@@ -1,0 +1,605 @@
+pub mod parse_fn_type_annotation;
+pub mod parse_parenthesized_type_annotation;
+
+use super::{Parser, ParsingError, ParsingErrorKind};
+use crate::{
+    ast::{
+        base::base_type::{TypeAnnotation, TypeAnnotationKind},
+        Span,
+    },
+    tokenizer::{KeywordKind, PunctuationKind, Token, TokenKind},
+};
+
+fn infix_bp(token_kind: &TokenKind) -> Option<(u8, u8)> {
+    use PunctuationKind::*;
+    use TokenKind::*;
+
+    let priority = match token_kind {
+        Punctuation(Or) => (1, 2),
+        _ => return None,
+    };
+
+    Some(priority)
+}
+
+fn suffix_bp(token_kind: &TokenKind) -> Option<(u8, ())> {
+    use PunctuationKind::*;
+    use TokenKind::*;
+
+    let priority = match token_kind {
+        Punctuation(LBracket) => (3, ()),
+        Punctuation(Lt) => (3, ()),
+        _ => return None,
+    };
+
+    Some(priority)
+}
+
+impl Parser {
+    pub fn parse_type_annotation(&mut self, min_prec: u8) -> Result<TypeAnnotation, ParsingError> {
+        let token = self.current().ok_or(self.unexpected_end_of_input())?;
+
+        let mut lhs = match token {
+            Token {
+                kind: TokenKind::Keyword(KeywordKind::Void),
+                ..
+            } => {
+                let start_offset = self.offset;
+
+                self.consume_keyword(KeywordKind::Void)?;
+                let span = self.get_span(start_offset, self.offset - 1)?;
+                TypeAnnotation {
+                    kind: TypeAnnotationKind::Void,
+                    span,
+                }
+            }
+            Token {
+                kind: TokenKind::Keyword(KeywordKind::Null),
+                ..
+            } => {
+                let start_offset = self.offset;
+
+                self.consume_keyword(KeywordKind::Null)?;
+                let span = self.get_span(start_offset, self.offset - 1)?;
+                TypeAnnotation {
+                    kind: TypeAnnotationKind::Null,
+                    span,
+                }
+            }
+            Token {
+                kind: TokenKind::Keyword(KeywordKind::Bool),
+                ..
+            } => {
+                let start_offset = self.offset;
+
+                self.consume_keyword(KeywordKind::Bool)?;
+                let span = self.get_span(start_offset, self.offset - 1)?;
+                TypeAnnotation {
+                    kind: TypeAnnotationKind::Bool,
+                    span,
+                }
+            }
+            Token {
+                kind: TokenKind::Keyword(KeywordKind::U8),
+                ..
+            } => {
+                let start_offset = self.offset;
+
+                self.consume_keyword(KeywordKind::U8)?;
+                let span = self.get_span(start_offset, self.offset - 1)?;
+                TypeAnnotation {
+                    kind: TypeAnnotationKind::U8,
+                    span,
+                }
+            }
+            Token {
+                kind: TokenKind::Keyword(KeywordKind::U16),
+                ..
+            } => {
+                let start_offset = self.offset;
+
+                self.consume_keyword(KeywordKind::U16)?;
+                let span = self.get_span(start_offset, self.offset - 1)?;
+                TypeAnnotation {
+                    kind: TypeAnnotationKind::U16,
+                    span,
+                }
+            }
+            Token {
+                kind: TokenKind::Keyword(KeywordKind::U32),
+                ..
+            } => {
+                let start_offset = self.offset;
+
+                self.consume_keyword(KeywordKind::U32)?;
+                let span = self.get_span(start_offset, self.offset - 1)?;
+                TypeAnnotation {
+                    kind: TypeAnnotationKind::U32,
+                    span,
+                }
+            }
+            Token {
+                kind: TokenKind::Keyword(KeywordKind::U64),
+                ..
+            } => {
+                let start_offset = self.offset;
+
+                self.consume_keyword(KeywordKind::U64)?;
+                let span = self.get_span(start_offset, self.offset - 1)?;
+                TypeAnnotation {
+                    kind: TypeAnnotationKind::U64,
+                    span,
+                }
+            }
+            Token {
+                kind: TokenKind::Keyword(KeywordKind::USize),
+                ..
+            } => {
+                let start_offset = self.offset;
+
+                self.consume_keyword(KeywordKind::USize)?;
+                let span = self.get_span(start_offset, self.offset - 1)?;
+                TypeAnnotation {
+                    kind: TypeAnnotationKind::USize,
+                    span,
+                }
+            }
+            Token {
+                kind: TokenKind::Keyword(KeywordKind::ISize),
+                ..
+            } => {
+                let start_offset = self.offset;
+
+                self.consume_keyword(KeywordKind::ISize)?;
+                let span = self.get_span(start_offset, self.offset - 1)?;
+                TypeAnnotation {
+                    kind: TypeAnnotationKind::ISize,
+                    span,
+                }
+            }
+            Token {
+                kind: TokenKind::Keyword(KeywordKind::I8),
+                ..
+            } => {
+                let start_offset = self.offset;
+
+                self.consume_keyword(KeywordKind::I8)?;
+                let span = self.get_span(start_offset, self.offset - 1)?;
+                TypeAnnotation {
+                    kind: TypeAnnotationKind::I8,
+                    span,
+                }
+            }
+            Token {
+                kind: TokenKind::Keyword(KeywordKind::I16),
+                ..
+            } => {
+                let start_offset = self.offset;
+
+                self.consume_keyword(KeywordKind::I16)?;
+                let span = self.get_span(start_offset, self.offset - 1)?;
+                TypeAnnotation {
+                    kind: TypeAnnotationKind::I16,
+                    span,
+                }
+            }
+            Token {
+                kind: TokenKind::Keyword(KeywordKind::I32),
+                ..
+            } => {
+                let start_offset = self.offset;
+
+                self.consume_keyword(KeywordKind::I32)?;
+                let span = self.get_span(start_offset, self.offset - 1)?;
+                TypeAnnotation {
+                    kind: TypeAnnotationKind::I32,
+                    span,
+                }
+            }
+            Token {
+                kind: TokenKind::Keyword(KeywordKind::I64),
+                ..
+            } => {
+                let start_offset = self.offset;
+
+                self.consume_keyword(KeywordKind::I64)?;
+                let span = self.get_span(start_offset, self.offset - 1)?;
+                TypeAnnotation {
+                    kind: TypeAnnotationKind::I64,
+                    span,
+                }
+            }
+            Token {
+                kind: TokenKind::Keyword(KeywordKind::F32),
+                ..
+            } => {
+                let start_offset = self.offset;
+
+                self.consume_keyword(KeywordKind::F32)?;
+                let span = self.get_span(start_offset, self.offset - 1)?;
+                TypeAnnotation {
+                    kind: TypeAnnotationKind::F32,
+                    span,
+                }
+            }
+            Token {
+                kind: TokenKind::Keyword(KeywordKind::F64),
+                ..
+            } => {
+                let start_offset = self.offset;
+
+                self.consume_keyword(KeywordKind::F64)?;
+                let span = self.get_span(start_offset, self.offset - 1)?;
+                TypeAnnotation {
+                    kind: TypeAnnotationKind::F64,
+                    span,
+                }
+            }
+            Token {
+                kind: TokenKind::Keyword(KeywordKind::Char),
+                ..
+            } => {
+                let start_offset = self.offset;
+
+                self.consume_keyword(KeywordKind::Char)?;
+                let span = self.get_span(start_offset, self.offset - 1)?;
+                TypeAnnotation {
+                    kind: TypeAnnotationKind::Char,
+                    span,
+                }
+            }
+            Token {
+                kind: TokenKind::Punctuation(PunctuationKind::LParen),
+                ..
+            } => {
+                self.place_checkpoint();
+                let type_annotation = self.parse_fn_type_annotation().or_else(|_| {
+                    self.goto_checkpoint();
+                    self.parse_parenthesized_type_annotation()
+                    // TODO: report an error when all parsing attempts fail
+                })?;
+
+                type_annotation
+            }
+            Token {
+                kind: TokenKind::Identifier(_),
+                ..
+            } => {
+                let start_offset = self.offset;
+
+                let id = self.consume_identifier()?;
+                let span = self.get_span(start_offset, self.offset - 1)?;
+                TypeAnnotation {
+                    kind: TypeAnnotationKind::Identifier(id),
+                    span,
+                }
+            }
+            t => {
+                return Err(ParsingError::new(
+                    ParsingErrorKind::ExpectedATypeButFound(t.clone()),
+                    t.span,
+                ))
+            }
+        };
+
+        loop {
+            let op = match self.current() {
+                Some(o) => o,
+                None => break,
+            };
+
+            if let Some((left_prec, ())) = suffix_bp(&op.kind) {
+                if left_prec < min_prec {
+                    break;
+                }
+
+                lhs = match op.kind {
+                    TokenKind::Punctuation(PunctuationKind::Lt) => {
+                        let (generic_args, generic_args_span) =
+                            self.parse_optional_generic_args()?;
+
+                        TypeAnnotation {
+                            kind: TypeAnnotationKind::GenericApply {
+                                left: Box::new(lhs.clone()),
+                                args: generic_args,
+                            },
+                            span: generic_args_span,
+                        }
+                    }
+                    TokenKind::Punctuation(PunctuationKind::LBracket) => {
+                        self.consume_punctuation(PunctuationKind::LBracket)?;
+                        let start_offset = self.offset;
+
+                        let size = self.consume_number()?;
+                        let span = self.get_span(start_offset, self.offset - 1)?;
+                        self.consume_punctuation(PunctuationKind::RBracket)?;
+                        TypeAnnotation {
+                            kind: TypeAnnotationKind::Array {
+                                left: Box::new(lhs),
+                                size,
+                            },
+                            span,
+                        }
+                    }
+                    _ => break,
+                };
+
+                continue;
+            }
+
+            if let Some((left_prec, right_prec)) = infix_bp(&op.kind) {
+                if left_prec < min_prec {
+                    break;
+                }
+
+                lhs = match op.kind {
+                    TokenKind::Punctuation(PunctuationKind::Or) => {
+                        let start_offset = self.offset;
+
+                        self.advance();
+                        let rhs = self.parse_type_annotation(right_prec)?;
+                        let end_span = self.get_span(start_offset, self.offset - 1)?;
+                        let span = Span {
+                            start: lhs.span.start,
+                            end: end_span.end,
+                        };
+
+                        let kind =
+                            if let TypeAnnotationKind::Union(existing_variants) = &mut lhs.kind {
+                                existing_variants.push(rhs);
+                                lhs.kind
+                            } else {
+                                TypeAnnotationKind::Union(vec![lhs, rhs])
+                            };
+
+                        TypeAnnotation { kind, span }
+                    }
+                    _ => break,
+                };
+                continue;
+            }
+
+            break;
+        }
+
+        Ok(lhs)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        ast::{
+            base::base_type::{TypeAnnotation, TypeAnnotationKind},
+            Span,
+        },
+        parse::Parser,
+    };
+
+    #[test]
+    fn parses_primitive_types() {
+        use crate::ast::Position;
+        use crate::tokenizer::Tokenizer;
+        use pretty_assertions::assert_eq;
+
+        let test_cases = vec![
+            (
+                "i8",
+                TypeAnnotation {
+                    kind: TypeAnnotationKind::I8,
+                    span: Span {
+                        start: Position { line: 1, col: 1 },
+                        end: Position { line: 1, col: 3 },
+                    },
+                },
+            ),
+            (
+                "i16",
+                TypeAnnotation {
+                    kind: TypeAnnotationKind::I16,
+                    span: Span {
+                        start: Position { line: 1, col: 1 },
+                        end: Position { line: 1, col: 4 },
+                    },
+                },
+            ),
+            (
+                "i32",
+                TypeAnnotation {
+                    kind: TypeAnnotationKind::I32,
+                    span: Span {
+                        start: Position { line: 1, col: 1 },
+                        end: Position { line: 1, col: 4 },
+                    },
+                },
+            ),
+            (
+                "i64",
+                TypeAnnotation {
+                    kind: TypeAnnotationKind::I64,
+                    span: Span {
+                        start: Position { line: 1, col: 1 },
+                        end: Position { line: 1, col: 4 },
+                    },
+                },
+            ),
+            (
+                "f32",
+                TypeAnnotation {
+                    kind: TypeAnnotationKind::F32,
+                    span: Span {
+                        start: Position { line: 1, col: 1 },
+                        end: Position { line: 1, col: 4 },
+                    },
+                },
+            ),
+            (
+                "f64",
+                TypeAnnotation {
+                    kind: TypeAnnotationKind::F64,
+                    span: Span {
+                        start: Position { line: 1, col: 1 },
+                        end: Position { line: 1, col: 4 },
+                    },
+                },
+            ),
+            (
+                "u8",
+                TypeAnnotation {
+                    kind: TypeAnnotationKind::U8,
+                    span: Span {
+                        start: Position { line: 1, col: 1 },
+                        end: Position { line: 1, col: 3 },
+                    },
+                },
+            ),
+            (
+                "u16",
+                TypeAnnotation {
+                    kind: TypeAnnotationKind::U16,
+                    span: Span {
+                        start: Position { line: 1, col: 1 },
+                        end: Position { line: 1, col: 4 },
+                    },
+                },
+            ),
+            (
+                "u32",
+                TypeAnnotation {
+                    kind: TypeAnnotationKind::U32,
+                    span: Span {
+                        start: Position { line: 1, col: 1 },
+                        end: Position { line: 1, col: 4 },
+                    },
+                },
+            ),
+            (
+                "u64",
+                TypeAnnotation {
+                    kind: TypeAnnotationKind::U64,
+                    span: Span {
+                        start: Position { line: 1, col: 1 },
+                        end: Position { line: 1, col: 4 },
+                    },
+                },
+            ),
+            (
+                "usize",
+                TypeAnnotation {
+                    kind: TypeAnnotationKind::USize,
+                    span: Span {
+                        start: Position { line: 1, col: 1 },
+                        end: Position { line: 1, col: 6 },
+                    },
+                },
+            ),
+            (
+                "void",
+                TypeAnnotation {
+                    kind: TypeAnnotationKind::Void,
+                    span: Span {
+                        start: Position { line: 1, col: 1 },
+                        end: Position { line: 1, col: 5 },
+                    },
+                },
+            ),
+            (
+                "null",
+                TypeAnnotation {
+                    kind: TypeAnnotationKind::Null,
+                    span: Span {
+                        start: Position { line: 1, col: 1 },
+                        end: Position { line: 1, col: 5 },
+                    },
+                },
+            ),
+            (
+                "bool",
+                TypeAnnotation {
+                    kind: TypeAnnotationKind::Bool,
+                    span: Span {
+                        start: Position { line: 1, col: 1 },
+                        end: Position { line: 1, col: 5 },
+                    },
+                },
+            ),
+            (
+                "char",
+                TypeAnnotation {
+                    kind: TypeAnnotationKind::Char,
+                    span: Span {
+                        start: Position { line: 1, col: 1 },
+                        end: Position { line: 1, col: 5 },
+                    },
+                },
+            ),
+        ];
+
+        for (input, expected) in test_cases {
+            let tokens = Tokenizer::tokenize(input.to_owned());
+            let mut parser = Parser {
+                offset: 0,
+                checkpoint_offset: 0,
+                tokens,
+            };
+            let result = parser.parse_type_annotation(0);
+
+            assert_eq!(result, Ok(expected))
+        }
+    }
+
+    #[test]
+    fn parses_union_types() {
+        use crate::ast::Position;
+        use crate::tokenizer::Tokenizer;
+        use pretty_assertions::assert_eq;
+
+        let tokens = Tokenizer::tokenize("i8 | i16 | i32 | i64".to_owned());
+        let mut parser = Parser {
+            offset: 0,
+            checkpoint_offset: 0,
+            tokens,
+        };
+        let result = parser.parse_type_annotation(0);
+
+        assert_eq!(
+            result,
+            Ok(TypeAnnotation {
+                kind: TypeAnnotationKind::Union(vec![
+                    TypeAnnotation {
+                        kind: TypeAnnotationKind::I8,
+                        span: Span {
+                            start: Position { line: 1, col: 1 },
+                            end: Position { line: 1, col: 3 }
+                        }
+                    },
+                    TypeAnnotation {
+                        kind: TypeAnnotationKind::I16,
+                        span: Span {
+                            start: Position { line: 1, col: 6 },
+                            end: Position { line: 1, col: 9 }
+                        }
+                    },
+                    TypeAnnotation {
+                        kind: TypeAnnotationKind::I32,
+                        span: Span {
+                            start: Position { line: 1, col: 12 },
+                            end: Position { line: 1, col: 15 }
+                        }
+                    },
+                    TypeAnnotation {
+                        kind: TypeAnnotationKind::I64,
+                        span: Span {
+                            start: Position { line: 1, col: 18 },
+                            end: Position { line: 1, col: 21 }
+                        }
+                    }
+                ]),
+                span: Span {
+                    start: Position { line: 1, col: 1 },
+                    end: Position { line: 1, col: 21 }
+                }
+            })
+        )
+    }
+}
