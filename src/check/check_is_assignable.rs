@@ -26,24 +26,12 @@ pub fn check_is_assignable(source_type: &Type, target_type: &Type) -> bool {
                 .iter()
                 .any(|right_item| check_is_assignable(left_item, right_item))
         }),
-        (GenericParam(left), GenericParam(right)) => {
-            match (&left.constraint, &right.constraint) {
-                (Some(left_constraint), Some(right_constraint)) => {
-                    check_is_assignable(&left_constraint, &right_constraint)
-                }
-                // generics might be substituted with types that are incompatible, we have to take conservative approach
-                // e.g
-                // struct User {
-                //   name: string
-                // }
-                //
-                // let something = <A, B>(a: A, b: B) => {
-                //   let x: A | null = null;
-                //   x = b; // "b" should not be assignable to x
-                // }
-                _ => false,
+        (GenericParam(left), GenericParam(right)) => match (&left.constraint, &right.constraint) {
+            (Some(left_constraint), Some(right_constraint)) => {
+                check_is_assignable(&left_constraint, &right_constraint)
             }
-        }
+            _ => false,
+        },
         (Struct(left), Struct(right)) => todo!(),
         (
             Array {
