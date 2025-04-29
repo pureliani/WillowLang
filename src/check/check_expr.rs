@@ -6,7 +6,7 @@ use crate::{
         checked::{
             checked_declaration::{CheckedParam, CheckedStructDecl, CheckedVarDecl},
             checked_expression::{CheckedBlockContents, CheckedExpr, CheckedExprKind},
-            checked_type::{Type, TypeKind, TypeSpan},
+            checked_type::{StructTypeKind, Type, TypeKind, TypeSpan},
         },
         Span,
     },
@@ -201,25 +201,30 @@ fn substitute_generics(
                 span: ty.span,
             }
         }
-        TypeKind::Struct(s_decl) => {
+        TypeKind::Struct(s) => {
             // Similar to FnType, a struct definition's generic params are local.
             // We substitute types *within* its properties if those types refer
             // to generics from the *outer* substitution context.
-            let substituted_props = s_decl
-                .properties
-                .iter()
-                .map(|p| CheckedParam {
-                    identifier: p.identifier.clone(),
-                    constraint: substitute_generics(&p.constraint, substitution, errors),
-                })
-                .collect();
-            Type {
-                kind: TypeKind::Struct(CheckedStructDecl {
-                    properties: substituted_props,
-                    // Keep other fields like name, generic_params, etc.
-                    ..s_decl.clone()
-                }),
-                span: ty.span,
+            match s {
+                StructTypeKind::Declaration(decl) => {
+                    let substituted_props = decl
+                        .properties
+                        .iter()
+                        .map(|p| CheckedParam {
+                            identifier: p.identifier.clone(),
+                            constraint: substitute_generics(&p.constraint, substitution, errors),
+                        })
+                        .collect();
+
+                    Type {
+                        kind: TypeKind::Struct(StructTypeKind::Declaration(CheckedStructDecl {
+                            properties: substituted_props,
+                            ..decl.clone()
+                        })),
+                        span: ty.span,
+                    }
+                }
+                StructTypeKind::Specialized(_) => ty.clone(),
             }
         }
         TypeKind::Array { item_type, size } => Type {
@@ -236,26 +241,6 @@ fn substitute_generics(
                 .collect();
             // Re-apply union_of logic to simplify the result
             union_of(&substituted_items)
-        }
-        TypeKind::GenericApply { target, type_args } => {
-            // Substitute within the target and the arguments themselves
-            let substituted_target = substitute_generics(target, substitution, errors);
-
-            let substituted_args = type_args
-                .iter()
-                .map(|t| substitute_generics(t, substitution, errors))
-                .collect();
-
-            // We might need to re-evaluate the GenericApply after substitution
-            // For now, just return the substituted structure. A more advanced checker
-            // might simplify `MyType<T>` where T becomes `int` into just `MyType<int>`.
-            Type {
-                kind: TypeKind::GenericApply {
-                    target: Box::new(substituted_target),
-                    type_args: substituted_args,
-                },
-                span: ty.span,
-            }
         }
         // Base types and others don't contain substitutable generics directly
         TypeKind::I8
@@ -321,17 +306,19 @@ pub fn infer_generics(
             infer_generics(maybe_generic, concrete, substitution, errors);
         }
         (TypeKind::Struct(maybe_generic), TypeKind::Struct(concrete)) => {
-            for (maybe_generic_prop, concrete_prop) in maybe_generic
-                .properties
-                .iter()
-                .zip(concrete.properties.iter())
-            {
-                infer_generics(
-                    &maybe_generic_prop.constraint,
-                    &concrete_prop.constraint,
-                    substitution,
-                    errors,
-                );
+            if let StructTypeKind::Declaration(maybe_generic) = maybe_generic {
+                for (maybe_generic_prop, concrete_prop) in maybe_generic
+                    .properties
+                    .iter()
+                    .zip(concrete.properties.iter())
+                {
+                    infer_generics(
+                        &maybe_generic_prop.constraint,
+                        &concrete_prop.constraint,
+                        substitution,
+                        errors,
+                    );
+                }
             }
         }
         (

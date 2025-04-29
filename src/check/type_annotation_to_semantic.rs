@@ -39,11 +39,12 @@ pub fn type_annotation_to_semantic(
         TypeAnnotationKind::F32 => TypeKind::F32,
         TypeAnnotationKind::F64 => TypeKind::F64,
         TypeAnnotationKind::Char => TypeKind::Char,
+        TypeAnnotationKind::GenericApply { left, args } => todo!(),
         TypeAnnotationKind::Identifier(id) => scope
             .borrow()
             .lookup(&id.name)
             .map(|entry| match entry {
-                SymbolEntry::StructDecl(decl) => TypeKind::Struct(decl),
+                SymbolEntry::StructDecl(s) => TypeKind::Struct(s),
                 SymbolEntry::EnumDecl(decl) => TypeKind::Enum(decl),
                 SymbolEntry::TypeAliasDecl(decl) => TypeKind::TypeAlias(decl),
                 SymbolEntry::GenericParam(generic_param) => TypeKind::GenericParam(generic_param),
