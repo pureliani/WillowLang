@@ -11,7 +11,7 @@ use crate::ast::{
         },
         checked_expression::{CheckedBlockContents, CheckedExprKind},
         checked_statement::{CheckedStmt, CheckedStmtKind},
-        checked_type::{StructTypeKind, Type, TypeKind, TypeSpan},
+        checked_type::{Type, TypeKind, TypeSpan},
     },
 };
 
@@ -101,7 +101,7 @@ pub fn check_stmt(
 
             scope.borrow_mut().insert(
                 identifier.name,
-                SymbolEntry::StructDecl(StructTypeKind::Declaration(checked_declaration.clone())),
+                SymbolEntry::StructDecl(checked_declaration.clone()),
             );
 
             CheckedStmt {

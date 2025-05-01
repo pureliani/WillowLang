@@ -2,14 +2,7 @@ use crate::ast::{base::base_declaration::EnumDecl, Span};
 
 use super::checked_declaration::{
     CheckedGenericParam, CheckedParam, CheckedStructDecl, CheckedTypeAliasDecl,
-    SpecializedStructDecl,
 };
-
-#[derive(Clone, Debug)]
-pub enum StructTypeKind {
-    Declaration(CheckedStructDecl),
-    Specialized(SpecializedStructDecl),
-}
 
 #[derive(Clone, Debug)]
 pub enum TypeKind {
@@ -29,9 +22,13 @@ pub enum TypeKind {
     F32,
     F64,
     Char,
-    Struct(StructTypeKind),
+    Struct(CheckedStructDecl),
     Enum(EnumDecl),
     GenericParam(CheckedGenericParam),
+    GenericApply {
+        target: Box<Type>,
+        type_args: Vec<Type>,
+    },
     TypeAlias(CheckedTypeAliasDecl),
     FnType {
         params: Vec<CheckedParam>,
@@ -68,18 +65,18 @@ impl PartialEq for TypeKind {
             (TypeKind::F64, TypeKind::F64) => true,
             (TypeKind::Char, TypeKind::Char) => true,
             (
-                TypeKind::Struct(StructTypeKind::Declaration(CheckedStructDecl {
+                TypeKind::Struct(CheckedStructDecl {
                     identifier: this_identifier,
                     properties: this_properties,
                     generic_params: this_generic_params,
                     documentation: _,
-                })),
-                TypeKind::Struct(StructTypeKind::Declaration(CheckedStructDecl {
+                }),
+                TypeKind::Struct(CheckedStructDecl {
                     identifier: other_identifier,
                     properties: other_properties,
                     generic_params: other_generic_params,
                     documentation: _,
-                })),
+                }),
             ) => {
                 let same_name = this_identifier.name == other_identifier.name;
 

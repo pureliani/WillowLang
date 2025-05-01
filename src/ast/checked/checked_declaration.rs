@@ -23,13 +23,6 @@ pub struct CheckedStructDecl {
 }
 
 #[derive(Clone, Debug)]
-pub struct SpecializedStructDecl {
-    pub identifier: IdentifierNode,
-    pub documentation: Option<DocAnnotation>,
-    pub properties: Vec<CheckedParam>,
-}
-
-#[derive(Clone, Debug)]
 pub struct CheckedTypeAliasDecl {
     pub identifier: IdentifierNode,
     pub documentation: Option<DocAnnotation>,
