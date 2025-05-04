@@ -131,7 +131,7 @@ pub enum ExprKind {
         else_branch: Option<BlockContents>,
     },
     ArrayLiteral {
-        items: Vec<Box<Expr>>,
+        items: Vec<Expr>,
     },
     Block(BlockContents),
     Error(ParsingError),

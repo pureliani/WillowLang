@@ -1,15 +1,18 @@
-use std::{cell::RefCell, rc::Rc};
-
-use crate::{
-    ast::{base::base_expression::Expr, checked::checked_expression::CheckedExpr, IdentifierNode},
-    check::{scope::Scope, SemanticError},
+use crate::ast::{
+    checked::{
+        checked_expression::{CheckedExpr, CheckedExprKind},
+        checked_type::{Type, TypeKind, TypeSpan},
+    },
+    Span,
 };
 
-pub fn check_bool_expr(
-    left: Box<Expr>,
-    field: IdentifierNode,
-    errors: &mut Vec<SemanticError>,
-    scope: Rc<RefCell<Scope>>,
-) -> CheckedExpr {
-    todo!()
+pub fn check_bool_expr(value: bool, expr_span: Span) -> CheckedExpr {
+    CheckedExpr {
+        kind: CheckedExprKind::BoolLiteral { value },
+
+        expr_type: Type {
+            kind: TypeKind::Bool,
+            span: TypeSpan::Expr(expr_span),
+        },
+    }
 }

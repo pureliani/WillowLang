@@ -142,13 +142,13 @@ impl Parser {
             } => {
                 let start_offset = self.offset;
                 self.consume_punctuation(PunctuationKind::LBracket)?;
-                let items: Vec<Box<Expr>> = self
+                let items: Vec<Expr> = self
                     .comma_separated(
                         |p| p.parse_expr(0),
                         |p| p.match_token(0, TokenKind::Punctuation(PunctuationKind::RBracket)),
                     )?
                     .into_iter()
-                    .map(|item| Box::new(item))
+                    .map(|item| item)
                     .collect();
 
                 self.consume_punctuation(PunctuationKind::RBracket)?;

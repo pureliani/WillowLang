@@ -7,7 +7,7 @@ use crate::{
 
 pub fn check_struct_init_expr(
     left: Box<Expr>,
-    field: IdentifierNode,
+    fields: Vec<(IdentifierNode, Expr)>,
     errors: &mut Vec<SemanticError>,
     scope: Rc<RefCell<Scope>>,
 ) -> CheckedExpr {
