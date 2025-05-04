@@ -8,13 +8,12 @@ use crate::{
             checked_type::{Type, TypeKind, TypeSpan},
         },
     },
+    check::{
+        check_stmt::check_generic_params,
+        scope::{Scope, ScopeKind, SymbolEntry},
+        SemanticError, SemanticErrorKind,
+    },
     tokenizer::NumberKind,
-};
-
-use super::{
-    check_stmt::check_generic_params,
-    scope::{Scope, ScopeKind, SymbolEntry},
-    SemanticError, SemanticErrorKind,
 };
 
 pub fn type_annotation_to_semantic(
@@ -39,7 +38,18 @@ pub fn type_annotation_to_semantic(
         TypeAnnotationKind::F32 => TypeKind::F32,
         TypeAnnotationKind::F64 => TypeKind::F64,
         TypeAnnotationKind::Char => TypeKind::Char,
-        TypeAnnotationKind::GenericApply { left, args } => todo!(),
+        TypeAnnotationKind::GenericApply { left, args } => {
+            let checked_target = type_annotation_to_semantic(&left, errors, scope.clone());
+            let checked_args = args
+                .into_iter()
+                .map(|arg| type_annotation_to_semantic(&arg, errors, scope.clone()))
+                .collect::<Vec<Type>>();
+
+            TypeKind::GenericApply {
+                target: Box::new(checked_target),
+                type_args: checked_args,
+            }
+        }
         TypeAnnotationKind::Identifier(id) => scope
             .borrow()
             .lookup(&id.name)
