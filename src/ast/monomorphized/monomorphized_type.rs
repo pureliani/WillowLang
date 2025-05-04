@@ -34,7 +34,6 @@ pub enum MonoType {
         item_type: Box<MonoType>,
         size: usize,
     },
-    Unknown,
 }
 
 impl PartialEq for MonoType {
@@ -159,7 +158,6 @@ impl PartialEq for MonoType {
                     size: other_size,
                 },
             ) => this_left == other_left && this_size == other_size,
-            (MonoType::Unknown, MonoType::Unknown) => true,
             _ => false,
         }
     }

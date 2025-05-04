@@ -17,10 +17,10 @@ use crate::ast::{
 
 use super::{
     check_expr::check_expr,
-    check_is_assignable::check_is_assignable,
     check_stmts::check_stmts,
     scope::{Scope, ScopeKind, SymbolEntry},
     type_annotation_to_semantic::type_annotation_to_semantic,
+    utils::check_is_assignable::check_is_assignable,
     SemanticError, SemanticErrorKind,
 };
 

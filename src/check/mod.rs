@@ -4,13 +4,13 @@ use crate::{
 };
 
 pub mod check_expr;
-pub mod check_is_assignable;
-pub mod check_returns;
 pub mod check_stmt;
 pub mod check_stmts;
+pub mod expressions;
 pub mod scope;
 pub mod type_annotation_to_semantic;
 pub mod type_flow_graph;
+pub mod utils;
 
 #[derive(Debug, Clone)]
 pub enum SemanticErrorKind {

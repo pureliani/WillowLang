@@ -1,11 +1,12 @@
 use std::{cell::RefCell, rc::Rc};
 
-use crate::ast::checked::{
-    checked_expression::{CheckedExpr, CheckedExprKind},
-    checked_statement::{CheckedStmt, CheckedStmtKind},
+use crate::{
+    ast::checked::{
+        checked_expression::{CheckedExpr, CheckedExprKind},
+        checked_statement::{CheckedStmt, CheckedStmtKind},
+    },
+    check::{scope::Scope, SemanticError, SemanticErrorKind},
 };
-
-use super::{scope::Scope, SemanticError, SemanticErrorKind};
 
 pub fn check_returns(
     statements: &[CheckedStmt],

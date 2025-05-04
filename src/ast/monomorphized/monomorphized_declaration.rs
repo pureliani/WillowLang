@@ -23,5 +23,6 @@ pub struct MonoTypeAliasDecl {
 #[derive(Clone, Debug)]
 pub struct MonoVarDecl {
     pub identifier: IdentifierNode,
+    pub constraint: MonoType,
     pub value: Option<MonoExpr>,
 }
