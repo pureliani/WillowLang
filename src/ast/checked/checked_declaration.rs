@@ -15,7 +15,7 @@ pub struct CheckedGenericParam {
 }
 
 #[derive(Clone, Debug)]
-pub struct CheckedStructDecl {
+pub struct GenericStructDecl {
     pub identifier: IdentifierNode,
     pub documentation: Option<DocAnnotation>,
     pub generic_params: Vec<CheckedGenericParam>,
@@ -23,10 +23,24 @@ pub struct CheckedStructDecl {
 }
 
 #[derive(Clone, Debug)]
-pub struct CheckedTypeAliasDecl {
+pub struct StructDecl {
+    pub identifier: IdentifierNode,
+    pub documentation: Option<DocAnnotation>,
+    pub properties: Vec<CheckedParam>,
+}
+
+#[derive(Clone, Debug)]
+pub struct GenericTypeAliasDecl {
     pub identifier: IdentifierNode,
     pub documentation: Option<DocAnnotation>,
     pub generic_params: Vec<CheckedGenericParam>,
+    pub value: Box<Type>,
+}
+
+#[derive(Clone, Debug)]
+pub struct TypeAliasDecl {
+    pub identifier: IdentifierNode,
+    pub documentation: Option<DocAnnotation>,
     pub value: Box<Type>,
 }
 

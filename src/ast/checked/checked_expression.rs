@@ -113,11 +113,16 @@ pub enum CheckedExprKind {
     String(StringNode),
     Identifier(IdentifierNode),
     // Complex expressions
-    Fn {
+    GenericFn {
         params: Vec<CheckedParam>,
         body: CheckedBlockContents,
         return_type: Type,
         generic_params: Vec<CheckedGenericParam>,
+    },
+    Fn {
+        params: Vec<CheckedParam>,
+        body: CheckedBlockContents,
+        return_type: Type,
     },
     If {
         condition: Box<CheckedExpr>,

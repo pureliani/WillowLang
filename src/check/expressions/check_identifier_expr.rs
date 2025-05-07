@@ -3,7 +3,6 @@ use std::{cell::RefCell, rc::Rc};
 use crate::{
     ast::{
         checked::{
-            checked_declaration::CheckedVarDecl,
             checked_expression::{CheckedExpr, CheckedExprKind},
             checked_type::{Type, TypeKind, TypeSpan},
         },
@@ -21,42 +20,24 @@ pub fn check_identifier_expr(
     errors: &mut Vec<SemanticError>,
     scope: Rc<RefCell<Scope>>,
 ) -> CheckedExpr {
-    let expr_type = scope
+    let type_kind = scope
         .borrow()
         .lookup(&id.name)
         .map(|entry| match entry {
-            SymbolEntry::StructDecl(decl) => Type {
-                kind: TypeKind::Struct(decl),
-                span: TypeSpan::Expr(expr_span),
-            },
-            SymbolEntry::TypeAliasDecl(decl) => Type {
-                kind: TypeKind::TypeAlias(decl),
-                span: TypeSpan::Expr(expr_span),
-            },
-            SymbolEntry::EnumDecl(decl) => Type {
-                kind: TypeKind::Enum(decl),
-                span: TypeSpan::Expr(expr_span),
-            },
+            SymbolEntry::GenericStructDecl(decl) => TypeKind::GenericStructDecl(decl),
+            SymbolEntry::StructDecl(decl) => TypeKind::StructDecl(decl),
+            SymbolEntry::GenericTypeAliasDecl(decl) => TypeKind::GenericTypeAliasDecl(decl),
+            SymbolEntry::TypeAliasDecl(decl) => TypeKind::TypeAliasDecl(decl),
+            SymbolEntry::EnumDecl(decl) => TypeKind::Enum(decl),
+            SymbolEntry::VarDecl(decl) => decl.constraint.kind,
             SymbolEntry::GenericParam(_) => {
                 errors.push(SemanticError::new(
                     SemanticErrorKind::CannotUseGenericParameterAsValue,
                     expr_span,
                 ));
 
-                Type {
-                    kind: TypeKind::Unknown,
-                    span: TypeSpan::Expr(expr_span),
-                }
+                TypeKind::Unknown
             }
-            SymbolEntry::VarDecl(CheckedVarDecl {
-                identifier,
-                documentation,
-                constraint,
-                value,
-            }) => Type {
-                kind: constraint.kind,
-                span: TypeSpan::Expr(expr_span),
-            },
         })
         .unwrap_or_else(|| {
             errors.push(SemanticError::new(
@@ -64,14 +45,14 @@ pub fn check_identifier_expr(
                 expr_span,
             ));
 
-            Type {
-                kind: TypeKind::Unknown,
-                span: TypeSpan::Expr(expr_span),
-            }
+            TypeKind::Unknown
         });
 
     CheckedExpr {
         kind: CheckedExprKind::Identifier(id),
-        expr_type,
+        expr_type: Type {
+            kind: type_kind,
+            span: TypeSpan::Expr(expr_span),
+        },
     }
 }

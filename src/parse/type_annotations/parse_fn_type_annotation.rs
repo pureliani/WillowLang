@@ -36,12 +36,21 @@ impl Parser {
 
         let span = self.get_span(start_offset, self.offset - 1)?;
 
-        Ok(TypeAnnotation {
-            kind: TypeAnnotationKind::FnType {
+        let type_kind = if generic_params.is_empty() {
+            TypeAnnotationKind::FnType {
+                params,
+                return_type,
+            }
+        } else {
+            TypeAnnotationKind::GenericFnType {
                 params,
                 return_type,
                 generic_params,
-            },
+            }
+        };
+
+        Ok(TypeAnnotation {
+            kind: type_kind,
             span,
         })
     }

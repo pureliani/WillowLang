@@ -105,22 +105,41 @@ pub fn check_fn_expr(
         inferred_return_type
     };
 
-    let expr_type = Type {
-        kind: TypeKind::FnType {
-            params: param_types,
-            return_type: Box::new(actual_return_type.clone()),
-            generic_params: checked_generic_params.clone(),
-        },
-        span: TypeSpan::Expr(expr_span),
-    };
+    if generic_params.is_empty() {
+        let expr_type = Type {
+            kind: TypeKind::FnType {
+                params: param_types,
+                return_type: Box::new(actual_return_type.clone()),
+            },
+            span: TypeSpan::Expr(expr_span),
+        };
 
-    CheckedExpr {
-        expr_type,
-        kind: CheckedExprKind::Fn {
-            params: checked_params,
-            body: checked_body,
-            return_type: actual_return_type,
-            generic_params: checked_generic_params,
-        },
+        CheckedExpr {
+            expr_type,
+            kind: CheckedExprKind::Fn {
+                params: checked_params,
+                body: checked_body,
+                return_type: actual_return_type,
+            },
+        }
+    } else {
+        let expr_type = Type {
+            kind: TypeKind::GenericFnType {
+                params: param_types,
+                return_type: Box::new(actual_return_type.clone()),
+                generic_params: checked_generic_params.clone(),
+            },
+            span: TypeSpan::Expr(expr_span),
+        };
+
+        CheckedExpr {
+            expr_type,
+            kind: CheckedExprKind::GenericFn {
+                params: checked_params,
+                body: checked_body,
+                return_type: actual_return_type,
+                generic_params: checked_generic_params,
+            },
+        }
     }
 }

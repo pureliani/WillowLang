@@ -25,10 +25,14 @@ pub enum TypeAnnotationKind {
     F64,
     Char,
     Identifier(IdentifierNode),
-    FnType {
+    GenericFnType {
         params: Vec<Param>,
         return_type: Box<TypeAnnotation>,
         generic_params: Vec<GenericParam>,
+    },
+    FnType {
+        params: Vec<Param>,
+        return_type: Box<TypeAnnotation>,
     },
     // Infix types
     Union(Vec<TypeAnnotation>),

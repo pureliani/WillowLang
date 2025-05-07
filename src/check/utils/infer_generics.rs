@@ -42,7 +42,7 @@ pub fn infer_generics(
         ) => {
             infer_generics(maybe_generic, concrete, substitution, errors);
         }
-        (TypeKind::Struct(maybe_generic), TypeKind::Struct(concrete)) => {
+        (TypeKind::GenericStructDecl(maybe_generic), TypeKind::GenericStructDecl(concrete)) => {
             for (maybe_generic_prop, concrete_prop) in maybe_generic
                 .properties
                 .iter()
@@ -57,12 +57,12 @@ pub fn infer_generics(
             }
         }
         (
-            TypeKind::FnType {
+            TypeKind::GenericFnType {
                 params: maybe_generic_params,
                 return_type: maybe_generic_return_type,
                 generic_params: _,
             },
-            TypeKind::FnType {
+            TypeKind::GenericFnType {
                 params: concrete_params,
                 return_type: concrete_return_type,
                 generic_params: _,

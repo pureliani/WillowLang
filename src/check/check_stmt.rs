@@ -2,12 +2,14 @@ use std::{cell::RefCell, rc::Rc};
 
 use crate::ast::{
     base::{
-        base_declaration::{GenericParam, Param, StructDecl, TypeAliasDecl, VarDecl},
+        base_declaration::{
+            GenericParam, Param, StructDecl as BaseStructDecl, TypeAliasDecl, VarDecl,
+        },
         base_statement::{Stmt, StmtKind},
     },
     checked::{
         checked_declaration::{
-            CheckedGenericParam, CheckedParam, CheckedStructDecl, CheckedVarDecl,
+            CheckedGenericParam, CheckedParam, CheckedVarDecl, GenericStructDecl, StructDecl,
         },
         checked_expression::{CheckedBlockContents, CheckedExprKind},
         checked_statement::{CheckedStmt, CheckedStmtKind},
@@ -80,7 +82,7 @@ pub fn check_stmt(
             kind: CheckedStmtKind::Expression(check_expr(expr, errors, scope)),
             span: stmt.span,
         },
-        StmtKind::StructDecl(StructDecl {
+        StmtKind::StructDecl(BaseStructDecl {
             identifier,
             documentation,
             generic_params,
@@ -94,21 +96,36 @@ pub fn check_stmt(
             let checked_properties =
                 check_struct_properties(&properties, errors, struct_scope.clone());
 
-            let checked_declaration = CheckedStructDecl {
-                identifier: identifier.to_owned(),
-                documentation,
-                properties: checked_properties,
-                generic_params,
-            };
+            if generic_params.is_empty() {
+                let decl = StructDecl {
+                    identifier: identifier.to_owned(),
+                    documentation,
+                    properties: checked_properties,
+                };
+                scope
+                    .borrow_mut()
+                    .insert(identifier.name, SymbolEntry::StructDecl(decl.clone()));
 
-            scope.borrow_mut().insert(
-                identifier.name,
-                SymbolEntry::StructDecl(checked_declaration.clone()),
-            );
+                CheckedStmt {
+                    kind: CheckedStmtKind::StructDecl(decl),
+                    span: stmt.span,
+                }
+            } else {
+                let decl = GenericStructDecl {
+                    identifier: identifier.to_owned(),
+                    documentation,
+                    properties: checked_properties,
+                    generic_params,
+                };
+                scope.borrow_mut().insert(
+                    identifier.name,
+                    SymbolEntry::GenericStructDecl(decl.clone()),
+                );
 
-            CheckedStmt {
-                kind: CheckedStmtKind::StructDecl(checked_declaration),
-                span: stmt.span,
+                CheckedStmt {
+                    kind: CheckedStmtKind::GenericStructDecl(decl),
+                    span: stmt.span,
+                }
             }
         }
         StmtKind::EnumDecl(decl) => {

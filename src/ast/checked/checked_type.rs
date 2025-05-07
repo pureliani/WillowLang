@@ -1,7 +1,8 @@
 use crate::ast::{base::base_declaration::EnumDecl, Span};
 
 use super::checked_declaration::{
-    CheckedGenericParam, CheckedParam, CheckedStructDecl, CheckedTypeAliasDecl,
+    CheckedGenericParam, CheckedParam, GenericStructDecl, GenericTypeAliasDecl, StructDecl,
+    TypeAliasDecl,
 };
 
 #[derive(Clone, Debug)]
@@ -22,19 +23,21 @@ pub enum TypeKind {
     F32,
     F64,
     Char,
-    Struct(CheckedStructDecl),
+    GenericStructDecl(GenericStructDecl),
+    StructDecl(StructDecl),
     Enum(EnumDecl),
     GenericParam(CheckedGenericParam),
-    GenericApply {
-        target: Box<Type>,
-        type_args: Vec<Type>,
-    },
-    TypeAlias(CheckedTypeAliasDecl),
-    FnType {
+    GenericFnType {
         params: Vec<CheckedParam>,
         return_type: Box<Type>,
         generic_params: Vec<CheckedGenericParam>,
     },
+    FnType {
+        params: Vec<CheckedParam>,
+        return_type: Box<Type>,
+    },
+    GenericTypeAliasDecl(GenericTypeAliasDecl),
+    TypeAliasDecl(TypeAliasDecl),
     // Infix types
     Union(Vec<Type>),
     // Suffix types
@@ -64,14 +67,15 @@ impl PartialEq for TypeKind {
             (TypeKind::F32, TypeKind::F32) => true,
             (TypeKind::F64, TypeKind::F64) => true,
             (TypeKind::Char, TypeKind::Char) => true,
+            // TODO: handle non generic struct
             (
-                TypeKind::Struct(CheckedStructDecl {
+                TypeKind::GenericStructDecl(GenericStructDecl {
                     identifier: this_identifier,
                     properties: this_properties,
                     generic_params: this_generic_params,
                     documentation: _,
                 }),
-                TypeKind::Struct(CheckedStructDecl {
+                TypeKind::GenericStructDecl(GenericStructDecl {
                     identifier: other_identifier,
                     properties: other_properties,
                     generic_params: other_generic_params,
@@ -117,37 +121,6 @@ impl PartialEq for TypeKind {
                 this_identifier.name == other_identifier.name && this_constraint == other_constraint
             }
             (
-                TypeKind::TypeAlias(CheckedTypeAliasDecl {
-                    identifier: this_identifier,
-                    generic_params: this_generic_params,
-                    value: this_value,
-                    documentation: _,
-                }),
-                TypeKind::TypeAlias(CheckedTypeAliasDecl {
-                    identifier: other_identifier,
-                    generic_params: other_generic_params,
-                    value: other_value,
-                    documentation: _,
-                }),
-            ) => {
-                let same_name = this_identifier.name == other_identifier.name;
-
-                if this_generic_params.len() != other_generic_params.len() {
-                    return false;
-                }
-
-                let same_generic_params = this_generic_params
-                    .iter()
-                    .zip(other_generic_params.iter())
-                    .all(|(this_param, other_param)| {
-                        this_param.constraint == other_param.constraint
-                    });
-
-                let same_value = this_value == other_value;
-
-                same_name && same_generic_params && same_value
-            }
-            (
                 TypeKind::Enum(EnumDecl {
                     identifier: this_identifier,
                     variants: this_variants,
@@ -164,13 +137,14 @@ impl PartialEq for TypeKind {
                         |(this_variant, other_variant)| this_variant.name == other_variant.name,
                     )
             }
+            // TODO: handle non generic fn
             (
-                TypeKind::FnType {
+                TypeKind::GenericFnType {
                     params: this_params,
                     return_type: this_return_type,
                     generic_params: this_generic_params,
                 },
-                TypeKind::FnType {
+                TypeKind::GenericFnType {
                     params: other_params,
                     return_type: other_return_type,
                     generic_params: other_generic_params,

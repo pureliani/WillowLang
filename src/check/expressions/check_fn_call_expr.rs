@@ -39,7 +39,7 @@ pub fn check_fn_call_expr(
     };
 
     match &checked_left.expr_type.kind {
-        TypeKind::FnType {
+        TypeKind::GenericFnType {
             generic_params,
             params,
             return_type,
@@ -49,7 +49,7 @@ pub fn check_fn_call_expr(
             // For now, let's require explicit arguments for generic functions.
             todo!("Implement type inference and substitution")
         }
-        TypeKind::FnType {
+        TypeKind::GenericFnType {
             params,
             return_type,
             generic_params,
@@ -79,7 +79,7 @@ pub fn check_fn_call_expr(
             }
         }
         TypeKind::GenericApply { target, type_args } => {
-            if let TypeKind::FnType {
+            if let TypeKind::GenericFnType {
                 params,
                 return_type,
                 generic_params,

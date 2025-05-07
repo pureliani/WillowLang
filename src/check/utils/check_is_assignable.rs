@@ -21,52 +21,66 @@ pub fn check_is_assignable(source_type: &Type, target_type: &Type) -> bool {
         | (Null, Null)
         | (Void, Void)
         | (Unknown, _) => true,
-        (Union(left), Union(right)) => left.iter().all(|left_item| {
-            right
+        (Union(source), Union(target)) => source.iter().all(|source_item| {
+            target
                 .iter()
-                .any(|right_item| check_is_assignable(left_item, right_item))
+                .any(|target_item| check_is_assignable(source_item, target_item))
         }),
-        (GenericParam(left), GenericParam(right)) => match (&left.constraint, &right.constraint) {
-            (Some(left_constraint), Some(right_constraint)) => {
-                check_is_assignable(&left_constraint, &right_constraint)
+        (GenericParam(source), GenericParam(target)) => {
+            match (&source.constraint, &target.constraint) {
+                (Some(left_constraint), Some(right_constraint)) => {
+                    check_is_assignable(&left_constraint, &right_constraint)
+                }
+                _ => false,
             }
-            _ => false,
-        },
-        (Struct(left), Struct(right)) => todo!(),
+        }
+        (GenericStructDecl(source), GenericStructDecl(target)) => todo!(),
+        (StructDecl(source), StructDecl(target)) => todo!(),
         (
             Array {
-                item_type: left_type,
-                size: left_size,
+                item_type: source_type,
+                size: source_size,
             },
             Array {
-                item_type: right_type,
-                size: right_size,
+                item_type: target_type,
+                size: target_size,
             },
         ) => {
-            let same_size = left_size == right_size;
-            let assignable_types = check_is_assignable(&left_type, &right_type);
+            let same_size = source_size == target_size;
+            let assignable_types = check_is_assignable(&source_type, &target_type);
 
             same_size && assignable_types
         }
         (
             FnType {
-                params: left_params,
-                return_type: left_return_type,
-                generic_params: left_generic_params,
+                params: source_params,
+                return_type: source_return_type,
             },
             FnType {
-                params: right_params,
-                return_type: right_return_type,
-                generic_params: right_generic_params,
+                params: target_params,
+                return_type: target_return_type,
             },
         ) => todo!(),
-        (Enum(left), Enum(right)) => {
-            let same_name = left.identifier.name == right.identifier.name;
-            let same_len = left.variants.len() == right.variants.len();
+        (
+            GenericFnType {
+                params: source_params,
+                return_type: source_return_type,
+                generic_params: source_generic_params,
+            },
+            GenericFnType {
+                params: target_params,
+                return_type: target_return_type,
+                generic_params: target_generic_params,
+            },
+        ) => todo!(),
+        (Enum(source), Enum(target)) => {
+            let same_name = source.identifier.name == target.identifier.name;
+            let same_len = source.variants.len() == target.variants.len();
 
             false
         }
-        (TypeAlias(left), right) => todo!(),
+
+        // TODO: add type alias handling
         _ => false,
     }
 }

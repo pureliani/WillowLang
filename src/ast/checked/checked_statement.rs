@@ -1,16 +1,20 @@
 use crate::ast::{base::base_declaration::EnumDecl, IdentifierNode, Span, StringNode};
 
 use super::{
-    checked_declaration::{CheckedStructDecl, CheckedTypeAliasDecl, CheckedVarDecl},
+    checked_declaration::{
+        CheckedVarDecl, GenericStructDecl, GenericTypeAliasDecl, StructDecl, TypeAliasDecl,
+    },
     checked_expression::{CheckedBlockContents, CheckedExpr},
 };
 
 #[derive(Clone, Debug)]
 pub enum CheckedStmtKind {
     Expression(CheckedExpr),
-    StructDecl(CheckedStructDecl),
+    GenericStructDecl(GenericStructDecl),
+    StructDecl(StructDecl),
     EnumDecl(EnumDecl),
-    TypeAliasDecl(CheckedTypeAliasDecl),
+    GenericTypeAliasDecl(GenericTypeAliasDecl),
+    TypeAliasDecl(TypeAliasDecl),
     VarDecl(CheckedVarDecl),
     Break,
     Continue,

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::{
     ast::checked::{
-        checked_declaration::{CheckedParam, CheckedStructDecl},
+        checked_declaration::{CheckedParam, GenericStructDecl},
         checked_type::{Type, TypeKind},
     },
     check::{SemanticError, SemanticErrorKind},
@@ -34,7 +34,7 @@ pub fn substitute_generics(
                     span: ty.span,
                 }
             }),
-        TypeKind::FnType {
+        TypeKind::GenericFnType {
             params,
             return_type,
             generic_params,
@@ -53,7 +53,7 @@ pub fn substitute_generics(
             let substituted_return_type = substitute_generics(return_type, substitution, errors);
 
             Type {
-                kind: TypeKind::FnType {
+                kind: TypeKind::GenericFnType {
                     params: substituted_params,
                     return_type: Box::new(substituted_return_type),
                     generic_params: generic_params.clone(), // Keep original generic params
@@ -61,7 +61,7 @@ pub fn substitute_generics(
                 span: ty.span,
             }
         }
-        TypeKind::Struct(decl) => {
+        TypeKind::GenericStructDecl(decl) => {
             // Similar to FnType, a struct definition's generic params are local.
             // We substitute types *within* its properties if those types refer
             // to generics from the *outer* substitution context.
@@ -75,7 +75,7 @@ pub fn substitute_generics(
                 .collect();
 
             Type {
-                kind: TypeKind::Struct(CheckedStructDecl {
+                kind: TypeKind::GenericStructDecl(GenericStructDecl {
                     properties: substituted_props,
                     ..decl.clone()
                 }),

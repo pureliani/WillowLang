@@ -45,6 +45,19 @@ pub fn type_annotation_to_semantic(
                 .map(|arg| type_annotation_to_semantic(&arg, errors, scope.clone()))
                 .collect::<Vec<Type>>();
 
+            match left.kind {
+                TypeAnnotationKind::GenericFnType {
+                    params,
+                    return_type,
+                    generic_params,
+                } => {}
+                TypeAnnotationKind::Identifier(id) => {
+                    let decl = scope.borrow().lookup(&id.name);
+
+                    // TODO: complete the implementation
+                }
+            }
+
             TypeKind::GenericApply {
                 target: Box::new(checked_target),
                 type_args: checked_args,
@@ -54,9 +67,11 @@ pub fn type_annotation_to_semantic(
             .borrow()
             .lookup(&id.name)
             .map(|entry| match entry {
-                SymbolEntry::StructDecl(s) => TypeKind::Struct(s),
+                SymbolEntry::GenericStructDecl(decl) => TypeKind::GenericStructDecl(decl),
+                SymbolEntry::StructDecl(decl) => TypeKind::StructDecl(decl),
                 SymbolEntry::EnumDecl(decl) => TypeKind::Enum(decl),
-                SymbolEntry::TypeAliasDecl(decl) => TypeKind::TypeAlias(decl),
+                SymbolEntry::GenericTypeAliasDecl(decl) => TypeKind::GenericTypeAliasDecl(decl),
+                SymbolEntry::TypeAliasDecl(decl) => TypeKind::TypeAliasDecl(decl),
                 SymbolEntry::GenericParam(generic_param) => TypeKind::GenericParam(generic_param),
                 SymbolEntry::VarDecl(_) => {
                     errors.push(SemanticError::new(
@@ -73,7 +88,7 @@ pub fn type_annotation_to_semantic(
                 ));
                 TypeKind::Unknown
             }),
-        TypeAnnotationKind::FnType {
+        TypeAnnotationKind::GenericFnType {
             params,
             return_type,
             generic_params,
@@ -95,7 +110,7 @@ pub fn type_annotation_to_semantic(
                 })
                 .collect();
 
-            TypeKind::FnType {
+            TypeKind::GenericFnType {
                 params: checked_params,
                 return_type: Box::new(type_annotation_to_semantic(
                     &return_type,
