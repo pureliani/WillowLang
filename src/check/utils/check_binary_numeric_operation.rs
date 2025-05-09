@@ -2,7 +2,7 @@ use crate::{
     ast::{
         checked::{
             checked_expression::CheckedExpr,
-            checked_type::{Type, TypeKind, TypeSpan},
+            checked_type::{CheckedType, CheckedTypeKind, TypeSpan},
         },
         Span,
     },
@@ -18,7 +18,7 @@ pub fn check_binary_numeric_operation(
     left: &CheckedExpr,
     right: &CheckedExpr,
     errors: &mut Vec<SemanticError>,
-) -> Type {
+) -> CheckedType {
     let combined_span = Span {
         start: left.expr_type.unwrap_expr_span().start,
         end: right.expr_type.unwrap_expr_span().start,
@@ -32,8 +32,8 @@ pub fn check_binary_numeric_operation(
             left.expr_type.unwrap_expr_span(),
         ));
 
-        return Type {
-            kind: TypeKind::Unknown,
+        return CheckedType {
+            kind: CheckedTypeKind::Unknown,
             span: TypeSpan::Expr(combined_span),
         };
     };
@@ -46,8 +46,8 @@ pub fn check_binary_numeric_operation(
             right.expr_type.unwrap_expr_span(),
         ));
 
-        return Type {
-            kind: TypeKind::Unknown,
+        return CheckedType {
+            kind: CheckedTypeKind::Unknown,
             span: TypeSpan::Expr(combined_span),
         };
     };
@@ -59,8 +59,8 @@ pub fn check_binary_numeric_operation(
             SemanticErrorKind::MixedFloatAndInteger,
             combined_span,
         ));
-        return Type {
-            kind: TypeKind::Unknown,
+        return CheckedType {
+            kind: CheckedTypeKind::Unknown,
             span: TypeSpan::Expr(combined_span),
         };
     }
@@ -70,8 +70,8 @@ pub fn check_binary_numeric_operation(
             SemanticErrorKind::MixedSignedAndUnsigned,
             combined_span,
         ));
-        return Type {
-            kind: TypeKind::Unknown,
+        return CheckedType {
+            kind: CheckedTypeKind::Unknown,
             span: TypeSpan::Expr(combined_span),
         };
     }

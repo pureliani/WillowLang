@@ -4,7 +4,7 @@ use crate::ast::{
     base::base_expression::{Expr, ExprKind},
     checked::{
         checked_expression::{CheckedExpr, CheckedExprKind},
-        checked_type::{Type, TypeKind, TypeSpan},
+        checked_type::{CheckedType, CheckedTypeKind, TypeSpan},
     },
 };
 
@@ -70,7 +70,7 @@ pub fn check_expr(
             check_is_type_expr(left, target, expr.span, errors, scope)
         }
         ExprKind::GenericApply { left, args } => {
-            check_generic_apply_expr(left, args, errors, scope)
+            check_generic_apply_expr(left, args, expr.span, errors, scope)
         }
         ExprKind::FnCall { left, args } => check_fn_call_expr(left, args, expr.span, errors, scope),
         ExprKind::StructInit { left, fields } => {
@@ -78,8 +78,8 @@ pub fn check_expr(
         }
         ExprKind::Null => CheckedExpr {
             kind: CheckedExprKind::Null,
-            expr_type: Type {
-                kind: TypeKind::Null,
+            expr_type: CheckedType {
+                kind: CheckedTypeKind::Null,
                 span: TypeSpan::Expr(expr.span),
             },
         },

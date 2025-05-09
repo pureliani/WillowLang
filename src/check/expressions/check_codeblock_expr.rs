@@ -5,7 +5,7 @@ use crate::{
         base::base_expression::BlockContents,
         checked::{
             checked_expression::{CheckedBlockContents, CheckedExpr, CheckedExprKind},
-            checked_type::{Type, TypeKind, TypeSpan},
+            checked_type::{CheckedType, CheckedTypeKind, TypeSpan},
         },
         Span,
     },
@@ -36,8 +36,8 @@ pub fn check_codeblock_expr(
     let expr_type = checked_codeblock_final_expr
         .clone()
         .map(|fe| fe.expr_type)
-        .unwrap_or(Type {
-            kind: TypeKind::Void,
+        .unwrap_or(CheckedType {
+            kind: CheckedTypeKind::Void,
             span: TypeSpan::Expr(expr_span),
         });
 

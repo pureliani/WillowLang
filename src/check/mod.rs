@@ -1,5 +1,5 @@
 use crate::{
-    ast::{checked::checked_type::Type, IdentifierNode, Span},
+    ast::{checked::checked_type::CheckedType, IdentifierNode, Span},
     tokenizer::NumberKind,
 };
 
@@ -16,19 +16,19 @@ pub enum SemanticErrorKind {
     NonNumericOperand,
     MixedSignedAndUnsigned,
     MixedFloatAndInteger,
-    CannotCompareType { of: Type, to: Type },
+    CannotCompareType { of: CheckedType, to: CheckedType },
     UndeclaredIdentifier(String),
     UndeclaredType(String),
     ReturnKeywordOutsideFunction,
     BreakKeywordOutsideLoop,
     ContinueKeywordOutsideLoop,
     InvalidAssignmentTarget,
-    TypeMismatch { expected: Type, received: Type },
+    TypeMismatch { expected: CheckedType, received: CheckedType },
     InvalidArraySizeValue(NumberKind),
     ReturnNotLastStatement,
-    ReturnTypeMismatch { expected: Type, received: Type },
-    CannotAccess(Type),
-    CannotCall(Type),
+    ReturnTypeMismatch { expected: CheckedType, received: CheckedType },
+    CannotAccess(CheckedType),
+    CannotCall(CheckedType),
     ArgumentCountMismatch { expected: usize, received: usize },
     GenericArgumentCountMismatch { expected: usize, received: usize },
     CannotUseGenericParameterAsValue,
@@ -37,7 +37,8 @@ pub enum SemanticErrorKind {
     UndefinedProperty(IdentifierNode),
     UnresolvedGenericParam(String),
     CannotUseIsTypeOnNonUnion,
-    ConflictingGenericBinding { existing: Type, new: Type },
+    ConflictingGenericBinding { existing: CheckedType, new: CheckedType },
+    CannotApplyTypeArguments { to: CheckedType },
 }
 
 #[derive(Debug, Clone)]

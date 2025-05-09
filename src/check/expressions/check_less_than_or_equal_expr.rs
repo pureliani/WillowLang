@@ -5,7 +5,7 @@ use crate::{
         base::base_expression::Expr,
         checked::{
             checked_expression::{CheckedExpr, CheckedExprKind},
-            checked_type::{Type, TypeKind},
+            checked_type::{CheckedType, CheckedTypeKind},
         },
     },
     check::{
@@ -24,13 +24,13 @@ pub fn check_less_than_or_equal_expr(
     let checked_right = check_expr(*right, errors, scope);
     let checked_op = check_binary_numeric_operation(&checked_left, &checked_right, errors);
 
-    let type_kind = if checked_op.kind == TypeKind::Unknown {
-        TypeKind::Unknown
+    let type_kind = if checked_op.kind == CheckedTypeKind::Unknown {
+        CheckedTypeKind::Unknown
     } else {
-        TypeKind::Bool
+        CheckedTypeKind::Bool
     };
 
-    let expr_type = Type {
+    let expr_type = CheckedType {
         kind: type_kind,
         span: checked_op.span,
     };

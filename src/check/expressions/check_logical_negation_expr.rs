@@ -5,7 +5,7 @@ use crate::{
         base::base_expression::Expr,
         checked::{
             checked_expression::{CheckedExpr, CheckedExprKind},
-            checked_type::{Type, TypeKind, TypeSpan},
+            checked_type::{CheckedType, CheckedTypeKind, TypeSpan},
         },
         Span,
     },
@@ -21,23 +21,23 @@ pub fn check_logical_negation_expr(
     let right_span = right.span;
     let checked_right = check_expr(*right, errors, scope);
 
-    let mut expr_type = Type {
-        kind: TypeKind::Bool,
+    let mut expr_type = CheckedType {
+        kind: CheckedTypeKind::Bool,
         span: TypeSpan::Expr(span),
     };
 
-    if checked_right.expr_type.kind != TypeKind::Bool {
+    if checked_right.expr_type.kind != CheckedTypeKind::Bool {
         errors.push(SemanticError::new(
             SemanticErrorKind::TypeMismatch {
-                expected: Type {
-                    kind: TypeKind::Bool,
+                expected: CheckedType {
+                    kind: CheckedTypeKind::Bool,
                     span: TypeSpan::Expr(right_span),
                 },
                 received: checked_right.expr_type.clone(),
             },
             span,
         ));
-        expr_type.kind = TypeKind::Unknown
+        expr_type.kind = CheckedTypeKind::Unknown
     }
 
     CheckedExpr {

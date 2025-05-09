@@ -13,7 +13,7 @@ use crate::ast::{
         },
         checked_expression::{CheckedBlockContents, CheckedExprKind},
         checked_statement::{CheckedStmt, CheckedStmtKind},
-        checked_type::{Type, TypeKind, TypeSpan},
+        checked_type::{CheckedType, CheckedTypeKind, TypeSpan},
     },
 };
 
@@ -23,7 +23,7 @@ use super::{
     scope::{Scope, ScopeKind, SymbolEntry},
     utils::{
         check_is_assignable::check_is_assignable,
-        type_annotation_to_semantic::type_annotation_to_semantic,
+        type_annotation_to_semantic::check_type,
     },
     SemanticError, SemanticErrorKind,
 };
@@ -37,7 +37,7 @@ pub fn check_generic_params(
         .into_iter()
         .map(|gp| {
             let checked_constraint = gp.constraint.as_ref().map(|constraint| {
-                Box::new(type_annotation_to_semantic(
+                Box::new(check_type(
                     constraint,
                     errors,
                     scope.clone(),
@@ -66,7 +66,7 @@ pub fn check_struct_properties(
     properties
         .into_iter()
         .map(|p| CheckedParam {
-            constraint: type_annotation_to_semantic(&p.constraint, errors, scope.clone()),
+            constraint: check_type(&p.constraint, errors, scope.clone()),
             identifier: p.identifier.to_owned(),
         })
         .collect()
@@ -148,7 +148,7 @@ pub fn check_stmt(
             let checked_value = value.map(|v| check_expr(v, errors, scope.clone()));
 
             let checked_constraint =
-                constraint.map(|c| type_annotation_to_semantic(&c, errors, scope.clone()));
+                constraint.map(|c| check_type(&c, errors, scope.clone()));
 
             let final_constraint = match (&checked_value, checked_constraint) {
                 (None, None) => {
@@ -157,8 +157,8 @@ pub fn check_stmt(
                         stmt.span,
                     ));
 
-                    Type {
-                        kind: TypeKind::Unknown,
+                    CheckedType {
+                        kind: CheckedTypeKind::Unknown,
                         span: TypeSpan::Annotation(identifier.span),
                     }
                 }
@@ -297,11 +297,11 @@ pub fn check_stmt(
 
             let checked_condition = check_expr(*condition, errors, scope.clone());
 
-            if checked_condition.expr_type.kind != TypeKind::Bool {
+            if checked_condition.expr_type.kind != CheckedTypeKind::Bool {
                 errors.push(SemanticError::new(
                     SemanticErrorKind::TypeMismatch {
-                        expected: Type {
-                            kind: TypeKind::Bool,
+                        expected: CheckedType {
+                            kind: CheckedTypeKind::Bool,
                             span: checked_condition.expr_type.span,
                         },
                         received: checked_condition.expr_type.clone(),

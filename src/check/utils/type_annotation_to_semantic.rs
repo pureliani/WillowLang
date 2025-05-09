@@ -5,7 +5,7 @@ use crate::{
         base::base_type::{TypeAnnotation, TypeAnnotationKind},
         checked::{
             checked_declaration::CheckedParam,
-            checked_type::{Type, TypeKind, TypeSpan},
+            checked_type::{CheckedType, CheckedTypeKind, TypeSpan},
         },
     },
     check::{
@@ -16,34 +16,34 @@ use crate::{
     tokenizer::NumberKind,
 };
 
-pub fn type_annotation_to_semantic(
+pub fn check_type(
     arg: &TypeAnnotation,
     errors: &mut Vec<SemanticError>,
     scope: Rc<RefCell<Scope>>,
-) -> Type {
+) -> CheckedType {
     let kind = match &arg.kind {
-        TypeAnnotationKind::Void => TypeKind::Void,
-        TypeAnnotationKind::Null => TypeKind::Null,
-        TypeAnnotationKind::Bool => TypeKind::Bool,
-        TypeAnnotationKind::U8 => TypeKind::U8,
-        TypeAnnotationKind::U16 => TypeKind::U16,
-        TypeAnnotationKind::U32 => TypeKind::U32,
-        TypeAnnotationKind::U64 => TypeKind::U64,
-        TypeAnnotationKind::USize => TypeKind::USize,
-        TypeAnnotationKind::ISize => TypeKind::ISize,
-        TypeAnnotationKind::I8 => TypeKind::I8,
-        TypeAnnotationKind::I16 => TypeKind::I16,
-        TypeAnnotationKind::I32 => TypeKind::I32,
-        TypeAnnotationKind::I64 => TypeKind::I64,
-        TypeAnnotationKind::F32 => TypeKind::F32,
-        TypeAnnotationKind::F64 => TypeKind::F64,
-        TypeAnnotationKind::Char => TypeKind::Char,
+        TypeAnnotationKind::Void => CheckedTypeKind::Void,
+        TypeAnnotationKind::Null => CheckedTypeKind::Null,
+        TypeAnnotationKind::Bool => CheckedTypeKind::Bool,
+        TypeAnnotationKind::U8 => CheckedTypeKind::U8,
+        TypeAnnotationKind::U16 => CheckedTypeKind::U16,
+        TypeAnnotationKind::U32 => CheckedTypeKind::U32,
+        TypeAnnotationKind::U64 => CheckedTypeKind::U64,
+        TypeAnnotationKind::USize => CheckedTypeKind::USize,
+        TypeAnnotationKind::ISize => CheckedTypeKind::ISize,
+        TypeAnnotationKind::I8 => CheckedTypeKind::I8,
+        TypeAnnotationKind::I16 => CheckedTypeKind::I16,
+        TypeAnnotationKind::I32 => CheckedTypeKind::I32,
+        TypeAnnotationKind::I64 => CheckedTypeKind::I64,
+        TypeAnnotationKind::F32 => CheckedTypeKind::F32,
+        TypeAnnotationKind::F64 => CheckedTypeKind::F64,
+        TypeAnnotationKind::Char => CheckedTypeKind::Char,
         TypeAnnotationKind::GenericApply { left, args } => {
-            let checked_target = type_annotation_to_semantic(&left, errors, scope.clone());
+            let checked_target = check_type(&left, errors, scope.clone());
             let checked_args = args
                 .into_iter()
-                .map(|arg| type_annotation_to_semantic(&arg, errors, scope.clone()))
-                .collect::<Vec<Type>>();
+                .map(|arg| check_type(&arg, errors, scope.clone()))
+                .collect::<Vec<CheckedType>>();
 
             match left.kind {
                 TypeAnnotationKind::GenericFnType {
@@ -58,7 +58,7 @@ pub fn type_annotation_to_semantic(
                 }
             }
 
-            TypeKind::GenericApply {
+            CheckedTypeKind::GenericApply {
                 target: Box::new(checked_target),
                 type_args: checked_args,
             }
@@ -67,18 +67,18 @@ pub fn type_annotation_to_semantic(
             .borrow()
             .lookup(&id.name)
             .map(|entry| match entry {
-                SymbolEntry::GenericStructDecl(decl) => TypeKind::GenericStructDecl(decl),
-                SymbolEntry::StructDecl(decl) => TypeKind::StructDecl(decl),
-                SymbolEntry::EnumDecl(decl) => TypeKind::Enum(decl),
-                SymbolEntry::GenericTypeAliasDecl(decl) => TypeKind::GenericTypeAliasDecl(decl),
-                SymbolEntry::TypeAliasDecl(decl) => TypeKind::TypeAliasDecl(decl),
-                SymbolEntry::GenericParam(generic_param) => TypeKind::GenericParam(generic_param),
+                SymbolEntry::GenericStructDecl(decl) => CheckedTypeKind::GenericStructDecl(decl),
+                SymbolEntry::StructDecl(decl) => CheckedTypeKind::StructDecl(decl),
+                SymbolEntry::EnumDecl(decl) => CheckedTypeKind::Enum(decl),
+                SymbolEntry::GenericTypeAliasDecl(decl) => CheckedTypeKind::GenericTypeAliasDecl(decl),
+                SymbolEntry::TypeAliasDecl(decl) => CheckedTypeKind::TypeAliasDecl(decl),
+                SymbolEntry::GenericParam(generic_param) => CheckedTypeKind::GenericParam(generic_param),
                 SymbolEntry::VarDecl(_) => {
                     errors.push(SemanticError::new(
                         SemanticErrorKind::CannotUseVariableDeclarationAsType,
                         arg.span,
                     ));
-                    TypeKind::Unknown
+                    CheckedTypeKind::Unknown
                 }
             })
             .unwrap_or_else(|| {
@@ -86,7 +86,7 @@ pub fn type_annotation_to_semantic(
                     SemanticErrorKind::UndeclaredType(id.name.clone()),
                     arg.span,
                 ));
-                TypeKind::Unknown
+                CheckedTypeKind::Unknown
             }),
         TypeAnnotationKind::GenericFnType {
             params,
@@ -101,29 +101,21 @@ pub fn type_annotation_to_semantic(
             let checked_params = params
                 .into_iter()
                 .map(|p| CheckedParam {
-                    constraint: type_annotation_to_semantic(
-                        &p.constraint,
-                        errors,
-                        fn_type_scope.clone(),
-                    ),
+                    constraint: check_type(&p.constraint, errors, fn_type_scope.clone()),
                     identifier: p.identifier.clone(),
                 })
                 .collect();
 
-            TypeKind::GenericFnType {
+            CheckedTypeKind::GenericFnType {
                 params: checked_params,
-                return_type: Box::new(type_annotation_to_semantic(
-                    &return_type,
-                    errors,
-                    fn_type_scope.clone(),
-                )),
+                return_type: Box::new(check_type(&return_type, errors, fn_type_scope.clone())),
                 generic_params: checked_generic_params,
             }
         }
-        TypeAnnotationKind::Union(items) => TypeKind::Union(
+        TypeAnnotationKind::Union(items) => CheckedTypeKind::Union(
             items
                 .iter()
-                .map(|i| type_annotation_to_semantic(&i, errors, scope.clone()))
+                .map(|i| check_type(&i, errors, scope.clone()))
                 .collect(),
         ),
         TypeAnnotationKind::Array { left, size } => {
@@ -145,8 +137,8 @@ pub fn type_annotation_to_semantic(
 
             match maybe_size {
                 Some(valid_size) => {
-                    let item_type = type_annotation_to_semantic(&left, errors, scope.clone());
-                    TypeKind::Array {
+                    let item_type = check_type(&left, errors, scope.clone());
+                    CheckedTypeKind::Array {
                         item_type: Box::new(item_type),
                         size: valid_size,
                     }
@@ -156,15 +148,15 @@ pub fn type_annotation_to_semantic(
                         SemanticErrorKind::InvalidArraySizeValue(*size),
                         arg.span,
                     ));
-                    let _ = type_annotation_to_semantic(&left, errors, scope.clone()); // Process for errors, ignore result
-                    TypeKind::Unknown
+                    let _ = check_type(&left, errors, scope.clone()); // Process for errors, ignore result
+                    CheckedTypeKind::Unknown
                 }
             }
         }
-        TypeAnnotationKind::Error(_) => TypeKind::Unknown,
+        TypeAnnotationKind::Error(_) => CheckedTypeKind::Unknown,
     };
 
-    Type {
+    CheckedType {
         kind,
         span: TypeSpan::Annotation(arg.span),
     }

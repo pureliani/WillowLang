@@ -5,7 +5,7 @@ use crate::{
         base::base_expression::{BlockContents, Expr},
         checked::{
             checked_expression::{CheckedBlockContents, CheckedExpr, CheckedExprKind},
-            checked_type::{Type, TypeKind, TypeSpan},
+            checked_type::{CheckedType, CheckedTypeKind, TypeSpan},
         },
         Span,
     },
@@ -27,17 +27,17 @@ pub fn check_if_expr(
     errors: &mut Vec<SemanticError>,
     scope: Rc<RefCell<Scope>>,
 ) -> CheckedExpr {
-    let mut if_else_expr_type = Type {
-        kind: TypeKind::Void,
+    let mut if_else_expr_type = CheckedType {
+        kind: CheckedTypeKind::Void,
         span: TypeSpan::Expr(expr_span),
     };
 
     let checked_condition = check_expr(*condition, errors, scope.clone());
-    if checked_condition.expr_type.kind != TypeKind::Bool {
+    if checked_condition.expr_type.kind != CheckedTypeKind::Bool {
         errors.push(SemanticError::new(
             SemanticErrorKind::TypeMismatch {
-                expected: Type {
-                    kind: TypeKind::Bool,
+                expected: CheckedType {
+                    kind: CheckedTypeKind::Bool,
                     span: checked_condition.expr_type.span,
                 },
                 received: checked_condition.expr_type.clone(),

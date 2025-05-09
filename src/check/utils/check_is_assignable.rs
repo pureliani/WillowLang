@@ -1,7 +1,7 @@
-use crate::ast::checked::checked_type::{Type, TypeKind};
+use crate::ast::checked::checked_type::{CheckedType, CheckedTypeKind};
 
-pub fn check_is_assignable(source_type: &Type, target_type: &Type) -> bool {
-    use TypeKind::*;
+pub fn check_is_assignable(source_type: &CheckedType, target_type: &CheckedType) -> bool {
+    use CheckedTypeKind::*;
 
     match (&source_type.kind, &target_type.kind) {
         (I8, I8)

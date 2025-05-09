@@ -6,7 +6,7 @@ use super::checked_declaration::{
 };
 
 #[derive(Clone, Debug)]
-pub enum TypeKind {
+pub enum CheckedTypeKind {
     Void,
     Null,
     Bool,
@@ -29,53 +29,53 @@ pub enum TypeKind {
     GenericParam(CheckedGenericParam),
     GenericFnType {
         params: Vec<CheckedParam>,
-        return_type: Box<Type>,
+        return_type: Box<CheckedType>,
         generic_params: Vec<CheckedGenericParam>,
     },
     FnType {
         params: Vec<CheckedParam>,
-        return_type: Box<Type>,
+        return_type: Box<CheckedType>,
     },
     GenericTypeAliasDecl(GenericTypeAliasDecl),
     TypeAliasDecl(TypeAliasDecl),
     // Infix types
-    Union(Vec<Type>),
+    Union(Vec<CheckedType>),
     // Suffix types
     Array {
-        item_type: Box<Type>,
+        item_type: Box<CheckedType>,
         size: usize,
     },
     Unknown,
 }
 
-impl PartialEq for TypeKind {
+impl PartialEq for CheckedTypeKind {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (TypeKind::Void, TypeKind::Void) => true,
-            (TypeKind::Null, TypeKind::Null) => true,
-            (TypeKind::Bool, TypeKind::Bool) => true,
-            (TypeKind::U8, TypeKind::U8) => true,
-            (TypeKind::U16, TypeKind::U16) => true,
-            (TypeKind::U32, TypeKind::U32) => true,
-            (TypeKind::U64, TypeKind::U64) => true,
-            (TypeKind::USize, TypeKind::USize) => true,
-            (TypeKind::ISize, TypeKind::ISize) => true,
-            (TypeKind::I8, TypeKind::I8) => true,
-            (TypeKind::I16, TypeKind::I16) => true,
-            (TypeKind::I32, TypeKind::I32) => true,
-            (TypeKind::I64, TypeKind::I64) => true,
-            (TypeKind::F32, TypeKind::F32) => true,
-            (TypeKind::F64, TypeKind::F64) => true,
-            (TypeKind::Char, TypeKind::Char) => true,
+            (CheckedTypeKind::Void, CheckedTypeKind::Void) => true,
+            (CheckedTypeKind::Null, CheckedTypeKind::Null) => true,
+            (CheckedTypeKind::Bool, CheckedTypeKind::Bool) => true,
+            (CheckedTypeKind::U8, CheckedTypeKind::U8) => true,
+            (CheckedTypeKind::U16, CheckedTypeKind::U16) => true,
+            (CheckedTypeKind::U32, CheckedTypeKind::U32) => true,
+            (CheckedTypeKind::U64, CheckedTypeKind::U64) => true,
+            (CheckedTypeKind::USize, CheckedTypeKind::USize) => true,
+            (CheckedTypeKind::ISize, CheckedTypeKind::ISize) => true,
+            (CheckedTypeKind::I8, CheckedTypeKind::I8) => true,
+            (CheckedTypeKind::I16, CheckedTypeKind::I16) => true,
+            (CheckedTypeKind::I32, CheckedTypeKind::I32) => true,
+            (CheckedTypeKind::I64, CheckedTypeKind::I64) => true,
+            (CheckedTypeKind::F32, CheckedTypeKind::F32) => true,
+            (CheckedTypeKind::F64, CheckedTypeKind::F64) => true,
+            (CheckedTypeKind::Char, CheckedTypeKind::Char) => true,
             // TODO: handle non generic struct
             (
-                TypeKind::GenericStructDecl(GenericStructDecl {
+                CheckedTypeKind::GenericStructDecl(GenericStructDecl {
                     identifier: this_identifier,
                     properties: this_properties,
                     generic_params: this_generic_params,
                     documentation: _,
                 }),
-                TypeKind::GenericStructDecl(GenericStructDecl {
+                CheckedTypeKind::GenericStructDecl(GenericStructDecl {
                     identifier: other_identifier,
                     properties: other_properties,
                     generic_params: other_generic_params,
@@ -109,11 +109,11 @@ impl PartialEq for TypeKind {
                 same_name && same_props && same_generic_params
             }
             (
-                TypeKind::GenericParam(CheckedGenericParam {
+                CheckedTypeKind::GenericParam(CheckedGenericParam {
                     identifier: this_identifier,
                     constraint: this_constraint,
                 }),
-                TypeKind::GenericParam(CheckedGenericParam {
+                CheckedTypeKind::GenericParam(CheckedGenericParam {
                     identifier: other_identifier,
                     constraint: other_constraint,
                 }),
@@ -121,12 +121,12 @@ impl PartialEq for TypeKind {
                 this_identifier.name == other_identifier.name && this_constraint == other_constraint
             }
             (
-                TypeKind::Enum(EnumDecl {
+                CheckedTypeKind::Enum(EnumDecl {
                     identifier: this_identifier,
                     variants: this_variants,
                     documentation: _,
                 }),
-                TypeKind::Enum(EnumDecl {
+                CheckedTypeKind::Enum(EnumDecl {
                     identifier: other_identifier,
                     variants: other_variants,
                     documentation: _,
@@ -139,12 +139,12 @@ impl PartialEq for TypeKind {
             }
             // TODO: handle non generic fn
             (
-                TypeKind::GenericFnType {
+                CheckedTypeKind::GenericFnType {
                     params: this_params,
                     return_type: this_return_type,
                     generic_params: this_generic_params,
                 },
-                TypeKind::GenericFnType {
+                CheckedTypeKind::GenericFnType {
                     params: other_params,
                     return_type: other_return_type,
                     generic_params: other_generic_params,
@@ -178,7 +178,7 @@ impl PartialEq for TypeKind {
 
                 same_params && same_generic_params && same_return_type
             }
-            (TypeKind::Union(left_items), TypeKind::Union(right_items)) => {
+            (CheckedTypeKind::Union(left_items), CheckedTypeKind::Union(right_items)) => {
                 let same_len = left_items.len() == right_items.len();
 
                 let same_items = left_items.iter().all(|item| right_items.contains(item))
@@ -187,16 +187,16 @@ impl PartialEq for TypeKind {
                 same_len && same_items
             }
             (
-                TypeKind::Array {
+                CheckedTypeKind::Array {
                     item_type: this_left,
                     size: this_size,
                 },
-                TypeKind::Array {
+                CheckedTypeKind::Array {
                     item_type: other_left,
                     size: other_size,
                 },
             ) => this_left == other_left && this_size == other_size,
-            (TypeKind::Unknown, TypeKind::Unknown) => true,
+            (CheckedTypeKind::Unknown, CheckedTypeKind::Unknown) => true,
             _ => false,
         }
     }
@@ -211,12 +211,12 @@ pub enum TypeSpan {
 }
 
 #[derive(Clone, Debug)]
-pub struct Type {
-    pub kind: TypeKind,
+pub struct CheckedType {
+    pub kind: CheckedTypeKind,
     pub span: TypeSpan,
 }
 
-impl Type {
+impl CheckedType {
     pub fn unwrap_decl_span(&self) -> Span {
         match self.span {
             TypeSpan::Decl(s) => s,
@@ -254,7 +254,7 @@ impl Type {
     }
 }
 
-impl PartialEq for Type {
+impl PartialEq for CheckedType {
     fn eq(&self, other: &Self) -> bool {
         self.kind == other.kind
     }

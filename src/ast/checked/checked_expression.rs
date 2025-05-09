@@ -6,7 +6,7 @@ use crate::{
 use super::{
     checked_declaration::{CheckedGenericParam, CheckedParam},
     checked_statement::CheckedStmt,
-    checked_type::Type,
+    checked_type::CheckedType,
 };
 
 #[derive(Clone, Debug)]
@@ -88,11 +88,11 @@ pub enum CheckedExprKind {
     },
     TypeCast {
         left: Box<CheckedExpr>,
-        target: Type,
+        target: CheckedType,
     },
     IsType {
         left: Box<CheckedExpr>,
-        target: Type,
+        target: CheckedType,
     },
     FnCall {
         left: Box<CheckedExpr>,
@@ -116,13 +116,13 @@ pub enum CheckedExprKind {
     GenericFn {
         params: Vec<CheckedParam>,
         body: CheckedBlockContents,
-        return_type: Type,
+        return_type: CheckedType,
         generic_params: Vec<CheckedGenericParam>,
     },
     Fn {
         params: Vec<CheckedParam>,
         body: CheckedBlockContents,
-        return_type: Type,
+        return_type: CheckedType,
     },
     If {
         condition: Box<CheckedExpr>,
@@ -139,5 +139,5 @@ pub enum CheckedExprKind {
 #[derive(Clone, Debug)]
 pub struct CheckedExpr {
     pub kind: CheckedExprKind,
-    pub expr_type: Type,
+    pub expr_type: CheckedType,
 }

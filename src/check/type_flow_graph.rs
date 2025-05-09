@@ -6,7 +6,7 @@ use std::{
 
 use crate::ast::checked::{
     checked_expression::{CheckedExpr, CheckedExprKind},
-    checked_type::{Type, TypeKind, TypeSpan},
+    checked_type::{CheckedType, CheckedTypeKind, TypeSpan},
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -20,7 +20,7 @@ pub struct VariableId(String);
 #[derive(Debug, Clone)]
 pub struct NarrowingInfo {
     pub variable: VariableId,
-    pub narrowed_type: Rc<Type>,
+    pub narrowed_type: Rc<CheckedType>,
 }
 
 /// Represents the different kinds of nodes in the Type Flow Graph.
@@ -51,7 +51,7 @@ pub enum TFGNodeKind {
     /// Represents an assignment `target = <expr>`.
     Assign {
         target: VariableId,
-        assigned_type: Rc<Type>,
+        assigned_type: Rc<CheckedType>,
         next_node: Option<TFGNodeId>,
     },
 
@@ -181,12 +181,12 @@ impl TypeFlowGraph {
 
 #[derive(Debug, Clone)]
 pub struct TypeState {
-    pub variable_types: HashMap<VariableId, Rc<Type>>,
+    pub variable_types: HashMap<VariableId, Rc<CheckedType>>,
 }
 
-pub fn union_subtract(union_type: &[Type], target: &Type) -> Type {
-    let mut result_items: Vec<Type> = match &target.kind {
-        TypeKind::Union(target_items) => {
+pub fn union_subtract(union_type: &[CheckedType], target: &CheckedType) -> CheckedType {
+    let mut result_items: Vec<CheckedType> = match &target.kind {
+        CheckedTypeKind::Union(target_items) => {
             if target_items.is_empty() {
                 union_type.to_vec()
             } else {
@@ -205,13 +205,13 @@ pub fn union_subtract(union_type: &[Type], target: &Type) -> Type {
     };
 
     match result_items.len() {
-        0 => Type {
-            kind: TypeKind::Union(vec![]),
+        0 => CheckedType {
+            kind: CheckedTypeKind::Union(vec![]),
             span: TypeSpan::None,
         },
         1 => result_items.pop().unwrap(),
-        _ => Type {
-            kind: TypeKind::Union(result_items),
+        _ => CheckedType {
+            kind: CheckedTypeKind::Union(result_items),
             span: TypeSpan::None,
         },
     }
@@ -224,7 +224,7 @@ fn analyze_atomic_condition(condition: &CheckedExpr) -> Option<(NarrowingInfo, N
                 let var_id = VariableId(id.name.clone());
                 let original_type = &left.expr_type;
 
-                let false_type = if let TypeKind::Union(types) = &original_type.kind {
+                let false_type = if let CheckedTypeKind::Union(types) = &original_type.kind {
                     union_subtract(types, target)
                 } else {
                     panic!("Cannot subtract from non-union type")
@@ -256,11 +256,11 @@ fn analyze_atomic_condition(condition: &CheckedExpr) -> Option<(NarrowingInfo, N
                     let var_id = VariableId(id.name.clone());
                     let original_type = &expr.expr_type;
 
-                    let true_type = if let TypeKind::Union(types) = &original_type.kind {
+                    let true_type = if let CheckedTypeKind::Union(types) = &original_type.kind {
                         union_subtract(
                             types,
-                            &Type {
-                                kind: TypeKind::Null,
+                            &CheckedType {
+                                kind: CheckedTypeKind::Null,
                                 span: TypeSpan::None,
                             },
                         )
@@ -274,8 +274,8 @@ fn analyze_atomic_condition(condition: &CheckedExpr) -> Option<(NarrowingInfo, N
                     };
                     let narrowing_false = NarrowingInfo {
                         variable: var_id,
-                        narrowed_type: Rc::new(Type {
-                            kind: TypeKind::Null,
+                        narrowed_type: Rc::new(CheckedType {
+                            kind: CheckedTypeKind::Null,
                             span: original_type.span,
                         }),
                     };
@@ -296,17 +296,17 @@ fn analyze_atomic_condition(condition: &CheckedExpr) -> Option<(NarrowingInfo, N
             if let Some(expr) = ident_expr {
                 if let CheckedExprKind::Identifier(id) = &expr.kind {
                     let var_id = VariableId(id.name.clone());
-                    let null_type = Rc::new(Type {
+                    let null_type = Rc::new(CheckedType {
                         span: TypeSpan::None,
-                        kind: TypeKind::Null,
+                        kind: CheckedTypeKind::Null,
                     });
                     let original_type = &expr.expr_type;
 
-                    let false_type = if let TypeKind::Union(types) = &original_type.kind {
+                    let false_type = if let CheckedTypeKind::Union(types) = &original_type.kind {
                         union_subtract(
                             types,
-                            &Type {
-                                kind: TypeKind::Null,
+                            &CheckedType {
+                                kind: CheckedTypeKind::Null,
                                 span: TypeSpan::None,
                             },
                         )

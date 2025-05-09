@@ -3,22 +3,22 @@ use std::collections::HashMap;
 use crate::{
     ast::checked::{
         checked_declaration::{CheckedParam, GenericStructDecl},
-        checked_type::{Type, TypeKind},
+        checked_type::{CheckedType, CheckedTypeKind},
     },
     check::{SemanticError, SemanticErrorKind},
 };
 
 use super::union_of::union_of;
 
-pub type GenericSubstitutionMap = HashMap<String, Type>;
+pub type GenericSubstitutionMap = HashMap<String, CheckedType>;
 
 pub fn substitute_generics(
-    ty: &Type,
+    ty: &CheckedType,
     substitution: &GenericSubstitutionMap,
     errors: &mut Vec<SemanticError>,
-) -> Type {
+) -> CheckedType {
     match &ty.kind {
-        TypeKind::GenericParam(gp) => substitution
+        CheckedTypeKind::GenericParam(gp) => substitution
             .get(&gp.identifier.name)
             .cloned()
             .unwrap_or_else(|| {
@@ -29,12 +29,12 @@ pub fn substitute_generics(
                     span,
                 ));
 
-                Type {
-                    kind: TypeKind::Unknown,
+                CheckedType {
+                    kind: CheckedTypeKind::Unknown,
                     span: ty.span,
                 }
             }),
-        TypeKind::GenericFnType {
+        CheckedTypeKind::GenericFnType {
             params,
             return_type,
             generic_params,
@@ -52,8 +52,8 @@ pub fn substitute_generics(
 
             let substituted_return_type = substitute_generics(return_type, substitution, errors);
 
-            Type {
-                kind: TypeKind::GenericFnType {
+            CheckedType {
+                kind: CheckedTypeKind::GenericFnType {
                     params: substituted_params,
                     return_type: Box::new(substituted_return_type),
                     generic_params: generic_params.clone(), // Keep original generic params
@@ -61,7 +61,7 @@ pub fn substitute_generics(
                 span: ty.span,
             }
         }
-        TypeKind::GenericStructDecl(decl) => {
+        CheckedTypeKind::GenericStructDecl(decl) => {
             // Similar to FnType, a struct definition's generic params are local.
             // We substitute types *within* its properties if those types refer
             // to generics from the *outer* substitution context.
@@ -74,48 +74,48 @@ pub fn substitute_generics(
                 })
                 .collect();
 
-            Type {
-                kind: TypeKind::GenericStructDecl(GenericStructDecl {
+            CheckedType {
+                kind: CheckedTypeKind::GenericStructDecl(GenericStructDecl {
                     properties: substituted_props,
                     ..decl.clone()
                 }),
                 span: ty.span,
             }
         }
-        TypeKind::Array { item_type, size } => Type {
-            kind: TypeKind::Array {
+        CheckedTypeKind::Array { item_type, size } => CheckedType {
+            kind: CheckedTypeKind::Array {
                 item_type: Box::new(substitute_generics(item_type, substitution, errors)),
                 size: *size,
             },
             span: ty.span,
         },
-        TypeKind::Union(items) => {
-            let substituted_items: Vec<Type> = items
+        CheckedTypeKind::Union(items) => {
+            let substituted_items: Vec<CheckedType> = items
                 .iter()
                 .map(|t| substitute_generics(t, substitution, errors))
                 .collect();
             // Re-apply union_of logic to simplify the result
             union_of(&substituted_items)
         }
-        TypeKind::I8
-        | TypeKind::I16
-        | TypeKind::I32
-        | TypeKind::I64
-        | TypeKind::ISize
-        | TypeKind::U8
-        | TypeKind::U16
-        | TypeKind::U32
-        | TypeKind::U64
-        | TypeKind::USize
-        | TypeKind::F32
-        | TypeKind::F64
-        | TypeKind::Bool
-        | TypeKind::Char
-        | TypeKind::Void
-        | TypeKind::Null
-        | TypeKind::Unknown
-        | TypeKind::TypeAlias(_)
-        | TypeKind::Enum(_) => ty.clone(),
-        TypeKind::GenericApply { target, type_args } => todo!(),
+        CheckedTypeKind::I8
+        | CheckedTypeKind::I16
+        | CheckedTypeKind::I32
+        | CheckedTypeKind::I64
+        | CheckedTypeKind::ISize
+        | CheckedTypeKind::U8
+        | CheckedTypeKind::U16
+        | CheckedTypeKind::U32
+        | CheckedTypeKind::U64
+        | CheckedTypeKind::USize
+        | CheckedTypeKind::F32
+        | CheckedTypeKind::F64
+        | CheckedTypeKind::Bool
+        | CheckedTypeKind::Char
+        | CheckedTypeKind::Void
+        | CheckedTypeKind::Null
+        | CheckedTypeKind::Unknown
+        | CheckedTypeKind::TypeAlias(_)
+        | CheckedTypeKind::Enum(_) => ty.clone(),
+        CheckedTypeKind::GenericApply { target, type_args } => todo!(),
     }
 }

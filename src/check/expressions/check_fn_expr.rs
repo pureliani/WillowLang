@@ -10,7 +10,7 @@ use crate::{
         checked::{
             checked_declaration::{CheckedParam, CheckedVarDecl},
             checked_expression::{CheckedBlockContents, CheckedExpr, CheckedExprKind},
-            checked_type::{Type, TypeKind, TypeSpan},
+            checked_type::{CheckedType, CheckedTypeKind, TypeSpan},
         },
         Span,
     },
@@ -21,7 +21,7 @@ use crate::{
         scope::{Scope, ScopeKind, SymbolEntry},
         utils::{
             check_is_assignable::check_is_assignable, check_returns::check_returns,
-            type_annotation_to_semantic::type_annotation_to_semantic, union_of::union_of,
+            type_annotation_to_semantic::check_type, union_of::union_of,
         },
         SemanticError,
     },
@@ -42,7 +42,7 @@ pub fn check_fn_expr(
         .iter()
         .map(|param| {
             let checked_constraint =
-                type_annotation_to_semantic(&param.constraint, errors, fn_scope.clone());
+                check_type(&param.constraint, errors, fn_scope.clone());
 
             fn_scope.borrow_mut().insert(
                 param.identifier.name.to_owned(),
@@ -81,19 +81,19 @@ pub fn check_fn_expr(
         &return_exprs
             .iter()
             .map(|e| e.expr_type.clone())
-            .collect::<Vec<Type>>(),
+            .collect::<Vec<CheckedType>>(),
     );
 
     let param_types: Vec<CheckedParam> = params
         .into_iter()
         .map(|p| CheckedParam {
-            constraint: type_annotation_to_semantic(&p.constraint, errors, fn_scope.clone()),
+            constraint: check_type(&p.constraint, errors, fn_scope.clone()),
             identifier: p.identifier,
         })
         .collect();
 
     let expected_return_type = return_type
-        .map(|return_t| type_annotation_to_semantic(&return_t, errors, fn_scope.clone()));
+        .map(|return_t| check_type(&return_t, errors, fn_scope.clone()));
 
     let actual_return_type = if let Some(explicit_return_type) = expected_return_type {
         for return_expr in return_exprs.iter() {
@@ -106,8 +106,8 @@ pub fn check_fn_expr(
     };
 
     if generic_params.is_empty() {
-        let expr_type = Type {
-            kind: TypeKind::FnType {
+        let expr_type = CheckedType {
+            kind: CheckedTypeKind::FnType {
                 params: param_types,
                 return_type: Box::new(actual_return_type.clone()),
             },
@@ -123,8 +123,8 @@ pub fn check_fn_expr(
             },
         }
     } else {
-        let expr_type = Type {
-            kind: TypeKind::GenericFnType {
+        let expr_type = CheckedType {
+            kind: CheckedTypeKind::GenericFnType {
                 params: param_types,
                 return_type: Box::new(actual_return_type.clone()),
                 generic_params: checked_generic_params.clone(),

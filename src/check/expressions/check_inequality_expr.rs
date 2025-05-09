@@ -5,7 +5,7 @@ use crate::{
         base::base_expression::Expr,
         checked::{
             checked_expression::{CheckedExpr, CheckedExprKind},
-            checked_type::{Type, TypeKind, TypeSpan},
+            checked_type::{CheckedType, CheckedTypeKind, TypeSpan},
         },
         Span,
     },
@@ -18,8 +18,8 @@ pub fn check_inequality_expr(
     errors: &mut Vec<SemanticError>,
     scope: Rc<RefCell<Scope>>,
 ) -> CheckedExpr {
-    let mut expr_type = Type {
-        kind: TypeKind::Bool,
+    let mut expr_type = CheckedType {
+        kind: CheckedTypeKind::Bool,
         span: TypeSpan::Expr(Span {
             start: left.span.start,
             end: right.span.end,

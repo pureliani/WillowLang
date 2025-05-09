@@ -1,11 +1,11 @@
-use crate::ast::checked::checked_type::{Type, TypeKind, TypeSpan};
+use crate::ast::checked::checked_type::{CheckedType, CheckedTypeKind, TypeSpan};
 
-pub fn union_of(types: &[Type]) -> Type {
-    let mut union_items: Vec<Type> = vec![];
+pub fn union_of(types: &[CheckedType]) -> CheckedType {
+    let mut union_items: Vec<CheckedType> = vec![];
 
     for t in types {
         match &t.kind {
-            TypeKind::Union(items) => {
+            CheckedTypeKind::Union(items) => {
                 union_items.extend(items.clone());
             }
             _ => union_items.push(t.clone()),
@@ -14,8 +14,8 @@ pub fn union_of(types: &[Type]) -> Type {
 
     // TODO: somehow deduplicate union items
 
-    Type {
-        kind: TypeKind::Union(union_items),
+    CheckedType {
+        kind: CheckedTypeKind::Union(union_items),
         span: TypeSpan::None,
     }
 }

@@ -5,7 +5,7 @@ use crate::{
         base::base_expression::Expr,
         checked::{
             checked_expression::{CheckedExpr, CheckedExprKind},
-            checked_type::{Type, TypeKind, TypeSpan},
+            checked_type::{CheckedType, CheckedTypeKind, TypeSpan},
         },
         Span,
     },
@@ -29,12 +29,12 @@ pub fn check_array_literal_expr(
         &checked_items
             .iter()
             .map(|item| item.expr_type.clone())
-            .collect::<Vec<Type>>(),
+            .collect::<Vec<CheckedType>>(),
     );
 
     CheckedExpr {
-        expr_type: Type {
-            kind: TypeKind::Array {
+        expr_type: CheckedType {
+            kind: CheckedTypeKind::Array {
                 item_type: Box::new(unionized_types),
                 size,
             },

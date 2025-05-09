@@ -4,7 +4,7 @@ use crate::{
     ast::{
         checked::{
             checked_expression::{CheckedExpr, CheckedExprKind},
-            checked_type::{Type, TypeKind, TypeSpan},
+            checked_type::{CheckedType, CheckedTypeKind, TypeSpan},
         },
         IdentifierNode, Span,
     },
@@ -24,11 +24,11 @@ pub fn check_identifier_expr(
         .borrow()
         .lookup(&id.name)
         .map(|entry| match entry {
-            SymbolEntry::GenericStructDecl(decl) => TypeKind::GenericStructDecl(decl),
-            SymbolEntry::StructDecl(decl) => TypeKind::StructDecl(decl),
-            SymbolEntry::GenericTypeAliasDecl(decl) => TypeKind::GenericTypeAliasDecl(decl),
-            SymbolEntry::TypeAliasDecl(decl) => TypeKind::TypeAliasDecl(decl),
-            SymbolEntry::EnumDecl(decl) => TypeKind::Enum(decl),
+            SymbolEntry::GenericStructDecl(decl) => CheckedTypeKind::GenericStructDecl(decl),
+            SymbolEntry::StructDecl(decl) => CheckedTypeKind::StructDecl(decl),
+            SymbolEntry::GenericTypeAliasDecl(decl) => CheckedTypeKind::GenericTypeAliasDecl(decl),
+            SymbolEntry::TypeAliasDecl(decl) => CheckedTypeKind::TypeAliasDecl(decl),
+            SymbolEntry::EnumDecl(decl) => CheckedTypeKind::Enum(decl),
             SymbolEntry::VarDecl(decl) => decl.constraint.kind,
             SymbolEntry::GenericParam(_) => {
                 errors.push(SemanticError::new(
@@ -36,7 +36,7 @@ pub fn check_identifier_expr(
                     expr_span,
                 ));
 
-                TypeKind::Unknown
+                CheckedTypeKind::Unknown
             }
         })
         .unwrap_or_else(|| {
@@ -45,12 +45,12 @@ pub fn check_identifier_expr(
                 expr_span,
             ));
 
-            TypeKind::Unknown
+            CheckedTypeKind::Unknown
         });
 
     CheckedExpr {
         kind: CheckedExprKind::Identifier(id),
-        expr_type: Type {
+        expr_type: CheckedType {
             kind: type_kind,
             span: TypeSpan::Expr(expr_span),
         },
