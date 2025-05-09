@@ -6,9 +6,10 @@ use crate::{
         checked::{
             checked_declaration::{
                 CheckedGenericParam, CheckedParam, GenericStructDecl, GenericTypeAliasDecl,
+                StructDecl,
             },
-            checked_expression::{CheckedExpr, CheckedExprKind},
-            checked_type::{CheckedType, CheckedTypeKind},
+            checked_expression::{CheckedBlockContents, CheckedExpr, CheckedExprKind},
+            checked_type::{CheckedType, CheckedTypeKind, TypeSpan},
         },
         Span,
     },
@@ -59,13 +60,15 @@ pub fn check_generic_apply_expr(
                         Some(constraint) => {
                             let is_assignable = check_is_assignable(ta, constraint);
 
-                            errors.push(SemanticError::new(
-                                SemanticErrorKind::TypeMismatch {
-                                    expected: *constraint.clone(),
-                                    received: ta.clone(),
-                                },
-                                ta.unwrap_annotation_span(),
-                            ));
+                            if !is_assignable {
+                                errors.push(SemanticError::new(
+                                    SemanticErrorKind::TypeMismatch {
+                                        expected: *constraint.clone(),
+                                        received: ta.clone(),
+                                    },
+                                    ta.unwrap_annotation_span(),
+                                ));
+                            }
 
                             is_assignable
                         }
@@ -106,6 +109,44 @@ pub fn check_generic_apply_expr(
                 let substituted_return_type =
                     substitute_generics(&return_type, &substitution, errors);
 
+                // Expressions that can potentially result in function type
+                let substituted_body = match checked_left.kind {
+                    CheckedExprKind::Identifier(id) => {
+                        todo!()
+                    }
+                    CheckedExprKind::If {
+                        condition,
+                        then_branch,
+                        else_if_branches,
+                        else_branch,
+                    } => {
+                        todo!()
+                    }
+                    CheckedExprKind::TypeCast { left, target } => {
+                        todo!()
+                    }
+                    CheckedExprKind::Block(CheckedBlockContents { final_expr, .. }) => {
+                        todo!()
+                    }
+                    CheckedExprKind::GenericFn {
+                        params,
+                        body,
+                        return_type,
+                        generic_params,
+                    } => {
+                        todo!()
+                    }
+                    CheckedExprKind::FnCall { left, args } => {
+                        todo!()
+                    }
+                    CheckedExprKind::Access { left, field } => {
+                        todo!()
+                    }
+                    _ => {
+                        unreachable!()
+                    }
+                };
+
                 // CheckedExpr {
                 //     kind: CheckedExprKind::Fn {
                 //         params: substituted_params,
@@ -114,7 +155,7 @@ pub fn check_generic_apply_expr(
                 //     },
                 // }
             } else {
-                // some default checkedexpr
+                todo!("return default CheckedExpr")
             }
         }
         CheckedTypeKind::GenericStructDecl(GenericStructDecl {
@@ -124,15 +165,34 @@ pub fn check_generic_apply_expr(
             properties,
         }) => {
             if let Some(substitution) = check_type_args(generic_params, type_args) {
-                let substituted_params: Vec<_> = properties
+                let substituted_properties: Vec<_> = properties
                     .into_iter()
                     .map(|p| CheckedParam {
                         constraint: substitute_generics(&p.constraint, &substitution, errors),
                         identifier: p.identifier,
                     })
                     .collect();
+
+                
+
+                type_args.iter().for_each(|arg| match arg.kind {
+                    CheckedTypeKind::Bool => 
+                });
+
+                let new_id: String = "placeholder".to_string();
+
+                CheckedExpr {
+                    expr_type: CheckedType {
+                        kind: CheckedTypeKind::StructDecl(StructDecl {
+                            documentation,
+                            identifier: new_id,
+                            properties: substituted_properties,
+                        }),
+                        span: TypeSpan::Expr(expr_span),
+                    },
+                }
             } else {
-                // some default checkedexpr
+                todo!("return default CheckedExpr")
             }
         }
         CheckedTypeKind::GenericTypeAliasDecl(GenericTypeAliasDecl {
@@ -140,7 +200,26 @@ pub fn check_generic_apply_expr(
             documentation,
             generic_params,
             value,
-        }) => {}
+        }) => {
+            if let Some(substitution) = check_type_args(generic_params, type_args) {
+                let substituted_value = substitute_generics(&value, &substitution, errors);
+
+                let new_id: String = "placeholder".to_string();
+
+                CheckedExpr {
+                    expr_type: CheckedType {
+                        kind: CheckedTypeKind::StructDecl(StructDecl {
+                            documentation,
+                            identifier: new_id,
+                            properties: substituted_properties,
+                        }),
+                        span: TypeSpan::Expr(expr_span),
+                    },
+                }
+            } else {
+                todo!("return default CheckedExpr")
+            }
+        }
         _ => {
             errors.push(SemanticError::new(
                 SemanticErrorKind::CannotApplyTypeArguments {

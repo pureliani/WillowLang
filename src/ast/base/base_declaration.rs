@@ -1,3 +1,5 @@
+use std::hash::{Hash, Hasher};
+
 use crate::{ast::IdentifierNode, parse::DocAnnotation};
 
 use super::{base_expression::Expr, base_type::TypeAnnotation};
@@ -22,11 +24,24 @@ pub struct StructDecl {
     pub properties: Vec<Param>,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub struct EnumDecl {
     pub identifier: IdentifierNode,
     pub documentation: Option<DocAnnotation>,
     pub variants: Vec<IdentifierNode>,
+}
+
+impl Eq for EnumDecl {}
+impl PartialEq for EnumDecl {
+    fn eq(&self, other: &Self) -> bool {
+        self.identifier == other.identifier && self.variants == other.variants
+    }
+}
+impl Hash for EnumDecl {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.identifier.hash(state);
+        self.variants.hash(state);
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
