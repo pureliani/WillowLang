@@ -173,12 +173,6 @@ pub fn check_generic_apply_expr(
                     })
                     .collect();
 
-                
-
-                type_args.iter().for_each(|arg| match arg.kind {
-                    CheckedTypeKind::Bool => 
-                });
-
                 let new_id: String = "placeholder".to_string();
 
                 CheckedExpr {

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::{
     ast::checked::{
-        checked_declaration::{CheckedParam, GenericStructDecl},
+        checked_declaration::{CheckedParam, StructDecl, TypeAliasDecl},
         checked_type::{CheckedType, CheckedTypeKind},
     },
     check::{SemanticError, SemanticErrorKind},
@@ -37,10 +37,10 @@ pub fn substitute_generics(
         CheckedTypeKind::GenericFnType {
             params,
             return_type,
-            generic_params,
+            generic_params: _, // not needed
         } => {
-            // IMPORTANT: When substituting within a function type, we generally DON'T
-            // substitute its *own* generic parameters. Those are bound locally.
+            // IMPORTANT: When substituting within a function type, we DON'T
+            // substitute its *own* generic parameters.
             // We only substitute types that came from an outer scope's substitution.
             let substituted_params = params
                 .iter()
@@ -53,10 +53,33 @@ pub fn substitute_generics(
             let substituted_return_type = substitute_generics(return_type, substitution, errors);
 
             CheckedType {
-                kind: CheckedTypeKind::GenericFnType {
+                kind: CheckedTypeKind::FnType {
                     params: substituted_params,
                     return_type: Box::new(substituted_return_type),
-                    generic_params: generic_params.clone(), // Keep original generic params
+                },
+                span: ty.span,
+            }
+        }
+        CheckedTypeKind::FnType {
+            params,
+            return_type,
+        } => {
+            // This case could be needed when a closure uses generic parameter which was defined by parent
+
+            let substituted_params = params
+                .iter()
+                .map(|p| CheckedParam {
+                    identifier: p.identifier.clone(),
+                    constraint: substitute_generics(&p.constraint, substitution, errors),
+                })
+                .collect();
+
+            let substituted_return_type = substitute_generics(return_type, substitution, errors);
+
+            CheckedType {
+                kind: CheckedTypeKind::FnType {
+                    params: substituted_params,
+                    return_type: Box::new(substituted_return_type),
                 },
                 span: ty.span,
             }
@@ -75,9 +98,22 @@ pub fn substitute_generics(
                 .collect();
 
             CheckedType {
-                kind: CheckedTypeKind::GenericStructDecl(GenericStructDecl {
+                kind: CheckedTypeKind::StructDecl(StructDecl {
                     properties: substituted_props,
-                    ..decl.clone()
+                    documentation: decl.documentation.clone(),
+                    identifier: decl.identifier.clone(), // maybe we should rename this?
+                }),
+                span: ty.span,
+            }
+        }
+        CheckedTypeKind::GenericTypeAliasDecl(decl) => {
+            let substituted_value = substitute_generics(&decl.value, substitution, errors);
+
+            CheckedType {
+                kind: CheckedTypeKind::TypeAliasDecl(TypeAliasDecl {
+                    value: Box::new(substituted_value),
+                    documentation: decl.documentation.clone(),
+                    identifier: decl.identifier.clone(), // maybe we should rename this?
                 }),
                 span: ty.span,
             }
@@ -114,8 +150,8 @@ pub fn substitute_generics(
         | CheckedTypeKind::Void
         | CheckedTypeKind::Null
         | CheckedTypeKind::Unknown
-        | CheckedTypeKind::TypeAlias(_)
+        | CheckedTypeKind::TypeAliasDecl(_)
+        | CheckedTypeKind::StructDecl(_)
         | CheckedTypeKind::Enum(_) => ty.clone(),
-        CheckedTypeKind::GenericApply { target, type_args } => todo!(),
     }
 }

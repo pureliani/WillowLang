@@ -1,4 +1,7 @@
-use std::hash::{Hash, Hasher};
+use std::{
+    collections::HashSet,
+    hash::{Hash, Hasher},
+};
 
 use crate::ast::{base::base_declaration::EnumDecl, Span};
 
@@ -41,7 +44,7 @@ pub enum CheckedTypeKind {
     GenericTypeAliasDecl(GenericTypeAliasDecl),
     TypeAliasDecl(TypeAliasDecl),
     // Infix types
-    Union(Vec<CheckedType>),
+    Union(HashSet<CheckedType>),
     // Suffix types
     Array {
         item_type: Box<CheckedType>,

@@ -4,7 +4,7 @@ use crate::{
     ast::{
         base::base_type::{TypeAnnotation, TypeAnnotationKind},
         checked::{
-            checked_declaration::CheckedParam,
+            checked_declaration::{CheckedParam, GenericStructDecl, GenericTypeAliasDecl},
             checked_type::{CheckedType, CheckedTypeKind, TypeSpan},
         },
     },
@@ -45,22 +45,33 @@ pub fn check_type(
                 .map(|arg| check_type(&arg, errors, scope.clone()))
                 .collect::<Vec<CheckedType>>();
 
-            match left.kind {
-                TypeAnnotationKind::GenericFnType {
+            match checked_target.kind {
+                CheckedTypeKind::GenericFnType {
                     params,
                     return_type,
                     generic_params,
-                } => {}
-                TypeAnnotationKind::Identifier(id) => {
-                    let decl = scope.borrow().lookup(&id.name);
-
-                    // TODO: complete the implementation
+                } => {
+                    todo!("Return specialized type")
                 }
-            }
-
-            CheckedTypeKind::GenericApply {
-                target: Box::new(checked_target),
-                type_args: checked_args,
+                CheckedTypeKind::GenericStructDecl(GenericStructDecl {
+                    identifier,
+                    generic_params,
+                    documentation,
+                    properties,
+                }) => {
+                    todo!("Return specialized type")
+                }
+                CheckedTypeKind::GenericTypeAliasDecl(GenericTypeAliasDecl {
+                    identifier,
+                    generic_params,
+                    documentation,
+                    value,
+                }) => {
+                    todo!("Return specialized type")
+                }
+                _ => {
+                    todo!("Push an error when target is non generic type")
+                }
             }
         }
         TypeAnnotationKind::Identifier(id) => scope
@@ -70,9 +81,13 @@ pub fn check_type(
                 SymbolEntry::GenericStructDecl(decl) => CheckedTypeKind::GenericStructDecl(decl),
                 SymbolEntry::StructDecl(decl) => CheckedTypeKind::StructDecl(decl),
                 SymbolEntry::EnumDecl(decl) => CheckedTypeKind::Enum(decl),
-                SymbolEntry::GenericTypeAliasDecl(decl) => CheckedTypeKind::GenericTypeAliasDecl(decl),
+                SymbolEntry::GenericTypeAliasDecl(decl) => {
+                    CheckedTypeKind::GenericTypeAliasDecl(decl)
+                }
                 SymbolEntry::TypeAliasDecl(decl) => CheckedTypeKind::TypeAliasDecl(decl),
-                SymbolEntry::GenericParam(generic_param) => CheckedTypeKind::GenericParam(generic_param),
+                SymbolEntry::GenericParam(generic_param) => {
+                    CheckedTypeKind::GenericParam(generic_param)
+                }
                 SymbolEntry::VarDecl(_) => {
                     errors.push(SemanticError::new(
                         SemanticErrorKind::CannotUseVariableDeclarationAsType,
@@ -88,6 +103,7 @@ pub fn check_type(
                 ));
                 CheckedTypeKind::Unknown
             }),
+
         TypeAnnotationKind::GenericFnType {
             params,
             return_type,
@@ -110,6 +126,25 @@ pub fn check_type(
                 params: checked_params,
                 return_type: Box::new(check_type(&return_type, errors, fn_type_scope.clone())),
                 generic_params: checked_generic_params,
+            }
+        }
+        TypeAnnotationKind::FnType {
+            params,
+            return_type,
+        } => {
+            let fn_type_scope = scope.borrow().child(ScopeKind::FnType);
+
+            let checked_params = params
+                .into_iter()
+                .map(|p| CheckedParam {
+                    constraint: check_type(&p.constraint, errors, fn_type_scope.clone()),
+                    identifier: p.identifier.clone(),
+                })
+                .collect();
+
+            CheckedTypeKind::FnType {
+                params: checked_params,
+                return_type: Box::new(check_type(&return_type, errors, fn_type_scope.clone())),
             }
         }
         TypeAnnotationKind::Union(items) => CheckedTypeKind::Union(

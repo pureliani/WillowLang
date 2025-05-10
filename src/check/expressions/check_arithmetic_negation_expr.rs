@@ -1,4 +1,4 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, collections::HashSet, rc::Rc};
 
 use crate::{
     ast::{
@@ -26,7 +26,7 @@ pub fn check_arithmetic_negation_expr(
     let expr_type = match &checked_right.expr_type {
         t if is_signed(&t) => t.clone(),
         unexpected_type => {
-            let expected = vec![
+            let expected = HashSet::from([
                 CheckedType {
                     kind: CheckedTypeKind::I8,
                     span: checked_right.expr_type.span,
@@ -55,7 +55,7 @@ pub fn check_arithmetic_negation_expr(
                     kind: CheckedTypeKind::F64,
                     span: checked_right.expr_type.span,
                 },
-            ];
+            ]);
 
             errors.push(SemanticError::new(
                 SemanticErrorKind::TypeMismatch {
