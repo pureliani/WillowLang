@@ -25,12 +25,7 @@ pub fn check_array_literal_expr(
         .map(|item| check_expr(item, errors, scope.clone()))
         .collect();
 
-    let unionized_types = union_of(
-        &checked_items
-            .iter()
-            .map(|item| item.expr_type.clone())
-            .collect::<Vec<CheckedType>>(),
-    );
+    let unionized_types = union_of(checked_items.iter().map(|item| item.expr_type.clone()));
 
     CheckedExpr {
         expr_type: CheckedType {

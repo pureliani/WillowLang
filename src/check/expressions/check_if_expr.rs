@@ -52,10 +52,13 @@ pub fn check_if_expr(
     let checked_then_branch_final_expr = then_branch.final_expr.map(|fe| {
         let checked_final_expr = check_expr(*fe, errors, then_branch_scope.clone());
 
-        if_else_expr_type = union_of(&[
-            if_else_expr_type.clone(),
-            checked_final_expr.expr_type.clone(),
-        ]);
+        if_else_expr_type = union_of(
+            [
+                if_else_expr_type.clone(),
+                checked_final_expr.expr_type.clone(),
+            ]
+            .into_iter(),
+        );
 
         Box::new(checked_final_expr)
     });
@@ -76,10 +79,13 @@ pub fn check_if_expr(
             let checked_codeblock_final_expr = ei.1.final_expr.map(|fe| {
                 let checked_final_expr = check_expr(*fe, errors, else_if_scope.clone());
 
-                if_else_expr_type = union_of(&[
-                    if_else_expr_type.clone(),
-                    checked_final_expr.expr_type.clone(),
-                ]);
+                if_else_expr_type = union_of(
+                    [
+                        if_else_expr_type.clone(),
+                        checked_final_expr.expr_type.clone(),
+                    ]
+                    .into_iter(),
+                );
 
                 Box::new(checked_final_expr)
             });
@@ -100,10 +106,13 @@ pub fn check_if_expr(
         let checked_final_expr = br.final_expr.map(|fe| {
             let checked_final_expr = check_expr(*fe, errors, else_scope);
 
-            if_else_expr_type = union_of(&[
-                if_else_expr_type.clone(),
-                checked_final_expr.expr_type.clone(),
-            ]);
+            if_else_expr_type = union_of(
+                [
+                    if_else_expr_type.clone(),
+                    checked_final_expr.expr_type.clone(),
+                ]
+                .into_iter(),
+            );
 
             Box::new(checked_final_expr)
         });

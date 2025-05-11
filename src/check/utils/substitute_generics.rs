@@ -126,12 +126,12 @@ pub fn substitute_generics(
             span: ty.span,
         },
         CheckedTypeKind::Union(items) => {
-            let substituted_items: Vec<CheckedType> = items
+            let substituted_items = items
                 .iter()
-                .map(|t| substitute_generics(t, substitution, errors))
-                .collect();
+                .map(|t| substitute_generics(t, substitution, errors));
+
             // Re-apply union_of logic to simplify the result
-            union_of(&substituted_items)
+            union_of(substituted_items)
         }
         CheckedTypeKind::I8
         | CheckedTypeKind::I16

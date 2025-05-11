@@ -41,8 +41,7 @@ pub fn check_fn_expr(
     let checked_params: Vec<CheckedParam> = params
         .iter()
         .map(|param| {
-            let checked_constraint =
-                check_type(&param.constraint, errors, fn_scope.clone());
+            let checked_constraint = check_type(&param.constraint, errors, fn_scope.clone());
 
             fn_scope.borrow_mut().insert(
                 param.identifier.name.to_owned(),
@@ -76,13 +75,7 @@ pub fn check_fn_expr(
     if let Some(final_expr) = checked_final_expr {
         return_exprs.push(*final_expr);
     }
-
-    let inferred_return_type = union_of(
-        &return_exprs
-            .iter()
-            .map(|e| e.expr_type.clone())
-            .collect::<Vec<CheckedType>>(),
-    );
+    let inferred_return_type = union_of(return_exprs.iter().map(|e| e.expr_type.clone()));
 
     let param_types: Vec<CheckedParam> = params
         .into_iter()
@@ -92,8 +85,8 @@ pub fn check_fn_expr(
         })
         .collect();
 
-    let expected_return_type = return_type
-        .map(|return_t| check_type(&return_t, errors, fn_scope.clone()));
+    let expected_return_type =
+        return_type.map(|return_t| check_type(&return_t, errors, fn_scope.clone()));
 
     let actual_return_type = if let Some(explicit_return_type) = expected_return_type {
         for return_expr in return_exprs.iter() {
