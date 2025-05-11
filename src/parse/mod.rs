@@ -325,11 +325,8 @@ impl Parser {
         while state.current().is_some() {
             let stmt = state.parse_stmt();
             let unwrapped = stmt.unwrap_or_else(|e| Stmt {
+                span: e.span,
                 kind: StmtKind::Error(e),
-                span: Span {
-                    start: Position { line: 0, col: 0 },
-                    end: Position { line: 0, col: 0 },
-                },
             });
 
             statements.push(unwrapped);

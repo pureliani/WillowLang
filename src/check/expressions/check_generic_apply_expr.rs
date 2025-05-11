@@ -8,7 +8,7 @@ use crate::{
                 CheckedGenericParam, CheckedParam, GenericStructDecl, GenericTypeAliasDecl,
                 StructDecl,
             },
-            checked_expression::{CheckedBlockContents, CheckedExpr, CheckedExprKind},
+            checked_expression::{CheckedBlockContents, CheckedExpr, CheckedExprKind, GenericFn},
             checked_type::{CheckedType, CheckedTypeKind, TypeSpan},
         },
         Span,
@@ -128,12 +128,12 @@ pub fn check_generic_apply_expr(
                     CheckedExprKind::Block(CheckedBlockContents { final_expr, .. }) => {
                         todo!()
                     }
-                    CheckedExprKind::GenericFn {
+                    CheckedExprKind::GenericFn(GenericFn {
                         params,
                         body,
                         return_type,
                         generic_params,
-                    } => {
+                    }) => {
                         todo!()
                     }
                     CheckedExprKind::FnCall { left, args } => {

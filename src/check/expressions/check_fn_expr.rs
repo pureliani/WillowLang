@@ -9,7 +9,7 @@ use crate::{
         },
         checked::{
             checked_declaration::{CheckedParam, CheckedVarDecl},
-            checked_expression::{CheckedBlockContents, CheckedExpr, CheckedExprKind},
+            checked_expression::{CheckedBlockContents, CheckedExpr, CheckedExprKind, GenericFn},
             checked_type::{CheckedType, CheckedTypeKind, TypeSpan},
         },
         Span,
@@ -127,12 +127,12 @@ pub fn check_fn_expr(
 
         CheckedExpr {
             expr_type,
-            kind: CheckedExprKind::GenericFn {
+            kind: CheckedExprKind::GenericFn(GenericFn {
                 params: checked_params,
                 body: checked_body,
                 return_type: actual_return_type,
                 generic_params: checked_generic_params,
-            },
+            }),
         }
     }
 }
