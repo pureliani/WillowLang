@@ -141,7 +141,7 @@ pub enum CheckedExprKind {
         else_branch: Option<CheckedBlockContents>,
     },
     GenericSpecialization {
-        target: GenericSpecializationKind,
+        target: Box<CheckedExpr>,
         substitutions: GenericSubstitutionMap,
     },
     ArrayLiteral {

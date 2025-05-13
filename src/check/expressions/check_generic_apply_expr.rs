@@ -1,14 +1,13 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, iter, rc::Rc};
 
 use crate::{
     ast::{
         base::{base_expression::Expr, base_type::TypeAnnotation},
         checked::{
             checked_declaration::{
-                CheckedGenericParam, CheckedParam, GenericStructDecl, GenericTypeAliasDecl,
-                StructDecl,
+                CheckedGenericParam, CheckedParam, GenericStructDecl, StructDecl,
             },
-            checked_expression::{CheckedBlockContents, CheckedExpr, CheckedExprKind, GenericFn},
+            checked_expression::{CheckedExpr, CheckedExprKind},
             checked_type::{CheckedType, CheckedTypeKind, TypeSpan},
         },
         Span,
@@ -38,10 +37,10 @@ pub fn check_generic_apply_expr(
         .map(|type_arg| check_type(&type_arg, errors, scope.clone()))
         .collect();
 
-    let mut check_type_args = |generic_params: Vec<CheckedGenericParam>,
-                               type_args: Vec<CheckedType>|
-     -> Option<GenericSubstitutionMap> {
-        let is_valid_usage = if generic_params.len() != type_args.len() {
+    let mut get_substitutions = |generic_params: Vec<CheckedGenericParam>,
+                                 type_args: Vec<CheckedType>|
+     -> GenericSubstitutionMap {
+        if generic_params.len() != type_args.len() {
             errors.push(SemanticError::new(
                 SemanticErrorKind::GenericArgumentCountMismatch {
                     expected: generic_params.len(),
@@ -49,114 +48,62 @@ pub fn check_generic_apply_expr(
                 },
                 expr_span,
             ));
-
-            false
         } else {
-            let are_arguments_assignable =
-                generic_params
-                    .iter()
-                    .zip(type_args.iter())
-                    .all(|(gp, ta)| match &gp.constraint {
-                        Some(constraint) => {
-                            let is_assignable = check_is_assignable(ta, constraint);
-
-                            if !is_assignable {
-                                errors.push(SemanticError::new(
-                                    SemanticErrorKind::TypeMismatch {
-                                        expected: *constraint.clone(),
-                                        received: ta.clone(),
-                                    },
-                                    ta.unwrap_annotation_span(),
-                                ));
-                            }
-
-                            is_assignable
+            generic_params
+                .iter()
+                .zip(type_args.iter())
+                .for_each(|(gp, ta)| {
+                    if let Some(constraint) = &gp.constraint {
+                        if !check_is_assignable(ta, constraint) {
+                            errors.push(SemanticError::new(
+                                SemanticErrorKind::TypeMismatch {
+                                    expected: *constraint.clone(),
+                                    received: ta.clone(),
+                                },
+                                ta.unwrap_annotation_span(),
+                            ));
                         }
-                        None => true,
-                    });
-
-            are_arguments_assignable
+                    }
+                });
         };
 
-        if !is_valid_usage {
-            None
-        } else {
-            let substitution: GenericSubstitutionMap = generic_params
-                .into_iter()
-                .map(|gp| gp.identifier.name.clone())
-                .zip(type_args.into_iter())
-                .collect();
+        let substitutions: GenericSubstitutionMap = generic_params
+            .into_iter()
+            .map(|gp| gp.identifier.name.clone())
+            .zip(type_args.into_iter().chain(iter::repeat(CheckedType {
+                kind: CheckedTypeKind::Unknown,
+                span: TypeSpan::None,
+            })))
+            .collect();
 
-            Some(substitution)
-        }
+        substitutions
     };
 
-    match checked_left.expr_type.kind {
+    let (type_kind, substitutions) = match checked_left.expr_type.kind.clone() {
         CheckedTypeKind::GenericFnType {
             params,
             return_type,
             generic_params,
         } => {
-            if let Some(substitution) = check_type_args(generic_params, type_args) {
-                let substituted_params: Vec<_> = params
-                    .into_iter()
-                    .map(|p| CheckedParam {
-                        constraint: substitute_generics(&p.constraint, &substitution, errors),
-                        identifier: p.identifier,
-                    })
-                    .collect();
+            let substitutions = get_substitutions(generic_params, type_args);
 
-                let substituted_return_type =
-                    substitute_generics(&return_type, &substitution, errors);
+            let substituted_params: Vec<_> = params
+                .into_iter()
+                .map(|p| CheckedParam {
+                    constraint: substitute_generics(&p.constraint, &substitutions, errors),
+                    identifier: p.identifier.clone(),
+                })
+                .collect();
 
-                // Expressions that can potentially result in function type
-                let substituted_body = match checked_left.kind {
-                    CheckedExprKind::Identifier(id) => {
-                        todo!()
-                    }
-                    CheckedExprKind::If {
-                        condition,
-                        then_branch,
-                        else_if_branches,
-                        else_branch,
-                    } => {
-                        todo!()
-                    }
-                    CheckedExprKind::TypeCast { left, target } => {
-                        todo!()
-                    }
-                    CheckedExprKind::Block(CheckedBlockContents { final_expr, .. }) => {
-                        todo!()
-                    }
-                    CheckedExprKind::GenericFn(GenericFn {
-                        params,
-                        body,
-                        return_type,
-                        generic_params,
-                    }) => {
-                        todo!()
-                    }
-                    CheckedExprKind::FnCall { left, args } => {
-                        todo!()
-                    }
-                    CheckedExprKind::Access { left, field } => {
-                        todo!()
-                    }
-                    _ => {
-                        unreachable!()
-                    }
-                };
+            let substituted_return_type = substitute_generics(&return_type, &substitutions, errors);
 
-                // CheckedExpr {
-                //     kind: CheckedExprKind::Fn {
-                //         params: substituted_params,
-                //         body: (),
-                //         return_type: substituted_return_type,
-                //     },
-                // }
-            } else {
-                todo!("return default CheckedExpr")
-            }
+            (
+                CheckedTypeKind::FnType {
+                    params: substituted_params,
+                    return_type: Box::new(substituted_return_type),
+                },
+                substitutions,
+            )
         }
         CheckedTypeKind::GenericStructDecl(GenericStructDecl {
             identifier,
@@ -164,65 +111,45 @@ pub fn check_generic_apply_expr(
             generic_params,
             properties,
         }) => {
-            if let Some(substitution) = check_type_args(generic_params, type_args) {
-                let substituted_properties: Vec<_> = properties
-                    .into_iter()
-                    .map(|p| CheckedParam {
-                        constraint: substitute_generics(&p.constraint, &substitution, errors),
-                        identifier: p.identifier,
-                    })
-                    .collect();
+            let substitutions = get_substitutions(generic_params, type_args);
 
-                let new_id: String = "placeholder".to_string();
+            let substituted_properties: Vec<_> = properties
+                .into_iter()
+                .map(|p| CheckedParam {
+                    constraint: substitute_generics(&p.constraint, &substitutions, errors),
+                    identifier: p.identifier.clone(),
+                })
+                .collect();
 
-                CheckedExpr {
-                    expr_type: CheckedType {
-                        kind: CheckedTypeKind::StructDecl(StructDecl {
-                            documentation,
-                            identifier: new_id,
-                            properties: substituted_properties,
-                        }),
-                        span: TypeSpan::Expr(expr_span),
-                    },
-                }
-            } else {
-                todo!("return default CheckedExpr")
-            }
-        }
-        CheckedTypeKind::GenericTypeAliasDecl(GenericTypeAliasDecl {
-            identifier,
-            documentation,
-            generic_params,
-            value,
-        }) => {
-            if let Some(substitution) = check_type_args(generic_params, type_args) {
-                let substituted_value = substitute_generics(&value, &substitution, errors);
-
-                let new_id: String = "placeholder".to_string();
-
-                CheckedExpr {
-                    expr_type: CheckedType {
-                        kind: CheckedTypeKind::StructDecl(StructDecl {
-                            documentation,
-                            identifier: new_id,
-                            properties: substituted_properties,
-                        }),
-                        span: TypeSpan::Expr(expr_span),
-                    },
-                }
-            } else {
-                todo!("return default CheckedExpr")
-            }
+            (
+                CheckedTypeKind::StructDecl(StructDecl {
+                    documentation: documentation.clone(),
+                    identifier: identifier.clone(),
+                    properties: substituted_properties,
+                }),
+                substitutions,
+            )
         }
         _ => {
             errors.push(SemanticError::new(
                 SemanticErrorKind::CannotApplyTypeArguments {
-                    to: checked_left.expr_type,
+                    to: checked_left.expr_type.clone(),
                 },
                 expr_span,
             ));
-        }
-    }
 
-    todo!()
+            (CheckedTypeKind::Unknown, GenericSubstitutionMap::new())
+        }
+    };
+
+    CheckedExpr {
+        expr_type: CheckedType {
+            kind: type_kind,
+            span: TypeSpan::Expr(expr_span),
+        },
+        kind: CheckedExprKind::GenericSpecialization {
+            target: Box::new(checked_left),
+            substitutions,
+        },
+    }
 }

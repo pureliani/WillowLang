@@ -21,10 +21,7 @@ use super::{
     check_expr::check_expr,
     check_stmts::check_stmts,
     scope::{Scope, ScopeKind, SymbolEntry},
-    utils::{
-        check_is_assignable::check_is_assignable,
-        type_annotation_to_semantic::check_type,
-    },
+    utils::{check_is_assignable::check_is_assignable, type_annotation_to_semantic::check_type},
     SemanticError, SemanticErrorKind,
 };
 
@@ -36,13 +33,10 @@ pub fn check_generic_params(
     generic_params
         .into_iter()
         .map(|gp| {
-            let checked_constraint = gp.constraint.as_ref().map(|constraint| {
-                Box::new(check_type(
-                    constraint,
-                    errors,
-                    scope.clone(),
-                ))
-            });
+            let checked_constraint = gp
+                .constraint
+                .as_ref()
+                .map(|constraint| Box::new(check_type(constraint, errors, scope.clone())));
 
             let checked_gp = CheckedGenericParam {
                 constraint: checked_constraint,
@@ -147,8 +141,7 @@ pub fn check_stmt(
         }) => {
             let checked_value = value.map(|v| check_expr(v, errors, scope.clone()));
 
-            let checked_constraint =
-                constraint.map(|c| check_type(&c, errors, scope.clone()));
+            let checked_constraint = constraint.map(|c| check_type(&c, errors, scope.clone()));
 
             let final_constraint = match (&checked_value, checked_constraint) {
                 (None, None) => {
