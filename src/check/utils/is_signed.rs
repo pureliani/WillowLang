@@ -1,6 +1,6 @@
-use crate::ast::checked::checked_type::{CheckedTypeX, CheckedType};
+use crate::ast::checked::checked_type::CheckedType;
 
-pub fn is_signed(ty: &CheckedTypeX) -> bool {
+pub fn is_signed(ty: &CheckedType) -> bool {
     use CheckedType::*;
-    matches!(ty.kind, I8 | I16 | I32 | I64 | ISize | F32 | F64)
+    matches!(ty, I8 | I16 | I32 | I64 | ISize | F32 | F64)
 }

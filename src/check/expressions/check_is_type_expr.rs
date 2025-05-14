@@ -18,7 +18,7 @@ use crate::{
 pub fn check_is_type_expr(
     left: Box<Expr>,
     target: TypeAnnotation,
-    expr_span: Span,
+    span: Span,
     errors: &mut Vec<SemanticError>,
     scope: Rc<RefCell<Scope>>,
 ) -> CheckedExpr {
@@ -28,12 +28,12 @@ pub fn check_is_type_expr(
     if !matches!(checked_left.ty, CheckedType::Union { .. }) {
         errors.push(SemanticError::new(
             SemanticErrorKind::CannotUseIsTypeOnNonUnion,
-            expr_span,
+            span,
         ));
     }
 
     CheckedExpr {
-        span: expr_span,
+        span,
         ty: CheckedType::Bool,
         kind: CheckedExprKind::IsType {
             left: Box::new(checked_left),

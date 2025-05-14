@@ -4,7 +4,7 @@ use crate::{
     ast::{
         checked::{
             checked_expression::{CheckedExpr, CheckedExprKind},
-            checked_type::{CheckedTypeX, CheckedType, TypeSpan},
+            checked_type::CheckedType,
         },
         IdentifierNode, Span,
     },
@@ -16,11 +16,11 @@ use crate::{
 
 pub fn check_identifier_expr(
     id: IdentifierNode,
-    expr_span: Span,
+    span: Span,
     errors: &mut Vec<SemanticError>,
     scope: Rc<RefCell<Scope>>,
 ) -> CheckedExpr {
-    let type_kind = scope
+    let ty = scope
         .borrow()
         .lookup(&id.name)
         .map(|entry| match entry {
@@ -29,11 +29,11 @@ pub fn check_identifier_expr(
             SymbolEntry::GenericTypeAliasDecl(decl) => CheckedType::GenericTypeAliasDecl(decl),
             SymbolEntry::TypeAliasDecl(decl) => CheckedType::TypeAliasDecl(decl),
             SymbolEntry::EnumDecl(decl) => CheckedType::Enum(decl),
-            SymbolEntry::VarDecl(decl) => decl.constraint.kind,
+            SymbolEntry::VarDecl(decl) => decl.constraint,
             SymbolEntry::GenericParam(_) => {
                 errors.push(SemanticError::new(
                     SemanticErrorKind::CannotUseGenericParameterAsValue,
-                    expr_span,
+                    span,
                 ));
 
                 CheckedType::Unknown
@@ -42,17 +42,15 @@ pub fn check_identifier_expr(
         .unwrap_or_else(|| {
             errors.push(SemanticError::new(
                 SemanticErrorKind::UndeclaredIdentifier(id.name.clone()),
-                expr_span,
+                span,
             ));
 
             CheckedType::Unknown
         });
 
     CheckedExpr {
+        ty,
+        span,
         kind: CheckedExprKind::Identifier(id),
-        ty: CheckedTypeX {
-            kind: type_kind,
-            span: TypeSpan::Expr(expr_span),
-        },
     }
 }

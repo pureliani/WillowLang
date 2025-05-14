@@ -10,7 +10,7 @@ use crate::{
         checked::{
             checked_declaration::{CheckedParam, CheckedVarDecl},
             checked_expression::{CheckedBlockContents, CheckedExpr, CheckedExprKind, GenericFn},
-            checked_type::{CheckedType, CheckedTypeX, TypeSpan},
+            checked_type::CheckedType,
         },
         Span,
     },
@@ -97,7 +97,7 @@ pub fn check_fn_expr(
                         expected: explicit_return_type.clone(),
                         received: return_expr.ty.clone(),
                     },
-                    return_expr.ty.unwrap_expr_span(),
+                    return_expr.span,
                 ));
             }
         }
@@ -108,15 +108,13 @@ pub fn check_fn_expr(
     };
 
     if generic_params.is_empty() {
-        let expr_type = CheckedTypeX {
-            kind: CheckedType::FnType {
-                params: param_types,
-                return_type: Box::new(actual_return_type.clone()),
-            },
-            span: TypeSpan::Expr(expr_span),
+        let expr_type = CheckedType::FnType {
+            params: param_types,
+            return_type: Box::new(actual_return_type.clone()),
         };
 
         CheckedExpr {
+            span: expr_span,
             ty: expr_type,
             kind: CheckedExprKind::Fn {
                 params: checked_params,
@@ -125,16 +123,14 @@ pub fn check_fn_expr(
             },
         }
     } else {
-        let expr_type = CheckedTypeX {
-            kind: CheckedType::GenericFnType {
-                params: param_types,
-                return_type: Box::new(actual_return_type.clone()),
-                generic_params: checked_generic_params.clone(),
-            },
-            span: TypeSpan::Expr(expr_span),
+        let expr_type = CheckedType::GenericFnType {
+            params: param_types,
+            return_type: Box::new(actual_return_type.clone()),
+            generic_params: checked_generic_params.clone(),
         };
 
         CheckedExpr {
+            span: expr_span,
             ty: expr_type,
             kind: CheckedExprKind::GenericFn(GenericFn {
                 params: checked_params,

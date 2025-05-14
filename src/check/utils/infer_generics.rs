@@ -1,28 +1,28 @@
 use crate::{
-    ast::checked::checked_type::{CheckedTypeX, CheckedType},
+    ast::checked::checked_type::CheckedType,
     check::{SemanticError, SemanticErrorKind},
 };
 
 use super::substitute_generics::GenericSubstitutionMap;
 
 pub fn infer_generics(
-    expected: &CheckedTypeX,
-    received: &CheckedTypeX,
+    expected: &CheckedType,
+    received: &CheckedType,
     substitution: &mut GenericSubstitutionMap,
     errors: &mut Vec<SemanticError>,
 ) {
-    match (&expected.kind, &received.kind) {
+    match (&expected, &received) {
         // Handle generics
         (CheckedType::GenericParam(gp), received_kind) => {
             let name = &gp.identifier.name;
             if let Some(existing) = substitution.get(name) {
-                if &existing.kind != received_kind {
+                if &existing != received_kind {
                     errors.push(SemanticError::new(
                         SemanticErrorKind::ConflictingGenericBinding {
                             existing: existing.clone(),
                             new: received.clone(),
                         },
-                        received.unwrap_annotation_span(),
+                        gp.identifier.span,
                     ));
                 }
             } else {

@@ -23,7 +23,7 @@ pub fn check_if_expr(
     then_branch: BlockContents,
     else_if_branches: Vec<(Box<Expr>, BlockContents)>,
     else_branch: Option<BlockContents>,
-    expr_span: Span,
+    span: Span,
     errors: &mut Vec<SemanticError>,
     scope: Rc<RefCell<Scope>>,
 ) -> CheckedExpr {
@@ -115,7 +115,7 @@ pub fn check_if_expr(
 
     CheckedExpr {
         ty: if_else_expr_type,
-        span: expr_span,
+        span,
         kind: CheckedExprKind::If {
             condition: Box::new(checked_condition),
             then_branch: checked_then_branch,

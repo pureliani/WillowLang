@@ -15,13 +15,10 @@ use crate::{
 pub fn check_addition_expr(
     left: Box<Expr>,
     right: Box<Expr>,
+    span: Span,
     errors: &mut Vec<SemanticError>,
     scope: Rc<RefCell<Scope>>,
 ) -> CheckedExpr {
-    let span = Span {
-        start: left.span.start,
-        end: right.span.end,
-    };
     let checked_left = check_expr(*left, errors, scope.clone());
     let checked_right = check_expr(*right, errors, scope);
     let expr_type = check_binary_numeric_operation(&checked_left, &checked_right, errors);

@@ -3,36 +3,31 @@ use std::collections::HashMap;
 use crate::{
     ast::checked::{
         checked_declaration::{CheckedParam, CheckedStructDecl, CheckedTypeAliasDecl},
-        checked_type::{CheckedTypeX, CheckedType},
+        checked_type::CheckedType,
     },
     check::{SemanticError, SemanticErrorKind},
 };
 
 use super::union_of::union_of;
 
-pub type GenericSubstitutionMap = HashMap<String, CheckedTypeX>;
+pub type GenericSubstitutionMap = HashMap<String, CheckedType>;
 
 pub fn substitute_generics(
-    ty: &CheckedTypeX,
+    ty: &CheckedType,
     substitution: &GenericSubstitutionMap,
     errors: &mut Vec<SemanticError>,
-) -> CheckedTypeX {
-    match &ty.kind {
+) -> CheckedType {
+    match &ty {
         CheckedType::GenericParam(gp) => substitution
             .get(&gp.identifier.name)
             .cloned()
             .unwrap_or_else(|| {
-                let span = ty.unwrap_annotation_span();
-
                 errors.push(SemanticError::new(
                     SemanticErrorKind::UnresolvedGenericParam(gp.identifier.name.clone()),
-                    span,
+                    gp.identifier.span,
                 ));
 
-                CheckedTypeX {
-                    kind: CheckedType::Unknown,
-                    span: ty.span,
-                }
+                CheckedType::Unknown
             }),
         CheckedType::GenericFnType {
             params,
@@ -52,12 +47,9 @@ pub fn substitute_generics(
 
             let substituted_return_type = substitute_generics(return_type, substitution, errors);
 
-            CheckedTypeX {
-                kind: CheckedType::FnType {
-                    params: substituted_params,
-                    return_type: Box::new(substituted_return_type),
-                },
-                span: ty.span,
+            CheckedType::FnType {
+                params: substituted_params,
+                return_type: Box::new(substituted_return_type),
             }
         }
         CheckedType::FnType {
@@ -76,12 +68,9 @@ pub fn substitute_generics(
 
             let substituted_return_type = substitute_generics(return_type, substitution, errors);
 
-            CheckedTypeX {
-                kind: CheckedType::FnType {
-                    params: substituted_params,
-                    return_type: Box::new(substituted_return_type),
-                },
-                span: ty.span,
+            CheckedType::FnType {
+                params: substituted_params,
+                return_type: Box::new(substituted_return_type),
             }
         }
         CheckedType::GenericStructDecl(decl) => {
@@ -97,33 +86,24 @@ pub fn substitute_generics(
                 })
                 .collect();
 
-            CheckedTypeX {
-                kind: CheckedType::StructDecl(CheckedStructDecl {
-                    properties: substituted_props,
-                    documentation: decl.documentation.clone(),
-                    identifier: decl.identifier.clone(), // maybe we should rename this?
-                }),
-                span: ty.span,
-            }
+            CheckedType::StructDecl(CheckedStructDecl {
+                properties: substituted_props,
+                documentation: decl.documentation.clone(),
+                identifier: decl.identifier.clone(), // maybe we should rename this?
+            })
         }
         CheckedType::GenericTypeAliasDecl(decl) => {
             let substituted_value = substitute_generics(&decl.value, substitution, errors);
 
-            CheckedTypeX {
-                kind: CheckedType::TypeAliasDecl(CheckedTypeAliasDecl {
-                    value: Box::new(substituted_value),
-                    documentation: decl.documentation.clone(),
-                    identifier: decl.identifier.clone(), // maybe we should rename this?
-                }),
-                span: ty.span,
-            }
+            CheckedType::TypeAliasDecl(CheckedTypeAliasDecl {
+                value: Box::new(substituted_value),
+                documentation: decl.documentation.clone(),
+                identifier: decl.identifier.clone(), // maybe we should rename this?
+            })
         }
-        CheckedType::Array { item_type, size } => CheckedTypeX {
-            kind: CheckedType::Array {
-                item_type: Box::new(substitute_generics(item_type, substitution, errors)),
-                size: *size,
-            },
-            span: ty.span,
+        CheckedType::Array { item_type, size } => CheckedType::Array {
+            item_type: Box::new(substitute_generics(item_type, substitution, errors)),
+            size: *size,
         },
         CheckedType::Union(items) => {
             let substituted_items = items

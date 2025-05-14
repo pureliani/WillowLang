@@ -15,13 +15,10 @@ use crate::{
 pub fn check_inequality_expr(
     left: Box<Expr>,
     right: Box<Expr>,
+    span: Span,
     errors: &mut Vec<SemanticError>,
     scope: Rc<RefCell<Scope>>,
 ) -> CheckedExpr {
-    let span = Span {
-        start: left.span.start,
-        end: right.span.end,
-    };
     let mut expr_type = CheckedType::Bool;
 
     let checked_left = check_expr(*left, errors, scope.clone());

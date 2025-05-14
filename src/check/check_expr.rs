@@ -42,30 +42,48 @@ pub fn check_expr(
     match expr.kind {
         ExprKind::Not { right } => check_logical_negation_expr(right, expr.span, errors, scope),
         ExprKind::Neg { right } => check_arithmetic_negation_expr(right, expr.span, errors, scope),
-        ExprKind::Add { left, right } => check_addition_expr(left, right, errors, scope),
-        ExprKind::Subtract { left, right } => check_subtraction_expr(left, right, errors, scope),
-        ExprKind::Multiply { left, right } => check_multiplication_expr(left, right, errors, scope),
-        ExprKind::Divide { left, right } => check_division_expr(left, right, errors, scope),
-        ExprKind::Modulo { left, right } => check_modulo_expr(left, right, errors, scope),
-        ExprKind::LessThan { left, right } => check_less_than_expr(left, right, errors, scope),
+        ExprKind::Add { left, right } => check_addition_expr(left, right, expr.span, errors, scope),
+        ExprKind::Subtract { left, right } => {
+            check_subtraction_expr(left, right, expr.span, errors, scope)
+        }
+        ExprKind::Multiply { left, right } => {
+            check_multiplication_expr(left, right, expr.span, errors, scope)
+        }
+        ExprKind::Divide { left, right } => {
+            check_division_expr(left, right, expr.span, errors, scope)
+        }
+        ExprKind::Modulo { left, right } => {
+            check_modulo_expr(left, right, expr.span, errors, scope)
+        }
+        ExprKind::LessThan { left, right } => {
+            check_less_than_expr(left, right, expr.span, errors, scope)
+        }
         ExprKind::LessThanOrEqual { left, right } => {
-            check_less_than_or_equal_expr(left, right, errors, scope)
+            check_less_than_or_equal_expr(left, right, expr.span, errors, scope)
         }
         ExprKind::GreaterThan { left, right } => {
-            check_greater_than_expr(left, right, errors, scope)
+            check_greater_than_expr(left, right, expr.span, errors, scope)
         }
         ExprKind::GreaterThanOrEqual { left, right } => {
-            check_greater_than_or_equal_expr(left, right, errors, scope)
+            check_greater_than_or_equal_expr(left, right, expr.span, errors, scope)
         }
-        ExprKind::Equal { left, right } => check_equality_expr(left, right, errors, scope),
-        ExprKind::NotEqual { left, right } => check_inequality_expr(left, right, errors, scope),
-        ExprKind::And { left, right } => check_and_expr(left, right, errors, scope),
-        ExprKind::Or { left, right } => check_or_expr(left, right, errors, scope),
-        ExprKind::Access { left, field } => check_access_expr(left, field, errors, scope),
+        ExprKind::Equal { left, right } => {
+            check_equality_expr(left, right, expr.span, errors, scope)
+        }
+        ExprKind::NotEqual { left, right } => {
+            check_inequality_expr(left, right, expr.span, errors, scope)
+        }
+        ExprKind::And { left, right } => check_and_expr(left, right, expr.span, errors, scope),
+        ExprKind::Or { left, right } => check_or_expr(left, right, expr.span, errors, scope),
+        ExprKind::Access { left, field } => {
+            check_access_expr(left, field, expr.span, errors, scope)
+        }
         ExprKind::StaticAccess { left, field } => {
             check_static_access_expr(left, field, errors, scope)
         }
-        ExprKind::TypeCast { left, target } => check_type_cast_expr(left, target, errors, scope),
+        ExprKind::TypeCast { left, target } => {
+            check_type_cast_expr(left, target, expr.span, errors, scope)
+        }
         ExprKind::IsType { left, target } => {
             check_is_type_expr(left, target, expr.span, errors, scope)
         }
@@ -74,7 +92,7 @@ pub fn check_expr(
         }
         ExprKind::FnCall { left, args } => check_fn_call_expr(left, args, expr.span, errors, scope),
         ExprKind::StructInit { left, fields } => {
-            check_struct_init_expr(left, fields, errors, scope)
+            check_struct_init_expr(left, fields, expr.span, errors, scope)
         }
         ExprKind::Null => CheckedExpr {
             span: expr.span,

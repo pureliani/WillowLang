@@ -8,7 +8,7 @@ use crate::{
             checked_expression::CheckedExpr,
             checked_type::CheckedType,
         },
-        IdentifierNode,
+        IdentifierNode, Span,
     },
     check::{check_expr::check_expr, scope::Scope, SemanticError},
 };
@@ -16,6 +16,7 @@ use crate::{
 pub fn check_struct_init_expr(
     left: Box<Expr>,
     fields: Vec<(IdentifierNode, Expr)>,
+    span: Span,
     errors: &mut Vec<SemanticError>,
     scope: Rc<RefCell<Scope>>,
 ) -> CheckedExpr {
@@ -25,7 +26,7 @@ pub fn check_struct_init_expr(
         .map(|f| (f.0, check_expr(f.1, errors, scope.clone())))
         .collect();
 
-    match checked_left.ty.kind {
+    match checked_left.ty {
         CheckedType::GenericStructDecl(CheckedGenericStructDecl {
             identifier,
             properties,

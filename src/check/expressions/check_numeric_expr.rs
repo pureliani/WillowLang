@@ -2,15 +2,15 @@ use crate::{
     ast::{
         checked::{
             checked_expression::{CheckedExpr, CheckedExprKind},
-            checked_type::{CheckedType, CheckedTypeX, TypeSpan},
+            checked_type::CheckedType,
         },
         Span,
     },
     tokenizer::NumberKind,
 };
 
-pub fn check_numeric_expr(value: NumberKind, expr_span: Span) -> CheckedExpr {
-    let type_kind = match value {
+pub fn check_numeric_expr(value: NumberKind, span: Span) -> CheckedExpr {
+    let ty = match value {
         NumberKind::I64(_) => CheckedType::I64,
         NumberKind::I32(_) => CheckedType::I32,
         NumberKind::I16(_) => CheckedType::I16,
@@ -26,11 +26,8 @@ pub fn check_numeric_expr(value: NumberKind, expr_span: Span) -> CheckedExpr {
     };
 
     CheckedExpr {
-        span: expr_span,
+        ty,
+        span,
         kind: CheckedExprKind::Number { value },
-        ty: CheckedTypeX {
-            kind: type_kind,
-            span: TypeSpan::Expr(expr_span),
-        },
     }
 }

@@ -5,7 +5,7 @@ use crate::{
         base::base_expression::Expr,
         checked::{
             checked_expression::{CheckedExpr, CheckedExprKind},
-            checked_type::{CheckedTypeX, CheckedType, TypeSpan},
+            checked_type::CheckedType,
         },
         Span,
     },
@@ -18,7 +18,7 @@ use crate::{
 pub fn check_fn_call_expr(
     left: Box<Expr>,
     args: Vec<Expr>,
-    expr_span: Span,
+    span: Span,
     errors: &mut Vec<SemanticError>,
     scope: Rc<RefCell<Scope>>,
 ) -> CheckedExpr {
@@ -28,12 +28,9 @@ pub fn check_fn_call_expr(
         .map(|arg| check_expr(arg, errors, scope.clone()))
         .collect();
 
-    let mut call_result_type = CheckedTypeX {
-        kind: CheckedType::Unknown,
-        span: TypeSpan::Expr(expr_span),
-    };
+    let mut call_result_type = CheckedType::Unknown;
 
-    match &checked_left.ty.kind {
+    match &checked_left.ty {
         CheckedType::FnType {
             params,
             return_type,
@@ -46,7 +43,7 @@ pub fn check_fn_call_expr(
                         expected: params.len(),
                         received: checked_args.len(),
                     },
-                    expr_span,
+                    span,
                 ));
             } else {
                 for (param, arg) in params.iter().zip(checked_args.iter()) {
@@ -56,7 +53,7 @@ pub fn check_fn_call_expr(
                                 expected: param.constraint.clone(),
                                 received: arg.ty.clone(),
                             },
-                            arg.ty.unwrap_expr_span(),
+                            arg.span,
                         ));
                     }
                 }
@@ -75,12 +72,13 @@ pub fn check_fn_call_expr(
         non_callable_type => {
             errors.push(SemanticError::new(
                 SemanticErrorKind::CannotCall(checked_left.ty.clone()),
-                checked_left.ty.unwrap_expr_span(),
+                checked_left.span,
             ));
         }
     }
 
     CheckedExpr {
+        span,
         ty: call_result_type,
         kind: CheckedExprKind::FnCall {
             left: Box::new(checked_left),

@@ -4,8 +4,10 @@ use crate::{
     ast::{
         base::base_type::{TypeAnnotation, TypeAnnotationKind},
         checked::{
-            checked_declaration::{CheckedParam, CheckedGenericStructDecl, CheckedGenericTypeAliasDecl},
-            checked_type::{CheckedTypeX, CheckedType, TypeSpan},
+            checked_declaration::{
+                CheckedGenericStructDecl, CheckedGenericTypeAliasDecl, CheckedParam,
+            },
+            checked_type::CheckedType,
         },
     },
     check::{
@@ -20,8 +22,8 @@ pub fn check_type(
     arg: &TypeAnnotation,
     errors: &mut Vec<SemanticError>,
     scope: Rc<RefCell<Scope>>,
-) -> CheckedTypeX {
-    let kind = match &arg.kind {
+) -> CheckedType {
+    match &arg.kind {
         TypeAnnotationKind::Void => CheckedType::Void,
         TypeAnnotationKind::Null => CheckedType::Null,
         TypeAnnotationKind::Bool => CheckedType::Bool,
@@ -40,12 +42,12 @@ pub fn check_type(
         TypeAnnotationKind::Char => CheckedType::Char,
         TypeAnnotationKind::GenericApply { left, args } => {
             let checked_target = check_type(&left, errors, scope.clone());
-            let checked_args = args
+            let checked_args: Vec<CheckedType> = args
                 .into_iter()
                 .map(|arg| check_type(&arg, errors, scope.clone()))
-                .collect::<Vec<CheckedTypeX>>();
+                .collect();
 
-            match checked_target.kind {
+            match checked_target {
                 CheckedType::GenericFnType {
                     params,
                     return_type,
@@ -81,9 +83,7 @@ pub fn check_type(
                 SymbolEntry::GenericStructDecl(decl) => CheckedType::GenericStructDecl(decl),
                 SymbolEntry::StructDecl(decl) => CheckedType::StructDecl(decl),
                 SymbolEntry::EnumDecl(decl) => CheckedType::Enum(decl),
-                SymbolEntry::GenericTypeAliasDecl(decl) => {
-                    CheckedType::GenericTypeAliasDecl(decl)
-                }
+                SymbolEntry::GenericTypeAliasDecl(decl) => CheckedType::GenericTypeAliasDecl(decl),
                 SymbolEntry::TypeAliasDecl(decl) => CheckedType::TypeAliasDecl(decl),
                 SymbolEntry::GenericParam(generic_param) => {
                     CheckedType::GenericParam(generic_param)
@@ -189,10 +189,5 @@ pub fn check_type(
             }
         }
         TypeAnnotationKind::Error(_) => CheckedType::Unknown,
-    };
-
-    CheckedTypeX {
-        kind,
-        span: TypeSpan::Annotation(arg.span),
     }
 }

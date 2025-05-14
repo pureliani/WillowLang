@@ -16,13 +16,10 @@ use crate::{
 pub fn check_access_expr(
     left: Box<Expr>,
     field: IdentifierNode,
+    span: Span,
     errors: &mut Vec<SemanticError>,
     scope: Rc<RefCell<Scope>>,
 ) -> CheckedExpr {
-    let span = Span {
-        start: left.span.start,
-        end: field.span.end,
-    };
     let checked_left = check_expr(*left, errors, scope);
 
     let expr_type = match &checked_left.ty {

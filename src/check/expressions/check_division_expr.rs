@@ -4,6 +4,7 @@ use crate::{
     ast::{
         base::base_expression::Expr,
         checked::checked_expression::{CheckedExpr, CheckedExprKind},
+        Span,
     },
     check::{
         check_expr::check_expr, scope::Scope,
@@ -14,6 +15,7 @@ use crate::{
 pub fn check_division_expr(
     left: Box<Expr>,
     right: Box<Expr>,
+    span: Span,
     errors: &mut Vec<SemanticError>,
     scope: Rc<RefCell<Scope>>,
 ) -> CheckedExpr {
@@ -22,6 +24,7 @@ pub fn check_division_expr(
     let expr_type = check_binary_numeric_operation(&checked_left, &checked_right, errors);
 
     CheckedExpr {
+        span,
         kind: CheckedExprKind::Divide {
             left: Box::new(checked_left),
             right: Box::new(checked_right),

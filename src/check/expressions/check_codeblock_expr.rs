@@ -5,7 +5,7 @@ use crate::{
         base::base_expression::BlockContents,
         checked::{
             checked_expression::{CheckedBlockContents, CheckedExpr, CheckedExprKind},
-            checked_type::{CheckedTypeX, CheckedType, TypeSpan},
+            checked_type::CheckedType,
         },
         Span,
     },
@@ -19,7 +19,7 @@ use crate::{
 
 pub fn check_codeblock_expr(
     block_contents: BlockContents,
-    expr_span: Span,
+    span: Span,
     errors: &mut Vec<SemanticError>,
     scope: Rc<RefCell<Scope>>,
 ) -> CheckedExpr {
@@ -33,19 +33,17 @@ pub fn check_codeblock_expr(
         Box::new(checked_final_expr)
     });
 
-    let expr_type = checked_codeblock_final_expr
+    let ty = checked_codeblock_final_expr
         .clone()
         .map(|fe| fe.ty)
-        .unwrap_or(CheckedTypeX {
-            kind: CheckedType::Void,
-            span: TypeSpan::Expr(expr_span),
-        });
+        .unwrap_or(CheckedType::Void);
 
     CheckedExpr {
+        span,
         kind: CheckedExprKind::Block(CheckedBlockContents {
             final_expr: checked_codeblock_final_expr,
             statements: checked_codeblock_statements,
         }),
-        ty: expr_type,
+        ty,
     }
 }

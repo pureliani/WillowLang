@@ -1,9 +1,9 @@
-use crate::ast::checked::checked_type::{CheckedTypeX, CheckedType};
+use crate::ast::checked::checked_type::CheckedType;
 
-pub fn is_integer(ty: &CheckedTypeX) -> bool {
+pub fn is_integer(ty: &CheckedType) -> bool {
     use CheckedType::*;
     matches!(
-        ty.kind,
+        ty,
         I8 | I16 | I32 | I64 | U8 | U16 | U32 | U64 | ISize | USize
     )
 }

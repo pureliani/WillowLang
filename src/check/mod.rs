@@ -96,6 +96,7 @@ impl SemanticError {
             SemanticErrorKind::GenericArgumentCountMismatch { .. } => 23,
             SemanticErrorKind::UnresolvedGenericParam(..) => 24,
             SemanticErrorKind::ConflictingGenericBinding { .. } => 25,
+            SemanticErrorKind::CannotApplyTypeArguments { .. } => 26,
         }
     }
 
