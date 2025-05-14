@@ -5,7 +5,7 @@ use crate::{
         base::base_expression::Expr,
         checked::{
             checked_expression::{CheckedExpr, CheckedExprKind},
-            checked_type::{CheckedType, CheckedTypeKind, TypeSpan},
+            checked_type::{CheckedTypeX, CheckedType, TypeSpan},
         },
         Span,
     },
@@ -27,8 +27,8 @@ pub fn check_equality_expr(
         start: left.span.start,
         end: right.span.end,
     };
-    let mut expr_type = CheckedType {
-        kind: CheckedTypeKind::Bool,
+    let mut expr_type = CheckedTypeX {
+        kind: CheckedType::Bool,
         span: TypeSpan::Expr(span.clone()),
     };
 
@@ -37,28 +37,28 @@ pub fn check_equality_expr(
 
     let err = SemanticError::new(
         SemanticErrorKind::CannotCompareType {
-            of: checked_left.expr_type.clone(),
-            to: checked_right.expr_type.clone(),
+            of: checked_left.ty.clone(),
+            to: checked_right.ty.clone(),
         },
         span,
     );
 
-    if !is_integer(&checked_left.expr_type)
-        || !is_integer(&checked_right.expr_type)
-        || get_numeric_type_rank(&checked_left.expr_type)
-            < get_numeric_type_rank(&checked_right.expr_type)
+    if !is_integer(&checked_left.ty)
+        || !is_integer(&checked_right.ty)
+        || get_numeric_type_rank(&checked_left.ty)
+            < get_numeric_type_rank(&checked_right.ty)
     {
         errors.push(err);
-        expr_type.kind = CheckedTypeKind::Unknown
+        expr_type.kind = CheckedType::Unknown
     } else {
-        match (&checked_left.expr_type.kind, &checked_right.expr_type.kind) {
-            (CheckedTypeKind::Bool, CheckedTypeKind::Bool) => {}
-            (CheckedTypeKind::Char, CheckedTypeKind::Char) => {}
-            (CheckedTypeKind::Null, CheckedTypeKind::Null) => {}
-            (CheckedTypeKind::Enum(_), CheckedTypeKind::Enum(_)) => {}
+        match (&checked_left.ty.kind, &checked_right.ty.kind) {
+            (CheckedType::Bool, CheckedType::Bool) => {}
+            (CheckedType::Char, CheckedType::Char) => {}
+            (CheckedType::Null, CheckedType::Null) => {}
+            (CheckedType::Enum(_), CheckedType::Enum(_)) => {}
             _ => {
                 errors.push(err);
-                expr_type.kind = CheckedTypeKind::Unknown
+                expr_type.kind = CheckedType::Unknown
             }
         }
     }
@@ -68,6 +68,6 @@ pub fn check_equality_expr(
             left: Box::new(checked_left),
             right: Box::new(checked_right),
         },
-        expr_type,
+        ty: expr_type,
     }
 }

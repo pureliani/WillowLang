@@ -6,7 +6,7 @@ use crate::{
         checked::{
             checked_declaration::{CheckedGenericStructDecl, CheckedStructDecl},
             checked_expression::CheckedExpr,
-            checked_type::CheckedTypeKind,
+            checked_type::CheckedType,
         },
         IdentifierNode,
     },
@@ -25,8 +25,8 @@ pub fn check_struct_init_expr(
         .map(|f| (f.0, check_expr(f.1, errors, scope.clone())))
         .collect();
 
-    match checked_left.expr_type.kind {
-        CheckedTypeKind::GenericStructDecl(CheckedGenericStructDecl {
+    match checked_left.ty.kind {
+        CheckedType::GenericStructDecl(CheckedGenericStructDecl {
             identifier,
             properties,
             documentation,
@@ -34,7 +34,7 @@ pub fn check_struct_init_expr(
         }) => {
             todo!()
         }
-        CheckedTypeKind::StructDecl(CheckedStructDecl {
+        CheckedType::StructDecl(CheckedStructDecl {
             identifier,
             properties,
             documentation,

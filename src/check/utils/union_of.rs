@@ -1,13 +1,13 @@
 use std::collections::HashSet;
 
-use crate::ast::checked::checked_type::{CheckedType, CheckedTypeKind, TypeSpan};
+use crate::ast::checked::checked_type::{CheckedTypeX, CheckedType, TypeSpan};
 
-pub fn union_of(types: impl Iterator<Item = CheckedType>) -> CheckedType {
-    let mut union_items: HashSet<CheckedType> = HashSet::new();
+pub fn union_of(types: impl Iterator<Item = CheckedTypeX>) -> CheckedTypeX {
+    let mut union_items: HashSet<CheckedTypeX> = HashSet::new();
 
     for t in types {
         match t.kind {
-            CheckedTypeKind::Union(items) => {
+            CheckedType::Union(items) => {
                 union_items.extend(items);
             }
             _ => {
@@ -16,8 +16,8 @@ pub fn union_of(types: impl Iterator<Item = CheckedType>) -> CheckedType {
         };
     }
 
-    CheckedType {
-        kind: CheckedTypeKind::Union(union_items),
+    CheckedTypeX {
+        kind: CheckedType::Union(union_items),
         span: TypeSpan::None,
     }
 }

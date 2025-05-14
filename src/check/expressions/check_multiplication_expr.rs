@@ -4,6 +4,7 @@ use crate::{
     ast::{
         base::base_expression::Expr,
         checked::checked_expression::{CheckedExpr, CheckedExprKind},
+        Span,
     },
     check::{
         check_expr::check_expr, scope::Scope,
@@ -17,15 +18,21 @@ pub fn check_multiplication_expr(
     errors: &mut Vec<SemanticError>,
     scope: Rc<RefCell<Scope>>,
 ) -> CheckedExpr {
+    let span = Span {
+        start: left.span.start,
+        end: right.span.end,
+    };
+
     let checked_left = check_expr(*left, errors, scope.clone());
     let checked_right = check_expr(*right, errors, scope);
     let expr_type = check_binary_numeric_operation(&checked_left, &checked_right, errors);
 
     CheckedExpr {
+        span,
+        ty: expr_type,
         kind: CheckedExprKind::Multiply {
             left: Box::new(checked_left),
             right: Box::new(checked_right),
         },
-        expr_type,
     }
 }

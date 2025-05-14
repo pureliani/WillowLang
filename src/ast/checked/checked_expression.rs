@@ -1,11 +1,11 @@
 use crate::{
-    ast::{IdentifierNode, StringNode},
+    ast::{IdentifierNode, Span, StringNode},
     check::utils::substitute_generics::GenericSubstitutionMap,
     tokenizer::NumberKind,
 };
 
 use super::{
-    checked_declaration::{CheckedGenericParam, CheckedParam, CheckedGenericStructDecl},
+    checked_declaration::{CheckedGenericParam, CheckedGenericStructDecl, CheckedParam},
     checked_statement::CheckedStmt,
     checked_type::CheckedType,
 };
@@ -153,5 +153,6 @@ pub enum CheckedExprKind {
 #[derive(Clone, Debug)]
 pub struct CheckedExpr {
     pub kind: CheckedExprKind,
-    pub expr_type: CheckedType,
+    pub ty: CheckedType,
+    pub span: Span,
 }

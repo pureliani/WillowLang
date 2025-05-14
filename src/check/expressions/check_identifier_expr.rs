@@ -4,7 +4,7 @@ use crate::{
     ast::{
         checked::{
             checked_expression::{CheckedExpr, CheckedExprKind},
-            checked_type::{CheckedType, CheckedTypeKind, TypeSpan},
+            checked_type::{CheckedTypeX, CheckedType, TypeSpan},
         },
         IdentifierNode, Span,
     },
@@ -24,11 +24,11 @@ pub fn check_identifier_expr(
         .borrow()
         .lookup(&id.name)
         .map(|entry| match entry {
-            SymbolEntry::GenericStructDecl(decl) => CheckedTypeKind::GenericStructDecl(decl),
-            SymbolEntry::StructDecl(decl) => CheckedTypeKind::StructDecl(decl),
-            SymbolEntry::GenericTypeAliasDecl(decl) => CheckedTypeKind::GenericTypeAliasDecl(decl),
-            SymbolEntry::TypeAliasDecl(decl) => CheckedTypeKind::TypeAliasDecl(decl),
-            SymbolEntry::EnumDecl(decl) => CheckedTypeKind::Enum(decl),
+            SymbolEntry::GenericStructDecl(decl) => CheckedType::GenericStructDecl(decl),
+            SymbolEntry::StructDecl(decl) => CheckedType::StructDecl(decl),
+            SymbolEntry::GenericTypeAliasDecl(decl) => CheckedType::GenericTypeAliasDecl(decl),
+            SymbolEntry::TypeAliasDecl(decl) => CheckedType::TypeAliasDecl(decl),
+            SymbolEntry::EnumDecl(decl) => CheckedType::Enum(decl),
             SymbolEntry::VarDecl(decl) => decl.constraint.kind,
             SymbolEntry::GenericParam(_) => {
                 errors.push(SemanticError::new(
@@ -36,7 +36,7 @@ pub fn check_identifier_expr(
                     expr_span,
                 ));
 
-                CheckedTypeKind::Unknown
+                CheckedType::Unknown
             }
         })
         .unwrap_or_else(|| {
@@ -45,12 +45,12 @@ pub fn check_identifier_expr(
                 expr_span,
             ));
 
-            CheckedTypeKind::Unknown
+            CheckedType::Unknown
         });
 
     CheckedExpr {
         kind: CheckedExprKind::Identifier(id),
-        expr_type: CheckedType {
+        ty: CheckedTypeX {
             kind: type_kind,
             span: TypeSpan::Expr(expr_span),
         },

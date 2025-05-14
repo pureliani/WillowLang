@@ -5,7 +5,7 @@ use crate::{
         base::{base_expression::Expr, base_type::TypeAnnotation},
         checked::{
             checked_expression::{CheckedExpr, CheckedExprKind},
-            checked_type::{CheckedType, CheckedTypeKind, TypeSpan},
+            checked_type::CheckedType,
         },
         Span,
     },
@@ -25,7 +25,7 @@ pub fn check_is_type_expr(
     let checked_left = check_expr(*left, errors, scope.clone());
     let checked_target = check_type(&target, errors, scope);
 
-    if !matches!(checked_left.expr_type.kind, CheckedTypeKind::Union { .. }) {
+    if !matches!(checked_left.ty, CheckedType::Union { .. }) {
         errors.push(SemanticError::new(
             SemanticErrorKind::CannotUseIsTypeOnNonUnion,
             expr_span,
@@ -33,13 +33,11 @@ pub fn check_is_type_expr(
     }
 
     CheckedExpr {
+        span: expr_span,
+        ty: CheckedType::Bool,
         kind: CheckedExprKind::IsType {
             left: Box::new(checked_left),
             target: checked_target,
-        },
-        expr_type: CheckedType {
-            kind: CheckedTypeKind::Bool,
-            span: TypeSpan::Expr(expr_span),
         },
     }
 }

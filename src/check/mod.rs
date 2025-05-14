@@ -16,29 +16,49 @@ pub enum SemanticErrorKind {
     NonNumericOperand,
     MixedSignedAndUnsigned,
     MixedFloatAndInteger,
-    CannotCompareType { of: CheckedType, to: CheckedType },
+    CannotCompareType {
+        of: CheckedType,
+        to: CheckedType,
+    },
     UndeclaredIdentifier(String),
     UndeclaredType(String),
     ReturnKeywordOutsideFunction,
     BreakKeywordOutsideLoop,
     ContinueKeywordOutsideLoop,
     InvalidAssignmentTarget,
-    TypeMismatch { expected: CheckedType, received: CheckedType },
+    TypeMismatch {
+        expected: CheckedType,
+        received: CheckedType,
+    },
     InvalidArraySizeValue(NumberKind),
     ReturnNotLastStatement,
-    ReturnTypeMismatch { expected: CheckedType, received: CheckedType },
+    ReturnTypeMismatch {
+        expected: CheckedType,
+        received: CheckedType,
+    },
     CannotAccess(CheckedType),
     CannotCall(CheckedType),
-    ArgumentCountMismatch { expected: usize, received: usize },
-    GenericArgumentCountMismatch { expected: usize, received: usize },
+    ArgumentCountMismatch {
+        expected: usize,
+        received: usize,
+    },
+    GenericArgumentCountMismatch {
+        expected: usize,
+        received: usize,
+    },
     CannotUseGenericParameterAsValue,
     CannotUseVariableDeclarationAsType,
     VarDeclWithNoConstraintOrInitializer,
     UndefinedProperty(IdentifierNode),
     UnresolvedGenericParam(String),
     CannotUseIsTypeOnNonUnion,
-    ConflictingGenericBinding { existing: CheckedType, new: CheckedType },
-    CannotApplyTypeArguments { to: CheckedType },
+    ConflictingGenericBinding {
+        existing: CheckedType,
+        new: CheckedType,
+    },
+    CannotApplyTypeArguments {
+        to: CheckedType,
+    },
 }
 
 #[derive(Debug, Clone)]

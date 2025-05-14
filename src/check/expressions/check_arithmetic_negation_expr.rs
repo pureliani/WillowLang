@@ -5,7 +5,7 @@ use crate::{
         base::base_expression::Expr,
         checked::{
             checked_expression::{CheckedExpr, CheckedExprKind},
-            checked_type::{CheckedType, CheckedTypeKind, TypeSpan},
+            checked_type::CheckedType,
         },
         Span,
     },
@@ -23,60 +23,34 @@ pub fn check_arithmetic_negation_expr(
 ) -> CheckedExpr {
     let checked_right = check_expr(*right, errors, scope);
 
-    let expr_type = match &checked_right.expr_type {
+    let expr_type = match &checked_right.ty {
         t if is_signed(&t) => t.clone(),
         unexpected_type => {
             let expected = HashSet::from([
-                CheckedType {
-                    kind: CheckedTypeKind::I8,
-                    span: checked_right.expr_type.span,
-                },
-                CheckedType {
-                    kind: CheckedTypeKind::I16,
-                    span: checked_right.expr_type.span,
-                },
-                CheckedType {
-                    kind: CheckedTypeKind::I32,
-                    span: checked_right.expr_type.span,
-                },
-                CheckedType {
-                    kind: CheckedTypeKind::I64,
-                    span: checked_right.expr_type.span,
-                },
-                CheckedType {
-                    kind: CheckedTypeKind::ISize,
-                    span: checked_right.expr_type.span,
-                },
-                CheckedType {
-                    kind: CheckedTypeKind::F32,
-                    span: checked_right.expr_type.span,
-                },
-                CheckedType {
-                    kind: CheckedTypeKind::F64,
-                    span: checked_right.expr_type.span,
-                },
+                CheckedType::I8,
+                CheckedType::I16,
+                CheckedType::I32,
+                CheckedType::I64,
+                CheckedType::ISize,
+                CheckedType::F32,
+                CheckedType::F64,
             ]);
 
             errors.push(SemanticError::new(
                 SemanticErrorKind::TypeMismatch {
-                    expected: CheckedType {
-                        kind: CheckedTypeKind::Union(expected),
-                        span: checked_right.expr_type.span,
-                    },
+                    expected: CheckedType::Union(expected),
                     received: unexpected_type.clone(),
                 },
-                checked_right.expr_type.unwrap_expr_span(),
+                checked_right.span,
             ));
 
-            CheckedType {
-                kind: CheckedTypeKind::Unknown,
-                span: TypeSpan::Expr(span),
-            }
+            CheckedType::Unknown
         }
     };
 
     CheckedExpr {
-        expr_type,
+        span,
+        ty: expr_type,
         kind: CheckedExprKind::Neg {
             right: Box::new(checked_right),
         },

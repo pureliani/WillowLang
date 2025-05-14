@@ -5,10 +5,10 @@ use crate::{
         base::{base_expression::Expr, base_type::TypeAnnotation},
         checked::{
             checked_declaration::{
-                CheckedGenericParam, CheckedParam, CheckedGenericStructDecl, CheckedStructDecl,
+                CheckedGenericParam, CheckedGenericStructDecl, CheckedParam, CheckedStructDecl,
             },
             checked_expression::{CheckedExpr, CheckedExprKind},
-            checked_type::{CheckedType, CheckedTypeKind, TypeSpan},
+            checked_type::{CheckedType, CheckedTypeX, TypeSpan},
         },
         Span,
     },
@@ -38,7 +38,7 @@ pub fn check_generic_apply_expr(
         .collect();
 
     let mut get_substitutions = |generic_params: Vec<CheckedGenericParam>,
-                                 type_args: Vec<CheckedType>|
+                                 type_args: Vec<CheckedTypeX>|
      -> GenericSubstitutionMap {
         if generic_params.len() != type_args.len() {
             errors.push(SemanticError::new(
@@ -70,8 +70,8 @@ pub fn check_generic_apply_expr(
         let substitutions: GenericSubstitutionMap = generic_params
             .into_iter()
             .map(|gp| gp.identifier.name.clone())
-            .zip(type_args.into_iter().chain(iter::repeat(CheckedType {
-                kind: CheckedTypeKind::Unknown,
+            .zip(type_args.into_iter().chain(iter::repeat(CheckedTypeX {
+                kind: CheckedType::Unknown,
                 span: TypeSpan::None,
             })))
             .collect();
@@ -79,8 +79,8 @@ pub fn check_generic_apply_expr(
         substitutions
     };
 
-    let (type_kind, substitutions) = match checked_left.expr_type.kind.clone() {
-        CheckedTypeKind::GenericFnType {
+    let (type_kind, substitutions) = match checked_left.ty.kind.clone() {
+        CheckedType::GenericFnType {
             params,
             return_type,
             generic_params,
@@ -98,14 +98,14 @@ pub fn check_generic_apply_expr(
             let substituted_return_type = substitute_generics(&return_type, &substitutions, errors);
 
             (
-                CheckedTypeKind::FnType {
+                CheckedType::FnType {
                     params: substituted_params,
                     return_type: Box::new(substituted_return_type),
                 },
                 substitutions,
             )
         }
-        CheckedTypeKind::GenericStructDecl(CheckedGenericStructDecl {
+        CheckedType::GenericStructDecl(CheckedGenericStructDecl {
             identifier,
             documentation,
             generic_params,
@@ -122,7 +122,7 @@ pub fn check_generic_apply_expr(
                 .collect();
 
             (
-                CheckedTypeKind::StructDecl(CheckedStructDecl {
+                CheckedType::StructDecl(CheckedStructDecl {
                     documentation: documentation.clone(),
                     identifier: identifier.clone(),
                     properties: substituted_properties,
@@ -133,17 +133,17 @@ pub fn check_generic_apply_expr(
         _ => {
             errors.push(SemanticError::new(
                 SemanticErrorKind::CannotApplyTypeArguments {
-                    to: checked_left.expr_type.clone(),
+                    to: checked_left.ty.clone(),
                 },
                 expr_span,
             ));
 
-            (CheckedTypeKind::Unknown, GenericSubstitutionMap::new())
+            (CheckedType::Unknown, GenericSubstitutionMap::new())
         }
     };
 
     CheckedExpr {
-        expr_type: CheckedType {
+        ty: CheckedTypeX {
             kind: type_kind,
             span: TypeSpan::Expr(expr_span),
         },

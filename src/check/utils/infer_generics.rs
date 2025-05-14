@@ -1,19 +1,19 @@
 use crate::{
-    ast::checked::checked_type::{CheckedType, CheckedTypeKind},
+    ast::checked::checked_type::{CheckedTypeX, CheckedType},
     check::{SemanticError, SemanticErrorKind},
 };
 
 use super::substitute_generics::GenericSubstitutionMap;
 
 pub fn infer_generics(
-    expected: &CheckedType,
-    received: &CheckedType,
+    expected: &CheckedTypeX,
+    received: &CheckedTypeX,
     substitution: &mut GenericSubstitutionMap,
     errors: &mut Vec<SemanticError>,
 ) {
     match (&expected.kind, &received.kind) {
         // Handle generics
-        (CheckedTypeKind::GenericParam(gp), received_kind) => {
+        (CheckedType::GenericParam(gp), received_kind) => {
             let name = &gp.identifier.name;
             if let Some(existing) = substitution.get(name) {
                 if &existing.kind != received_kind {
@@ -31,11 +31,11 @@ pub fn infer_generics(
         }
         // Recursively check components (arrays, structs, etc.)
         (
-            CheckedTypeKind::Array {
+            CheckedType::Array {
                 item_type: maybe_generic,
                 ..
             },
-            CheckedTypeKind::Array {
+            CheckedType::Array {
                 item_type: concrete,
                 ..
             },
@@ -43,8 +43,8 @@ pub fn infer_generics(
             infer_generics(maybe_generic, concrete, substitution, errors);
         }
         (
-            CheckedTypeKind::GenericStructDecl(maybe_generic),
-            CheckedTypeKind::GenericStructDecl(concrete),
+            CheckedType::GenericStructDecl(maybe_generic),
+            CheckedType::GenericStructDecl(concrete),
         ) => {
             for (maybe_generic_prop, concrete_prop) in maybe_generic
                 .properties
@@ -60,12 +60,12 @@ pub fn infer_generics(
             }
         }
         (
-            CheckedTypeKind::GenericFnType {
+            CheckedType::GenericFnType {
                 params: maybe_generic_params,
                 return_type: maybe_generic_return_type,
                 generic_params: _,
             },
-            CheckedTypeKind::GenericFnType {
+            CheckedType::GenericFnType {
                 params: concrete_params,
                 return_type: concrete_return_type,
                 generic_params: _,
@@ -73,7 +73,7 @@ pub fn infer_generics(
         ) => {
             todo!("Implement inferring types for functions")
         }
-        (CheckedTypeKind::Union(maybe_generic), CheckedTypeKind::Union(concrete)) => {
+        (CheckedType::Union(maybe_generic), CheckedType::Union(concrete)) => {
             todo!("Implement inferring types for unions")
         }
         _ => {}

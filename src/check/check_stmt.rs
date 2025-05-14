@@ -14,7 +14,7 @@ use crate::ast::{
         },
         checked_expression::{CheckedBlockContents, CheckedExprKind},
         checked_statement::{CheckedStmt, CheckedStmtKind},
-        checked_type::{CheckedType, CheckedTypeKind, TypeSpan},
+        checked_type::CheckedType,
     },
 };
 
@@ -151,19 +151,16 @@ pub fn check_stmt(
                         stmt.span,
                     ));
 
-                    CheckedType {
-                        kind: CheckedTypeKind::Unknown,
-                        span: TypeSpan::Annotation(identifier.span),
-                    }
+                    CheckedType::Unknown
                 }
                 (Some(value), Some(constraint)) => {
-                    let is_assignable = check_is_assignable(&value.expr_type, &constraint);
+                    let is_assignable = check_is_assignable(&value.ty, &constraint);
 
                     if !is_assignable {
                         errors.push(SemanticError::new(
                             SemanticErrorKind::TypeMismatch {
                                 expected: constraint.clone(),
-                                received: value.expr_type.clone(),
+                                received: value.ty.clone(),
                             },
                             stmt.span,
                         ));
@@ -171,7 +168,7 @@ pub fn check_stmt(
 
                     constraint
                 }
-                (Some(value), None) => value.expr_type.clone(),
+                (Some(value), None) => value.ty.clone(),
                 (None, Some(t)) => t.clone(),
             };
 
@@ -247,13 +244,13 @@ pub fn check_stmt(
 
                     if let Some(SymbolEntry::VarDecl(decl)) = identifier_expr_type {
                         let is_assignable =
-                            check_is_assignable(&checked_value.expr_type, &decl.constraint);
+                            check_is_assignable(&checked_value.ty, &decl.constraint);
 
                         if !is_assignable {
                             errors.push(SemanticError::new(
                                 SemanticErrorKind::TypeMismatch {
                                     expected: decl.constraint.clone(),
-                                    received: checked_value.expr_type.clone(),
+                                    received: checked_value.ty.clone(),
                                 },
                                 stmt.span,
                             ));
@@ -261,7 +258,7 @@ pub fn check_stmt(
                     } else {
                         errors.push(SemanticError::new(
                             SemanticErrorKind::UndeclaredIdentifier(id.name.clone()),
-                            checked_target.expr_type.unwrap_expr_span(),
+                            checked_target.span,
                         ));
                     }
                 }
@@ -269,7 +266,7 @@ pub fn check_stmt(
                 _ => {
                     errors.push(SemanticError::new(
                         SemanticErrorKind::InvalidAssignmentTarget,
-                        checked_target.expr_type.unwrap_expr_span(),
+                        checked_target.span,
                     ));
                 }
             }
@@ -291,16 +288,13 @@ pub fn check_stmt(
 
             let checked_condition = check_expr(*condition, errors, scope.clone());
 
-            if checked_condition.expr_type.kind != CheckedTypeKind::Bool {
+            if !check_is_assignable(&checked_condition.ty, &CheckedType::Bool) {
                 errors.push(SemanticError::new(
                     SemanticErrorKind::TypeMismatch {
-                        expected: CheckedType {
-                            kind: CheckedTypeKind::Bool,
-                            span: checked_condition.expr_type.span,
-                        },
-                        received: checked_condition.expr_type.clone(),
+                        expected: CheckedType::Bool,
+                        received: checked_condition.ty.clone(),
                     },
-                    checked_condition.expr_type.unwrap_expr_span(),
+                    checked_condition.span,
                 ));
             }
 

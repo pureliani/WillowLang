@@ -4,7 +4,7 @@ use crate::ast::{
     base::base_expression::{Expr, ExprKind},
     checked::{
         checked_expression::{CheckedExpr, CheckedExprKind},
-        checked_type::{CheckedType, CheckedTypeKind, TypeSpan},
+        checked_type::CheckedType,
     },
 };
 
@@ -13,7 +13,7 @@ use super::{
         check_access_expr::check_access_expr, check_addition_expr::check_addition_expr,
         check_and_expr::check_and_expr,
         check_arithmetic_negation_expr::check_arithmetic_negation_expr,
-        check_array_literal_expr::check_array_literal_expr, check_bool_expr::check_bool_expr,
+        check_array_literal_expr::check_array_literal_expr,
         check_codeblock_expr::check_codeblock_expr, check_division_expr::check_division_expr,
         check_equality_expr::check_equality_expr, check_fn_call_expr::check_fn_call_expr,
         check_fn_expr::check_fn_expr, check_generic_apply_expr::check_generic_apply_expr,
@@ -26,7 +26,7 @@ use super::{
         check_logical_negation_expr::check_logical_negation_expr,
         check_modulo_expr::check_modulo_expr, check_multiplication_expr::check_multiplication_expr,
         check_numeric_expr::check_numeric_expr, check_or_expr::check_or_expr,
-        check_static_access_expr::check_static_access_expr, check_string_expr::check_string_expr,
+        check_static_access_expr::check_static_access_expr,
         check_struct_init_expr::check_struct_init_expr,
         check_subtraction_expr::check_subtraction_expr, check_type_cast_expr::check_type_cast_expr,
     },
@@ -77,15 +77,28 @@ pub fn check_expr(
             check_struct_init_expr(left, fields, errors, scope)
         }
         ExprKind::Null => CheckedExpr {
+            span: expr.span,
             kind: CheckedExprKind::Null,
-            expr_type: CheckedType {
-                kind: CheckedTypeKind::Null,
-                span: TypeSpan::Expr(expr.span),
-            },
+            ty: CheckedType::Null,
         },
-        ExprKind::BoolLiteral { value } => check_bool_expr(value, expr.span),
+        ExprKind::BoolLiteral { value } => CheckedExpr {
+            span: expr.span,
+            kind: CheckedExprKind::BoolLiteral { value },
+            ty: CheckedType::Bool,
+        },
+        ExprKind::String(string_node) => {
+            let size = string_node.value.len();
+
+            CheckedExpr {
+                span: expr.span,
+                kind: CheckedExprKind::String(string_node),
+                ty: CheckedType::Array {
+                    item_type: Box::new(CheckedType::Char),
+                    size,
+                },
+            }
+        }
         ExprKind::Number { value } => check_numeric_expr(value, expr.span),
-        ExprKind::String(string_node) => check_string_expr(string_node, expr.span),
         ExprKind::Identifier(id) => check_identifier_expr(id, expr.span, errors, scope),
         ExprKind::Fn {
             params,

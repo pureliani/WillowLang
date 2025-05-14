@@ -1,9 +1,9 @@
-use crate::ast::checked::checked_type::{CheckedType, CheckedTypeKind};
+use crate::ast::checked::checked_type::CheckedType;
 
 pub fn check_is_assignable(source_type: &CheckedType, target_type: &CheckedType) -> bool {
-    use CheckedTypeKind::*;
+    use CheckedType::*;
 
-    match (&source_type.kind, &target_type.kind) {
+    match (&source_type, &target_type) {
         (I8, I8)
         | (I16, I16)
         | (I32, I32)
@@ -28,14 +28,17 @@ pub fn check_is_assignable(source_type: &CheckedType, target_type: &CheckedType)
         }),
         (GenericParam(source), GenericParam(target)) => {
             match (&source.constraint, &target.constraint) {
+                (None, None) => true,
+                (Some(_), None) => true,
+                (None, Some(_)) => false,
                 (Some(left_constraint), Some(right_constraint)) => {
                     check_is_assignable(&left_constraint, &right_constraint)
                 }
-                _ => false,
             }
         }
-        (GenericStructDecl(source), GenericStructDecl(target)) => todo!(),
-        (StructDecl(source), StructDecl(target)) => todo!(),
+        (StructDecl(source), StructDecl(target)) => {
+            todo!()
+        }
         (
             Array {
                 item_type: source_type,
@@ -60,7 +63,9 @@ pub fn check_is_assignable(source_type: &CheckedType, target_type: &CheckedType)
                 params: target_params,
                 return_type: target_return_type,
             },
-        ) => todo!(),
+        ) => {
+            todo!()
+        }
         (
             GenericFnType {
                 params: source_params,
@@ -73,13 +78,7 @@ pub fn check_is_assignable(source_type: &CheckedType, target_type: &CheckedType)
                 generic_params: target_generic_params,
             },
         ) => todo!(),
-        (Enum(source), Enum(target)) => {
-            let same_name = source.identifier.name == target.identifier.name;
-            let same_len = source.variants.len() == target.variants.len();
-
-            false
-        }
-
+        (Enum(source), Enum(target)) => source == target,
         // TODO: add type alias handling
         _ => false,
     }

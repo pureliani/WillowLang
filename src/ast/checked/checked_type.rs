@@ -3,15 +3,15 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use crate::ast::{base::base_declaration::EnumDecl, Span};
+use crate::ast::base::base_declaration::EnumDecl;
 
 use super::checked_declaration::{
-    CheckedGenericParam, CheckedParam, CheckedGenericStructDecl, CheckedGenericTypeAliasDecl, CheckedStructDecl,
-    CheckedTypeAliasDecl,
+    CheckedGenericParam, CheckedGenericStructDecl, CheckedGenericTypeAliasDecl, CheckedParam,
+    CheckedStructDecl, CheckedTypeAliasDecl,
 };
 
 #[derive(Clone, Debug)]
-pub enum CheckedTypeKind {
+pub enum CheckedType {
     Void,
     Null,
     Bool,
@@ -53,60 +53,55 @@ pub enum CheckedTypeKind {
     Unknown,
 }
 
-impl Eq for CheckedTypeKind {}
-impl PartialEq for CheckedTypeKind {
+impl Eq for CheckedType {}
+impl PartialEq for CheckedType {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (CheckedTypeKind::Void, CheckedTypeKind::Void) => true,
-            (CheckedTypeKind::Null, CheckedTypeKind::Null) => true,
-            (CheckedTypeKind::Bool, CheckedTypeKind::Bool) => true,
-            (CheckedTypeKind::U8, CheckedTypeKind::U8) => true,
-            (CheckedTypeKind::U16, CheckedTypeKind::U16) => true,
-            (CheckedTypeKind::U32, CheckedTypeKind::U32) => true,
-            (CheckedTypeKind::U64, CheckedTypeKind::U64) => true,
-            (CheckedTypeKind::USize, CheckedTypeKind::USize) => true,
-            (CheckedTypeKind::ISize, CheckedTypeKind::ISize) => true,
-            (CheckedTypeKind::I8, CheckedTypeKind::I8) => true,
-            (CheckedTypeKind::I16, CheckedTypeKind::I16) => true,
-            (CheckedTypeKind::I32, CheckedTypeKind::I32) => true,
-            (CheckedTypeKind::I64, CheckedTypeKind::I64) => true,
-            (CheckedTypeKind::F32, CheckedTypeKind::F32) => true,
-            (CheckedTypeKind::F64, CheckedTypeKind::F64) => true,
-            (CheckedTypeKind::Char, CheckedTypeKind::Char) => true,
-            (CheckedTypeKind::GenericStructDecl(a), CheckedTypeKind::GenericStructDecl(b)) => {
-                a == b
-            }
-            (CheckedTypeKind::StructDecl(a), CheckedTypeKind::StructDecl(b)) => a == b,
-            (CheckedTypeKind::Enum(a), CheckedTypeKind::Enum(b)) => a == b,
-            (CheckedTypeKind::GenericParam(a), CheckedTypeKind::GenericParam(b)) => a == b,
+            (CheckedType::Void, CheckedType::Void) => true,
+            (CheckedType::Null, CheckedType::Null) => true,
+            (CheckedType::Bool, CheckedType::Bool) => true,
+            (CheckedType::U8, CheckedType::U8) => true,
+            (CheckedType::U16, CheckedType::U16) => true,
+            (CheckedType::U32, CheckedType::U32) => true,
+            (CheckedType::U64, CheckedType::U64) => true,
+            (CheckedType::USize, CheckedType::USize) => true,
+            (CheckedType::ISize, CheckedType::ISize) => true,
+            (CheckedType::I8, CheckedType::I8) => true,
+            (CheckedType::I16, CheckedType::I16) => true,
+            (CheckedType::I32, CheckedType::I32) => true,
+            (CheckedType::I64, CheckedType::I64) => true,
+            (CheckedType::F32, CheckedType::F32) => true,
+            (CheckedType::F64, CheckedType::F64) => true,
+            (CheckedType::Char, CheckedType::Char) => true,
+            (CheckedType::GenericStructDecl(a), CheckedType::GenericStructDecl(b)) => a == b,
+            (CheckedType::StructDecl(a), CheckedType::StructDecl(b)) => a == b,
+            (CheckedType::Enum(a), CheckedType::Enum(b)) => a == b,
+            (CheckedType::GenericParam(a), CheckedType::GenericParam(b)) => a == b,
             (
-                CheckedTypeKind::GenericFnType {
+                CheckedType::GenericFnType {
                     params: ap,
                     return_type: ar,
                     generic_params: agp,
                 },
-                CheckedTypeKind::GenericFnType {
+                CheckedType::GenericFnType {
                     params: bp,
                     return_type: br,
                     generic_params: bgp,
                 },
             ) => ap == bp && ar == br && agp == bgp,
             (
-                CheckedTypeKind::FnType {
+                CheckedType::FnType {
                     params: ap,
                     return_type: ar,
                 },
-                CheckedTypeKind::FnType {
+                CheckedType::FnType {
                     params: bp,
                     return_type: br,
                 },
             ) => ap == bp && ar == br,
-            (
-                CheckedTypeKind::GenericTypeAliasDecl(a),
-                CheckedTypeKind::GenericTypeAliasDecl(b),
-            ) => a == b,
-            (CheckedTypeKind::TypeAliasDecl(a), CheckedTypeKind::TypeAliasDecl(b)) => a == b,
-            (CheckedTypeKind::Union(a_items), CheckedTypeKind::Union(b_items)) => {
+            (CheckedType::GenericTypeAliasDecl(a), CheckedType::GenericTypeAliasDecl(b)) => a == b,
+            (CheckedType::TypeAliasDecl(a), CheckedType::TypeAliasDecl(b)) => a == b,
+            (CheckedType::Union(a_items), CheckedType::Union(b_items)) => {
                 if a_items.len() != b_items.len() {
                     return false;
                 }
@@ -115,47 +110,47 @@ impl PartialEq for CheckedTypeKind {
                     && b_items.iter().all(|item_b| a_items.contains(item_b))
             }
             (
-                CheckedTypeKind::Array {
+                CheckedType::Array {
                     item_type: ai,
                     size: asize,
                 },
-                CheckedTypeKind::Array {
+                CheckedType::Array {
                     item_type: bi,
                     size: bsize,
                 },
             ) => ai == bi && asize == bsize,
-            (CheckedTypeKind::Unknown, CheckedTypeKind::Unknown) => true,
+            (CheckedType::Unknown, CheckedType::Unknown) => true,
             _ => false,
         }
     }
 }
 
-impl Hash for CheckedTypeKind {
+impl Hash for CheckedType {
     fn hash<H: Hasher>(&self, state: &mut H) {
         std::mem::discriminant(self).hash(state);
 
         match self {
-            CheckedTypeKind::Void => {}
-            CheckedTypeKind::Null => {}
-            CheckedTypeKind::Bool => {}
-            CheckedTypeKind::U8 => {}
-            CheckedTypeKind::U16 => {}
-            CheckedTypeKind::U32 => {}
-            CheckedTypeKind::U64 => {}
-            CheckedTypeKind::USize => {}
-            CheckedTypeKind::ISize => {}
-            CheckedTypeKind::I8 => {}
-            CheckedTypeKind::I16 => {}
-            CheckedTypeKind::I32 => {}
-            CheckedTypeKind::I64 => {}
-            CheckedTypeKind::F32 => {}
-            CheckedTypeKind::F64 => {}
-            CheckedTypeKind::Char => {}
-            CheckedTypeKind::GenericStructDecl(gsd) => gsd.hash(state),
-            CheckedTypeKind::StructDecl(sd) => sd.hash(state),
-            CheckedTypeKind::Enum(e) => e.hash(state),
-            CheckedTypeKind::GenericParam(gp) => gp.hash(state),
-            CheckedTypeKind::GenericFnType {
+            CheckedType::Void => {}
+            CheckedType::Null => {}
+            CheckedType::Bool => {}
+            CheckedType::U8 => {}
+            CheckedType::U16 => {}
+            CheckedType::U32 => {}
+            CheckedType::U64 => {}
+            CheckedType::USize => {}
+            CheckedType::ISize => {}
+            CheckedType::I8 => {}
+            CheckedType::I16 => {}
+            CheckedType::I32 => {}
+            CheckedType::I64 => {}
+            CheckedType::F32 => {}
+            CheckedType::F64 => {}
+            CheckedType::Char => {}
+            CheckedType::GenericStructDecl(gsd) => gsd.hash(state),
+            CheckedType::StructDecl(sd) => sd.hash(state),
+            CheckedType::Enum(e) => e.hash(state),
+            CheckedType::GenericParam(gp) => gp.hash(state),
+            CheckedType::GenericFnType {
                 params,
                 return_type,
                 generic_params,
@@ -164,16 +159,16 @@ impl Hash for CheckedTypeKind {
                 return_type.hash(state);
                 generic_params.hash(state);
             }
-            CheckedTypeKind::FnType {
+            CheckedType::FnType {
                 params,
                 return_type,
             } => {
                 params.hash(state);
                 return_type.hash(state);
             }
-            CheckedTypeKind::GenericTypeAliasDecl(gta) => gta.hash(state),
-            CheckedTypeKind::TypeAliasDecl(ta) => ta.hash(state),
-            CheckedTypeKind::Union(items) => {
+            CheckedType::GenericTypeAliasDecl(gta) => gta.hash(state),
+            CheckedType::TypeAliasDecl(ta) => ta.hash(state),
+            CheckedType::Union(items) => {
                 // For order-insensitive hashing of unions:
                 // 1. Hash the length.
                 // 2. Hash each item's hash XORed together (or summed, but XOR is common).
@@ -195,75 +190,11 @@ impl Hash for CheckedTypeKind {
                     }
                 }
             }
-            CheckedTypeKind::Array { item_type, size } => {
+            CheckedType::Array { item_type, size } => {
                 item_type.hash(state);
                 size.hash(state);
             }
-            CheckedTypeKind::Unknown => {}
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-pub enum TypeSpan {
-    Expr(Span),
-    Annotation(Span),
-    Decl(Span),
-    None,
-}
-
-#[derive(Clone, Debug)]
-pub struct CheckedType {
-    pub kind: CheckedTypeKind,
-    pub span: TypeSpan,
-}
-
-impl Eq for CheckedType {}
-impl PartialEq for CheckedType {
-    fn eq(&self, other: &Self) -> bool {
-        self.kind == other.kind
-    }
-}
-impl Hash for CheckedType {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.kind.hash(state);
-    }
-}
-
-impl CheckedType {
-    pub fn unwrap_decl_span(&self) -> Span {
-        match self.span {
-            TypeSpan::Decl(s) => s,
-            _ => {
-                panic!(
-                    "Expected the type of span to be TypeSpan::Decl on {:#?}",
-                    self
-                )
-            }
-        }
-    }
-
-    pub fn unwrap_expr_span(&self) -> Span {
-        match self.span {
-            TypeSpan::Expr(s) => s,
-            _ => {
-                panic!(
-                    "Expected the type of span to be TypeSpan::Expr on {:#?}",
-                    self
-                )
-            }
-        }
-    }
-
-    pub fn unwrap_annotation_span(&self) -> Span {
-        match self.span {
-            TypeSpan::Annotation(s) => s,
-            _ => {
-                panic!(
-                    "Expected the type of span to be TypeSpan::Annotation on {:#?}",
-                    self
-                )
-            }
+            CheckedType::Unknown => {}
         }
     }
 }

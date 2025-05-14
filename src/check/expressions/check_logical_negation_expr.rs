@@ -5,11 +5,14 @@ use crate::{
         base::base_expression::Expr,
         checked::{
             checked_expression::{CheckedExpr, CheckedExprKind},
-            checked_type::{CheckedType, CheckedTypeKind, TypeSpan},
+            checked_type::CheckedType,
         },
         Span,
     },
-    check::{check_expr::check_expr, scope::Scope, SemanticError, SemanticErrorKind},
+    check::{
+        check_expr::check_expr, scope::Scope, utils::check_is_assignable::check_is_assignable,
+        SemanticError, SemanticErrorKind,
+    },
 };
 
 pub fn check_logical_negation_expr(
@@ -18,32 +21,26 @@ pub fn check_logical_negation_expr(
     errors: &mut Vec<SemanticError>,
     scope: Rc<RefCell<Scope>>,
 ) -> CheckedExpr {
-    let right_span = right.span;
     let checked_right = check_expr(*right, errors, scope);
 
-    let mut expr_type = CheckedType {
-        kind: CheckedTypeKind::Bool,
-        span: TypeSpan::Expr(span),
-    };
+    let mut expr_type = CheckedType::Bool;
 
-    if checked_right.expr_type.kind != CheckedTypeKind::Bool {
+    if !check_is_assignable(&checked_right.ty, &CheckedType::Bool) {
         errors.push(SemanticError::new(
             SemanticErrorKind::TypeMismatch {
-                expected: CheckedType {
-                    kind: CheckedTypeKind::Bool,
-                    span: TypeSpan::Expr(right_span),
-                },
-                received: checked_right.expr_type.clone(),
+                expected: CheckedType::Bool,
+                received: checked_right.ty.clone(),
             },
             span,
         ));
-        expr_type.kind = CheckedTypeKind::Unknown
+        expr_type = CheckedType::Unknown
     }
 
     CheckedExpr {
+        span,
+        ty: expr_type,
         kind: CheckedExprKind::Not {
             right: Box::new(checked_right),
         },
-        expr_type,
     }
 }

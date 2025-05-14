@@ -5,7 +5,7 @@ use crate::{
         base::base_expression::Expr,
         checked::{
             checked_expression::{CheckedExpr, CheckedExprKind},
-            checked_type::{CheckedType, CheckedTypeKind, TypeSpan},
+            checked_type::{CheckedTypeX, CheckedType, TypeSpan},
         },
         Span,
     },
@@ -18,8 +18,8 @@ pub fn check_or_expr(
     errors: &mut Vec<SemanticError>,
     scope: Rc<RefCell<Scope>>,
 ) -> CheckedExpr {
-    let mut expr_type = CheckedType {
-        kind: CheckedTypeKind::Bool,
+    let mut expr_type = CheckedTypeX {
+        kind: CheckedType::Bool,
         span: TypeSpan::Expr(Span {
             start: left.span.start,
             end: right.span.end,
@@ -29,32 +29,32 @@ pub fn check_or_expr(
     let checked_left = check_expr(*left, errors, scope.clone());
     let checked_right = check_expr(*right, errors, scope);
 
-    if checked_left.expr_type.kind != CheckedTypeKind::Bool {
+    if checked_left.ty.kind != CheckedType::Bool {
         errors.push(SemanticError::new(
             SemanticErrorKind::TypeMismatch {
-                expected: CheckedType {
-                    kind: CheckedTypeKind::Bool,
-                    span: checked_left.expr_type.span,
+                expected: CheckedTypeX {
+                    kind: CheckedType::Bool,
+                    span: checked_left.ty.span,
                 },
-                received: checked_left.expr_type.clone(),
+                received: checked_left.ty.clone(),
             },
-            checked_left.expr_type.unwrap_expr_span(),
+            checked_left.ty.unwrap_expr_span(),
         ));
-        expr_type.kind = CheckedTypeKind::Unknown;
+        expr_type.kind = CheckedType::Unknown;
     }
 
-    if checked_right.expr_type.kind != CheckedTypeKind::Bool {
+    if checked_right.ty.kind != CheckedType::Bool {
         errors.push(SemanticError::new(
             SemanticErrorKind::TypeMismatch {
-                expected: CheckedType {
-                    kind: CheckedTypeKind::Bool,
-                    span: checked_right.expr_type.span,
+                expected: CheckedTypeX {
+                    kind: CheckedType::Bool,
+                    span: checked_right.ty.span,
                 },
-                received: checked_right.expr_type.clone(),
+                received: checked_right.ty.clone(),
             },
-            checked_right.expr_type.unwrap_expr_span(),
+            checked_right.ty.unwrap_expr_span(),
         ));
-        expr_type.kind = CheckedTypeKind::Unknown;
+        expr_type.kind = CheckedType::Unknown;
     }
 
     CheckedExpr {
@@ -62,6 +62,6 @@ pub fn check_or_expr(
             left: Box::new(checked_left),
             right: Box::new(checked_right),
         },
-        expr_type,
+        ty: expr_type,
     }
 }

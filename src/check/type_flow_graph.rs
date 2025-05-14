@@ -6,7 +6,7 @@ use std::{
 
 use crate::ast::checked::{
     checked_expression::{CheckedExpr, CheckedExprKind},
-    checked_type::{CheckedType, CheckedTypeKind, TypeSpan},
+    checked_type::CheckedType,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -188,8 +188,8 @@ pub fn union_subtract(
     mut from_union: HashSet<CheckedType>,
     type_to_remove: &CheckedType,
 ) -> HashSet<CheckedType> {
-    match &type_to_remove.kind {
-        CheckedTypeKind::Union(types_to_remove) => {
+    match type_to_remove {
+        CheckedType::Union(types_to_remove) => {
             for t in types_to_remove {
                 from_union.remove(t);
             }
@@ -208,12 +208,8 @@ fn analyze_atomic_condition(condition: &CheckedExpr) -> Option<(NarrowingInfo, N
             if let CheckedExprKind::Identifier(id) = &left.kind {
                 let var_id = VariableId(id.name.clone());
 
-                let false_type = if let CheckedTypeKind::Union(types) = left.expr_type.kind.clone()
-                {
-                    CheckedType {
-                        kind: CheckedTypeKind::Union(union_subtract(types, target)),
-                        span: left.expr_type.span,
-                    }
+                let false_type = if let CheckedType::Union(types) = left.ty.clone() {
+                    CheckedType::Union(union_subtract(types, target))
                 } else {
                     panic!("Cannot subtract from non-union type")
                 };
@@ -242,23 +238,12 @@ fn analyze_atomic_condition(condition: &CheckedExpr) -> Option<(NarrowingInfo, N
             if let Some(expr) = ident_expr {
                 if let CheckedExprKind::Identifier(id) = &expr.kind {
                     let var_id = VariableId(id.name.clone());
-                    let original_type = &expr.expr_type;
 
-                    let true_type =
-                        if let CheckedTypeKind::Union(types) = left.expr_type.kind.clone() {
-                            CheckedType {
-                                kind: CheckedTypeKind::Union(union_subtract(
-                                    types,
-                                    &CheckedType {
-                                        kind: CheckedTypeKind::Null,
-                                        span: TypeSpan::None,
-                                    },
-                                )),
-                                span: original_type.span,
-                            }
-                        } else {
-                            panic!("Cannot subtract from non-union type")
-                        };
+                    let true_type = if let CheckedType::Union(types) = left.ty.clone() {
+                        CheckedType::Union(union_subtract(types, &CheckedType::Null))
+                    } else {
+                        panic!("Cannot subtract from non-union type")
+                    };
 
                     let narrowing_true = NarrowingInfo {
                         variable: var_id.clone(),
@@ -266,10 +251,7 @@ fn analyze_atomic_condition(condition: &CheckedExpr) -> Option<(NarrowingInfo, N
                     };
                     let narrowing_false = NarrowingInfo {
                         variable: var_id,
-                        narrowed_type: Rc::new(CheckedType {
-                            kind: CheckedTypeKind::Null,
-                            span: original_type.span,
-                        }),
+                        narrowed_type: Rc::new(CheckedType::Null),
                     };
                     return Some((narrowing_true, narrowing_false));
                 }
@@ -288,26 +270,13 @@ fn analyze_atomic_condition(condition: &CheckedExpr) -> Option<(NarrowingInfo, N
             if let Some(expr) = ident_expr {
                 if let CheckedExprKind::Identifier(id) = &expr.kind {
                     let var_id = VariableId(id.name.clone());
-                    let null_type = Rc::new(CheckedType {
-                        span: TypeSpan::None,
-                        kind: CheckedTypeKind::Null,
-                    });
+                    let null_type = Rc::new(CheckedType::Null);
 
-                    let false_type =
-                        if let CheckedTypeKind::Union(types) = left.expr_type.kind.clone() {
-                            CheckedType {
-                                kind: CheckedTypeKind::Union(union_subtract(
-                                    types,
-                                    &CheckedType {
-                                        kind: CheckedTypeKind::Null,
-                                        span: TypeSpan::None,
-                                    },
-                                )),
-                                span: left.expr_type.span,
-                            }
-                        } else {
-                            panic!("Cannot subtract from non-union type")
-                        };
+                    let false_type = if let CheckedType::Union(types) = left.ty.clone() {
+                        CheckedType::Union(union_subtract(types, &CheckedType::Null))
+                    } else {
+                        panic!("Cannot subtract from non-union type")
+                    };
 
                     let narrowing_true = NarrowingInfo {
                         variable: var_id.clone(),

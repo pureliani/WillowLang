@@ -26,6 +26,6 @@ pub fn check_subtraction_expr(
             left: Box::new(checked_left),
             right: Box::new(checked_right),
         },
-        expr_type,
+        ty: expr_type,
     }
 }

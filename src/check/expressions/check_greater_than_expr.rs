@@ -5,8 +5,9 @@ use crate::{
         base::base_expression::Expr,
         checked::{
             checked_expression::{CheckedExpr, CheckedExprKind},
-            checked_type::{CheckedType, CheckedTypeKind},
+            checked_type::CheckedType,
         },
+        Span,
     },
     check::{
         check_expr::check_expr, scope::Scope,
@@ -20,26 +21,26 @@ pub fn check_greater_than_expr(
     errors: &mut Vec<SemanticError>,
     scope: Rc<RefCell<Scope>>,
 ) -> CheckedExpr {
+    let span = Span {
+        start: left.span.start,
+        end: right.span.end,
+    };
     let checked_left = check_expr(*left, errors, scope.clone());
     let checked_right = check_expr(*right, errors, scope);
     let checked_op = check_binary_numeric_operation(&checked_left, &checked_right, errors);
 
-    let type_kind = if checked_op.kind == CheckedTypeKind::Unknown {
-        CheckedTypeKind::Unknown
+    let expr_type = if checked_op == CheckedType::Unknown {
+        CheckedType::Unknown
     } else {
-        CheckedTypeKind::Bool
-    };
-
-    let expr_type = CheckedType {
-        kind: type_kind,
-        span: checked_op.span,
+        CheckedType::Bool
     };
 
     CheckedExpr {
+        span,
+        ty: expr_type,
         kind: CheckedExprKind::GreaterThan {
             left: Box::new(checked_left),
             right: Box::new(checked_right),
         },
-        expr_type,
     }
 }

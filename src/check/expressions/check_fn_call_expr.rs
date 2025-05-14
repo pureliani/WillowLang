@@ -5,7 +5,7 @@ use crate::{
         base::base_expression::Expr,
         checked::{
             checked_expression::{CheckedExpr, CheckedExprKind},
-            checked_type::{CheckedType, CheckedTypeKind, TypeSpan},
+            checked_type::{CheckedTypeX, CheckedType, TypeSpan},
         },
         Span,
     },
@@ -28,13 +28,13 @@ pub fn check_fn_call_expr(
         .map(|arg| check_expr(arg, errors, scope.clone()))
         .collect();
 
-    let mut call_result_type = CheckedType {
-        kind: CheckedTypeKind::Unknown,
+    let mut call_result_type = CheckedTypeX {
+        kind: CheckedType::Unknown,
         span: TypeSpan::Expr(expr_span),
     };
 
-    match &checked_left.expr_type.kind {
-        CheckedTypeKind::FnType {
+    match &checked_left.ty.kind {
+        CheckedType::FnType {
             params,
             return_type,
         } => {
@@ -50,19 +50,19 @@ pub fn check_fn_call_expr(
                 ));
             } else {
                 for (param, arg) in params.iter().zip(checked_args.iter()) {
-                    if !check_is_assignable(&arg.expr_type, &param.constraint) {
+                    if !check_is_assignable(&arg.ty, &param.constraint) {
                         errors.push(SemanticError::new(
                             SemanticErrorKind::TypeMismatch {
                                 expected: param.constraint.clone(),
-                                received: arg.expr_type.clone(),
+                                received: arg.ty.clone(),
                             },
-                            arg.expr_type.unwrap_expr_span(),
+                            arg.ty.unwrap_expr_span(),
                         ));
                     }
                 }
             }
         }
-        CheckedTypeKind::GenericFnType {
+        CheckedType::GenericFnType {
             params,
             return_type,
             generic_params,
@@ -74,14 +74,14 @@ pub fn check_fn_call_expr(
         }
         non_callable_type => {
             errors.push(SemanticError::new(
-                SemanticErrorKind::CannotCall(checked_left.expr_type.clone()),
-                checked_left.expr_type.unwrap_expr_span(),
+                SemanticErrorKind::CannotCall(checked_left.ty.clone()),
+                checked_left.ty.unwrap_expr_span(),
             ));
         }
     }
 
     CheckedExpr {
-        expr_type: call_result_type,
+        ty: call_result_type,
         kind: CheckedExprKind::FnCall {
             left: Box::new(checked_left),
             args: checked_args,

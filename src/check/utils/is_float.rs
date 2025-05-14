@@ -1,6 +1,6 @@
-use crate::ast::checked::checked_type::{CheckedType, CheckedTypeKind};
+use crate::ast::checked::checked_type::{CheckedTypeX, CheckedType};
 
-pub fn is_float(ty: &CheckedType) -> bool {
-    use CheckedTypeKind::*;
+pub fn is_float(ty: &CheckedTypeX) -> bool {
+    use CheckedType::*;
     matches!(ty.kind, F32 | F64)
 }

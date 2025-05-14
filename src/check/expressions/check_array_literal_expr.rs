@@ -5,7 +5,7 @@ use crate::{
         base::base_expression::Expr,
         checked::{
             checked_expression::{CheckedExpr, CheckedExprKind},
-            checked_type::{CheckedType, CheckedTypeKind, TypeSpan},
+            checked_type::CheckedType,
         },
         Span,
     },
@@ -14,7 +14,7 @@ use crate::{
 
 pub fn check_array_literal_expr(
     items: Vec<Expr>,
-    expr_span: Span,
+    span: Span,
     errors: &mut Vec<SemanticError>,
     scope: Rc<RefCell<Scope>>,
 ) -> CheckedExpr {
@@ -25,16 +25,16 @@ pub fn check_array_literal_expr(
         .map(|item| check_expr(item, errors, scope.clone()))
         .collect();
 
-    let unionized_types = union_of(checked_items.iter().map(|item| item.expr_type.clone()));
+    let unionized_types = union_of(checked_items.iter().map(|item| item.ty.clone()));
+
+    let expr_type = CheckedType::Array {
+        item_type: Box::new(unionized_types),
+        size,
+    };
 
     CheckedExpr {
-        expr_type: CheckedType {
-            kind: CheckedTypeKind::Array {
-                item_type: Box::new(unionized_types),
-                size,
-            },
-            span: TypeSpan::Expr(expr_span),
-        },
+        span,
+        ty: expr_type,
         kind: CheckedExprKind::ArrayLiteral {
             items: checked_items,
         },

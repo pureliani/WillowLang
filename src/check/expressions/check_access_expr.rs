@@ -6,7 +6,7 @@ use crate::{
         checked::{
             checked_declaration::CheckedStructDecl,
             checked_expression::{CheckedExpr, CheckedExprKind},
-            checked_type::{CheckedType, CheckedTypeKind, TypeSpan},
+            checked_type::CheckedType,
         },
         IdentifierNode, Span,
     },
@@ -25,25 +25,25 @@ pub fn check_access_expr(
     };
     let checked_left = check_expr(*left, errors, scope);
 
-    let expr_type = match &checked_left.expr_type.kind {
-        CheckedTypeKind::StructDecl(CheckedStructDecl { properties, .. }) => properties
-            .iter()
+    let expr_type = match &checked_left.ty {
+        CheckedType::StructDecl(CheckedStructDecl { properties, .. }) => properties
+            .into_iter()
             .find(|p| p.identifier == field)
             .map(|p| p.constraint.clone())
-            .unwrap_or(CheckedType {
-                kind: CheckedTypeKind::Unknown,
-                span: TypeSpan::Expr(field.span),
+            .unwrap_or_else(|| {
+                errors.push(SemanticError::new(
+                    SemanticErrorKind::UndefinedProperty(field.clone()),
+                    span,
+                ));
+                CheckedType::Unknown
             }),
-        _ => {
+        t => {
             errors.push(SemanticError::new(
-                SemanticErrorKind::UndefinedProperty(field.clone()),
+                SemanticErrorKind::CannotAccess(t.clone()),
                 field.span,
             ));
 
-            CheckedType {
-                kind: CheckedTypeKind::Unknown,
-                span: TypeSpan::Expr(span),
-            }
+            CheckedType::Unknown
         }
     };
 
@@ -52,6 +52,7 @@ pub fn check_access_expr(
             left: Box::new(checked_left.clone()),
             field,
         },
-        expr_type,
+        span,
+        ty: expr_type,
     }
 }

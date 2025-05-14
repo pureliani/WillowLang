@@ -1,9 +1,6 @@
 use crate::{
     ast::{
-        checked::{
-            checked_expression::CheckedExpr,
-            checked_type::{CheckedType, CheckedTypeKind, TypeSpan},
-        },
+        checked::{checked_expression::CheckedExpr, checked_type::CheckedType},
         Span,
     },
     check::{SemanticError, SemanticErrorKind},
@@ -20,36 +17,30 @@ pub fn check_binary_numeric_operation(
     errors: &mut Vec<SemanticError>,
 ) -> CheckedType {
     let combined_span = Span {
-        start: left.expr_type.unwrap_expr_span().start,
-        end: right.expr_type.unwrap_expr_span().start,
+        start: left.span.start,
+        end: right.span.end,
     };
 
-    let left_type = if is_float(&left.expr_type) || is_integer(&left.expr_type) {
-        &left.expr_type
+    let left_type = if is_float(&left.ty) || is_integer(&left.ty) {
+        &left.ty
     } else {
         errors.push(SemanticError::new(
             SemanticErrorKind::NonNumericOperand,
-            left.expr_type.unwrap_expr_span(),
+            left.span,
         ));
 
-        return CheckedType {
-            kind: CheckedTypeKind::Unknown,
-            span: TypeSpan::Expr(combined_span),
-        };
+        return CheckedType::Unknown;
     };
 
-    let right_type = if is_float(&right.expr_type) || is_integer(&right.expr_type) {
-        &right.expr_type
+    let right_type = if is_float(&right.ty) || is_integer(&right.ty) {
+        &right.ty
     } else {
         errors.push(SemanticError::new(
             SemanticErrorKind::NonNumericOperand,
-            right.expr_type.unwrap_expr_span(),
+            right.span,
         ));
 
-        return CheckedType {
-            kind: CheckedTypeKind::Unknown,
-            span: TypeSpan::Expr(combined_span),
-        };
+        return CheckedType::Unknown;
     };
 
     if (is_float(&left_type) && is_integer(&right_type))
@@ -59,10 +50,8 @@ pub fn check_binary_numeric_operation(
             SemanticErrorKind::MixedFloatAndInteger,
             combined_span,
         ));
-        return CheckedType {
-            kind: CheckedTypeKind::Unknown,
-            span: TypeSpan::Expr(combined_span),
-        };
+
+        return CheckedType::Unknown;
     }
 
     if is_signed(&left_type) != is_signed(&right_type) {
@@ -70,10 +59,8 @@ pub fn check_binary_numeric_operation(
             SemanticErrorKind::MixedSignedAndUnsigned,
             combined_span,
         ));
-        return CheckedType {
-            kind: CheckedTypeKind::Unknown,
-            span: TypeSpan::Expr(combined_span),
-        };
+
+        return CheckedType::Unknown;
     }
 
     if right_type == left_type {

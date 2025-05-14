@@ -10,7 +10,7 @@ use crate::{
         checked::{
             checked_declaration::{CheckedParam, CheckedVarDecl},
             checked_expression::{CheckedBlockContents, CheckedExpr, CheckedExprKind, GenericFn},
-            checked_type::{CheckedType, CheckedTypeKind, TypeSpan},
+            checked_type::{CheckedType, CheckedTypeX, TypeSpan},
         },
         Span,
     },
@@ -75,7 +75,7 @@ pub fn check_fn_expr(
     if let Some(final_expr) = checked_final_expr {
         return_exprs.push(*final_expr);
     }
-    let inferred_return_type = union_of(return_exprs.iter().map(|e| e.expr_type.clone()));
+    let inferred_return_type = union_of(return_exprs.iter().map(|e| e.ty.clone()));
 
     let param_types: Vec<CheckedParam> = params
         .into_iter()
@@ -90,14 +90,14 @@ pub fn check_fn_expr(
 
     let actual_return_type = if let Some(explicit_return_type) = expected_return_type {
         for return_expr in return_exprs.iter() {
-            let is_assignable = check_is_assignable(&return_expr.expr_type, &explicit_return_type);
+            let is_assignable = check_is_assignable(&return_expr.ty, &explicit_return_type);
             if !is_assignable {
                 errors.push(SemanticError::new(
                     SemanticErrorKind::ReturnTypeMismatch {
                         expected: explicit_return_type.clone(),
-                        received: return_expr.expr_type.clone(),
+                        received: return_expr.ty.clone(),
                     },
-                    return_expr.expr_type.unwrap_expr_span(),
+                    return_expr.ty.unwrap_expr_span(),
                 ));
             }
         }
@@ -108,8 +108,8 @@ pub fn check_fn_expr(
     };
 
     if generic_params.is_empty() {
-        let expr_type = CheckedType {
-            kind: CheckedTypeKind::FnType {
+        let expr_type = CheckedTypeX {
+            kind: CheckedType::FnType {
                 params: param_types,
                 return_type: Box::new(actual_return_type.clone()),
             },
@@ -117,7 +117,7 @@ pub fn check_fn_expr(
         };
 
         CheckedExpr {
-            expr_type,
+            ty: expr_type,
             kind: CheckedExprKind::Fn {
                 params: checked_params,
                 body: checked_body,
@@ -125,8 +125,8 @@ pub fn check_fn_expr(
             },
         }
     } else {
-        let expr_type = CheckedType {
-            kind: CheckedTypeKind::GenericFnType {
+        let expr_type = CheckedTypeX {
+            kind: CheckedType::GenericFnType {
                 params: param_types,
                 return_type: Box::new(actual_return_type.clone()),
                 generic_params: checked_generic_params.clone(),
@@ -135,7 +135,7 @@ pub fn check_fn_expr(
         };
 
         CheckedExpr {
-            expr_type,
+            ty: expr_type,
             kind: CheckedExprKind::GenericFn(GenericFn {
                 params: checked_params,
                 body: checked_body,

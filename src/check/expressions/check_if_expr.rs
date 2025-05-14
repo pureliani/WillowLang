@@ -5,7 +5,7 @@ use crate::{
         base::base_expression::{BlockContents, Expr},
         checked::{
             checked_expression::{CheckedBlockContents, CheckedExpr, CheckedExprKind},
-            checked_type::{CheckedType, CheckedTypeKind, TypeSpan},
+            checked_type::CheckedType,
         },
         Span,
     },
@@ -13,7 +13,7 @@ use crate::{
         check_expr::check_expr,
         check_stmts::check_stmts,
         scope::{Scope, ScopeKind},
-        utils::union_of::union_of,
+        utils::{check_is_assignable::check_is_assignable, union_of::union_of},
         SemanticError, SemanticErrorKind,
     },
 };
@@ -27,24 +27,19 @@ pub fn check_if_expr(
     errors: &mut Vec<SemanticError>,
     scope: Rc<RefCell<Scope>>,
 ) -> CheckedExpr {
-    let mut if_else_expr_type = CheckedType {
-        kind: CheckedTypeKind::Void,
-        span: TypeSpan::Expr(expr_span),
-    };
+    let mut if_else_expr_type = CheckedType::Void;
 
     let checked_condition = check_expr(*condition, errors, scope.clone());
-    if checked_condition.expr_type.kind != CheckedTypeKind::Bool {
+    if !check_is_assignable(&checked_condition.ty, &CheckedType::Bool) {
         errors.push(SemanticError::new(
             SemanticErrorKind::TypeMismatch {
-                expected: CheckedType {
-                    kind: CheckedTypeKind::Bool,
-                    span: checked_condition.expr_type.span,
-                },
-                received: checked_condition.expr_type.clone(),
+                expected: CheckedType::Bool,
+                received: checked_condition.ty.clone(),
             },
-            checked_condition.expr_type.unwrap_expr_span(),
+            checked_condition.span,
         ));
     }
+
     let then_branch_scope = scope.borrow().child(ScopeKind::CodeBlock);
     let checked_then_branch_statements =
         check_stmts(then_branch.statements, errors, then_branch_scope.clone());
@@ -52,13 +47,8 @@ pub fn check_if_expr(
     let checked_then_branch_final_expr = then_branch.final_expr.map(|fe| {
         let checked_final_expr = check_expr(*fe, errors, then_branch_scope.clone());
 
-        if_else_expr_type = union_of(
-            [
-                if_else_expr_type.clone(),
-                checked_final_expr.expr_type.clone(),
-            ]
-            .into_iter(),
-        );
+        if_else_expr_type =
+            union_of([if_else_expr_type.clone(), checked_final_expr.ty.clone()].into_iter());
 
         Box::new(checked_final_expr)
     });
@@ -72,6 +62,15 @@ pub fn check_if_expr(
         .into_iter()
         .map(|ei| {
             let checked_condition = check_expr(*ei.0, errors, scope.clone());
+            if !check_is_assignable(&checked_condition.ty, &CheckedType::Bool) {
+                errors.push(SemanticError::new(
+                    SemanticErrorKind::TypeMismatch {
+                        expected: CheckedType::Bool,
+                        received: checked_condition.ty.clone(),
+                    },
+                    checked_condition.span,
+                ));
+            }
 
             let else_if_scope = scope.borrow().child(ScopeKind::CodeBlock);
             let checked_codeblock_statements =
@@ -80,11 +79,7 @@ pub fn check_if_expr(
                 let checked_final_expr = check_expr(*fe, errors, else_if_scope.clone());
 
                 if_else_expr_type = union_of(
-                    [
-                        if_else_expr_type.clone(),
-                        checked_final_expr.expr_type.clone(),
-                    ]
-                    .into_iter(),
+                    [if_else_expr_type.clone(), checked_final_expr.ty.clone()].into_iter(),
                 );
 
                 Box::new(checked_final_expr)
@@ -106,13 +101,8 @@ pub fn check_if_expr(
         let checked_final_expr = br.final_expr.map(|fe| {
             let checked_final_expr = check_expr(*fe, errors, else_scope);
 
-            if_else_expr_type = union_of(
-                [
-                    if_else_expr_type.clone(),
-                    checked_final_expr.expr_type.clone(),
-                ]
-                .into_iter(),
-            );
+            if_else_expr_type =
+                union_of([if_else_expr_type.clone(), checked_final_expr.ty.clone()].into_iter());
 
             Box::new(checked_final_expr)
         });
@@ -124,7 +114,8 @@ pub fn check_if_expr(
     });
 
     CheckedExpr {
-        expr_type: if_else_expr_type,
+        ty: if_else_expr_type,
+        span: expr_span,
         kind: CheckedExprKind::If {
             condition: Box::new(checked_condition),
             then_branch: checked_then_branch,
