@@ -34,11 +34,11 @@ pub fn check_generic_apply_expr(
     let checked_left = check_expr(*left, errors, scope.clone());
     let type_args: Vec<_> = args
         .into_iter()
-        .map(|type_arg| check_type(&type_arg, errors, scope.clone()))
+        .map(|type_arg| (type_arg.span, check_type(&type_arg, errors, scope.clone())))
         .collect();
 
     let mut get_substitutions = |generic_params: Vec<CheckedGenericParam>,
-                                 type_args: Vec<CheckedType>|
+                                 type_args: Vec<(Span, CheckedType)>|
      -> GenericSubstitutionMap {
         if generic_params.len() != type_args.len() {
             errors.push(SemanticError::new(
@@ -54,13 +54,13 @@ pub fn check_generic_apply_expr(
                 .zip(type_args.iter())
                 .for_each(|(gp, ta)| {
                     if let Some(constraint) = &gp.constraint {
-                        if !check_is_assignable(ta, constraint) {
+                        if !check_is_assignable(&ta.1, constraint) {
                             errors.push(SemanticError::new(
                                 SemanticErrorKind::TypeMismatch {
                                     expected: *constraint.clone(),
-                                    received: ta.clone(),
+                                    received: ta.1.clone(),
                                 },
-                                gp.identifier.span, // TODO: should be type argument span instead
+                                ta.0,
                             ));
                         }
                     }
@@ -73,6 +73,7 @@ pub fn check_generic_apply_expr(
             .zip(
                 type_args
                     .into_iter()
+                    .map(|ta| ta.1)
                     .chain(iter::repeat(CheckedType::Unknown)),
             )
             .collect();
