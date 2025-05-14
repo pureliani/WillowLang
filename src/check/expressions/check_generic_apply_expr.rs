@@ -5,7 +5,7 @@ use crate::{
         base::{base_expression::Expr, base_type::TypeAnnotation},
         checked::{
             checked_declaration::{
-                CheckedGenericParam, CheckedParam, GenericStructDecl, StructDecl,
+                CheckedGenericParam, CheckedParam, CheckedGenericStructDecl, CheckedStructDecl,
             },
             checked_expression::{CheckedExpr, CheckedExprKind},
             checked_type::{CheckedType, CheckedTypeKind, TypeSpan},
@@ -105,7 +105,7 @@ pub fn check_generic_apply_expr(
                 substitutions,
             )
         }
-        CheckedTypeKind::GenericStructDecl(GenericStructDecl {
+        CheckedTypeKind::GenericStructDecl(CheckedGenericStructDecl {
             identifier,
             documentation,
             generic_params,
@@ -122,7 +122,7 @@ pub fn check_generic_apply_expr(
                 .collect();
 
             (
-                CheckedTypeKind::StructDecl(StructDecl {
+                CheckedTypeKind::StructDecl(CheckedStructDecl {
                     documentation: documentation.clone(),
                     identifier: identifier.clone(),
                     properties: substituted_properties,

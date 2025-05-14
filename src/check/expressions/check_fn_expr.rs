@@ -23,7 +23,7 @@ use crate::{
             check_is_assignable::check_is_assignable, check_returns::check_returns,
             type_annotation_to_semantic::check_type, union_of::union_of,
         },
-        SemanticError,
+        SemanticError, SemanticErrorKind,
     },
 };
 
@@ -91,6 +91,15 @@ pub fn check_fn_expr(
     let actual_return_type = if let Some(explicit_return_type) = expected_return_type {
         for return_expr in return_exprs.iter() {
             let is_assignable = check_is_assignable(&return_expr.expr_type, &explicit_return_type);
+            if !is_assignable {
+                errors.push(SemanticError::new(
+                    SemanticErrorKind::ReturnTypeMismatch {
+                        expected: explicit_return_type.clone(),
+                        received: return_expr.expr_type.clone(),
+                    },
+                    return_expr.expr_type.unwrap_expr_span(),
+                ));
+            }
         }
 
         explicit_return_type

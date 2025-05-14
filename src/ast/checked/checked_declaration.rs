@@ -43,22 +43,22 @@ impl Hash for CheckedGenericParam {
 }
 
 #[derive(Clone, Debug)]
-pub struct GenericStructDecl {
+pub struct CheckedGenericStructDecl {
     pub identifier: IdentifierNode,
     pub documentation: Option<DocAnnotation>,
     pub generic_params: Vec<CheckedGenericParam>,
     pub properties: Vec<CheckedParam>,
 }
 
-impl Eq for GenericStructDecl {}
-impl PartialEq for GenericStructDecl {
+impl Eq for CheckedGenericStructDecl {}
+impl PartialEq for CheckedGenericStructDecl {
     fn eq(&self, other: &Self) -> bool {
         self.identifier == other.identifier
             && self.generic_params == other.generic_params
             && self.properties == other.properties
     }
 }
-impl Hash for GenericStructDecl {
+impl Hash for CheckedGenericStructDecl {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.identifier.hash(state);
         self.generic_params.hash(state);
@@ -67,19 +67,19 @@ impl Hash for GenericStructDecl {
 }
 
 #[derive(Clone, Debug)]
-pub struct StructDecl {
+pub struct CheckedStructDecl {
     pub identifier: IdentifierNode,
     pub documentation: Option<DocAnnotation>,
     pub properties: Vec<CheckedParam>,
 }
 
-impl Eq for StructDecl {}
-impl PartialEq for StructDecl {
+impl Eq for CheckedStructDecl {}
+impl PartialEq for CheckedStructDecl {
     fn eq(&self, other: &Self) -> bool {
         self.identifier == other.identifier && self.properties == other.properties
     }
 }
-impl Hash for StructDecl {
+impl Hash for CheckedStructDecl {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.identifier.hash(state);
         self.properties.hash(state);
@@ -87,22 +87,22 @@ impl Hash for StructDecl {
 }
 
 #[derive(Clone, Debug)]
-pub struct GenericTypeAliasDecl {
+pub struct CheckedGenericTypeAliasDecl {
     pub identifier: IdentifierNode,
     pub documentation: Option<DocAnnotation>,
     pub generic_params: Vec<CheckedGenericParam>,
     pub value: Box<CheckedType>,
 }
 
-impl Eq for GenericTypeAliasDecl {}
-impl PartialEq for GenericTypeAliasDecl {
+impl Eq for CheckedGenericTypeAliasDecl {}
+impl PartialEq for CheckedGenericTypeAliasDecl {
     fn eq(&self, other: &Self) -> bool {
         self.identifier == other.identifier
             && self.generic_params == other.generic_params
             && self.value == other.value
     }
 }
-impl Hash for GenericTypeAliasDecl {
+impl Hash for CheckedGenericTypeAliasDecl {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.identifier.hash(state);
         self.generic_params.hash(state);
@@ -111,19 +111,19 @@ impl Hash for GenericTypeAliasDecl {
 }
 
 #[derive(Clone, Debug)]
-pub struct TypeAliasDecl {
+pub struct CheckedTypeAliasDecl {
     pub identifier: IdentifierNode,
     pub documentation: Option<DocAnnotation>,
     pub value: Box<CheckedType>,
 }
 
-impl Eq for TypeAliasDecl {}
-impl PartialEq for TypeAliasDecl {
+impl Eq for CheckedTypeAliasDecl {}
+impl PartialEq for CheckedTypeAliasDecl {
     fn eq(&self, other: &Self) -> bool {
         self.identifier == other.identifier && self.value == other.value
     }
 }
-impl Hash for TypeAliasDecl {
+impl Hash for CheckedTypeAliasDecl {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.identifier.hash(state);
         self.value.hash(state);

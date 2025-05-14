@@ -6,8 +6,8 @@ use std::{
 use crate::ast::{base::base_declaration::EnumDecl, Span};
 
 use super::checked_declaration::{
-    CheckedGenericParam, CheckedParam, GenericStructDecl, GenericTypeAliasDecl, StructDecl,
-    TypeAliasDecl,
+    CheckedGenericParam, CheckedParam, CheckedGenericStructDecl, CheckedGenericTypeAliasDecl, CheckedStructDecl,
+    CheckedTypeAliasDecl,
 };
 
 #[derive(Clone, Debug)]
@@ -28,8 +28,8 @@ pub enum CheckedTypeKind {
     F32,
     F64,
     Char,
-    GenericStructDecl(GenericStructDecl),
-    StructDecl(StructDecl),
+    GenericStructDecl(CheckedGenericStructDecl),
+    StructDecl(CheckedStructDecl),
     Enum(EnumDecl),
     GenericParam(CheckedGenericParam),
     GenericFnType {
@@ -41,8 +41,8 @@ pub enum CheckedTypeKind {
         params: Vec<CheckedParam>,
         return_type: Box<CheckedType>,
     },
-    GenericTypeAliasDecl(GenericTypeAliasDecl),
-    TypeAliasDecl(TypeAliasDecl),
+    GenericTypeAliasDecl(CheckedGenericTypeAliasDecl),
+    TypeAliasDecl(CheckedTypeAliasDecl),
     // Infix types
     Union(HashSet<CheckedType>),
     // Suffix types

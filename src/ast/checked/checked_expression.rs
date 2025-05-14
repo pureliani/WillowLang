@@ -5,7 +5,7 @@ use crate::{
 };
 
 use super::{
-    checked_declaration::{CheckedGenericParam, CheckedParam, GenericStructDecl},
+    checked_declaration::{CheckedGenericParam, CheckedParam, CheckedGenericStructDecl},
     checked_statement::CheckedStmt,
     checked_type::CheckedType,
 };
@@ -27,7 +27,7 @@ pub struct GenericFn {
 #[derive(Clone, Debug)]
 pub enum GenericSpecializationKind {
     Fn(GenericFn),
-    Struct(GenericStructDecl),
+    Struct(CheckedGenericStructDecl),
 }
 
 #[derive(Clone, Debug)]

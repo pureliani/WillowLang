@@ -9,7 +9,8 @@ use crate::ast::{
     },
     checked::{
         checked_declaration::{
-            CheckedGenericParam, CheckedParam, CheckedVarDecl, GenericStructDecl, StructDecl,
+            CheckedGenericParam, CheckedGenericStructDecl, CheckedParam, CheckedStructDecl,
+            CheckedVarDecl,
         },
         checked_expression::{CheckedBlockContents, CheckedExprKind},
         checked_statement::{CheckedStmt, CheckedStmtKind},
@@ -91,7 +92,7 @@ pub fn check_stmt(
                 check_struct_properties(&properties, errors, struct_scope.clone());
 
             if generic_params.is_empty() {
-                let decl = StructDecl {
+                let decl = CheckedStructDecl {
                     identifier: identifier.to_owned(),
                     documentation,
                     properties: checked_properties,
@@ -105,7 +106,7 @@ pub fn check_stmt(
                     span: stmt.span,
                 }
             } else {
-                let decl = GenericStructDecl {
+                let decl = CheckedGenericStructDecl {
                     identifier: identifier.to_owned(),
                     documentation,
                     properties: checked_properties,

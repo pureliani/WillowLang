@@ -1,8 +1,16 @@
 use std::{cell::RefCell, rc::Rc};
 
 use crate::{
-    ast::{base::base_expression::Expr, checked::checked_expression::CheckedExpr, IdentifierNode},
-    check::{scope::Scope, SemanticError},
+    ast::{
+        base::base_expression::Expr,
+        checked::{
+            checked_declaration::{CheckedGenericStructDecl, CheckedStructDecl},
+            checked_expression::CheckedExpr,
+            checked_type::CheckedTypeKind,
+        },
+        IdentifierNode,
+    },
+    check::{check_expr::check_expr, scope::Scope, SemanticError},
 };
 
 pub fn check_struct_init_expr(
@@ -11,5 +19,32 @@ pub fn check_struct_init_expr(
     errors: &mut Vec<SemanticError>,
     scope: Rc<RefCell<Scope>>,
 ) -> CheckedExpr {
+    let checked_left = check_expr(*left, errors, scope.clone());
+    let checked_fields: Vec<(IdentifierNode, CheckedExpr)> = fields
+        .into_iter()
+        .map(|f| (f.0, check_expr(f.1, errors, scope.clone())))
+        .collect();
+
+    match checked_left.expr_type.kind {
+        CheckedTypeKind::GenericStructDecl(CheckedGenericStructDecl {
+            identifier,
+            properties,
+            documentation,
+            generic_params,
+        }) => {
+            todo!()
+        }
+        CheckedTypeKind::StructDecl(CheckedStructDecl {
+            identifier,
+            properties,
+            documentation,
+        }) => {
+            todo!()
+        }
+        _ => {
+            todo!()
+        }
+    }
+
     todo!()
 }

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::{
     ast::checked::{
-        checked_declaration::{CheckedParam, StructDecl, TypeAliasDecl},
+        checked_declaration::{CheckedParam, CheckedStructDecl, CheckedTypeAliasDecl},
         checked_type::{CheckedType, CheckedTypeKind},
     },
     check::{SemanticError, SemanticErrorKind},
@@ -98,7 +98,7 @@ pub fn substitute_generics(
                 .collect();
 
             CheckedType {
-                kind: CheckedTypeKind::StructDecl(StructDecl {
+                kind: CheckedTypeKind::StructDecl(CheckedStructDecl {
                     properties: substituted_props,
                     documentation: decl.documentation.clone(),
                     identifier: decl.identifier.clone(), // maybe we should rename this?
@@ -110,7 +110,7 @@ pub fn substitute_generics(
             let substituted_value = substitute_generics(&decl.value, substitution, errors);
 
             CheckedType {
-                kind: CheckedTypeKind::TypeAliasDecl(TypeAliasDecl {
+                kind: CheckedTypeKind::TypeAliasDecl(CheckedTypeAliasDecl {
                     value: Box::new(substituted_value),
                     documentation: decl.documentation.clone(),
                     identifier: decl.identifier.clone(), // maybe we should rename this?

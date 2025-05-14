@@ -4,7 +4,7 @@ use crate::{
     ast::{
         base::base_expression::Expr,
         checked::{
-            checked_declaration::StructDecl,
+            checked_declaration::CheckedStructDecl,
             checked_expression::{CheckedExpr, CheckedExprKind},
             checked_type::{CheckedType, CheckedTypeKind, TypeSpan},
         },
@@ -26,7 +26,7 @@ pub fn check_access_expr(
     let checked_left = check_expr(*left, errors, scope);
 
     let expr_type = match &checked_left.expr_type.kind {
-        CheckedTypeKind::StructDecl(StructDecl { properties, .. }) => properties
+        CheckedTypeKind::StructDecl(CheckedStructDecl { properties, .. }) => properties
             .iter()
             .find(|p| p.identifier == field)
             .map(|p| p.constraint.clone())
