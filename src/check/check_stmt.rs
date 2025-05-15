@@ -9,8 +9,8 @@ use crate::ast::{
     },
     checked::{
         checked_declaration::{
-            CheckedGenericParam, CheckedGenericStructDecl, CheckedParam, CheckedStructDecl,
-            CheckedVarDecl,
+            CheckedGenericParam, CheckedGenericStructDecl, CheckedGenericTypeAliasDecl,
+            CheckedParam, CheckedStructDecl, CheckedTypeAliasDecl, CheckedVarDecl,
         },
         checked_expression::{CheckedBlockContents, CheckedExprKind},
         checked_statement::{CheckedStmt, CheckedStmtKind},
@@ -27,7 +27,7 @@ use super::{
 };
 
 pub fn check_generic_params(
-    generic_params: &Vec<GenericParam>,
+    generic_params: &[GenericParam],
     errors: &mut Vec<SemanticError>,
     scope: Rc<RefCell<Scope>>,
 ) -> Vec<CheckedGenericParam> {
@@ -83,6 +83,13 @@ pub fn check_stmt(
             generic_params,
             properties,
         }) => {
+            if !scope.borrow().is_file_scope() {
+                errors.push(SemanticError::new(
+                    SemanticErrorKind::StructMustBeDeclaredAtTopLevel,
+                    stmt.span,
+                ));
+            }
+
             let struct_scope = scope.borrow().child(ScopeKind::Struct);
 
             let generic_params =
@@ -93,7 +100,7 @@ pub fn check_stmt(
 
             if generic_params.is_empty() {
                 let decl = CheckedStructDecl {
-                    identifier: identifier.to_owned(),
+                    identifier: identifier.clone(),
                     documentation,
                     properties: checked_properties,
                 };
@@ -107,7 +114,7 @@ pub fn check_stmt(
                 }
             } else {
                 let decl = CheckedGenericStructDecl {
-                    identifier: identifier.to_owned(),
+                    identifier: identifier.clone(),
                     documentation,
                     properties: checked_properties,
                     generic_params,
@@ -194,9 +201,55 @@ pub fn check_stmt(
             documentation,
             generic_params,
             value,
-        }) => todo!(),
+        }) => {
+            if !scope.borrow().is_file_scope() {
+                errors.push(SemanticError::new(
+                    SemanticErrorKind::TypeAliasMustBeDeclaredAtTopLevel,
+                    stmt.span,
+                ));
+            }
+
+            let alias_scope = scope.borrow().child(ScopeKind::TypeAlias);
+
+            let generic_params = check_generic_params(&generic_params, errors, alias_scope.clone());
+
+            let checked_value = check_type(&value, errors, alias_scope);
+
+            let kind = if generic_params.is_empty() {
+                let decl = CheckedTypeAliasDecl {
+                    documentation,
+                    identifier: identifier.clone(),
+                    value: Box::new(checked_value),
+                };
+
+                scope
+                    .borrow_mut()
+                    .insert(identifier.name, SymbolEntry::TypeAliasDecl(decl.clone()));
+
+                CheckedStmtKind::TypeAliasDecl(decl)
+            } else {
+                let decl = CheckedGenericTypeAliasDecl {
+                    documentation,
+                    identifier: identifier.clone(),
+                    value: Box::new(checked_value),
+                    generic_params,
+                };
+
+                scope.borrow_mut().insert(
+                    identifier.name,
+                    SymbolEntry::GenericTypeAliasDecl(decl.clone()),
+                );
+
+                CheckedStmtKind::GenericTypeAliasDecl(decl)
+            };
+
+            CheckedStmt {
+                kind,
+                span: stmt.span,
+            }
+        }
         StmtKind::Break => {
-            if !scope.borrow().is_within_loop() {
+            if !scope.borrow().is_loop_scope() {
                 errors.push(SemanticError::new(
                     SemanticErrorKind::BreakKeywordOutsideLoop,
                     stmt.span,
@@ -209,7 +262,7 @@ pub fn check_stmt(
             }
         }
         StmtKind::Continue => {
-            if !scope.borrow().is_within_loop() {
+            if !scope.borrow().is_loop_scope() {
                 errors.push(SemanticError::new(
                     SemanticErrorKind::ContinueKeywordOutsideLoop,
                     stmt.span,
@@ -222,7 +275,7 @@ pub fn check_stmt(
             }
         }
         StmtKind::Return(expr) => {
-            if !scope.borrow().is_within_function() {
+            if !scope.borrow().is_function_scope() {
                 errors.push(SemanticError::new(
                     SemanticErrorKind::ReturnKeywordOutsideFunction,
                     stmt.span,

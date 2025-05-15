@@ -70,25 +70,25 @@ impl Scope {
         None
     }
 
-    pub fn is_within_function(&self) -> bool {
+    pub fn is_function_scope(&self) -> bool {
         if self.kind != ScopeKind::Function {
             self.parent
                 .as_ref()
-                .map(|p| p.borrow().is_within_function())
+                .map(|p| p.borrow().is_function_scope())
                 .unwrap_or(false)
         } else {
             true
         }
     }
 
-    pub fn is_within_loop(&self) -> bool {
+    pub fn is_loop_scope(&self) -> bool {
         if self.kind != ScopeKind::While {
             self.parent
                 .as_ref()
                 .map(|p| {
                     let p = p.borrow();
                     if p.kind != ScopeKind::Function && p.kind != ScopeKind::File {
-                        p.is_within_loop()
+                        p.is_loop_scope()
                     } else {
                         false
                     }
@@ -97,6 +97,10 @@ impl Scope {
         } else {
             true
         }
+    }
+
+    pub fn is_file_scope(&self) -> bool {
+        self.kind == ScopeKind::File
     }
 
     pub fn child(&self, kind: ScopeKind) -> Rc<RefCell<Self>> {

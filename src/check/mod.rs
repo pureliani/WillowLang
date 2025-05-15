@@ -56,6 +56,8 @@ pub enum SemanticErrorKind {
         existing: CheckedType,
         new: CheckedType,
     },
+    TypeAliasMustBeDeclaredAtTopLevel,
+    StructMustBeDeclaredAtTopLevel,
     CannotApplyTypeArguments {
         to: CheckedType,
     },
@@ -97,6 +99,8 @@ impl SemanticError {
             SemanticErrorKind::UnresolvedGenericParam(..) => 24,
             SemanticErrorKind::ConflictingGenericBinding { .. } => 25,
             SemanticErrorKind::CannotApplyTypeArguments { .. } => 26,
+            SemanticErrorKind::TypeAliasMustBeDeclaredAtTopLevel => 27,
+            SemanticErrorKind::StructMustBeDeclaredAtTopLevel => 28,
         }
     }
 
