@@ -1,5 +1,6 @@
 pub mod check_binary_numeric_operation;
 pub mod check_is_assignable;
+pub mod check_is_equatable;
 pub mod check_returns;
 pub mod get_numeric_type_rank;
 pub mod infer_generics;
