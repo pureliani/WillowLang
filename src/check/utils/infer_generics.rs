@@ -42,17 +42,12 @@ pub fn infer_generics(
         ) => {
             infer_generics(maybe_generic, concrete, substitution, errors);
         }
-        (
-            CheckedType::GenericStructDecl(maybe_generic),
-            CheckedType::GenericStructDecl(concrete),
-        ) => {
-            for (maybe_generic_prop, concrete_prop) in maybe_generic
-                .properties
-                .iter()
-                .zip(concrete.properties.iter())
+        (CheckedType::GenericStructDecl(generic), CheckedType::StructDecl(concrete)) => {
+            for (generic_prop, concrete_prop) in
+                generic.properties.iter().zip(concrete.properties.iter())
             {
                 infer_generics(
-                    &maybe_generic_prop.constraint,
+                    &generic_prop.constraint,
                     &concrete_prop.constraint,
                     substitution,
                     errors,
@@ -61,20 +56,46 @@ pub fn infer_generics(
         }
         (
             CheckedType::GenericFnType {
-                params: maybe_generic_params,
-                return_type: maybe_generic_return_type,
+                params: generic_params,
+                return_type: generic_return_type,
                 generic_params: _,
             },
-            CheckedType::GenericFnType {
+            CheckedType::FnType {
                 params: concrete_params,
                 return_type: concrete_return_type,
-                generic_params: _,
+            },
+        )
+        | (
+            CheckedType::FnType {
+                params: generic_params,
+                return_type: generic_return_type,
+            },
+            CheckedType::FnType {
+                params: concrete_params,
+                return_type: concrete_return_type,
             },
         ) => {
-            todo!("Implement inferring types for functions")
+            for (generic_param, concrete_param) in generic_params.iter().zip(concrete_params.iter())
+            {
+                infer_generics(
+                    &generic_param.constraint,
+                    &concrete_param.constraint,
+                    substitution,
+                    errors,
+                );
+            }
+
+            infer_generics(
+                &generic_return_type,
+                &concrete_return_type,
+                substitution,
+                errors,
+            );
         }
-        (CheckedType::Union(maybe_generic), CheckedType::Union(concrete)) => {
-            todo!("Implement inferring types for unions")
+        (CheckedType::Union(expected_union), CheckedType::Union(received_union)) => {
+            for (expected_elem, received_elem) in expected_union.iter().zip(received_union.iter()) {
+                infer_generics(expected_elem, received_elem, substitution, errors);
+            }
         }
         _ => {}
     }

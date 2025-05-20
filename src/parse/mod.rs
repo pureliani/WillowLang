@@ -11,10 +11,7 @@ pub struct Parser {
 }
 
 use crate::{
-    ast::{
-        base::base_statement::{Stmt, StmtKind},
-        IdentifierNode, Position, Span, StringNode,
-    },
+    ast::{base::base_statement::Stmt, IdentifierNode, Position, Span, StringNode},
     tokenizer::{KeywordKind, NumberKind, PunctuationKind, Token, TokenKind},
 };
 
@@ -321,15 +318,18 @@ impl Parser {
         };
 
         let mut statements: Vec<Stmt> = vec![];
+        let mut errors: Vec<ParsingError> = vec![];
 
         while state.current().is_some() {
             let stmt = state.parse_stmt();
-            let unwrapped = stmt.unwrap_or_else(|e| Stmt {
-                span: e.span,
-                kind: StmtKind::Error(e),
-            });
-
-            statements.push(unwrapped);
+            match stmt {
+                Ok(s) => {
+                    statements.push(s);
+                }
+                Err(e) => {
+                    errors.push(e);
+                }
+            }
         }
 
         statements

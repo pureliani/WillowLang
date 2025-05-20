@@ -188,6 +188,5 @@ pub fn check_type(
                 }
             }
         }
-        TypeAnnotationKind::Error(_) => CheckedType::Unknown,
     }
 }

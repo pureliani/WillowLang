@@ -1,6 +1,5 @@
 use crate::{
     ast::{IdentifierNode, Span, StringNode},
-    parse::ParsingError,
     tokenizer::NumberKind,
 };
 
@@ -134,7 +133,6 @@ pub enum ExprKind {
         items: Vec<Expr>,
     },
     Block(BlockContents),
-    Error(ParsingError),
 }
 
 #[derive(Clone, Debug, PartialEq)]

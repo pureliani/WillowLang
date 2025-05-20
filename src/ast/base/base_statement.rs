@@ -1,7 +1,4 @@
-use crate::{
-    ast::{IdentifierNode, Span, StringNode},
-    parse::ParsingError,
-};
+use crate::ast::{IdentifierNode, Span, StringNode};
 
 use super::{
     base_declaration::{EnumDecl, StructDecl, TypeAliasDecl, VarDecl},
@@ -30,7 +27,6 @@ pub enum StmtKind {
         condition: Box<Expr>,
         body: BlockContents,
     },
-    Error(ParsingError),
 }
 
 #[derive(Clone, Debug, PartialEq)]

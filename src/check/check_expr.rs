@@ -152,6 +152,5 @@ pub fn check_expr(
         ExprKind::Block(block_contents) => {
             check_codeblock_expr(block_contents, expr.span, errors, scope)
         }
-        ExprKind::Error(parsing_error) => todo!(),
     }
 }

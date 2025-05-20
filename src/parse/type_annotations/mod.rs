@@ -7,7 +7,7 @@ use crate::{
         base::base_type::{TypeAnnotation, TypeAnnotationKind},
         Span,
     },
-    tokenizer::{KeywordKind, PunctuationKind, Token, TokenKind},
+    tokenizer::{KeywordKind, PunctuationKind, TokenKind},
 };
 
 fn infix_bp(token_kind: &TokenKind) -> Option<(u8, u8)> {
@@ -39,11 +39,8 @@ impl Parser {
     pub fn parse_type_annotation(&mut self, min_prec: u8) -> Result<TypeAnnotation, ParsingError> {
         let token = self.current().ok_or(self.unexpected_end_of_input())?;
 
-        let mut lhs = match token {
-            Token {
-                kind: TokenKind::Keyword(KeywordKind::Void),
-                ..
-            } => {
+        let mut lhs = match token.kind {
+            TokenKind::Keyword(KeywordKind::Void) => {
                 let start_offset = self.offset;
 
                 self.consume_keyword(KeywordKind::Void)?;
@@ -53,10 +50,7 @@ impl Parser {
                     span,
                 }
             }
-            Token {
-                kind: TokenKind::Keyword(KeywordKind::Null),
-                ..
-            } => {
+            TokenKind::Keyword(KeywordKind::Null) => {
                 let start_offset = self.offset;
 
                 self.consume_keyword(KeywordKind::Null)?;
@@ -66,10 +60,7 @@ impl Parser {
                     span,
                 }
             }
-            Token {
-                kind: TokenKind::Keyword(KeywordKind::Bool),
-                ..
-            } => {
+            TokenKind::Keyword(KeywordKind::Bool) => {
                 let start_offset = self.offset;
 
                 self.consume_keyword(KeywordKind::Bool)?;
@@ -79,10 +70,7 @@ impl Parser {
                     span,
                 }
             }
-            Token {
-                kind: TokenKind::Keyword(KeywordKind::U8),
-                ..
-            } => {
+            TokenKind::Keyword(KeywordKind::U8) => {
                 let start_offset = self.offset;
 
                 self.consume_keyword(KeywordKind::U8)?;
@@ -92,10 +80,7 @@ impl Parser {
                     span,
                 }
             }
-            Token {
-                kind: TokenKind::Keyword(KeywordKind::U16),
-                ..
-            } => {
+            TokenKind::Keyword(KeywordKind::U16) => {
                 let start_offset = self.offset;
 
                 self.consume_keyword(KeywordKind::U16)?;
@@ -105,10 +90,7 @@ impl Parser {
                     span,
                 }
             }
-            Token {
-                kind: TokenKind::Keyword(KeywordKind::U32),
-                ..
-            } => {
+            TokenKind::Keyword(KeywordKind::U32) => {
                 let start_offset = self.offset;
 
                 self.consume_keyword(KeywordKind::U32)?;
@@ -118,10 +100,7 @@ impl Parser {
                     span,
                 }
             }
-            Token {
-                kind: TokenKind::Keyword(KeywordKind::U64),
-                ..
-            } => {
+            TokenKind::Keyword(KeywordKind::U64) => {
                 let start_offset = self.offset;
 
                 self.consume_keyword(KeywordKind::U64)?;
@@ -131,10 +110,7 @@ impl Parser {
                     span,
                 }
             }
-            Token {
-                kind: TokenKind::Keyword(KeywordKind::USize),
-                ..
-            } => {
+            TokenKind::Keyword(KeywordKind::USize) => {
                 let start_offset = self.offset;
 
                 self.consume_keyword(KeywordKind::USize)?;
@@ -144,10 +120,7 @@ impl Parser {
                     span,
                 }
             }
-            Token {
-                kind: TokenKind::Keyword(KeywordKind::ISize),
-                ..
-            } => {
+            TokenKind::Keyword(KeywordKind::ISize) => {
                 let start_offset = self.offset;
 
                 self.consume_keyword(KeywordKind::ISize)?;
@@ -157,10 +130,7 @@ impl Parser {
                     span,
                 }
             }
-            Token {
-                kind: TokenKind::Keyword(KeywordKind::I8),
-                ..
-            } => {
+            TokenKind::Keyword(KeywordKind::I8) => {
                 let start_offset = self.offset;
 
                 self.consume_keyword(KeywordKind::I8)?;
@@ -170,10 +140,7 @@ impl Parser {
                     span,
                 }
             }
-            Token {
-                kind: TokenKind::Keyword(KeywordKind::I16),
-                ..
-            } => {
+            TokenKind::Keyword(KeywordKind::I16) => {
                 let start_offset = self.offset;
 
                 self.consume_keyword(KeywordKind::I16)?;
@@ -183,10 +150,7 @@ impl Parser {
                     span,
                 }
             }
-            Token {
-                kind: TokenKind::Keyword(KeywordKind::I32),
-                ..
-            } => {
+            TokenKind::Keyword(KeywordKind::I32) => {
                 let start_offset = self.offset;
 
                 self.consume_keyword(KeywordKind::I32)?;
@@ -196,10 +160,7 @@ impl Parser {
                     span,
                 }
             }
-            Token {
-                kind: TokenKind::Keyword(KeywordKind::I64),
-                ..
-            } => {
+            TokenKind::Keyword(KeywordKind::I64) => {
                 let start_offset = self.offset;
 
                 self.consume_keyword(KeywordKind::I64)?;
@@ -209,10 +170,7 @@ impl Parser {
                     span,
                 }
             }
-            Token {
-                kind: TokenKind::Keyword(KeywordKind::F32),
-                ..
-            } => {
+            TokenKind::Keyword(KeywordKind::F32) => {
                 let start_offset = self.offset;
 
                 self.consume_keyword(KeywordKind::F32)?;
@@ -222,10 +180,7 @@ impl Parser {
                     span,
                 }
             }
-            Token {
-                kind: TokenKind::Keyword(KeywordKind::F64),
-                ..
-            } => {
+            TokenKind::Keyword(KeywordKind::F64) => {
                 let start_offset = self.offset;
 
                 self.consume_keyword(KeywordKind::F64)?;
@@ -235,10 +190,7 @@ impl Parser {
                     span,
                 }
             }
-            Token {
-                kind: TokenKind::Keyword(KeywordKind::Char),
-                ..
-            } => {
+            TokenKind::Keyword(KeywordKind::Char) => {
                 let start_offset = self.offset;
 
                 self.consume_keyword(KeywordKind::Char)?;
@@ -248,10 +200,7 @@ impl Parser {
                     span,
                 }
             }
-            Token {
-                kind: TokenKind::Punctuation(PunctuationKind::LParen),
-                ..
-            } => {
+            TokenKind::Punctuation(PunctuationKind::LParen) => {
                 self.place_checkpoint();
                 let type_annotation = self.parse_fn_type_annotation().or_else(|_| {
                     self.goto_checkpoint();
@@ -261,10 +210,7 @@ impl Parser {
 
                 type_annotation
             }
-            Token {
-                kind: TokenKind::Identifier(_),
-                ..
-            } => {
+            TokenKind::Identifier(_) => {
                 let start_offset = self.offset;
 
                 let id = self.consume_identifier()?;
@@ -274,10 +220,10 @@ impl Parser {
                     span,
                 }
             }
-            t => {
+            _ => {
                 return Err(ParsingError::new(
-                    ParsingErrorKind::ExpectedATypeButFound(t.clone()),
-                    t.span,
+                    ParsingErrorKind::ExpectedATypeButFound(token.clone()),
+                    token.span,
                 ))
             }
         };

@@ -368,6 +368,5 @@ pub fn check_stmt(
                 span: stmt.span,
             }
         }
-        StmtKind::Error(parsing_error) => todo!(),
     }
 }

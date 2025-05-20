@@ -1,6 +1,5 @@
 use crate::{
     ast::{IdentifierNode, Span},
-    parse::ParsingError,
     tokenizer::NumberKind,
 };
 
@@ -45,7 +44,6 @@ pub enum TypeAnnotationKind {
         left: Box<TypeAnnotation>,
         args: Vec<TypeAnnotation>,
     },
-    Error(ParsingError),
 }
 
 #[derive(Clone, Debug, PartialEq)]
