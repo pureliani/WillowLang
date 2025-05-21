@@ -92,11 +92,8 @@ pub fn infer_generics(
                 errors,
             );
         }
-        (CheckedType::Union(expected_union), CheckedType::Union(received_union)) => {
-            for (expected_elem, received_elem) in expected_union.iter().zip(received_union.iter()) {
-                infer_generics(expected_elem, received_elem, substitution, errors);
-            }
-        }
+        (CheckedType::Union(expected_union), CheckedType::Union(received_union)) => {}
+        (CheckedType::Union(expected_union), non_union) => {}
         _ => {}
     }
 }

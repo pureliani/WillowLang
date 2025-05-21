@@ -1,16 +1,23 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::{
     ast::{
         base::base_expression::Expr,
         checked::{
+            checked_declaration::CheckedParam,
             checked_expression::{CheckedExpr, CheckedExprKind},
             checked_type::CheckedType,
         },
         Span,
     },
     check::{
-        check_expr::check_expr, scope::Scope, utils::check_is_assignable::check_is_assignable,
+        check_expr::check_expr,
+        scope::Scope,
+        utils::{
+            check_is_assignable::check_is_assignable,
+            infer_generics::infer_generics,
+            substitute_generics::{substitute_generics, GenericSubstitutionMap},
+        },
         SemanticError, SemanticErrorKind,
     },
 };
@@ -62,16 +69,51 @@ pub fn check_fn_call_expr(
         CheckedType::GenericFnType {
             params,
             return_type,
-            generic_params,
+            generic_params: _,
         } => {
-            // --- Call on a Generic Function without Explicit Type Arguments ---
-            // This requires type inference, which is complex.
-            // For now, let's require explicit arguments for generic functions.
-            todo!("Implement type inference and substitution")
+            if checked_args.len() != params.len() {
+                errors.push(SemanticError::new(
+                    SemanticErrorKind::ArgumentCountMismatch {
+                        expected: params.len(),
+                        received: checked_args.len(),
+                    },
+                    span,
+                ));
+            } else {
+                let mut substitution: GenericSubstitutionMap = HashMap::new();
+
+                for (param, arg) in params.iter().zip(checked_args.iter()) {
+                    infer_generics(&param.constraint, &arg.ty, &mut substitution, errors);
+                }
+
+                let substituted_return = substitute_generics(&return_type, &substitution, errors);
+
+                call_result_type = substituted_return;
+
+                let substituted_params: Vec<CheckedParam> = params
+                    .into_iter()
+                    .map(|p| CheckedParam {
+                        constraint: substitute_generics(&p.constraint, &substitution, errors),
+                        identifier: p.identifier.clone(),
+                    })
+                    .collect();
+
+                for (param, arg) in substituted_params.into_iter().zip(checked_args.iter()) {
+                    if !check_is_assignable(&arg.ty, &param.constraint) {
+                        errors.push(SemanticError::new(
+                            SemanticErrorKind::TypeMismatch {
+                                expected: param.constraint,
+                                received: arg.ty.clone(),
+                            },
+                            arg.span,
+                        ));
+                    }
+                }
+            }
         }
         non_callable_type => {
             errors.push(SemanticError::new(
-                SemanticErrorKind::CannotCall(checked_left.ty.clone()),
+                SemanticErrorKind::CannotCall(non_callable_type.clone()),
                 checked_left.span,
             ));
         }
