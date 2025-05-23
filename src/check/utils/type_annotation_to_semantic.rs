@@ -82,7 +82,7 @@ pub fn check_type(
             .map(|entry| match entry {
                 SymbolEntry::GenericStructDecl(decl) => CheckedType::GenericStructDecl(decl),
                 SymbolEntry::StructDecl(decl) => CheckedType::StructDecl(decl),
-                SymbolEntry::EnumDecl(decl) => CheckedType::Enum(decl),
+                SymbolEntry::EnumDecl(decl) => CheckedType::EnumDecl(decl),
                 SymbolEntry::GenericTypeAliasDecl(decl) => CheckedType::GenericTypeAliasDecl(decl),
                 SymbolEntry::TypeAliasDecl(decl) => CheckedType::TypeAliasDecl(decl),
                 SymbolEntry::GenericParam(generic_param) => {

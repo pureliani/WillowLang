@@ -30,7 +30,7 @@ pub enum CheckedType {
     Char,
     GenericStructDecl(CheckedGenericStructDecl),
     StructDecl(CheckedStructDecl),
-    Enum(EnumDecl),
+    EnumDecl(EnumDecl),
     GenericParam(CheckedGenericParam),
     GenericFnType {
         params: Vec<CheckedParam>,
@@ -75,7 +75,7 @@ impl PartialEq for CheckedType {
             (CheckedType::Char, CheckedType::Char) => true,
             (CheckedType::GenericStructDecl(a), CheckedType::GenericStructDecl(b)) => a == b,
             (CheckedType::StructDecl(a), CheckedType::StructDecl(b)) => a == b,
-            (CheckedType::Enum(a), CheckedType::Enum(b)) => a == b,
+            (CheckedType::EnumDecl(a), CheckedType::EnumDecl(b)) => a == b,
             (CheckedType::GenericParam(a), CheckedType::GenericParam(b)) => a == b,
             (
                 CheckedType::GenericFnType {
@@ -148,7 +148,7 @@ impl Hash for CheckedType {
             CheckedType::Char => {}
             CheckedType::GenericStructDecl(gsd) => gsd.hash(state),
             CheckedType::StructDecl(sd) => sd.hash(state),
-            CheckedType::Enum(e) => e.hash(state),
+            CheckedType::EnumDecl(e) => e.hash(state),
             CheckedType::GenericParam(gp) => gp.hash(state),
             CheckedType::GenericFnType {
                 params,

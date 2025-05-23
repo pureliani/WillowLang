@@ -7,8 +7,7 @@ pub fn check_is_equatable(left: &CheckedType, right: &CheckedType) -> bool {
         (CheckedType::Bool, CheckedType::Bool) => true,
         (CheckedType::Char, CheckedType::Char) => true,
         (a, b) if is_integer(a) && is_integer(b) => true,
-        (CheckedType::Enum(a), CheckedType::Enum(b)) => a == b,
-
+        (CheckedType::EnumDecl(a), CheckedType::EnumDecl(b)) => a == b,
         (CheckedType::Union(a_items), CheckedType::Union(b_items)) => a_items
             .iter()
             .any(|a| b_items.iter().any(|b| check_is_equatable(a, b))),

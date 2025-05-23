@@ -28,7 +28,7 @@ pub fn check_identifier_expr(
             SymbolEntry::StructDecl(decl) => CheckedType::StructDecl(decl),
             SymbolEntry::GenericTypeAliasDecl(decl) => CheckedType::GenericTypeAliasDecl(decl),
             SymbolEntry::TypeAliasDecl(decl) => CheckedType::TypeAliasDecl(decl),
-            SymbolEntry::EnumDecl(decl) => CheckedType::Enum(decl),
+            SymbolEntry::EnumDecl(decl) => CheckedType::EnumDecl(decl),
             SymbolEntry::VarDecl(decl) => decl.constraint,
             SymbolEntry::GenericParam(_) => {
                 errors.push(SemanticError::new(

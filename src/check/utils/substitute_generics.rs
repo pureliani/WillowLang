@@ -132,6 +132,6 @@ pub fn substitute_generics(
         | CheckedType::Unknown
         | CheckedType::TypeAliasDecl(_)
         | CheckedType::StructDecl(_)
-        | CheckedType::Enum(_) => ty.clone(),
+        | CheckedType::EnumDecl(_) => ty.clone(),
     }
 }
