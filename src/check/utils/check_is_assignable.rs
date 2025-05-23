@@ -26,6 +26,9 @@ pub fn check_is_assignable(source_type: &CheckedType, target_type: &CheckedType)
                 .iter()
                 .any(|target_item| check_is_assignable(source_item, target_item))
         }),
+        (source, Union(target)) => target
+            .iter()
+            .any(|target_item| check_is_assignable(source, target_item)),
         (GenericParam(source), GenericParam(target)) => {
             match (&source.constraint, &target.constraint) {
                 (None, None) => true,
@@ -110,7 +113,8 @@ pub fn check_is_assignable(source_type: &CheckedType, target_type: &CheckedType)
 
             compatible_params && compatible_returns
         }
-        // TODO: add type alias handling
+        (TypeAliasDecl(source), target) => check_is_assignable(&source.value, target),
+        (source, TypeAliasDecl(target)) => check_is_assignable(source, &target.value),
         _ => false,
     }
 }
