@@ -1,6 +1,6 @@
 use super::{PunctuationKind, Tokenizer};
 
-impl Tokenizer {
+impl<'a> Tokenizer<'a> {
     pub fn tokenize_punctuation(&mut self, punct: &str) -> Option<PunctuationKind> {
         match punct {
             ":" => match self.peek(1) {

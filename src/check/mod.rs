@@ -65,9 +65,8 @@ pub enum SemanticErrorKind {
 
 #[derive(Debug, Clone)]
 pub struct SemanticError {
-    kind: SemanticErrorKind,
-    code: usize,
-    span: Span,
+    pub kind: SemanticErrorKind,
+    pub span: Span,
 }
 
 impl SemanticError {
@@ -105,9 +104,7 @@ impl SemanticError {
     }
 
     fn new(kind: SemanticErrorKind, span: Span) -> Self {
-        let code = Self::kind_to_code(&kind);
-
-        Self { code, kind, span }
+        Self { kind, span }
     }
 
     fn get_kind(&self) -> &SemanticErrorKind {

@@ -1,8 +1,8 @@
-use super::{is_digit, is_letter, NumberKind, TokenizationError, Tokenizer};
+use super::{is_digit, is_letter, NumberKind, TokenizationErrorKind, Tokenizer};
 
-impl Tokenizer {
-    pub fn tokenize_number(&mut self) -> Result<NumberKind, TokenizationError> {
-        let start = self.offset;
+impl<'a> Tokenizer<'a> {
+    pub fn tokenize_number(&mut self) -> Result<NumberKind, TokenizationErrorKind> {
+        let start = self.grapheme_offset;
         let mut has_dot = false;
 
         while let Some(c) = self.current() {
@@ -12,7 +12,7 @@ impl Tokenizer {
                 has_dot = true;
                 self.consume();
             } else if c == "." && has_dot {
-                return Err(TokenizationError::InvalidFloatingNumber);
+                return Err(TokenizationErrorKind::InvalidFloatingNumber);
             } else if is_letter(c) {
                 self.consume();
             } else {
@@ -20,13 +20,13 @@ impl Tokenizer {
             }
         }
 
-        let number_str = self.slice(start, self.offset);
+        let number_str = self.slice(start, self.grapheme_offset);
 
         parse_number(number_str)
     }
 }
 
-fn parse_number(number: &str) -> Result<NumberKind, TokenizationError> {
+fn parse_number(number: &str) -> Result<NumberKind, TokenizationErrorKind> {
     if number.contains('.') {
         if let Ok(value) = number.parse::<f64>() {
             return Ok(NumberKind::F64(value));
@@ -34,7 +34,7 @@ fn parse_number(number: &str) -> Result<NumberKind, TokenizationError> {
         if let Ok(value) = number.parse::<f32>() {
             return Ok(NumberKind::F32(value));
         }
-        return Err(TokenizationError::InvalidFloatingNumber);
+        return Err(TokenizationErrorKind::InvalidFloatingNumber);
     } else {
         if let Ok(value) = number.parse::<i64>() {
             return Ok(NumberKind::I64(value));
@@ -67,6 +67,6 @@ fn parse_number(number: &str) -> Result<NumberKind, TokenizationError> {
             return Ok(NumberKind::ISize(value));
         }
 
-        return Err(TokenizationError::InvalidIntegerNumber);
+        return Err(TokenizationErrorKind::InvalidIntegerNumber);
     }
 }

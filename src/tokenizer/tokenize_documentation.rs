@@ -1,15 +1,15 @@
-use super::{TokenizationError, Tokenizer};
+use super::{TokenizationErrorKind, Tokenizer};
 
-impl Tokenizer {
-    pub fn tokenize_documentation(&mut self) -> Result<String, TokenizationError> {
+impl<'a> Tokenizer<'a> {
+    pub fn tokenize_documentation(&mut self) -> Result<String, TokenizationErrorKind> {
         self.consume();
         self.consume();
         self.consume();
 
-        let start = self.offset;
+        let start = self.grapheme_offset;
         while let Some(c) = self.current() {
             if c == "-" && self.peek(1) == Some("-") && self.peek(2) == Some("-") {
-                let doc_content = self.slice(start, self.offset).to_owned();
+                let doc_content = self.slice(start, self.grapheme_offset).to_owned();
                 self.consume();
                 self.consume();
                 self.consume();
@@ -18,6 +18,6 @@ impl Tokenizer {
             self.consume();
         }
 
-        Err(TokenizationError::UnterminatedDoc)
+        Err(TokenizationErrorKind::UnterminatedDoc)
     }
 }

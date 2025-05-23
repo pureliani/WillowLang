@@ -482,7 +482,7 @@ mod tests {
         ];
 
         for (input, expected) in test_cases {
-            let tokens = Tokenizer::tokenize(input.to_owned());
+            let (tokens, _) = Tokenizer::tokenize(input.to_owned());
             let mut parser = Parser {
                 offset: 0,
                 checkpoint_offset: 0,
@@ -500,7 +500,7 @@ mod tests {
         use crate::tokenizer::Tokenizer;
         use pretty_assertions::assert_eq;
 
-        let tokens = Tokenizer::tokenize("i8 | i16 | i32 | i64".to_owned());
+        let (tokens, _) = Tokenizer::tokenize("i8 | i16 | i32 | i64".to_owned());
         let mut parser = Parser {
             offset: 0,
             checkpoint_offset: 0,

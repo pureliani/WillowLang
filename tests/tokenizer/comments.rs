@@ -6,7 +6,7 @@ use willow::{
 #[test]
 fn test_skip_single_line_comment() {
     let input = "// This is a comment\nlet x = 10;".to_owned();
-    let tokens = Tokenizer::tokenize(input).to_owned();
+    let (tokens, _) = Tokenizer::tokenize(input).to_owned();
 
     assert_eq!(
         tokens,
@@ -53,7 +53,7 @@ fn test_skip_single_line_comment() {
 #[test]
 fn test_skip_multiple_single_line_comments() {
     let input = "// Comment 1\n// Comment 2\nlet x = 10;".to_owned();
-    let tokens = Tokenizer::tokenize(input);
+    let (tokens, _) = Tokenizer::tokenize(input);
 
     assert_eq!(tokens.len(), 5);
     assert_eq!(tokens[0].kind, TokenKind::Keyword(KeywordKind::Let));
@@ -62,7 +62,7 @@ fn test_skip_multiple_single_line_comments() {
 #[test]
 fn test_comment_at_end_of_input() {
     let input = "let x = 10; // Comment at the end".to_owned();
-    let tokens = Tokenizer::tokenize(input);
+    let (tokens, _) = Tokenizer::tokenize(input);
 
     assert_eq!(tokens.len(), 5);
     assert_eq!(tokens[0].kind, TokenKind::Keyword(KeywordKind::Let));
@@ -71,7 +71,7 @@ fn test_comment_at_end_of_input() {
 #[test]
 fn test_no_comments() {
     let input = "let x = 10;".to_owned();
-    let tokens = Tokenizer::tokenize(input);
+    let (tokens, _) = Tokenizer::tokenize(input);
 
     assert_eq!(tokens.len(), 5);
     assert_eq!(tokens[0].kind, TokenKind::Keyword(KeywordKind::Let));
@@ -80,6 +80,6 @@ fn test_no_comments() {
 #[test]
 fn test_only_comments() {
     let input = "// Only a comment".to_owned();
-    let tokens = Tokenizer::tokenize(input);
+    let (tokens, _) = Tokenizer::tokenize(input);
     assert_eq!(tokens.len(), 0);
 }

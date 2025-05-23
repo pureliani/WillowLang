@@ -1,14 +1,14 @@
-use super::{TokenizationError, Tokenizer};
+use super::{TokenizationErrorKind, Tokenizer};
 
-impl Tokenizer {
-    pub fn string(&mut self) -> Result<String, TokenizationError> {
+impl<'a> Tokenizer<'a> {
+    pub fn string(&mut self) -> Result<String, TokenizationErrorKind> {
         self.consume();
-        let literal_start = self.offset;
+        let literal_start = self.grapheme_offset;
 
         while let Some(c) = self.current() {
             match c {
                 "\"" => {
-                    let result = self.slice(literal_start, self.offset).to_owned();
+                    let result = self.slice(literal_start, self.grapheme_offset).to_owned();
                     self.consume();
                     return Ok(result);
                 }
@@ -20,17 +20,17 @@ impl Tokenizer {
                                 self.consume();
                             }
                             _ => {
-                                return Err(TokenizationError::UnknownEscapeSequence);
+                                return Err(TokenizationErrorKind::UnknownEscapeSequence);
                             }
                         }
                     } else {
-                        return Err(TokenizationError::UnterminatedString);
+                        return Err(TokenizationErrorKind::UnterminatedString);
                     }
                 }
                 _ => self.consume(),
             }
         }
 
-        Err(TokenizationError::UnterminatedString)
+        Err(TokenizationErrorKind::UnterminatedString)
     }
 }

@@ -9,13 +9,19 @@ pub mod tokenize_string;
 use crate::ast::{Position, Span};
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum TokenizationError {
+pub enum TokenizationErrorKind {
     UnknownToken,
     UnknownEscapeSequence,
     InvalidFloatingNumber,
     InvalidIntegerNumber,
     UnterminatedString,
     UnterminatedDoc,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct TokenizationError {
+    pub kind: TokenizationErrorKind,
+    pub span: Span,
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -111,7 +117,6 @@ pub enum TokenKind {
     String(String),
     Number(NumberKind),
     Doc(String),
-    Error(TokenizationError),
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -121,32 +126,35 @@ pub struct Token {
 }
 
 #[derive(Debug)]
-pub struct Tokenizer {
-    input: String,
-    offset: usize,
+pub struct Tokenizer<'a> {
+    input: &'a String,
+    byte_offset: usize,
+    grapheme_offset: usize,
     line: usize,
     col: usize,
 }
 
-impl Tokenizer {
+impl<'a> Tokenizer<'a> {
     fn current(&self) -> Option<&str> {
-        self.input.graphemes(true).nth(self.offset)
+        self.input.graphemes(true).nth(self.grapheme_offset)
     }
 
     fn consume(&mut self) {
         if let Some(c) = self.current() {
             if c == "\n" {
+                self.byte_offset += c.len();
                 self.line += 1;
                 self.col = 1;
             } else {
+                self.byte_offset += c.len();
                 self.col += 1;
             }
-            self.offset += 1;
+            self.grapheme_offset += 1;
         }
     }
 
     fn peek(&self, i: usize) -> Option<&str> {
-        self.input.graphemes(true).nth(self.offset + i)
+        self.input.graphemes(true).nth(self.grapheme_offset + i)
     }
 
     fn slice(&self, start: usize, end: usize) -> &str {
@@ -198,14 +206,16 @@ impl Tokenizer {
         }
     }
 
-    pub fn tokenize(input: String) -> Vec<Token> {
+    pub fn tokenize(input: &String) -> (Vec<Token>, Vec<TokenizationError>) {
         let mut state = Tokenizer {
             input,
-            offset: 0,
+            byte_offset: 0,
+            grapheme_offset: 0,
             line: 1,
             col: 1,
         };
         let mut tokens: Vec<Token> = vec![];
+        let mut errors: Vec<TokenizationError> = vec![];
 
         loop {
             state.skip_whitespace();
@@ -214,6 +224,7 @@ impl Tokenizer {
             let start_pos = Position {
                 line: state.line,
                 col: state.col,
+                byte_offset: state.byte_offset,
             };
 
             match state.current() {
@@ -228,6 +239,7 @@ impl Tokenizer {
                     let end_pos = Position {
                         line: state.line,
                         col: state.col,
+                        byte_offset: state.byte_offset,
                     };
 
                     tokens.push(Token {
@@ -243,6 +255,7 @@ impl Tokenizer {
                         let end_pos = Position {
                             line: state.line,
                             col: state.col,
+                            byte_offset: state.byte_offset,
                         };
                         tokens.push(Token {
                             span: Span {
@@ -256,9 +269,10 @@ impl Tokenizer {
                         let end_pos = Position {
                             line: state.line,
                             col: state.col,
+                            byte_offset: state.byte_offset,
                         };
-                        tokens.push(Token {
-                            kind: TokenKind::Error(kind),
+                        errors.push(TokenizationError {
+                            kind,
                             span: Span {
                                 start: start_pos,
                                 end: end_pos,
@@ -272,6 +286,7 @@ impl Tokenizer {
                         let end_pos = Position {
                             line: state.line,
                             col: state.col,
+                            byte_offset: state.byte_offset,
                         };
                         tokens.push(Token {
                             kind: TokenKind::Number(number_kind),
@@ -285,9 +300,10 @@ impl Tokenizer {
                         let end_pos = Position {
                             line: state.line,
                             col: state.col,
+                            byte_offset: state.byte_offset,
                         };
-                        tokens.push(Token {
-                            kind: TokenKind::Error(kind),
+                        errors.push(TokenizationError {
+                            kind,
                             span: Span {
                                 start: start_pos,
                                 end: end_pos,
@@ -302,6 +318,7 @@ impl Tokenizer {
                             let end_pos = Position {
                                 line: state.line,
                                 col: state.col,
+                                byte_offset: state.byte_offset,
                             };
                             tokens.push(Token {
                                 kind: TokenKind::Doc(content),
@@ -315,9 +332,10 @@ impl Tokenizer {
                             let end_pos = Position {
                                 line: state.line,
                                 col: state.col,
+                                byte_offset: state.byte_offset,
                             };
-                            tokens.push(Token {
-                                kind: TokenKind::Error(kind),
+                            errors.push(TokenizationError {
+                                kind,
                                 span: Span {
                                     start: start_pos,
                                     end: end_pos,
@@ -332,6 +350,7 @@ impl Tokenizer {
                         let end_pos = Position {
                             line: state.line,
                             col: state.col,
+                            byte_offset: state.byte_offset,
                         };
                         tokens.push(Token {
                             kind: TokenKind::Punctuation(kind),
@@ -345,9 +364,10 @@ impl Tokenizer {
                         let end_pos = Position {
                             line: state.line,
                             col: state.col,
+                            byte_offset: state.byte_offset,
                         };
-                        tokens.push(Token {
-                            kind: TokenKind::Error(TokenizationError::UnknownToken),
+                        errors.push(TokenizationError {
+                            kind: TokenizationErrorKind::UnknownToken,
                             span: Span {
                                 start: start_pos,
                                 end: end_pos,
@@ -360,7 +380,7 @@ impl Tokenizer {
             };
         }
 
-        tokens
+        (tokens, errors)
     }
 }
 

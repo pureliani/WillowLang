@@ -129,7 +129,7 @@ fn tokenizes_numbers_with_suffixes() {
     ];
 
     for (input, expected_kind, span) in test_cases {
-        let tokens = Tokenizer::tokenize(input.to_owned());
+        let (tokens, _) = Tokenizer::tokenize(input.to_owned());
 
         assert_eq!(
             tokens,

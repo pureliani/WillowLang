@@ -113,9 +113,18 @@ impl Parser {
     }
 
     fn unexpected_end_of_input(&self) -> ParsingError {
+        // TODO: fix this
         let first_token_span = Span {
-            start: Position { line: 1, col: 1 },
-            end: Position { line: 1, col: 1 },
+            start: Position {
+                line: 1,
+                col: 1,
+                byte_offset: 0,
+            },
+            end: Position {
+                line: 1,
+                col: 1,
+                byte_offset: 0,
+            },
         };
 
         let last_token_span = self
@@ -310,7 +319,7 @@ impl Parser {
         Ok(items)
     }
 
-    pub fn parse(tokens: Vec<Token>) -> Vec<Stmt> {
+    pub fn parse(tokens: Vec<Token>) -> (Vec<Stmt>, Vec<ParsingError>) {
         let mut state = Parser {
             offset: 0,
             checkpoint_offset: 0,
@@ -332,6 +341,6 @@ impl Parser {
             }
         }
 
-        statements
+        (statements, errors)
     }
 }

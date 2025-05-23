@@ -1,8 +1,8 @@
 use super::{is_alphanumeric, Tokenizer};
 
-impl Tokenizer {
+impl<'a> Tokenizer<'a> {
     pub fn tokenize_identifier(&mut self) -> String {
-        let start = self.offset;
+        let start = self.grapheme_offset;
         while let Some(c) = self.current() {
             if is_alphanumeric(c) || c == "_" {
                 self.consume();
@@ -11,6 +11,6 @@ impl Tokenizer {
             }
         }
 
-        self.slice(start, self.offset).to_owned()
+        self.slice(start, self.grapheme_offset).to_owned()
     }
 }

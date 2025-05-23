@@ -40,10 +40,11 @@ impl Hash for StringNode {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Copy)]
+#[derive(Clone, Debug, PartialEq, Copy)]
 pub struct Position {
     pub line: usize,
     pub col: usize,
+    pub byte_offset: usize,
 }
 
 #[derive(Clone, Debug, PartialEq, Copy)]

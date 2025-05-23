@@ -5,7 +5,7 @@ use willow::{
 
 #[test]
 fn tokenizes_simple_identifiers() {
-    let tokens = Tokenizer::tokenize("hello".to_owned());
+    let (tokens, _) = Tokenizer::tokenize("hello".to_owned());
 
     assert_eq!(
         tokens,
@@ -21,7 +21,7 @@ fn tokenizes_simple_identifiers() {
 
 #[test]
 fn tokenizes_keywords() {
-    let tokens = Tokenizer::tokenize("struct".to_owned());
+    let (tokens, _) = Tokenizer::tokenize("struct".to_owned());
 
     assert_eq!(
         tokens,
@@ -37,7 +37,7 @@ fn tokenizes_keywords() {
 
 #[test]
 fn tokenizes_sequence_as_identifier() {
-    let tokens = Tokenizer::tokenize("\nstructhello".to_owned());
+    let (tokens, _) = Tokenizer::tokenize("\nstructhello".to_owned());
 
     assert_eq!(
         tokens,

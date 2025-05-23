@@ -71,7 +71,7 @@ mod test {
 
     #[test]
     fn parses_basic_function() {
-        let tokens = Tokenizer::tokenize("() => {}".to_owned());
+        let (tokens, _) = Tokenizer::tokenize("() => {}".to_owned());
         let mut parser = Parser {
             checkpoint_offset: 0,
             offset: 0,
@@ -98,7 +98,7 @@ mod test {
 
     #[test]
     fn parses_function_with_params() {
-        let tokens = Tokenizer::tokenize("(const a: i32) => {}".to_owned());
+        let (tokens, _) = Tokenizer::tokenize("(const a: i32) => {}".to_owned());
         let mut parser = Parser {
             checkpoint_offset: 0,
             offset: 0,
@@ -140,7 +140,7 @@ mod test {
 
     #[test]
     fn parses_function_with_generic_params() {
-        let tokens = Tokenizer::tokenize("<AParam>(a: AParam) => {}".to_owned());
+        let (tokens, _) = Tokenizer::tokenize("<AParam>(a: AParam) => {}".to_owned());
         let mut parser = Parser {
             checkpoint_offset: 0,
             offset: 0,
@@ -197,7 +197,7 @@ mod test {
 
     #[test]
     fn parses_function_with_return_type() {
-        let tokens = Tokenizer::tokenize("<AParam>(a: AParam): i32 => {}".to_owned());
+        let (tokens, _) = Tokenizer::tokenize("<AParam>(a: AParam): i32 => {}".to_owned());
         let mut parser = Parser {
             checkpoint_offset: 0,
             offset: 0,
