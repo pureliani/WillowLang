@@ -1,19 +1,5 @@
 use crate::ast::checked::checked_type::CheckedType;
 
-fn check_generic_constraint_assignability(
-    source_type: &Option<Box<CheckedType>>,
-    target_type: &Option<Box<CheckedType>>,
-) -> bool {
-    match (source_type, target_type) {
-        (None, None) => true,
-        (Some(_), None) => true,
-        (None, Some(_)) => false,
-        (Some(left_constraint), Some(right_constraint)) => {
-            check_is_assignable(left_constraint, right_constraint)
-        }
-    }
-}
-
 pub fn check_is_assignable(source_type: &CheckedType, target_type: &CheckedType) -> bool {
     use CheckedType::*;
 
@@ -41,7 +27,14 @@ pub fn check_is_assignable(source_type: &CheckedType, target_type: &CheckedType)
                 .any(|target_item| check_is_assignable(source_item, target_item))
         }),
         (GenericParam(source), GenericParam(target)) => {
-            check_generic_constraint_assignability(&source.constraint, &target.constraint)
+            match (&source.constraint, &target.constraint) {
+                (None, None) => true,
+                (Some(_), None) => true,
+                (None, Some(_)) => false,
+                (Some(left_constraint), Some(right_constraint)) => {
+                    check_is_assignable(left_constraint, right_constraint)
+                }
+            }
         }
         (StructDecl(source), StructDecl(target)) => source == target,
         (EnumDecl(source), EnumDecl(target)) => source == target,
