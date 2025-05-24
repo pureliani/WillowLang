@@ -92,13 +92,13 @@ pub fn check_fn_expr(
         for return_expr in return_exprs.iter() {
             let is_assignable = check_is_assignable(&return_expr.ty, &explicit_return_type);
             if !is_assignable {
-                errors.push(SemanticError::new(
-                    SemanticErrorKind::ReturnTypeMismatch {
+                errors.push(SemanticError {
+                    kind: SemanticErrorKind::ReturnTypeMismatch {
                         expected: explicit_return_type.clone(),
                         received: return_expr.ty.clone(),
                     },
-                    return_expr.span,
-                ));
+                    span: return_expr.span,
+                });
             }
         }
 

@@ -22,10 +22,10 @@ pub fn substitute_generics(
             .get(&gp.identifier.name)
             .cloned()
             .unwrap_or_else(|| {
-                errors.push(SemanticError::new(
-                    SemanticErrorKind::UnresolvedGenericParam(gp.identifier.name.clone()),
-                    gp.identifier.span,
-                ));
+                errors.push(SemanticError {
+                    kind: SemanticErrorKind::UnresolvedGenericParam(gp.identifier.name.clone()),
+                    span: gp.identifier.span,
+                });
 
                 CheckedType::Unknown
             }),

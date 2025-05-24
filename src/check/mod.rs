@@ -63,15 +63,9 @@ pub enum SemanticErrorKind {
     },
 }
 
-#[derive(Debug, Clone)]
-pub struct SemanticError {
-    pub kind: SemanticErrorKind,
-    pub span: Span,
-}
-
-impl SemanticError {
-    fn kind_to_code(kind: &SemanticErrorKind) -> usize {
-        match kind {
+impl SemanticErrorKind {
+    pub fn code(&self) -> usize {
+        match self {
             SemanticErrorKind::NonNumericOperand => 1,
             SemanticErrorKind::MixedSignedAndUnsigned => 2,
             SemanticErrorKind::MixedFloatAndInteger => 3,
@@ -102,12 +96,10 @@ impl SemanticError {
             SemanticErrorKind::StructMustBeDeclaredAtTopLevel => 28,
         }
     }
+}
 
-    fn new(kind: SemanticErrorKind, span: Span) -> Self {
-        Self { kind, span }
-    }
-
-    fn get_kind(&self) -> &SemanticErrorKind {
-        &self.kind
-    }
+#[derive(Debug, Clone)]
+pub struct SemanticError {
+    pub kind: SemanticErrorKind,
+    pub span: Span,
 }

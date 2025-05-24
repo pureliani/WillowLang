@@ -43,16 +43,9 @@ pub enum ParsingErrorKind {
     UnexpectedTokenAfterFinalExpression { found: TokenKind },
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct ParsingError {
-    pub kind: ParsingErrorKind,
-    pub span: Span,
-    code: usize,
-}
-
-impl ParsingError {
-    fn kind_to_code(kind: &ParsingErrorKind) -> usize {
-        match kind {
+impl ParsingErrorKind {
+    pub fn code(&self) -> usize {
+        match self {
             ParsingErrorKind::DocMustBeFollowedByDeclaration { .. } => 1,
             ParsingErrorKind::ExpectedNumberOfArguments(..) => 2,
             ParsingErrorKind::ExpectedAnExpressionButFound(..) => 3,
@@ -79,14 +72,12 @@ impl ParsingError {
             ParsingErrorKind::UnexpectedTokenAfterFinalExpression { .. } => 24,
         }
     }
+}
 
-    fn new(kind: ParsingErrorKind, span: Span) -> ParsingError {
-        ParsingError {
-            code: Self::kind_to_code(&kind),
-            kind,
-            span,
-        }
-    }
+#[derive(Debug, Clone, PartialEq)]
+pub struct ParsingError {
+    pub kind: ParsingErrorKind,
+    pub span: Span,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -133,10 +124,10 @@ impl Parser {
             .map(|t| &t.span)
             .unwrap_or(&first_token_span);
 
-        ParsingError::new(
-            ParsingErrorKind::UnexpectedEndOfInput,
-            last_token_span.clone(),
-        )
+        ParsingError {
+            kind: ParsingErrorKind::UnexpectedEndOfInput,
+            span: last_token_span.clone(),
+        }
     }
 
     fn get_span(&mut self, start_offset: usize, end_offset: usize) -> Result<Span, ParsingError> {
@@ -176,10 +167,10 @@ impl Parser {
                     Ok(StringNode { span, value })
                 }
                 t => {
-                    return Err(ParsingError::new(
-                        ParsingErrorKind::ExpectedAStringValue,
-                        t.span,
-                    ))
+                    return Err(ParsingError {
+                        kind: ParsingErrorKind::ExpectedAStringValue,
+                        span: t.span,
+                    })
                 }
             }
         } else {
@@ -194,10 +185,10 @@ impl Parser {
                     self.advance();
                     Ok(())
                 }
-                _ => Err(ParsingError::new(
-                    ParsingErrorKind::ExpectedAPunctuationMark(expected),
-                    token.span,
-                )),
+                _ => Err(ParsingError {
+                    kind: ParsingErrorKind::ExpectedAPunctuationMark(expected),
+                    span: token.span,
+                }),
             }
         } else {
             Err(self.unexpected_end_of_input())
@@ -212,10 +203,10 @@ impl Parser {
                     return Ok(number_kind);
                 }
                 _ => {
-                    return Err(ParsingError::new(
-                        ParsingErrorKind::ExpectedANumericValue,
-                        token.span,
-                    ))
+                    return Err(ParsingError {
+                        kind: ParsingErrorKind::ExpectedANumericValue,
+                        span: token.span,
+                    })
                 }
             }
         }
@@ -230,10 +221,10 @@ impl Parser {
                     self.advance();
                     Ok(())
                 }
-                _ => Err(ParsingError::new(
-                    ParsingErrorKind::ExpectedAKeyword(expected),
-                    token.span,
-                )),
+                _ => Err(ParsingError {
+                    kind: ParsingErrorKind::ExpectedAKeyword(expected),
+                    span: token.span,
+                }),
             }
         } else {
             Err(self.unexpected_end_of_input())
@@ -252,10 +243,10 @@ impl Parser {
                         span,
                     })
                 }
-                _ => Err(ParsingError::new(
-                    ParsingErrorKind::ExpectedAnIdentifier,
-                    token.span,
-                )),
+                _ => Err(ParsingError {
+                    kind: ParsingErrorKind::ExpectedAnIdentifier,
+                    span: token.span,
+                }),
             }
         } else {
             Err(self.unexpected_end_of_input())

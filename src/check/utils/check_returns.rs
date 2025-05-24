@@ -21,10 +21,10 @@ pub fn check_returns(
         match &stmt.kind {
             CheckedStmtKind::Return(expr) => {
                 if i < stmt_count - 1 {
-                    errors.push(SemanticError::new(
-                        SemanticErrorKind::ReturnNotLastStatement,
-                        stmt.span,
-                    ));
+                    errors.push(SemanticError {
+                        kind: SemanticErrorKind::ReturnNotLastStatement,
+                        span: stmt.span,
+                    });
                 }
                 returns.push(expr.clone());
             }

@@ -57,10 +57,10 @@ impl Parser {
             } else if self.match_token(0, TokenKind::Keyword(KeywordKind::Let)) {
                 self.parse_var_decl(documentation)
             } else if let Some(doc) = documentation {
-                Err(ParsingError::new(
-                    ParsingErrorKind::DocMustBeFollowedByDeclaration,
-                    doc.span,
-                ))
+                Err(ParsingError {
+                    kind: ParsingErrorKind::DocMustBeFollowedByDeclaration,
+                    span: doc.span,
+                })
             } else {
                 let lhs = self.parse_expr(0);
 

@@ -31,19 +31,19 @@ pub fn check_identifier_expr(
             SymbolEntry::EnumDecl(decl) => CheckedType::EnumDecl(decl),
             SymbolEntry::VarDecl(decl) => decl.constraint,
             SymbolEntry::GenericParam(_) => {
-                errors.push(SemanticError::new(
-                    SemanticErrorKind::CannotUseGenericParameterAsValue,
+                errors.push(SemanticError {
+                    kind: SemanticErrorKind::CannotUseGenericParameterAsValue,
                     span,
-                ));
+                });
 
                 CheckedType::Unknown
             }
         })
         .unwrap_or_else(|| {
-            errors.push(SemanticError::new(
-                SemanticErrorKind::UndeclaredIdentifier(id.name.clone()),
+            errors.push(SemanticError {
+                kind: SemanticErrorKind::UndeclaredIdentifier(id.name.clone()),
                 span,
-            ));
+            });
 
             CheckedType::Unknown
         });

@@ -45,23 +45,23 @@ pub fn check_fn_call_expr(
             call_result_type = *return_type.clone();
 
             if checked_args.len() != params.len() {
-                errors.push(SemanticError::new(
-                    SemanticErrorKind::ArgumentCountMismatch {
+                errors.push(SemanticError {
+                    kind: SemanticErrorKind::ArgumentCountMismatch {
                         expected: params.len(),
                         received: checked_args.len(),
                     },
-                    span,
-                ));
+                    span: span,
+                });
             } else {
                 for (param, arg) in params.iter().zip(checked_args.iter()) {
                     if !check_is_assignable(&arg.ty, &param.constraint) {
-                        errors.push(SemanticError::new(
-                            SemanticErrorKind::TypeMismatch {
+                        errors.push(SemanticError {
+                            kind: SemanticErrorKind::TypeMismatch {
                                 expected: param.constraint.clone(),
                                 received: arg.ty.clone(),
                             },
-                            arg.span,
-                        ));
+                            span: arg.span,
+                        });
                     }
                 }
             }
@@ -72,13 +72,13 @@ pub fn check_fn_call_expr(
             generic_params: _,
         } => {
             if checked_args.len() != params.len() {
-                errors.push(SemanticError::new(
-                    SemanticErrorKind::ArgumentCountMismatch {
+                errors.push(SemanticError {
+                    kind: SemanticErrorKind::ArgumentCountMismatch {
                         expected: params.len(),
                         received: checked_args.len(),
                     },
-                    span,
-                ));
+                    span: span,
+                });
             } else {
                 let mut substitution: GenericSubstitutionMap = HashMap::new();
 
@@ -100,22 +100,22 @@ pub fn check_fn_call_expr(
 
                 for (param, arg) in substituted_params.into_iter().zip(checked_args.iter()) {
                     if !check_is_assignable(&arg.ty, &param.constraint) {
-                        errors.push(SemanticError::new(
-                            SemanticErrorKind::TypeMismatch {
+                        errors.push(SemanticError {
+                            kind: SemanticErrorKind::TypeMismatch {
                                 expected: param.constraint,
                                 received: arg.ty.clone(),
                             },
-                            arg.span,
-                        ));
+                            span: arg.span,
+                        });
                     }
                 }
             }
         }
         non_callable_type => {
-            errors.push(SemanticError::new(
-                SemanticErrorKind::CannotCall(non_callable_type.clone()),
-                checked_left.span,
-            ));
+            errors.push(SemanticError {
+                kind: SemanticErrorKind::CannotCall(non_callable_type.clone()),
+                span: checked_left.span,
+            });
         }
     }
 

@@ -221,10 +221,10 @@ impl Parser {
                 }
             }
             _ => {
-                return Err(ParsingError::new(
-                    ParsingErrorKind::ExpectedATypeButFound(token.clone()),
-                    token.span,
-                ))
+                return Err(ParsingError {
+                    kind: ParsingErrorKind::ExpectedATypeButFound(token.clone()),
+                    span: token.span,
+                })
             }
         };
 

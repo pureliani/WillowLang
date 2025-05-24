@@ -84,10 +84,10 @@ pub fn check_stmt(
             properties,
         }) => {
             if !scope.borrow().is_file_scope() {
-                errors.push(SemanticError::new(
-                    SemanticErrorKind::StructMustBeDeclaredAtTopLevel,
-                    stmt.span,
-                ));
+                errors.push(SemanticError {
+                    kind: SemanticErrorKind::StructMustBeDeclaredAtTopLevel,
+                    span: stmt.span,
+                });
             }
 
             let struct_scope = scope.borrow().child(ScopeKind::Struct);
@@ -153,10 +153,10 @@ pub fn check_stmt(
 
             let final_constraint = match (&checked_value, checked_constraint) {
                 (None, None) => {
-                    errors.push(SemanticError::new(
-                        SemanticErrorKind::VarDeclWithNoConstraintOrInitializer,
-                        stmt.span,
-                    ));
+                    errors.push(SemanticError {
+                        kind: SemanticErrorKind::VarDeclWithNoConstraintOrInitializer,
+                        span: stmt.span,
+                    });
 
                     CheckedType::Unknown
                 }
@@ -164,13 +164,13 @@ pub fn check_stmt(
                     let is_assignable = check_is_assignable(&value.ty, &constraint);
 
                     if !is_assignable {
-                        errors.push(SemanticError::new(
-                            SemanticErrorKind::TypeMismatch {
+                        errors.push(SemanticError {
+                            kind: SemanticErrorKind::TypeMismatch {
                                 expected: constraint.clone(),
                                 received: value.ty.clone(),
                             },
-                            stmt.span,
-                        ));
+                            span: stmt.span,
+                        });
                     }
 
                     constraint
@@ -203,10 +203,10 @@ pub fn check_stmt(
             value,
         }) => {
             if !scope.borrow().is_file_scope() {
-                errors.push(SemanticError::new(
-                    SemanticErrorKind::TypeAliasMustBeDeclaredAtTopLevel,
-                    stmt.span,
-                ));
+                errors.push(SemanticError {
+                    kind: SemanticErrorKind::TypeAliasMustBeDeclaredAtTopLevel,
+                    span: stmt.span,
+                });
             }
 
             let alias_scope = scope.borrow().child(ScopeKind::TypeAlias);
@@ -250,10 +250,10 @@ pub fn check_stmt(
         }
         StmtKind::Break => {
             if !scope.borrow().is_loop_scope() {
-                errors.push(SemanticError::new(
-                    SemanticErrorKind::BreakKeywordOutsideLoop,
-                    stmt.span,
-                ));
+                errors.push(SemanticError {
+                    kind: SemanticErrorKind::BreakKeywordOutsideLoop,
+                    span: stmt.span,
+                });
             }
 
             CheckedStmt {
@@ -263,10 +263,10 @@ pub fn check_stmt(
         }
         StmtKind::Continue => {
             if !scope.borrow().is_loop_scope() {
-                errors.push(SemanticError::new(
-                    SemanticErrorKind::ContinueKeywordOutsideLoop,
-                    stmt.span,
-                ));
+                errors.push(SemanticError {
+                    kind: SemanticErrorKind::ContinueKeywordOutsideLoop,
+                    span: stmt.span,
+                });
             }
 
             CheckedStmt {
@@ -276,10 +276,10 @@ pub fn check_stmt(
         }
         StmtKind::Return(expr) => {
             if !scope.borrow().is_function_scope() {
-                errors.push(SemanticError::new(
-                    SemanticErrorKind::ReturnKeywordOutsideFunction,
-                    stmt.span,
-                ));
+                errors.push(SemanticError {
+                    kind: SemanticErrorKind::ReturnKeywordOutsideFunction,
+                    span: stmt.span,
+                });
             }
 
             CheckedStmt {
@@ -300,27 +300,27 @@ pub fn check_stmt(
                             check_is_assignable(&checked_value.ty, &decl.constraint);
 
                         if !is_assignable {
-                            errors.push(SemanticError::new(
-                                SemanticErrorKind::TypeMismatch {
+                            errors.push(SemanticError {
+                                kind: SemanticErrorKind::TypeMismatch {
                                     expected: decl.constraint.clone(),
                                     received: checked_value.ty.clone(),
                                 },
-                                stmt.span,
-                            ));
+                                span: stmt.span,
+                            });
                         }
                     } else {
-                        errors.push(SemanticError::new(
-                            SemanticErrorKind::UndeclaredIdentifier(id.name.clone()),
-                            checked_target.span,
-                        ));
+                        errors.push(SemanticError {
+                            kind: SemanticErrorKind::UndeclaredIdentifier(id.name.clone()),
+                            span: checked_target.span,
+                        });
                     }
                 }
                 CheckedExprKind::Access { left, field } => {}
                 _ => {
-                    errors.push(SemanticError::new(
-                        SemanticErrorKind::InvalidAssignmentTarget,
-                        checked_target.span,
-                    ));
+                    errors.push(SemanticError {
+                        kind: SemanticErrorKind::InvalidAssignmentTarget,
+                        span: checked_target.span,
+                    });
                 }
             }
 
@@ -342,13 +342,13 @@ pub fn check_stmt(
             let checked_condition = check_expr(*condition, errors, scope.clone());
 
             if !check_is_assignable(&checked_condition.ty, &CheckedType::Bool) {
-                errors.push(SemanticError::new(
-                    SemanticErrorKind::TypeMismatch {
+                errors.push(SemanticError {
+                    kind: SemanticErrorKind::TypeMismatch {
                         expected: CheckedType::Bool,
                         received: checked_condition.ty.clone(),
                     },
-                    checked_condition.span,
-                ));
+                    span: checked_condition.span,
+                });
             }
 
             let checked_final_expr = body

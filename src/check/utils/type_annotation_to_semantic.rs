@@ -89,18 +89,18 @@ pub fn check_type(
                     CheckedType::GenericParam(generic_param)
                 }
                 SymbolEntry::VarDecl(_) => {
-                    errors.push(SemanticError::new(
-                        SemanticErrorKind::CannotUseVariableDeclarationAsType,
-                        arg.span,
-                    ));
+                    errors.push(SemanticError {
+                        kind: SemanticErrorKind::CannotUseVariableDeclarationAsType,
+                        span: arg.span,
+                    });
                     CheckedType::Unknown
                 }
             })
             .unwrap_or_else(|| {
-                errors.push(SemanticError::new(
-                    SemanticErrorKind::UndeclaredType(id.name.clone()),
-                    arg.span,
-                ));
+                errors.push(SemanticError {
+                    kind: SemanticErrorKind::UndeclaredType(id.name.clone()),
+                    span: arg.span,
+                });
                 CheckedType::Unknown
             }),
 
@@ -179,10 +179,10 @@ pub fn check_type(
                     }
                 }
                 None => {
-                    errors.push(SemanticError::new(
-                        SemanticErrorKind::InvalidArraySizeValue(*size),
-                        arg.span,
-                    ));
+                    errors.push(SemanticError {
+                        kind: SemanticErrorKind::InvalidArraySizeValue(*size),
+                        span: arg.span,
+                    });
                     let _ = check_type(&left, errors, scope.clone()); // Process for errors, ignore result
                     CheckedType::Unknown
                 }

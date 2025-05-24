@@ -28,25 +28,25 @@ pub fn check_and_expr(
     let checked_right = check_expr(*right, errors, scope);
 
     if !check_is_assignable(&checked_left.ty, &CheckedType::Bool) {
-        errors.push(SemanticError::new(
-            SemanticErrorKind::TypeMismatch {
+        errors.push(SemanticError {
+            kind: SemanticErrorKind::TypeMismatch {
                 expected: CheckedType::Bool,
                 received: checked_left.ty.clone(),
             },
-            checked_left.span,
-        ));
+            span: checked_left.span,
+        });
 
         expr_type = CheckedType::Unknown;
     }
 
     if !check_is_assignable(&checked_right.ty, &CheckedType::Bool) {
-        errors.push(SemanticError::new(
-            SemanticErrorKind::TypeMismatch {
+        errors.push(SemanticError {
+            kind: SemanticErrorKind::TypeMismatch {
                 expected: CheckedType::Bool,
                 received: checked_right.ty.clone(),
             },
-            checked_right.span,
-        ));
+            span: checked_right.span,
+        });
         expr_type = CheckedType::Unknown;
     }
 

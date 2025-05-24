@@ -28,17 +28,17 @@ pub fn check_access_expr(
             .find(|p| p.identifier == field)
             .map(|p| p.constraint.clone())
             .unwrap_or_else(|| {
-                errors.push(SemanticError::new(
-                    SemanticErrorKind::UndefinedProperty(field.clone()),
-                    span,
-                ));
+                errors.push(SemanticError {
+                    kind: SemanticErrorKind::UndefinedProperty(field.clone()),
+                    span: span,
+                });
                 CheckedType::Unknown
             }),
         t => {
-            errors.push(SemanticError::new(
-                SemanticErrorKind::CannotAccess(t.clone()),
-                field.span,
-            ));
+            errors.push(SemanticError {
+                kind: SemanticErrorKind::CannotAccess(t.clone()),
+                span: field.span,
+            });
 
             CheckedType::Unknown
         }

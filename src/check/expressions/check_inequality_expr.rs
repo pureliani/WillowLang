@@ -28,13 +28,13 @@ pub fn check_inequality_expr(
     let checked_right = check_expr(*right, errors, scope);
 
     if !check_is_equatable(&checked_left.ty, &checked_right.ty) {
-        errors.push(SemanticError::new(
-            SemanticErrorKind::CannotCompareType {
+        errors.push(SemanticError {
+            kind: SemanticErrorKind::CannotCompareType {
                 of: checked_left.ty.clone(),
                 to: checked_right.ty.clone(),
             },
             span,
-        ));
+        });
 
         ty = CheckedType::Unknown;
     }

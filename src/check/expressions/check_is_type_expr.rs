@@ -26,10 +26,10 @@ pub fn check_is_type_expr(
     let checked_target = check_type(&target, errors, scope);
 
     if !matches!(checked_left.ty, CheckedType::Union { .. }) {
-        errors.push(SemanticError::new(
-            SemanticErrorKind::CannotUseIsTypeOnNonUnion,
+        errors.push(SemanticError {
+            kind: SemanticErrorKind::CannotUseIsTypeOnNonUnion,
             span,
-        ));
+        });
     }
 
     CheckedExpr {

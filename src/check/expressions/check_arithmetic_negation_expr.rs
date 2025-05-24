@@ -36,13 +36,13 @@ pub fn check_arithmetic_negation_expr(
                 CheckedType::F64,
             ]);
 
-            errors.push(SemanticError::new(
-                SemanticErrorKind::TypeMismatch {
+            errors.push(SemanticError {
+                kind: SemanticErrorKind::TypeMismatch {
                     expected: CheckedType::Union(expected),
                     received: unexpected_type.clone(),
                 },
-                checked_right.span,
-            ));
+                span: checked_right.span,
+            });
 
             CheckedType::Unknown
         }

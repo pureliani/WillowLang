@@ -32,10 +32,10 @@ impl Parser {
 
             if is_start_of_stmt(&current_token.kind) {
                 if final_expr.is_some() {
-                    return Err(ParsingError::new(
-                        ParsingErrorKind::UnexpectedStatementAfterFinalExpression,
-                        current_token_span,
-                    ));
+                    return Err(ParsingError {
+                        kind: ParsingErrorKind::UnexpectedStatementAfterFinalExpression,
+                        span: current_token_span,
+                    });
                 }
 
                 let stmt = self.parse_stmt().map_err(|e| {
@@ -46,12 +46,12 @@ impl Parser {
                 final_expr = None;
             } else if is_start_of_expr(&current_token.kind) {
                 if final_expr.is_some() {
-                    return Err(ParsingError::new(
-                        ParsingErrorKind::UnexpectedTokenAfterFinalExpression {
+                    return Err(ParsingError {
+                        kind: ParsingErrorKind::UnexpectedTokenAfterFinalExpression {
                             found: current_token.kind.clone(),
                         },
-                        current_token_span,
-                    ));
+                        span: current_token_span,
+                    });
                 }
 
                 let expr = self.parse_expr(0).map_err(|e| {
@@ -77,12 +77,12 @@ impl Parser {
                     final_expr = Some(Box::new(expr));
                 }
             } else {
-                return Err(ParsingError::new(
-                    ParsingErrorKind::ExpectedStatementOrExpression {
+                return Err(ParsingError {
+                    kind: ParsingErrorKind::ExpectedStatementOrExpression {
                         found: current_token.kind.clone(),
                     },
-                    current_token_span,
-                ));
+                    span: current_token_span,
+                });
             }
 
             if final_expr.is_some()
@@ -92,12 +92,12 @@ impl Parser {
                     .current()
                     .cloned()
                     .ok_or_else(|| self.unexpected_end_of_input())?;
-                return Err(ParsingError::new(
-                    ParsingErrorKind::UnexpectedTokenAfterFinalExpression {
+                return Err(ParsingError {
+                    kind: ParsingErrorKind::UnexpectedTokenAfterFinalExpression {
                         found: unexpected_token.kind.clone(),
                     },
-                    unexpected_token.span,
-                ));
+                    span: unexpected_token.span,
+                });
             }
         }
 

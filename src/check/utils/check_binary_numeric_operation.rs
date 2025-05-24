@@ -24,10 +24,10 @@ pub fn check_binary_numeric_operation(
     let left_type = if is_float(&left.ty) || is_integer(&left.ty) {
         &left.ty
     } else {
-        errors.push(SemanticError::new(
-            SemanticErrorKind::NonNumericOperand,
-            left.span,
-        ));
+        errors.push(SemanticError {
+            kind: SemanticErrorKind::NonNumericOperand,
+            span: left.span,
+        });
 
         return CheckedType::Unknown;
     };
@@ -35,10 +35,10 @@ pub fn check_binary_numeric_operation(
     let right_type = if is_float(&right.ty) || is_integer(&right.ty) {
         &right.ty
     } else {
-        errors.push(SemanticError::new(
-            SemanticErrorKind::NonNumericOperand,
-            right.span,
-        ));
+        errors.push(SemanticError {
+            kind: SemanticErrorKind::NonNumericOperand,
+            span: right.span,
+        });
 
         return CheckedType::Unknown;
     };
@@ -46,19 +46,19 @@ pub fn check_binary_numeric_operation(
     if (is_float(&left_type) && is_integer(&right_type))
         || (is_integer(&left_type) && is_float(&right_type))
     {
-        errors.push(SemanticError::new(
-            SemanticErrorKind::MixedFloatAndInteger,
-            combined_span,
-        ));
+        errors.push(SemanticError {
+            kind: SemanticErrorKind::MixedFloatAndInteger,
+            span: combined_span,
+        });
 
         return CheckedType::Unknown;
     }
 
     if is_signed(&left_type) != is_signed(&right_type) {
-        errors.push(SemanticError::new(
-            SemanticErrorKind::MixedSignedAndUnsigned,
-            combined_span,
-        ));
+        errors.push(SemanticError {
+            kind: SemanticErrorKind::MixedSignedAndUnsigned,
+            span: combined_span,
+        });
 
         return CheckedType::Unknown;
     }

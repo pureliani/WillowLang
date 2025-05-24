@@ -246,10 +246,10 @@ impl Parser {
                 }
             }
             t => {
-                return Err(ParsingError::new(
-                    ParsingErrorKind::ExpectedAnExpressionButFound(t.clone()),
-                    t.span,
-                ))
+                return Err(ParsingError {
+                    kind: ParsingErrorKind::ExpectedAnExpressionButFound(t.clone()),
+                    span: t.span,
+                })
             }
         };
 
@@ -339,10 +339,10 @@ impl Parser {
                                     },
                                 })
                             } else {
-                                return Err(ParsingError::new(
-                                    ParsingErrorKind::UnknownStaticMethod(field.to_owned()),
-                                    field.span,
-                                ));
+                                return Err(ParsingError {
+                                    kind: ParsingErrorKind::UnknownStaticMethod(field.to_owned()),
+                                    span: field.span,
+                                });
                             }
                         } else {
                             Some(self.parse_fn_call_expr(lhs_clone)?)
@@ -352,10 +352,10 @@ impl Parser {
                         Some(self.parse_struct_init_expr(lhs_clone)?)
                     }
                     _ => {
-                        return Err(ParsingError::new(
-                            ParsingErrorKind::InvalidSuffixOperator(op.clone()),
-                            op.span,
-                        ))
+                        return Err(ParsingError {
+                            kind: ParsingErrorKind::InvalidSuffixOperator(op.clone()),
+                            span: op.span,
+                        })
                     }
                 };
 

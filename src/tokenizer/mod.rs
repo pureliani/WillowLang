@@ -18,6 +18,19 @@ pub enum TokenizationErrorKind {
     UnterminatedDoc,
 }
 
+impl TokenizationErrorKind {
+    pub fn code(&self) -> usize {
+        match self {
+            TokenizationErrorKind::UnknownToken => 1,
+            TokenizationErrorKind::UnknownEscapeSequence => 2,
+            TokenizationErrorKind::InvalidFloatingNumber => 3,
+            TokenizationErrorKind::InvalidIntegerNumber => 4,
+            TokenizationErrorKind::UnterminatedString => 5,
+            TokenizationErrorKind::UnterminatedDoc => 6,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct TokenizationError {
     pub kind: TokenizationErrorKind,

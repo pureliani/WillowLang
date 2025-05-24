@@ -17,13 +17,13 @@ pub fn infer_generics(
             let name = &gp.identifier.name;
             if let Some(existing) = substitution.get(name) {
                 if &existing != received_kind {
-                    errors.push(SemanticError::new(
-                        SemanticErrorKind::ConflictingGenericBinding {
+                    errors.push(SemanticError {
+                        kind: SemanticErrorKind::ConflictingGenericBinding {
                             existing: existing.clone(),
                             new: received.clone(),
                         },
-                        gp.identifier.span,
-                    ));
+                        span: gp.identifier.span,
+                    });
                 }
             } else {
                 substitution.insert(name.clone(), received.clone());

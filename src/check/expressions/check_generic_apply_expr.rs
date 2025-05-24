@@ -41,13 +41,13 @@ pub fn check_generic_apply_expr(
                                  type_args: Vec<(Span, CheckedType)>|
      -> GenericSubstitutionMap {
         if generic_params.len() != type_args.len() {
-            errors.push(SemanticError::new(
-                SemanticErrorKind::GenericArgumentCountMismatch {
+            errors.push(SemanticError {
+                kind: SemanticErrorKind::GenericArgumentCountMismatch {
                     expected: generic_params.len(),
                     received: type_args.len(),
                 },
                 span,
-            ));
+            });
         } else {
             generic_params
                 .iter()
@@ -55,13 +55,13 @@ pub fn check_generic_apply_expr(
                 .for_each(|(gp, ta)| {
                     if let Some(constraint) = &gp.constraint {
                         if !check_is_assignable(&ta.1, constraint) {
-                            errors.push(SemanticError::new(
-                                SemanticErrorKind::TypeMismatch {
+                            errors.push(SemanticError {
+                                kind: SemanticErrorKind::TypeMismatch {
                                     expected: *constraint.clone(),
                                     received: ta.1.clone(),
                                 },
-                                ta.0,
-                            ));
+                                span: ta.0,
+                            });
                         }
                     }
                 });
@@ -133,12 +133,12 @@ pub fn check_generic_apply_expr(
             )
         }
         _ => {
-            errors.push(SemanticError::new(
-                SemanticErrorKind::CannotApplyTypeArguments {
+            errors.push(SemanticError {
+                kind: SemanticErrorKind::CannotApplyTypeArguments {
                     to: checked_left.ty.clone(),
                 },
                 span,
-            ));
+            });
 
             (CheckedType::Unknown, GenericSubstitutionMap::new())
         }

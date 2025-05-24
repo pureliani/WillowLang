@@ -31,13 +31,13 @@ pub fn check_if_expr(
 
     let checked_condition = check_expr(*condition, errors, scope.clone());
     if !check_is_assignable(&checked_condition.ty, &CheckedType::Bool) {
-        errors.push(SemanticError::new(
-            SemanticErrorKind::TypeMismatch {
+        errors.push(SemanticError {
+            kind: SemanticErrorKind::TypeMismatch {
                 expected: CheckedType::Bool,
                 received: checked_condition.ty.clone(),
             },
-            checked_condition.span,
-        ));
+            span: checked_condition.span,
+        });
     }
 
     let then_branch_scope = scope.borrow().child(ScopeKind::CodeBlock);
@@ -63,13 +63,13 @@ pub fn check_if_expr(
         .map(|ei| {
             let checked_condition = check_expr(*ei.0, errors, scope.clone());
             if !check_is_assignable(&checked_condition.ty, &CheckedType::Bool) {
-                errors.push(SemanticError::new(
-                    SemanticErrorKind::TypeMismatch {
+                errors.push(SemanticError {
+                    kind: SemanticErrorKind::TypeMismatch {
                         expected: CheckedType::Bool,
                         received: checked_condition.ty.clone(),
                     },
-                    checked_condition.span,
-                ));
+                    span: checked_condition.span,
+                });
             }
 
             let else_if_scope = scope.borrow().child(ScopeKind::CodeBlock);

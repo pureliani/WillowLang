@@ -54,7 +54,8 @@ pub fn compile_file(file_path: &String, source_code: &String) {
             file_path.clone(),
             e.span.start.byte_offset..e.span.end.byte_offset,
         );
-        let report_builder = Report::build(ReportKind::Error, error_span.clone());
+        let report_builder = Report::build(ReportKind::Error, error_span.clone())
+            .with_code(format!("T{}", e.kind.code()));
 
         let report = match &e.kind {
             TokenizationErrorKind::UnterminatedString => report_builder
@@ -116,7 +117,8 @@ pub fn compile_file(file_path: &String, source_code: &String) {
             e.span.start.byte_offset..e.span.end.byte_offset,
         );
 
-        let report_builder = Report::build(ReportKind::Error, error_span.clone());
+        let report_builder = Report::build(ReportKind::Error, error_span.clone())
+            .with_code(format!("P{}", e.kind.code()));
 
         let report = match &e.kind {
             ParsingErrorKind::DocMustBeFollowedByDeclaration => {
@@ -202,7 +204,8 @@ pub fn compile_file(file_path: &String, source_code: &String) {
             e.span.start.byte_offset..e.span.end.byte_offset,
         );
 
-        let report_builder = Report::build(ReportKind::Error, error_span.clone());
+        let report_builder = Report::build(ReportKind::Error, error_span.clone())
+            .with_code(format!("S{}", e.kind.code()));
 
         let report = match &e.kind {
             SemanticErrorKind::NonNumericOperand => {

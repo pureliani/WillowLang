@@ -26,13 +26,13 @@ pub fn check_logical_negation_expr(
     let mut expr_type = CheckedType::Bool;
 
     if !check_is_assignable(&checked_right.ty, &CheckedType::Bool) {
-        errors.push(SemanticError::new(
-            SemanticErrorKind::TypeMismatch {
+        errors.push(SemanticError {
+            kind: SemanticErrorKind::TypeMismatch {
                 expected: CheckedType::Bool,
                 received: checked_right.ty.clone(),
             },
             span,
-        ));
+        });
         expr_type = CheckedType::Unknown
     }
 
