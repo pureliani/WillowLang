@@ -299,7 +299,7 @@ pub fn compile_file(file_path: &String, source_code: &String) {
         cache.add(file_path.clone(), source_code.clone());
 
         for (index, report) in reports.into_iter().enumerate() {
-            let top_border = format!("=============== #{} ===============", index + 1);
+            let top_border = format!("=============== {} ===============", index + 1);
             let bottom_border = "=".repeat(top_border.len());
             print!("\n\n{}\n\n", top_border);
             report.eprint(&mut cache).unwrap();
