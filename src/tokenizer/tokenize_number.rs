@@ -26,47 +26,373 @@ impl<'a> Tokenizer<'a> {
     }
 }
 
-fn parse_number(number: &str) -> Result<NumberKind, TokenizationErrorKind> {
-    if number.contains('.') {
-        if let Ok(value) = number.parse::<f64>() {
-            return Ok(NumberKind::F64(value));
-        }
-        if let Ok(value) = number.parse::<f32>() {
-            return Ok(NumberKind::F32(value));
-        }
-        return Err(TokenizationErrorKind::InvalidFloatingNumber);
-    } else {
-        if let Ok(value) = number.parse::<i64>() {
-            return Ok(NumberKind::I64(value));
-        }
-        if let Ok(value) = number.parse::<i32>() {
-            return Ok(NumberKind::I32(value));
-        }
-        if let Ok(value) = number.parse::<i16>() {
-            return Ok(NumberKind::I16(value));
-        }
-        if let Ok(value) = number.parse::<i8>() {
-            return Ok(NumberKind::I8(value));
-        }
-        if let Ok(value) = number.parse::<u64>() {
-            return Ok(NumberKind::U64(value));
-        }
-        if let Ok(value) = number.parse::<u32>() {
-            return Ok(NumberKind::U32(value));
-        }
-        if let Ok(value) = number.parse::<u16>() {
-            return Ok(NumberKind::U16(value));
-        }
-        if let Ok(value) = number.parse::<u8>() {
-            return Ok(NumberKind::U8(value));
-        }
-        if let Ok(value) = number.parse::<usize>() {
-            return Ok(NumberKind::USize(value));
-        }
-        if let Ok(value) = number.parse::<isize>() {
-            return Ok(NumberKind::ISize(value));
-        }
+const SUFFIX_INFOS: [(&'static str, bool); 12] = [
+    ("f64", true),
+    ("f32", true),
+    ("usize", false),
+    ("u64", false),
+    ("u32", false),
+    ("u16", false),
+    ("u8", false),
+    ("isize", false),
+    ("i64", false),
+    ("i32", false),
+    ("i16", false),
+    ("i8", false),
+];
 
-        return Err(TokenizationErrorKind::InvalidIntegerNumber);
+fn parse_number(full_number_str: &str) -> Result<NumberKind, TokenizationErrorKind> {
+    for (suffix_str, is_float_suffix) in SUFFIX_INFOS {
+        if full_number_str.ends_with(suffix_str) {
+            let numeric_part = &full_number_str[..full_number_str.len() - suffix_str.len()];
+
+            if !is_float_suffix && numeric_part.contains('.') {
+                // e.g. "1.0u8"
+                return Err(TokenizationErrorKind::InvalidIntegerNumber);
+            }
+            if is_float_suffix && numeric_part == "." {
+                // e.g. ".f32"
+                return Err(TokenizationErrorKind::InvalidFloatingNumber);
+            }
+
+            let result: Result<NumberKind, _> = match suffix_str {
+                "f64" => numeric_part
+                    .parse::<f64>()
+                    .map(NumberKind::F64)
+                    .or(Err(TokenizationErrorKind::InvalidFloatingNumber)),
+                "f32" => numeric_part
+                    .parse::<f32>()
+                    .map(NumberKind::F32)
+                    .or(Err(TokenizationErrorKind::InvalidFloatingNumber)),
+                "usize" => numeric_part
+                    .parse::<usize>()
+                    .map(NumberKind::USize)
+                    .or(Err(TokenizationErrorKind::InvalidIntegerNumber)),
+                "u64" => numeric_part
+                    .parse::<u64>()
+                    .map(NumberKind::U64)
+                    .or(Err(TokenizationErrorKind::InvalidIntegerNumber)),
+                "u32" => numeric_part
+                    .parse::<u32>()
+                    .map(NumberKind::U32)
+                    .or(Err(TokenizationErrorKind::InvalidIntegerNumber)),
+                "u16" => numeric_part
+                    .parse::<u16>()
+                    .map(NumberKind::U16)
+                    .or(Err(TokenizationErrorKind::InvalidIntegerNumber)),
+                "u8" => numeric_part
+                    .parse::<u8>()
+                    .map(NumberKind::U8)
+                    .or(Err(TokenizationErrorKind::InvalidIntegerNumber)),
+                "isize" => numeric_part
+                    .parse::<isize>()
+                    .map(NumberKind::ISize)
+                    .or(Err(TokenizationErrorKind::InvalidIntegerNumber)),
+                "i64" => numeric_part
+                    .parse::<i64>()
+                    .map(NumberKind::I64)
+                    .or(Err(TokenizationErrorKind::InvalidIntegerNumber)),
+                "i32" => numeric_part
+                    .parse::<i32>()
+                    .map(NumberKind::I32)
+                    .or(Err(TokenizationErrorKind::InvalidIntegerNumber)),
+                "i16" => numeric_part
+                    .parse::<i16>()
+                    .map(NumberKind::I16)
+                    .or(Err(TokenizationErrorKind::InvalidIntegerNumber)),
+                "i8" => numeric_part
+                    .parse::<i8>()
+                    .map(NumberKind::I8)
+                    .or(Err(TokenizationErrorKind::InvalidIntegerNumber)),
+                _ => unreachable!("Suffix matched in loop but not in match block"),
+            };
+
+            return result;
+        }
+    }
+
+    if full_number_str.contains('.') {
+        return full_number_str
+            .parse::<f64>()
+            .map(NumberKind::F64)
+            .or(Err(TokenizationErrorKind::InvalidFloatingNumber));
+    } else {
+        return full_number_str
+            .parse::<i64>()
+            .map(NumberKind::I64)
+            .or(Err(TokenizationErrorKind::InvalidIntegerNumber));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        ast::{Position, Span},
+        tokenizer::{NumberKind, Token, TokenKind, Tokenizer},
+    };
+    use pretty_assertions::assert_eq;
+
+    #[test]
+    fn tokenizes_numbers_with_suffixes() {
+        let test_cases = vec![
+            (
+                "1.",
+                NumberKind::F64(1.0f64),
+                Span {
+                    start: Position {
+                        line: 1,
+                        col: 1,
+                        byte_offset: 0,
+                    },
+                    end: Position {
+                        line: 1,
+                        col: 3,
+                        byte_offset: 2,
+                    },
+                },
+            ),
+            (
+                "1.5",
+                NumberKind::F64(1.5f64),
+                Span {
+                    start: Position {
+                        line: 1,
+                        col: 1,
+                        byte_offset: 0,
+                    },
+                    end: Position {
+                        line: 1,
+                        col: 4,
+                        byte_offset: 3,
+                    },
+                },
+            ),
+            (
+                "1",
+                NumberKind::I64(1i64),
+                Span {
+                    start: Position {
+                        line: 1,
+                        col: 1,
+                        byte_offset: 0,
+                    },
+                    end: Position {
+                        line: 1,
+                        col: 2,
+                        byte_offset: 1,
+                    },
+                },
+            ),
+            (
+                "1.5f64",
+                NumberKind::F64(1.5f64),
+                Span {
+                    start: Position {
+                        line: 1,
+                        col: 1,
+                        byte_offset: 0,
+                    },
+                    end: Position {
+                        line: 1,
+                        col: 7,
+                        byte_offset: 6,
+                    },
+                },
+            ),
+            (
+                "1.5f32",
+                NumberKind::F32(1.5f32),
+                Span {
+                    start: Position {
+                        line: 1,
+                        col: 1,
+                        byte_offset: 0,
+                    },
+                    end: Position {
+                        line: 1,
+                        col: 7,
+                        byte_offset: 6,
+                    },
+                },
+            ),
+            (
+                "1f64",
+                NumberKind::F64(1f64),
+                Span {
+                    start: Position {
+                        line: 1,
+                        col: 1,
+                        byte_offset: 0,
+                    },
+                    end: Position {
+                        line: 1,
+                        col: 5,
+                        byte_offset: 4,
+                    },
+                },
+            ),
+            (
+                "1f32",
+                NumberKind::F32(1f32),
+                Span {
+                    start: Position {
+                        line: 1,
+                        col: 1,
+                        byte_offset: 0,
+                    },
+                    end: Position {
+                        line: 1,
+                        col: 5,
+                        byte_offset: 4,
+                    },
+                },
+            ),
+            (
+                "1u8",
+                NumberKind::U8(1u8),
+                Span {
+                    start: Position {
+                        line: 1,
+                        col: 1,
+                        byte_offset: 0,
+                    },
+                    end: Position {
+                        line: 1,
+                        col: 4,
+                        byte_offset: 3,
+                    },
+                },
+            ),
+            (
+                "1u16",
+                NumberKind::U16(1u16),
+                Span {
+                    start: Position {
+                        line: 1,
+                        col: 1,
+                        byte_offset: 0,
+                    },
+                    end: Position {
+                        line: 1,
+                        col: 5,
+                        byte_offset: 4,
+                    },
+                },
+            ),
+            (
+                "1u32",
+                NumberKind::U32(1u32),
+                Span {
+                    start: Position {
+                        line: 1,
+                        col: 1,
+                        byte_offset: 0,
+                    },
+                    end: Position {
+                        line: 1,
+                        col: 5,
+                        byte_offset: 4,
+                    },
+                },
+            ),
+            (
+                "1u64",
+                NumberKind::U64(1u64),
+                Span {
+                    start: Position {
+                        line: 1,
+                        col: 1,
+                        byte_offset: 0,
+                    },
+                    end: Position {
+                        line: 1,
+                        col: 5,
+                        byte_offset: 4,
+                    },
+                },
+            ),
+            (
+                "1i8",
+                NumberKind::I8(1i8),
+                Span {
+                    start: Position {
+                        line: 1,
+                        col: 1,
+                        byte_offset: 0,
+                    },
+                    end: Position {
+                        line: 1,
+                        col: 4,
+                        byte_offset: 3,
+                    },
+                },
+            ),
+            (
+                "1i16",
+                NumberKind::I16(1i16),
+                Span {
+                    start: Position {
+                        line: 1,
+                        col: 1,
+                        byte_offset: 0,
+                    },
+                    end: Position {
+                        line: 1,
+                        col: 5,
+                        byte_offset: 4,
+                    },
+                },
+            ),
+            (
+                "1i32",
+                NumberKind::I32(1i32),
+                Span {
+                    start: Position {
+                        line: 1,
+                        col: 1,
+                        byte_offset: 0,
+                    },
+                    end: Position {
+                        line: 1,
+                        col: 5,
+                        byte_offset: 4,
+                    },
+                },
+            ),
+            (
+                "1i64",
+                NumberKind::I64(1i64),
+                Span {
+                    start: Position {
+                        line: 1,
+                        col: 1,
+                        byte_offset: 0,
+                    },
+                    end: Position {
+                        line: 1,
+                        col: 5,
+                        byte_offset: 4,
+                    },
+                },
+            ),
+        ];
+
+        for (input, expected_kind, span) in test_cases {
+            let (tokens, errors) = Tokenizer::tokenize(input);
+
+            if errors.len() > 0 {
+                dbg!("re", input);
+            }
+
+            assert_eq!(errors, vec![]);
+
+            assert_eq!(
+                tokens,
+                vec![Token {
+                    span,
+                    kind: TokenKind::Number(expected_kind),
+                }]
+            );
+        }
     }
 }
