@@ -41,16 +41,16 @@ impl Cache<String> for FileSourceCache {
     }
 }
 
-pub fn compile_file(file_path: String, source_code: &String) {
+pub fn compile_file(file_path: &String, source_code: &String) {
+    let mut reports: Vec<Report<'_, (String, std::ops::Range<usize>)>> = vec![];
+
     let (tokens, tokenization_errors) = Tokenizer::tokenize(source_code);
     let (ast, parsing_errors) = Parser::parse(tokens);
     let mut semantic_errors: Vec<SemanticError> = vec![];
     let scope = Rc::new(RefCell::new(Scope::new(ScopeKind::File)));
     let analyzed_tree = check_stmts(ast, &mut semantic_errors, scope);
 
-    let mut reports: Vec<Report<'_, (String, std::ops::Range<usize>)>> = vec![];
-
-    tokenization_errors.into_iter().for_each(|e| {
+    tokenization_errors.iter().for_each(|e| {
         let report_builder = Report::build(
             ReportKind::Error,
             (
@@ -59,7 +59,7 @@ pub fn compile_file(file_path: String, source_code: &String) {
             ),
         );
 
-        let report = match e.kind {
+        let report = match &e.kind {
             TokenizationErrorKind::UnterminatedString => {
                 report_builder.with_message("Unterminated string").finish()
             }
@@ -83,7 +83,7 @@ pub fn compile_file(file_path: String, source_code: &String) {
         reports.push(report)
     });
 
-    parsing_errors.into_iter().for_each(|e| {
+    parsing_errors.iter().for_each(|e| {
         let report_builder = Report::build(
             ReportKind::Error,
             (
@@ -92,7 +92,7 @@ pub fn compile_file(file_path: String, source_code: &String) {
             ),
         );
 
-        let report = match e.kind {
+        let report = match &e.kind {
             ParsingErrorKind::DocMustBeFollowedByDeclaration => {
                 todo!();
             }
@@ -179,7 +179,7 @@ pub fn compile_file(file_path: String, source_code: &String) {
             ),
         );
 
-        let report = match e.kind {
+        let report = match &e.kind {
             SemanticErrorKind::NonNumericOperand => {
                 todo!();
             }
