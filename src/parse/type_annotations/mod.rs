@@ -334,8 +334,16 @@ mod tests {
                 TypeAnnotation {
                     kind: TypeAnnotationKind::I8,
                     span: Span {
-                        start: Position { line: 1, col: 1 },
-                        end: Position { line: 1, col: 3 },
+                        start: Position {
+                            line: 1,
+                            col: 1,
+                            byte_offset: 0,
+                        },
+                        end: Position {
+                            line: 1,
+                            col: 3,
+                            byte_offset: 2,
+                        },
                     },
                 },
             ),
@@ -344,8 +352,16 @@ mod tests {
                 TypeAnnotation {
                     kind: TypeAnnotationKind::I16,
                     span: Span {
-                        start: Position { line: 1, col: 1 },
-                        end: Position { line: 1, col: 4 },
+                        start: Position {
+                            line: 1,
+                            col: 1,
+                            byte_offset: 0,
+                        },
+                        end: Position {
+                            line: 1,
+                            col: 4,
+                            byte_offset: 3,
+                        },
                     },
                 },
             ),
@@ -354,8 +370,16 @@ mod tests {
                 TypeAnnotation {
                     kind: TypeAnnotationKind::I32,
                     span: Span {
-                        start: Position { line: 1, col: 1 },
-                        end: Position { line: 1, col: 4 },
+                        start: Position {
+                            line: 1,
+                            col: 1,
+                            byte_offset: 0,
+                        },
+                        end: Position {
+                            line: 1,
+                            col: 4,
+                            byte_offset: 3,
+                        },
                     },
                 },
             ),
@@ -364,8 +388,16 @@ mod tests {
                 TypeAnnotation {
                     kind: TypeAnnotationKind::I64,
                     span: Span {
-                        start: Position { line: 1, col: 1 },
-                        end: Position { line: 1, col: 4 },
+                        start: Position {
+                            line: 1,
+                            col: 1,
+                            byte_offset: 0,
+                        },
+                        end: Position {
+                            line: 1,
+                            col: 4,
+                            byte_offset: 3,
+                        },
                     },
                 },
             ),
@@ -374,8 +406,16 @@ mod tests {
                 TypeAnnotation {
                     kind: TypeAnnotationKind::F32,
                     span: Span {
-                        start: Position { line: 1, col: 1 },
-                        end: Position { line: 1, col: 4 },
+                        start: Position {
+                            line: 1,
+                            col: 1,
+                            byte_offset: 0,
+                        },
+                        end: Position {
+                            line: 1,
+                            col: 4,
+                            byte_offset: 3,
+                        },
                     },
                 },
             ),
@@ -384,8 +424,16 @@ mod tests {
                 TypeAnnotation {
                     kind: TypeAnnotationKind::F64,
                     span: Span {
-                        start: Position { line: 1, col: 1 },
-                        end: Position { line: 1, col: 4 },
+                        start: Position {
+                            line: 1,
+                            col: 1,
+                            byte_offset: 0,
+                        },
+                        end: Position {
+                            line: 1,
+                            col: 4,
+                            byte_offset: 3,
+                        },
                     },
                 },
             ),
@@ -394,8 +442,16 @@ mod tests {
                 TypeAnnotation {
                     kind: TypeAnnotationKind::U8,
                     span: Span {
-                        start: Position { line: 1, col: 1 },
-                        end: Position { line: 1, col: 3 },
+                        start: Position {
+                            line: 1,
+                            col: 1,
+                            byte_offset: 0,
+                        },
+                        end: Position {
+                            line: 1,
+                            col: 3,
+                            byte_offset: 2,
+                        },
                     },
                 },
             ),
@@ -404,8 +460,16 @@ mod tests {
                 TypeAnnotation {
                     kind: TypeAnnotationKind::U16,
                     span: Span {
-                        start: Position { line: 1, col: 1 },
-                        end: Position { line: 1, col: 4 },
+                        start: Position {
+                            line: 1,
+                            col: 1,
+                            byte_offset: 0,
+                        },
+                        end: Position {
+                            line: 1,
+                            col: 4,
+                            byte_offset: 3,
+                        },
                     },
                 },
             ),
@@ -414,8 +478,16 @@ mod tests {
                 TypeAnnotation {
                     kind: TypeAnnotationKind::U32,
                     span: Span {
-                        start: Position { line: 1, col: 1 },
-                        end: Position { line: 1, col: 4 },
+                        start: Position {
+                            line: 1,
+                            col: 1,
+                            byte_offset: 0,
+                        },
+                        end: Position {
+                            line: 1,
+                            col: 4,
+                            byte_offset: 3,
+                        },
                     },
                 },
             ),
@@ -424,8 +496,16 @@ mod tests {
                 TypeAnnotation {
                     kind: TypeAnnotationKind::U64,
                     span: Span {
-                        start: Position { line: 1, col: 1 },
-                        end: Position { line: 1, col: 4 },
+                        start: Position {
+                            line: 1,
+                            col: 1,
+                            byte_offset: 0,
+                        },
+                        end: Position {
+                            line: 1,
+                            col: 4,
+                            byte_offset: 3,
+                        },
                     },
                 },
             ),
@@ -434,8 +514,16 @@ mod tests {
                 TypeAnnotation {
                     kind: TypeAnnotationKind::USize,
                     span: Span {
-                        start: Position { line: 1, col: 1 },
-                        end: Position { line: 1, col: 6 },
+                        start: Position {
+                            line: 1,
+                            col: 1,
+                            byte_offset: 0,
+                        },
+                        end: Position {
+                            line: 1,
+                            col: 6,
+                            byte_offset: 5,
+                        },
                     },
                 },
             ),
@@ -444,8 +532,16 @@ mod tests {
                 TypeAnnotation {
                     kind: TypeAnnotationKind::Void,
                     span: Span {
-                        start: Position { line: 1, col: 1 },
-                        end: Position { line: 1, col: 5 },
+                        start: Position {
+                            line: 1,
+                            col: 1,
+                            byte_offset: 0,
+                        },
+                        end: Position {
+                            line: 1,
+                            col: 5,
+                            byte_offset: 4,
+                        },
                     },
                 },
             ),
@@ -454,8 +550,16 @@ mod tests {
                 TypeAnnotation {
                     kind: TypeAnnotationKind::Null,
                     span: Span {
-                        start: Position { line: 1, col: 1 },
-                        end: Position { line: 1, col: 5 },
+                        start: Position {
+                            line: 1,
+                            col: 1,
+                            byte_offset: 0,
+                        },
+                        end: Position {
+                            line: 1,
+                            col: 5,
+                            byte_offset: 4,
+                        },
                     },
                 },
             ),
@@ -464,8 +568,16 @@ mod tests {
                 TypeAnnotation {
                     kind: TypeAnnotationKind::Bool,
                     span: Span {
-                        start: Position { line: 1, col: 1 },
-                        end: Position { line: 1, col: 5 },
+                        start: Position {
+                            line: 1,
+                            col: 1,
+                            byte_offset: 0,
+                        },
+                        end: Position {
+                            line: 1,
+                            col: 5,
+                            byte_offset: 4,
+                        },
                     },
                 },
             ),
@@ -474,15 +586,23 @@ mod tests {
                 TypeAnnotation {
                     kind: TypeAnnotationKind::Char,
                     span: Span {
-                        start: Position { line: 1, col: 1 },
-                        end: Position { line: 1, col: 5 },
+                        start: Position {
+                            line: 1,
+                            col: 1,
+                            byte_offset: 0,
+                        },
+                        end: Position {
+                            line: 1,
+                            col: 5,
+                            byte_offset: 4,
+                        },
                     },
                 },
             ),
         ];
 
         for (input, expected) in test_cases {
-            let (tokens, _) = Tokenizer::tokenize(input.to_owned());
+            let (tokens, _) = Tokenizer::tokenize(input);
             let mut parser = Parser {
                 offset: 0,
                 checkpoint_offset: 0,
@@ -500,7 +620,7 @@ mod tests {
         use crate::tokenizer::Tokenizer;
         use pretty_assertions::assert_eq;
 
-        let (tokens, _) = Tokenizer::tokenize("i8 | i16 | i32 | i64".to_owned());
+        let (tokens, _) = Tokenizer::tokenize("i8 | i16 | i32 | i64");
         let mut parser = Parser {
             offset: 0,
             checkpoint_offset: 0,
@@ -515,35 +635,75 @@ mod tests {
                     TypeAnnotation {
                         kind: TypeAnnotationKind::I8,
                         span: Span {
-                            start: Position { line: 1, col: 1 },
-                            end: Position { line: 1, col: 3 }
+                            start: Position {
+                                line: 1,
+                                col: 1,
+                                byte_offset: 0
+                            },
+                            end: Position {
+                                line: 1,
+                                col: 3,
+                                byte_offset: 2
+                            }
                         }
                     },
                     TypeAnnotation {
                         kind: TypeAnnotationKind::I16,
                         span: Span {
-                            start: Position { line: 1, col: 6 },
-                            end: Position { line: 1, col: 9 }
+                            start: Position {
+                                line: 1,
+                                col: 6,
+                                byte_offset: 5
+                            },
+                            end: Position {
+                                line: 1,
+                                col: 9,
+                                byte_offset: 8
+                            }
                         }
                     },
                     TypeAnnotation {
                         kind: TypeAnnotationKind::I32,
                         span: Span {
-                            start: Position { line: 1, col: 12 },
-                            end: Position { line: 1, col: 15 }
+                            start: Position {
+                                line: 1,
+                                col: 12,
+                                byte_offset: 11
+                            },
+                            end: Position {
+                                line: 1,
+                                col: 15,
+                                byte_offset: 14
+                            }
                         }
                     },
                     TypeAnnotation {
                         kind: TypeAnnotationKind::I64,
                         span: Span {
-                            start: Position { line: 1, col: 18 },
-                            end: Position { line: 1, col: 21 }
+                            start: Position {
+                                line: 1,
+                                col: 18,
+                                byte_offset: 17
+                            },
+                            end: Position {
+                                line: 1,
+                                col: 21,
+                                byte_offset: 20
+                            }
                         }
                     }
                 ]),
                 span: Span {
-                    start: Position { line: 1, col: 1 },
-                    end: Position { line: 1, col: 21 }
+                    start: Position {
+                        line: 1,
+                        col: 1,
+                        byte_offset: 0
+                    },
+                    end: Position {
+                        line: 1,
+                        col: 21,
+                        byte_offset: 20
+                    }
                 }
             })
         )

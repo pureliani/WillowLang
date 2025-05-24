@@ -71,7 +71,7 @@ mod test {
 
     #[test]
     fn parses_basic_function() {
-        let (tokens, _) = Tokenizer::tokenize("() => {}".to_owned());
+        let (tokens, _) = Tokenizer::tokenize("() => {}");
         let mut parser = Parser {
             checkpoint_offset: 0,
             offset: 0,
@@ -89,8 +89,16 @@ mod test {
                 generic_params: vec![],
             },
             span: Span {
-                start: Position { line: 1, col: 1 },
-                end: Position { line: 1, col: 9 },
+                start: Position {
+                    line: 1,
+                    col: 1,
+                    byte_offset: 0,
+                },
+                end: Position {
+                    line: 1,
+                    col: 9,
+                    byte_offset: 8,
+                },
             },
         });
         assert_eq!(actual_ast, expected_ast)
@@ -98,7 +106,7 @@ mod test {
 
     #[test]
     fn parses_function_with_params() {
-        let (tokens, _) = Tokenizer::tokenize("(const a: i32) => {}".to_owned());
+        let (tokens, _) = Tokenizer::tokenize("(a: i32) => {}");
         let mut parser = Parser {
             checkpoint_offset: 0,
             offset: 0,
@@ -111,15 +119,31 @@ mod test {
                     identifier: IdentifierNode {
                         name: String::from("a"),
                         span: Span {
-                            start: Position { line: 0, col: 0 },
-                            end: Position { line: 0, col: 0 },
+                            start: Position {
+                                line: 1,
+                                col: 2,
+                                byte_offset: 1,
+                            },
+                            end: Position {
+                                line: 1,
+                                col: 3,
+                                byte_offset: 2,
+                            },
                         },
                     },
                     constraint: TypeAnnotation {
                         kind: TypeAnnotationKind::I32,
                         span: Span {
-                            start: Position { line: 1, col: 5 },
-                            end: Position { line: 1, col: 8 },
+                            start: Position {
+                                line: 1,
+                                col: 5,
+                                byte_offset: 4,
+                            },
+                            end: Position {
+                                line: 1,
+                                col: 8,
+                                byte_offset: 7,
+                            },
                         },
                     },
                 }],
@@ -131,8 +155,16 @@ mod test {
                 generic_params: vec![],
             },
             span: Span {
-                start: Position { line: 1, col: 1 },
-                end: Position { line: 1, col: 15 },
+                start: Position {
+                    line: 1,
+                    col: 1,
+                    byte_offset: 0,
+                },
+                end: Position {
+                    line: 1,
+                    col: 15,
+                    byte_offset: 14,
+                },
             },
         });
         assert_eq!(actual_ast, expected_ast)
@@ -140,7 +172,7 @@ mod test {
 
     #[test]
     fn parses_function_with_generic_params() {
-        let (tokens, _) = Tokenizer::tokenize("<AParam>(a: AParam) => {}".to_owned());
+        let (tokens, _) = Tokenizer::tokenize("<AParam>(a: AParam) => {}");
         let mut parser = Parser {
             checkpoint_offset: 0,
             offset: 0,
@@ -149,25 +181,68 @@ mod test {
         let actual_ast = parser.parse_expr(0);
         let expected_ast = Ok(Expr {
             kind: ExprKind::Fn {
+                generic_params: vec![GenericParam {
+                    constraint: None,
+                    identifier: IdentifierNode {
+                        name: String::from("AParam"),
+                        span: Span {
+                            start: Position {
+                                line: 1,
+                                col: 2,
+                                byte_offset: 1,
+                            },
+                            end: Position {
+                                line: 1,
+                                col: 8,
+                                byte_offset: 7,
+                            },
+                        },
+                    },
+                }],
                 params: vec![Param {
                     identifier: IdentifierNode {
                         name: String::from("a"),
                         span: Span {
-                            start: Position { line: 0, col: 0 },
-                            end: Position { line: 0, col: 0 },
+                            start: Position {
+                                line: 1,
+                                col: 10,
+                                byte_offset: 9,
+                            },
+
+                            end: Position {
+                                line: 1,
+                                col: 11,
+                                byte_offset: 10,
+                            },
                         },
                     },
                     constraint: TypeAnnotation {
                         kind: TypeAnnotationKind::Identifier(IdentifierNode {
                             name: String::from("AParam"),
                             span: Span {
-                                start: Position { line: 0, col: 0 },
-                                end: Position { line: 0, col: 0 },
+                                start: Position {
+                                    line: 1,
+                                    col: 13,
+                                    byte_offset: 12,
+                                },
+                                end: Position {
+                                    line: 1,
+                                    col: 19,
+                                    byte_offset: 18,
+                                },
                             },
                         }),
                         span: Span {
-                            start: Position { line: 1, col: 13 },
-                            end: Position { line: 1, col: 19 },
+                            start: Position {
+                                line: 1,
+                                col: 13,
+                                byte_offset: 12,
+                            },
+                            end: Position {
+                                line: 1,
+                                col: 19,
+                                byte_offset: 18,
+                            },
                         },
                     },
                 }],
@@ -176,20 +251,18 @@ mod test {
                     statements: vec![],
                 },
                 return_type: None,
-                generic_params: vec![GenericParam {
-                    constraint: None,
-                    identifier: IdentifierNode {
-                        name: String::from("AParam"),
-                        span: Span {
-                            start: Position { line: 0, col: 0 },
-                            end: Position { line: 0, col: 0 },
-                        },
-                    },
-                }],
             },
             span: Span {
-                start: Position { line: 1, col: 1 },
-                end: Position { line: 1, col: 26 },
+                start: Position {
+                    line: 1,
+                    col: 1,
+                    byte_offset: 0,
+                },
+                end: Position {
+                    line: 1,
+                    col: 26,
+                    byte_offset: 25,
+                },
             },
         });
         assert_eq!(actual_ast, expected_ast)
@@ -197,7 +270,7 @@ mod test {
 
     #[test]
     fn parses_function_with_return_type() {
-        let (tokens, _) = Tokenizer::tokenize("<AParam>(a: AParam): i32 => {}".to_owned());
+        let (tokens, _) = Tokenizer::tokenize("<AParam>(a: AParam): i32 => {}");
         let mut parser = Parser {
             checkpoint_offset: 0,
             offset: 0,
@@ -206,25 +279,67 @@ mod test {
         let actual_ast = parser.parse_expr(0);
         let expected_ast = Ok(Expr {
             kind: ExprKind::Fn {
+                generic_params: vec![GenericParam {
+                    constraint: None,
+                    identifier: IdentifierNode {
+                        name: String::from("AParam"),
+                        span: Span {
+                            start: Position {
+                                line: 1,
+                                col: 2,
+                                byte_offset: 1,
+                            },
+                            end: Position {
+                                line: 1,
+                                col: 8,
+                                byte_offset: 7,
+                            },
+                        },
+                    },
+                }],
                 params: vec![Param {
                     identifier: IdentifierNode {
                         name: String::from("a"),
                         span: Span {
-                            start: Position { line: 0, col: 0 },
-                            end: Position { line: 0, col: 0 },
+                            start: Position {
+                                line: 1,
+                                col: 10,
+                                byte_offset: 9,
+                            },
+                            end: Position {
+                                line: 1,
+                                col: 11,
+                                byte_offset: 10,
+                            },
                         },
                     },
                     constraint: TypeAnnotation {
                         kind: TypeAnnotationKind::Identifier(IdentifierNode {
                             name: String::from("AParam"),
                             span: Span {
-                                start: Position { line: 0, col: 0 },
-                                end: Position { line: 0, col: 0 },
+                                start: Position {
+                                    line: 1,
+                                    col: 13,
+                                    byte_offset: 12,
+                                },
+                                end: Position {
+                                    line: 1,
+                                    col: 19,
+                                    byte_offset: 18,
+                                },
                             },
                         }),
                         span: Span {
-                            start: Position { line: 1, col: 13 },
-                            end: Position { line: 1, col: 19 },
+                            start: Position {
+                                line: 1,
+                                col: 13,
+                                byte_offset: 12,
+                            },
+                            end: Position {
+                                line: 1,
+                                col: 19,
+                                byte_offset: 18,
+                            },
                         },
                     },
                 }],
@@ -235,24 +350,30 @@ mod test {
                 return_type: Some(TypeAnnotation {
                     kind: TypeAnnotationKind::I32,
                     span: Span {
-                        start: Position { line: 1, col: 22 },
-                        end: Position { line: 1, col: 25 },
-                    },
-                }),
-                generic_params: vec![GenericParam {
-                    constraint: None,
-                    identifier: IdentifierNode {
-                        name: String::from("AParam"),
-                        span: Span {
-                            start: Position { line: 0, col: 0 },
-                            end: Position { line: 0, col: 0 },
+                        start: Position {
+                            line: 1,
+                            col: 22,
+                            byte_offset: 21,
+                        },
+                        end: Position {
+                            line: 1,
+                            col: 25,
+                            byte_offset: 24,
                         },
                     },
-                }],
+                }),
             },
             span: Span {
-                start: Position { line: 1, col: 1 },
-                end: Position { line: 1, col: 31 },
+                start: Position {
+                    line: 1,
+                    col: 1,
+                    byte_offset: 0,
+                },
+                end: Position {
+                    line: 1,
+                    col: 31,
+                    byte_offset: 30,
+                },
             },
         });
         assert_eq!(actual_ast, expected_ast)

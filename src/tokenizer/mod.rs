@@ -127,7 +127,7 @@ pub struct Token {
 
 #[derive(Debug)]
 pub struct Tokenizer<'a> {
-    input: &'a String,
+    input: &'a str,
     byte_offset: usize,
     grapheme_offset: usize,
     line: usize,
@@ -206,7 +206,7 @@ impl<'a> Tokenizer<'a> {
         }
     }
 
-    pub fn tokenize(input: &String) -> (Vec<Token>, Vec<TokenizationError>) {
+    pub fn tokenize(input: &str) -> (Vec<Token>, Vec<TokenizationError>) {
         let mut state = Tokenizer {
             input,
             byte_offset: 0,
