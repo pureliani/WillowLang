@@ -1,5 +1,5 @@
-use ariadne::{Cache, Report, ReportKind, Source};
-use std::{cell::RefCell, collections::HashMap, rc::Rc, vec};
+use ariadne::{Cache, Color, Label, Report, ReportKind, Source};
+use std::{cell::RefCell, collections::HashMap, fmt::format, rc::Rc, vec};
 
 use crate::{
     check::{
@@ -11,7 +11,6 @@ use crate::{
     tokenizer::{TokenizationErrorKind, Tokenizer},
 };
 
-// A simple cache for Ariadne
 struct FileSourceCache {
     sources: HashMap<String, Source>,
 }
@@ -51,32 +50,60 @@ pub fn compile_file(file_path: &String, source_code: &String) {
     let analyzed_tree = check_stmts(ast, &mut semantic_errors, scope);
 
     tokenization_errors.iter().for_each(|e| {
-        let report_builder = Report::build(
-            ReportKind::Error,
-            (
-                file_path.clone(),
-                e.span.start.byte_offset..e.span.end.byte_offset,
-            ),
+        let error_span = (
+            file_path.clone(),
+            e.span.start.byte_offset..e.span.end.byte_offset,
         );
+        let report_builder = Report::build(ReportKind::Error, error_span.clone());
 
         let report = match &e.kind {
-            TokenizationErrorKind::UnterminatedString => {
-                report_builder.with_message("Unterminated string").finish()
-            }
-            TokenizationErrorKind::UnknownToken => {
-                report_builder.with_message("Unknown token").finish()
-            }
+            TokenizationErrorKind::UnterminatedString => report_builder
+                .with_message("Unterminated string")
+                .with_label(
+                    Label::new(error_span.clone())
+                        .with_message("This string is not terminated")
+                        .with_color(Color::Red),
+                )
+                .finish(),
+            TokenizationErrorKind::UnknownToken => report_builder
+                .with_message("Unknown token")
+                .with_label(
+                    Label::new(error_span.clone())
+                        .with_message("This token is not recognized")
+                        .with_color(Color::Red),
+                )
+                .finish(),
             TokenizationErrorKind::UnknownEscapeSequence => report_builder
                 .with_message("Unknown escape sequence")
+                .with_label(
+                    Label::new(error_span.clone())
+                        .with_message("The escape sequence here is invalid")
+                        .with_color(Color::Red),
+                )
                 .finish(),
             TokenizationErrorKind::InvalidFloatingNumber => report_builder
                 .with_message("Invalid floating-point number")
+                .with_label(
+                    Label::new(error_span.clone())
+                        .with_message("This is not a valid floating-point number")
+                        .with_color(Color::Red),
+                )
                 .finish(),
             TokenizationErrorKind::InvalidIntegerNumber => report_builder
                 .with_message("Invalid integer number")
+                .with_label(
+                    Label::new(error_span.clone())
+                        .with_message("This is not a valid integer number")
+                        .with_color(Color::Red),
+                )
                 .finish(),
             TokenizationErrorKind::UnterminatedDoc => report_builder
                 .with_message("Unterminated documentation")
+                .with_label(
+                    Label::new(error_span.clone())
+                        .with_message("This documentation block is not terminated")
+                        .with_color(Color::Red),
+                )
                 .finish(),
         };
 
@@ -84,13 +111,12 @@ pub fn compile_file(file_path: &String, source_code: &String) {
     });
 
     parsing_errors.iter().for_each(|e| {
-        let report_builder = Report::build(
-            ReportKind::Error,
-            (
-                file_path.clone(),
-                e.span.start.byte_offset..e.span.end.byte_offset,
-            ),
+        let error_span = (
+            file_path.clone(),
+            e.span.start.byte_offset..e.span.end.byte_offset,
         );
+
+        let report_builder = Report::build(ReportKind::Error, error_span.clone());
 
         let report = match &e.kind {
             ParsingErrorKind::DocMustBeFollowedByDeclaration => {
@@ -171,13 +197,12 @@ pub fn compile_file(file_path: &String, source_code: &String) {
     });
 
     semantic_errors.into_iter().for_each(|e| {
-        let report_builder = Report::build(
-            ReportKind::Error,
-            (
-                file_path.clone(),
-                e.span.start.byte_offset..e.span.end.byte_offset,
-            ),
+        let error_span = (
+            file_path.clone(),
+            e.span.start.byte_offset..e.span.end.byte_offset,
         );
+
+        let report_builder = Report::build(ReportKind::Error, error_span.clone());
 
         let report = match &e.kind {
             SemanticErrorKind::NonNumericOperand => {
@@ -273,9 +298,12 @@ pub fn compile_file(file_path: &String, source_code: &String) {
         let mut cache = FileSourceCache::new();
         cache.add(file_path.clone(), source_code.clone());
 
-        for report in reports {
-            report.print(&mut cache).unwrap();
-            println!("--------------------");
+        for (index, report) in reports.into_iter().enumerate() {
+            let top_border = format!("=============== #{} ===============", index + 1);
+            let bottom_border = "=".repeat(top_border.len());
+            print!("\n\n{}\n\n", top_border);
+            report.eprint(&mut cache).unwrap();
+            print!("\n{}\n", bottom_border);
         }
     } else {
         println!(
