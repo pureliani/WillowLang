@@ -72,6 +72,44 @@ pub enum PunctuationKind {
     FatArrow,
 }
 
+impl PunctuationKind {
+    pub fn to_string(&self) -> String {
+        String::from(match self {
+            PunctuationKind::DoubleCol => "::",
+            PunctuationKind::DoubleOr => "||",
+            PunctuationKind::DoubleAnd => "&&",
+            PunctuationKind::DoubleEq => "==",
+            PunctuationKind::Col => ":",
+            PunctuationKind::SemiCol => ";",
+            PunctuationKind::Lt => "<",
+            PunctuationKind::Gt => ">",
+            PunctuationKind::Lte => "<=",
+            PunctuationKind::Gte => ">=",
+            PunctuationKind::Or => "|",
+            PunctuationKind::And => "&",
+            PunctuationKind::Not => "!",
+            PunctuationKind::Dot => ".",
+            PunctuationKind::LParen => "(",
+            PunctuationKind::RParen => ")",
+            PunctuationKind::LBracket => "[",
+            PunctuationKind::RBracket => "]",
+            PunctuationKind::LBrace => "{",
+            PunctuationKind::RBrace => "}",
+            PunctuationKind::Eq => "=",
+            PunctuationKind::NotEq => "!=",
+            PunctuationKind::Plus => "+",
+            PunctuationKind::Minus => "-",
+            PunctuationKind::Slash => "/",
+            PunctuationKind::Star => "*",
+            PunctuationKind::Percent => "%",
+            PunctuationKind::Comma => ",",
+            PunctuationKind::Dollar => "$",
+            PunctuationKind::Question => "?",
+            PunctuationKind::FatArrow => "=>",
+        })
+    }
+}
+
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum KeywordKind {
     Struct,
@@ -106,6 +144,43 @@ pub enum KeywordKind {
     F64,
 }
 
+impl KeywordKind {
+    pub fn to_string(&self) -> String {
+        String::from(match self {
+            KeywordKind::Struct => "struct",
+            KeywordKind::Enum => "enum",
+            KeywordKind::Let => "let",
+            KeywordKind::Return => "return",
+            KeywordKind::If => "if",
+            KeywordKind::Else => "else",
+            KeywordKind::While => "while",
+            KeywordKind::Break => "break",
+            KeywordKind::Continue => "continue",
+            KeywordKind::Type => "type",
+            KeywordKind::From => "from",
+            KeywordKind::Void => "void",
+            KeywordKind::Null => "null",
+            KeywordKind::True => "true",
+            KeywordKind::False => "false",
+            KeywordKind::Pub => "pub",
+            KeywordKind::Char => "char",
+            KeywordKind::Bool => "bool",
+            KeywordKind::I8 => "i8",
+            KeywordKind::I16 => "i16",
+            KeywordKind::I32 => "i32",
+            KeywordKind::I64 => "i64",
+            KeywordKind::U8 => "u8",
+            KeywordKind::U16 => "u16",
+            KeywordKind::U32 => "u32",
+            KeywordKind::U64 => "u64",
+            KeywordKind::USize => "uSize",
+            KeywordKind::ISize => "iSize",
+            KeywordKind::F32 => "f32",
+            KeywordKind::F64 => "f64",
+        })
+    }
+}
+
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum NumberKind {
     I64(i64),
@@ -122,6 +197,25 @@ pub enum NumberKind {
     ISize(isize),
 }
 
+impl NumberKind {
+    pub fn to_string(&self) -> String {
+        match self {
+            NumberKind::I64(v) => format!("{}i64", v),
+            NumberKind::I32(v) => format!("{}i32", v),
+            NumberKind::I16(v) => format!("{}i16", v),
+            NumberKind::I8(v) => format!("{}i8", v),
+            NumberKind::F32(v) => format!("{}f32", v),
+            NumberKind::F64(v) => format!("{}f64", v),
+            NumberKind::U64(v) => format!("{}u64", v),
+            NumberKind::U32(v) => format!("{}u32", v),
+            NumberKind::U16(v) => format!("{}u16", v),
+            NumberKind::U8(v) => format!("{}u8", v),
+            NumberKind::USize(v) => format!("{}usize", v),
+            NumberKind::ISize(v) => format!("{}isize", v),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum TokenKind {
     Identifier(String),
@@ -136,6 +230,19 @@ pub enum TokenKind {
 pub struct Token {
     pub span: Span,
     pub kind: TokenKind,
+}
+
+impl TokenKind {
+    pub fn to_string(&self) -> String {
+        match self {
+            TokenKind::Identifier(id) => id.to_string(),
+            TokenKind::Punctuation(punctuation_kind) => punctuation_kind.to_string(),
+            TokenKind::Keyword(keyword_kind) => keyword_kind.to_string(),
+            TokenKind::String(value) => format!("\"{}\"", value),
+            TokenKind::Number(number_kind) => number_kind.to_string(),
+            TokenKind::Doc(doc) => doc.to_owned(),
+        }
+    }
 }
 
 #[derive(Debug)]

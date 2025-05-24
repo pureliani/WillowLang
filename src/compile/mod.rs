@@ -122,76 +122,144 @@ pub fn compile_file(file_path: &String, source_code: &String) {
 
         let report = match &e.kind {
             ParsingErrorKind::DocMustBeFollowedByDeclaration => {
-                todo!();
-            }
-            ParsingErrorKind::ExpectedNumberOfArguments(_) => {
-                todo!();
+                report_builder
+                .with_message("Documentation must be followed by a declaration of ")
+                .with_label(
+                    Label::new(error_span.clone())
+                        .with_message("This documentation must be followed by a declaration of either struct, type alias, enum or a variable")
+                        .with_color(Color::Red),
+                )
+                .finish()
             }
             ParsingErrorKind::ExpectedAnExpressionButFound(token) => {
-                todo!();
+                report_builder
+                .with_message("Expected an expression")
+                .with_label(
+                    Label::new(error_span.clone())
+                        .with_message(format!("Expected an expression but instead found token: {}", token.kind.to_string()))
+                        .with_color(Color::Red),
+                )
+                .finish()
             }
             ParsingErrorKind::ExpectedATypeButFound(token) => {
-                todo!();
-            }
-            ParsingErrorKind::InvalidTypeOperator(token) => {
-                todo!();
-            }
-            ParsingErrorKind::InvalidPrefixOperator(token) => {
-                todo!();
+                report_builder
+                .with_message("Expected a type")
+                .with_label(
+                    Label::new(error_span.clone())
+                        .with_message(format!("Expected a type but instead found token: {}", token.kind.to_string()))
+                        .with_color(Color::Red),
+                )
+                .finish()
             }
             ParsingErrorKind::InvalidSuffixOperator(token) => {
-                todo!();
-            }
-            ParsingErrorKind::InvalidInfixOperator(token) => {
-                todo!();
-            }
-            ParsingErrorKind::InvalidArraySize => {
-                todo!();
-            }
-            ParsingErrorKind::InvalidArrayIndex => {
-                todo!();
-            }
-            ParsingErrorKind::UnexpectedToken(token) => {
-                todo!();
-            }
-            ParsingErrorKind::InvalidImportPath => {
-                todo!();
-            }
-            ParsingErrorKind::InvalidDocumentationString => {
-                todo!();
-            }
-            ParsingErrorKind::MissingElseBranch => {
-                todo!();
+                report_builder
+                .with_message("Invalid suffix operator")
+                .with_label(
+                    Label::new(error_span.clone())
+                        .with_message(format!("Invalid token as expression suffix operator: {}", token.kind.to_string()))
+                        .with_color(Color::Red),
+                )
+                .finish()
             }
             ParsingErrorKind::UnexpectedEndOfInput => {
-                todo!();
+                report_builder
+                .with_message("Unexpected end of input")
+                .with_label(
+                    Label::new(error_span.clone())
+                        .with_message("Unexpected end of input")
+                        .with_color(Color::Red),
+                )
+                .finish()
             }
             ParsingErrorKind::ExpectedAnIdentifier => {
-                todo!();
+                report_builder
+                .with_message("Expected an identifier")
+                .with_label(
+                    Label::new(error_span.clone())
+                        .with_message("Expected an identifier")
+                        .with_color(Color::Red),
+                )
+                .finish()
             }
             ParsingErrorKind::ExpectedAPunctuationMark(punctuation_kind) => {
-                todo!();
+                report_builder
+                .with_message("Expected a punctuation mark")
+                .with_label(
+                    Label::new(error_span.clone())
+                        .with_message(format!("Expected the \"{}\" punctuation mark", punctuation_kind.to_string()))
+                        .with_color(Color::Red),
+                )
+                .finish()
             }
             ParsingErrorKind::ExpectedAKeyword(keyword_kind) => {
-                todo!();
+                report_builder
+                .with_message("Expected a keyword")
+                .with_label(
+                    Label::new(error_span.clone())
+                        .with_message(format!("Expected the \"{}\" keyword", keyword_kind.to_string()))
+                        .with_color(Color::Red),
+                )
+                .finish()
             }
             ParsingErrorKind::ExpectedAStringValue => {
-                todo!();
+                report_builder
+                .with_message("Expected a string literal")
+                .with_label(
+                    Label::new(error_span.clone())
+                        .with_message("Expected a string literal")
+                        .with_color(Color::Red),
+                )
+                .finish()
             }
             ParsingErrorKind::ExpectedANumericValue => {
-                todo!();
+                report_builder
+                .with_message("Expected a numeric literal")
+                .with_label(
+                    Label::new(error_span.clone())
+                        .with_message("Expected a numeric literal")
+                        .with_color(Color::Red),
+                )
+                .finish()
             }
             ParsingErrorKind::UnknownStaticMethod(identifier_node) => {
-                todo!();
+                report_builder
+                .with_message("Unknown static method")
+                .with_label(
+                    Label::new(error_span.clone())
+                        .with_message(format!("Static method with name \"{}\" doesn't exist", identifier_node.name))
+                        .with_color(Color::Red),
+                )
+                .finish()
             }
             ParsingErrorKind::UnexpectedStatementAfterFinalExpression => {
-                todo!();
+                report_builder
+                .with_message("Unexpected statement after final expression")
+                .with_label(
+                    Label::new(error_span.clone())
+                        .with_message("Final expression of a codeblock must not be followed by another statement")
+                        .with_color(Color::Red),
+                )
+                .finish()
             }
             ParsingErrorKind::ExpectedStatementOrExpression { found } => {
-                todo!();
+                report_builder
+                .with_message("Expected a statement or an expression")
+                .with_label(
+                    Label::new(error_span.clone())
+                        .with_message(format!("Expected a statement or an expression but instead found token: {}", found.to_string()))
+                        .with_color(Color::Red),
+                )
+                .finish()
             }
             ParsingErrorKind::UnexpectedTokenAfterFinalExpression { found } => {
-                todo!();
+                report_builder
+                .with_message("Unexpected token after final expression")
+                .with_label(
+                    Label::new(error_span.clone())
+                        .with_message(format!("Unexpected token after final expression: {}", found.to_string()))
+                        .with_color(Color::Red),
+                )
+                .finish()
             }
         };
 
@@ -256,7 +324,7 @@ pub fn compile_file(file_path: &String, source_code: &String) {
             SemanticErrorKind::CannotCall(checked_type) => {
                 todo!();
             }
-            SemanticErrorKind::ArgumentCountMismatch { expected, received } => {
+            SemanticErrorKind::FnArgumentCountMismatch { expected, received } => {
                 todo!();
             }
             SemanticErrorKind::GenericArgumentCountMismatch { expected, received } => {

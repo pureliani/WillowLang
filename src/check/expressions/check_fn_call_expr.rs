@@ -46,7 +46,7 @@ pub fn check_fn_call_expr(
 
             if checked_args.len() != params.len() {
                 errors.push(SemanticError {
-                    kind: SemanticErrorKind::ArgumentCountMismatch {
+                    kind: SemanticErrorKind::FnArgumentCountMismatch {
                         expected: params.len(),
                         received: checked_args.len(),
                     },
@@ -73,7 +73,7 @@ pub fn check_fn_call_expr(
         } => {
             if checked_args.len() != params.len() {
                 errors.push(SemanticError {
-                    kind: SemanticErrorKind::ArgumentCountMismatch {
+                    kind: SemanticErrorKind::FnArgumentCountMismatch {
                         expected: params.len(),
                         received: checked_args.len(),
                     },

@@ -38,7 +38,7 @@ pub enum SemanticErrorKind {
     },
     CannotAccess(CheckedType),
     CannotCall(CheckedType),
-    ArgumentCountMismatch {
+    FnArgumentCountMismatch {
         expected: usize,
         received: usize,
     },
@@ -87,7 +87,7 @@ impl SemanticErrorKind {
             SemanticErrorKind::UndefinedProperty(..) => 19,
             SemanticErrorKind::CannotUseIsTypeOnNonUnion => 20,
             SemanticErrorKind::InvalidArraySizeValue(..) => 21,
-            SemanticErrorKind::ArgumentCountMismatch { .. } => 22,
+            SemanticErrorKind::FnArgumentCountMismatch { .. } => 22,
             SemanticErrorKind::GenericArgumentCountMismatch { .. } => 23,
             SemanticErrorKind::UnresolvedGenericParam(..) => 24,
             SemanticErrorKind::ConflictingGenericBinding { .. } => 25,
