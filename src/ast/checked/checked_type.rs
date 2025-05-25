@@ -55,42 +55,96 @@ pub enum CheckedType {
 
 impl CheckedType {
     pub fn to_string(&self) -> String {
-        String::from(match self {
-            CheckedType::Void => "void",
-            CheckedType::Null => "null",
-            CheckedType::Bool => "bool",
-            CheckedType::U8 => "u8",
-            CheckedType::U16 => "u16",
-            CheckedType::U32 => "u32",
-            CheckedType::U64 => "u64",
-            CheckedType::USize => "usize",
-            CheckedType::ISize => "isize",
-            CheckedType::I8 => "i8",
-            CheckedType::I16 => "i16",
-            CheckedType::I32 => "i32",
-            CheckedType::I64 => "i64",
-            CheckedType::F32 => "f32",
-            CheckedType::F64 => "f64",
-            CheckedType::Char => "char",
-            CheckedType::GenericStructDecl(checked_generic_struct_decl) => todo!(),
-            CheckedType::StructDecl(checked_struct_decl) => todo!(),
-            CheckedType::EnumDecl(enum_decl) => todo!(),
-            CheckedType::GenericParam(checked_generic_param) => todo!(),
+        match self {
+            CheckedType::Void => "void".to_owned(),
+            CheckedType::Null => "null".to_owned(),
+            CheckedType::Bool => "bool".to_owned(),
+            CheckedType::U8 => "u8".to_owned(),
+            CheckedType::U16 => "u16".to_owned(),
+            CheckedType::U32 => "u32".to_owned(),
+            CheckedType::U64 => "u64".to_owned(),
+            CheckedType::USize => "usize".to_owned(),
+            CheckedType::ISize => "isize".to_owned(),
+            CheckedType::I8 => "i8".to_owned(),
+            CheckedType::I16 => "i16".to_owned(),
+            CheckedType::I32 => "i32".to_owned(),
+            CheckedType::I64 => "i64".to_owned(),
+            CheckedType::F32 => "f32".to_owned(),
+            CheckedType::F64 => "f64".to_owned(),
+            CheckedType::Char => "char".to_owned(),
+            CheckedType::Unknown => "unknown".to_owned(),
+            CheckedType::GenericStructDecl(checked_generic_struct_decl) => {
+                checked_generic_struct_decl.to_string()
+            }
+            CheckedType::StructDecl(checked_struct_decl) => checked_struct_decl.to_string(),
+            CheckedType::EnumDecl(enum_decl) => enum_decl.to_string(),
+            CheckedType::GenericParam(checked_generic_param) => checked_generic_param.to_string(),
             CheckedType::GenericFnType {
                 params,
                 return_type,
                 generic_params,
-            } => todo!(),
+            } => {
+                let generic_params_str = if !generic_params.is_empty() {
+                    let joined = generic_params
+                        .iter()
+                        .map(|gp| gp.to_string())
+                        .collect::<Vec<String>>()
+                        .join(", ");
+
+                    format!("<{}>", joined)
+                } else {
+                    "".to_owned()
+                };
+
+                let params_str = {
+                    let joined = params
+                        .iter()
+                        .map(|p| p.to_string())
+                        .collect::<Vec<String>>()
+                        .join(",\n");
+
+                    format!("({})", joined)
+                };
+
+                format!(
+                    "({}{} => {})",
+                    generic_params_str,
+                    params_str,
+                    return_type.to_string()
+                )
+            }
             CheckedType::FnType {
                 params,
                 return_type,
-            } => todo!(),
-            CheckedType::GenericTypeAliasDecl(checked_generic_type_alias_decl) => todo!(),
-            CheckedType::TypeAliasDecl(checked_type_alias_decl) => todo!(),
-            CheckedType::Union(hash_set) => todo!(),
-            CheckedType::Array { item_type, size } => todo!(),
-            CheckedType::Unknown => todo!(),
-        })
+            } => {
+                let params_str = {
+                    let joined = params
+                        .iter()
+                        .map(|p| p.to_string())
+                        .collect::<Vec<String>>()
+                        .join(",\n");
+
+                    format!("({})", joined)
+                };
+
+                format!("({} => {})", params_str, return_type.to_string())
+            }
+            CheckedType::GenericTypeAliasDecl(checked_generic_type_alias_decl) => {
+                checked_generic_type_alias_decl.to_string()
+            }
+            CheckedType::TypeAliasDecl(checked_type_alias_decl) => {
+                checked_type_alias_decl.to_string()
+            }
+            CheckedType::Union(hash_set) => hash_set
+                .iter()
+                .map(|t| t.to_string())
+                .collect::<Vec<String>>()
+                .join(" | "),
+
+            CheckedType::Array { item_type, size } => {
+                format!("({})[{}]", item_type.to_string(), size)
+            }
+        }
     }
 }
 

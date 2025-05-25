@@ -96,7 +96,7 @@ impl CheckedGenericStructDecl {
                 .collect::<Vec<String>>()
                 .join(",\n");
 
-            format!("{{{}}}", joined)
+            format!("{{ {} }}", joined)
         };
 
         format!(
@@ -139,7 +139,7 @@ impl CheckedStructDecl {
                 .collect::<Vec<String>>()
                 .join(",\n");
 
-            format!("{{{}}}", joined)
+            format!("{{ {} }}", joined)
         };
 
         format!("struct {} {}", self.identifier.name, params_str)

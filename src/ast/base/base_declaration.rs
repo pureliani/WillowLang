@@ -31,6 +31,19 @@ pub struct EnumDecl {
     pub variants: Vec<IdentifierNode>,
 }
 
+impl EnumDecl {
+    pub fn to_string(&self) -> String {
+        let joined = self
+            .variants
+            .iter()
+            .map(|v| v.name.clone())
+            .collect::<Vec<String>>()
+            .join(",\n");
+
+        format!("enum {} {{{}}}", self.identifier.name.clone(), joined)
+    }
+}
+
 impl Eq for EnumDecl {}
 impl PartialEq for EnumDecl {
     fn eq(&self, other: &Self) -> bool {
