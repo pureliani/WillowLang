@@ -19,6 +19,7 @@ pub fn infer_generics(
                 if &existing != received_kind {
                     errors.push(SemanticError {
                         kind: SemanticErrorKind::ConflictingGenericBinding {
+                            identifier: name.clone(),
                             existing: existing.clone(),
                             new: received.clone(),
                         },

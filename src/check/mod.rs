@@ -13,7 +13,7 @@ pub mod utils;
 
 #[derive(Debug, Clone)]
 pub enum SemanticErrorKind {
-    NonNumericOperand,
+    ExpectedANumericOperand,
     MixedSignedAndUnsigned,
     MixedFloatAndInteger,
     CannotCompareType {
@@ -49,10 +49,11 @@ pub enum SemanticErrorKind {
     CannotUseGenericParameterAsValue,
     CannotUseVariableDeclarationAsType,
     VarDeclWithNoConstraintOrInitializer,
-    UndefinedProperty(IdentifierNode),
+    AccessToUndefinedProperty(IdentifierNode),
     UnresolvedGenericParam(String),
     CannotUseIsTypeOnNonUnion,
     ConflictingGenericBinding {
+        identifier: String,
         existing: CheckedType,
         new: CheckedType,
     },
@@ -66,7 +67,7 @@ pub enum SemanticErrorKind {
 impl SemanticErrorKind {
     pub fn code(&self) -> usize {
         match self {
-            SemanticErrorKind::NonNumericOperand => 1,
+            SemanticErrorKind::ExpectedANumericOperand => 1,
             SemanticErrorKind::MixedSignedAndUnsigned => 2,
             SemanticErrorKind::MixedFloatAndInteger => 3,
             SemanticErrorKind::CannotCompareType { .. } => 4,
@@ -84,7 +85,7 @@ impl SemanticErrorKind {
             SemanticErrorKind::CannotUseGenericParameterAsValue => 16,
             SemanticErrorKind::CannotUseVariableDeclarationAsType => 17,
             SemanticErrorKind::VarDeclWithNoConstraintOrInitializer => 18,
-            SemanticErrorKind::UndefinedProperty(..) => 19,
+            SemanticErrorKind::AccessToUndefinedProperty(..) => 19,
             SemanticErrorKind::CannotUseIsTypeOnNonUnion => 20,
             SemanticErrorKind::InvalidArraySizeValue(..) => 21,
             SemanticErrorKind::FnArgumentCountMismatch { .. } => 22,

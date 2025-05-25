@@ -53,6 +53,47 @@ pub enum CheckedType {
     Unknown,
 }
 
+impl CheckedType {
+    pub fn to_string(&self) -> String {
+        String::from(match self {
+            CheckedType::Void => "void",
+            CheckedType::Null => "null",
+            CheckedType::Bool => "bool",
+            CheckedType::U8 => "u8",
+            CheckedType::U16 => "u16",
+            CheckedType::U32 => "u32",
+            CheckedType::U64 => "u64",
+            CheckedType::USize => "usize",
+            CheckedType::ISize => "isize",
+            CheckedType::I8 => "i8",
+            CheckedType::I16 => "i16",
+            CheckedType::I32 => "i32",
+            CheckedType::I64 => "i64",
+            CheckedType::F32 => "f32",
+            CheckedType::F64 => "f64",
+            CheckedType::Char => "char",
+            CheckedType::GenericStructDecl(checked_generic_struct_decl) => todo!(),
+            CheckedType::StructDecl(checked_struct_decl) => todo!(),
+            CheckedType::EnumDecl(enum_decl) => todo!(),
+            CheckedType::GenericParam(checked_generic_param) => todo!(),
+            CheckedType::GenericFnType {
+                params,
+                return_type,
+                generic_params,
+            } => todo!(),
+            CheckedType::FnType {
+                params,
+                return_type,
+            } => todo!(),
+            CheckedType::GenericTypeAliasDecl(checked_generic_type_alias_decl) => todo!(),
+            CheckedType::TypeAliasDecl(checked_type_alias_decl) => todo!(),
+            CheckedType::Union(hash_set) => todo!(),
+            CheckedType::Array { item_type, size } => todo!(),
+            CheckedType::Unknown => todo!(),
+        })
+    }
+}
+
 impl Eq for CheckedType {}
 impl PartialEq for CheckedType {
     fn eq(&self, other: &Self) -> bool {

@@ -29,7 +29,7 @@ pub fn check_access_expr(
             .map(|p| p.constraint.clone())
             .unwrap_or_else(|| {
                 errors.push(SemanticError {
-                    kind: SemanticErrorKind::UndefinedProperty(field.clone()),
+                    kind: SemanticErrorKind::AccessToUndefinedProperty(field.clone()),
                     span: span,
                 });
                 CheckedType::Unknown

@@ -25,7 +25,7 @@ pub fn check_binary_numeric_operation(
         &left.ty
     } else {
         errors.push(SemanticError {
-            kind: SemanticErrorKind::NonNumericOperand,
+            kind: SemanticErrorKind::ExpectedANumericOperand,
             span: left.span,
         });
 
@@ -36,7 +36,7 @@ pub fn check_binary_numeric_operation(
         &right.ty
     } else {
         errors.push(SemanticError {
-            kind: SemanticErrorKind::NonNumericOperand,
+            kind: SemanticErrorKind::ExpectedANumericOperand,
             span: right.span,
         });
 

@@ -1,5 +1,5 @@
 use ariadne::{Cache, Color, Label, Report, ReportKind, Source};
-use std::{cell::RefCell, collections::HashMap, fmt::format, rc::Rc, vec};
+use std::{cell::RefCell, collections::HashMap, rc::Rc, vec};
 
 use crate::{
     check::{
@@ -61,7 +61,7 @@ pub fn compile_file(file_path: &String, source_code: &String) {
             TokenizationErrorKind::UnterminatedString => report_builder
                 .with_message("Unterminated string")
                 .with_label(
-                    Label::new(error_span.clone())
+                    Label::new(error_span)
                         .with_message("This string is not terminated")
                         .with_color(Color::Red),
                 )
@@ -69,7 +69,7 @@ pub fn compile_file(file_path: &String, source_code: &String) {
             TokenizationErrorKind::UnknownToken => report_builder
                 .with_message("Unknown token")
                 .with_label(
-                    Label::new(error_span.clone())
+                    Label::new(error_span)
                         .with_message("This token is not recognized")
                         .with_color(Color::Red),
                 )
@@ -77,7 +77,7 @@ pub fn compile_file(file_path: &String, source_code: &String) {
             TokenizationErrorKind::UnknownEscapeSequence => report_builder
                 .with_message("Unknown escape sequence")
                 .with_label(
-                    Label::new(error_span.clone())
+                    Label::new(error_span)
                         .with_message("The escape sequence here is invalid")
                         .with_color(Color::Red),
                 )
@@ -85,7 +85,7 @@ pub fn compile_file(file_path: &String, source_code: &String) {
             TokenizationErrorKind::InvalidFloatingNumber => report_builder
                 .with_message("Invalid floating-point number")
                 .with_label(
-                    Label::new(error_span.clone())
+                    Label::new(error_span)
                         .with_message("This is not a valid floating-point number")
                         .with_color(Color::Red),
                 )
@@ -93,7 +93,7 @@ pub fn compile_file(file_path: &String, source_code: &String) {
             TokenizationErrorKind::InvalidIntegerNumber => report_builder
                 .with_message("Invalid integer number")
                 .with_label(
-                    Label::new(error_span.clone())
+                    Label::new(error_span)
                         .with_message("This is not a valid integer number")
                         .with_color(Color::Red),
                 )
@@ -101,7 +101,7 @@ pub fn compile_file(file_path: &String, source_code: &String) {
             TokenizationErrorKind::UnterminatedDoc => report_builder
                 .with_message("Unterminated documentation")
                 .with_label(
-                    Label::new(error_span.clone())
+                    Label::new(error_span)
                         .with_message("This documentation block is not terminated")
                         .with_color(Color::Red),
                 )
@@ -125,7 +125,7 @@ pub fn compile_file(file_path: &String, source_code: &String) {
                 report_builder
                 .with_message("Documentation must be followed by a declaration of ")
                 .with_label(
-                    Label::new(error_span.clone())
+                    Label::new(error_span)
                         .with_message("This documentation must be followed by a declaration of either struct, type alias, enum or a variable")
                         .with_color(Color::Red),
                 )
@@ -135,7 +135,7 @@ pub fn compile_file(file_path: &String, source_code: &String) {
                 report_builder
                 .with_message("Expected an expression")
                 .with_label(
-                    Label::new(error_span.clone())
+                    Label::new(error_span)
                         .with_message(format!("Expected an expression but instead found token: {}", token.kind.to_string()))
                         .with_color(Color::Red),
                 )
@@ -145,7 +145,7 @@ pub fn compile_file(file_path: &String, source_code: &String) {
                 report_builder
                 .with_message("Expected a type")
                 .with_label(
-                    Label::new(error_span.clone())
+                    Label::new(error_span)
                         .with_message(format!("Expected a type but instead found token: {}", token.kind.to_string()))
                         .with_color(Color::Red),
                 )
@@ -155,7 +155,7 @@ pub fn compile_file(file_path: &String, source_code: &String) {
                 report_builder
                 .with_message("Invalid suffix operator")
                 .with_label(
-                    Label::new(error_span.clone())
+                    Label::new(error_span)
                         .with_message(format!("Invalid token as expression suffix operator: {}", token.kind.to_string()))
                         .with_color(Color::Red),
                 )
@@ -165,7 +165,7 @@ pub fn compile_file(file_path: &String, source_code: &String) {
                 report_builder
                 .with_message("Unexpected end of input")
                 .with_label(
-                    Label::new(error_span.clone())
+                    Label::new(error_span)
                         .with_message("Unexpected end of input")
                         .with_color(Color::Red),
                 )
@@ -175,7 +175,7 @@ pub fn compile_file(file_path: &String, source_code: &String) {
                 report_builder
                 .with_message("Expected an identifier")
                 .with_label(
-                    Label::new(error_span.clone())
+                    Label::new(error_span)
                         .with_message("Expected an identifier")
                         .with_color(Color::Red),
                 )
@@ -185,7 +185,7 @@ pub fn compile_file(file_path: &String, source_code: &String) {
                 report_builder
                 .with_message("Expected a punctuation mark")
                 .with_label(
-                    Label::new(error_span.clone())
+                    Label::new(error_span)
                         .with_message(format!("Expected the \"{}\" punctuation mark", punctuation_kind.to_string()))
                         .with_color(Color::Red),
                 )
@@ -195,7 +195,7 @@ pub fn compile_file(file_path: &String, source_code: &String) {
                 report_builder
                 .with_message("Expected a keyword")
                 .with_label(
-                    Label::new(error_span.clone())
+                    Label::new(error_span)
                         .with_message(format!("Expected the \"{}\" keyword", keyword_kind.to_string()))
                         .with_color(Color::Red),
                 )
@@ -205,7 +205,7 @@ pub fn compile_file(file_path: &String, source_code: &String) {
                 report_builder
                 .with_message("Expected a string literal")
                 .with_label(
-                    Label::new(error_span.clone())
+                    Label::new(error_span)
                         .with_message("Expected a string literal")
                         .with_color(Color::Red),
                 )
@@ -215,7 +215,7 @@ pub fn compile_file(file_path: &String, source_code: &String) {
                 report_builder
                 .with_message("Expected a numeric literal")
                 .with_label(
-                    Label::new(error_span.clone())
+                    Label::new(error_span)
                         .with_message("Expected a numeric literal")
                         .with_color(Color::Red),
                 )
@@ -225,7 +225,7 @@ pub fn compile_file(file_path: &String, source_code: &String) {
                 report_builder
                 .with_message("Unknown static method")
                 .with_label(
-                    Label::new(error_span.clone())
+                    Label::new(error_span)
                         .with_message(format!("Static method with name \"{}\" doesn't exist", identifier_node.name))
                         .with_color(Color::Red),
                 )
@@ -235,7 +235,7 @@ pub fn compile_file(file_path: &String, source_code: &String) {
                 report_builder
                 .with_message("Unexpected statement after final expression")
                 .with_label(
-                    Label::new(error_span.clone())
+                    Label::new(error_span)
                         .with_message("Final expression of a codeblock must not be followed by another statement")
                         .with_color(Color::Red),
                 )
@@ -245,7 +245,7 @@ pub fn compile_file(file_path: &String, source_code: &String) {
                 report_builder
                 .with_message("Expected a statement or an expression")
                 .with_label(
-                    Label::new(error_span.clone())
+                    Label::new(error_span)
                         .with_message(format!("Expected a statement or an expression but instead found token: {}", found.to_string()))
                         .with_color(Color::Red),
                 )
@@ -255,7 +255,7 @@ pub fn compile_file(file_path: &String, source_code: &String) {
                 report_builder
                 .with_message("Unexpected token after final expression")
                 .with_label(
-                    Label::new(error_span.clone())
+                    Label::new(error_span)
                         .with_message(format!("Unexpected token after final expression: {}", found.to_string()))
                         .with_color(Color::Red),
                 )
@@ -276,89 +276,280 @@ pub fn compile_file(file_path: &String, source_code: &String) {
             .with_code(format!("S{}", e.kind.code()));
 
         let report = match &e.kind {
-            SemanticErrorKind::NonNumericOperand => {
-                todo!();
-            }
-            SemanticErrorKind::MixedSignedAndUnsigned => {
-                todo!();
-            }
+            SemanticErrorKind::ExpectedANumericOperand => report_builder
+                .with_message("Expected a numeric operand")
+                .with_label(
+                    Label::new(error_span)
+                        .with_message("Expected this value to have a numeric type")
+                        .with_color(Color::Red),
+                )
+                .finish(),
+            SemanticErrorKind::MixedSignedAndUnsigned => report_builder
+                .with_message("Mixed signed and unsigned operands")
+                .with_label(
+                    Label::new(error_span)
+                        .with_message(
+                            "Mixing signed and unsigned operands in an arithmetic operation is not allowed",
+                        )
+                        .with_color(Color::Red),
+                )
+                .finish(),
             SemanticErrorKind::MixedFloatAndInteger => {
-                todo!();
+               report_builder
+                .with_message("Mixed float and integer operands")
+                .with_label(
+                    Label::new(error_span)
+                        .with_message(
+                            "Mixing floating-point and integer numbers in an arithmetic operation is not allowed",
+                        )
+                        .with_color(Color::Red),
+                )
+                .finish()
             }
             SemanticErrorKind::CannotCompareType { of, to } => {
-                todo!();
+                report_builder
+                .with_message("Cannot compare types")
+                .with_label(
+                    Label::new(error_span)
+                        .with_message(
+                            format!("Cannot compare type \"{}\" to type \"{}\"", of.to_string(), to.to_string()),
+                        )
+                        .with_color(Color::Red),
+                )
+                .finish()
             }
-            SemanticErrorKind::UndeclaredIdentifier(_) => {
-                todo!();
+            SemanticErrorKind::UndeclaredIdentifier(id) => {
+                report_builder
+                .with_message("Undeclared identifier")
+                .with_label(
+                    Label::new(error_span)
+                        .with_message(format!("Undeclared identifier \"{}\"", id))
+                        .with_color(Color::Red),
+                )
+                .finish()
             }
-            SemanticErrorKind::UndeclaredType(_) => {
-                todo!();
+            SemanticErrorKind::UndeclaredType(t) => {
+                report_builder
+                .with_message("Undeclared type")
+                .with_label(
+                    Label::new(error_span)
+                        .with_message(format!("Undeclared type \"{}\"", t))
+                        .with_color(Color::Red),
+                )
+                .finish()
             }
             SemanticErrorKind::ReturnKeywordOutsideFunction => {
-                todo!();
+                report_builder
+                .with_message("Keyword \"return\" used outside of a function scope")
+                .with_label(
+                    Label::new(error_span)
+                        .with_message("Cannot use the \"return\" keyword outside of a function scope")
+                        .with_color(Color::Red),
+                )
+                .finish()
             }
             SemanticErrorKind::BreakKeywordOutsideLoop => {
-                todo!();
+                report_builder
+                .with_message("Keyword \"break\" used outside of a loop scope")
+                .with_label(
+                    Label::new(error_span)
+                        .with_message("Cannot use the \"break\" keyword outside of a loop scope")
+                        .with_color(Color::Red),
+                )
+                .finish()
             }
             SemanticErrorKind::ContinueKeywordOutsideLoop => {
-                todo!();
+                report_builder
+                .with_message("Keyword \"continue\" used outside of a loop scope")
+                .with_label(
+                    Label::new(error_span)
+                        .with_message("Cannot use the \"continue\" keyword outside of a loop scope")
+                        .with_color(Color::Red),
+                )
+                .finish()
             }
             SemanticErrorKind::InvalidAssignmentTarget => {
-                todo!();
+                report_builder
+                .with_message("Invalid assignment target")
+                .with_label(
+                    Label::new(error_span)
+                        .with_message("Invalid assignment target")
+                        .with_color(Color::Red),
+                )
+                .finish()
             }
             SemanticErrorKind::TypeMismatch { expected, received } => {
-                todo!();
+                report_builder
+                .with_message("Type mismatch")
+                .with_label(
+                    Label::new(error_span)
+                        .with_message(format!("Type mismatch, expected {} but instead found {}", expected.to_string(), received.to_string()))
+                        .with_color(Color::Red),
+                )
+                .finish()
             }
             SemanticErrorKind::InvalidArraySizeValue(number_kind) => {
-                todo!();
+                report_builder
+                .with_message("Invalid array size")
+                .with_label(
+                    Label::new(error_span)
+                        .with_message(format!("Invalid array size: {}", number_kind.to_string()))
+                        .with_color(Color::Red),
+                )
+                .finish()
             }
             SemanticErrorKind::ReturnNotLastStatement => {
-                todo!();
+                report_builder
+                .with_message("Expected the return statement to be the last statement in the function")
+                .with_label(
+                    Label::new(error_span)
+                        .with_message("Expected the return statement to be the last statement in the function")
+                        .with_color(Color::Red),
+                )
+                .finish()
             }
             SemanticErrorKind::ReturnTypeMismatch { expected, received } => {
-                todo!();
+                report_builder
+                .with_message("Return type mismatch")
+                .with_label(
+                    Label::new(error_span)
+                        .with_message(format!("Expected the type of the returned expression to be assignable to {}, but instead found {}", expected.to_string(), received.to_string()))
+                        .with_color(Color::Red),
+                )
+                .finish()
             }
             SemanticErrorKind::CannotAccess(checked_type) => {
-                todo!();
+                report_builder
+                .with_message("Cannot access")
+                .with_label(
+                    Label::new(error_span)
+                        .with_message(format!("Cannot use the access operator on the type \"{}\"", checked_type.to_string()))
+                        .with_color(Color::Red),
+                )
+                .finish()
             }
             SemanticErrorKind::CannotCall(checked_type) => {
-                todo!();
+                report_builder
+                .with_message("Cannot call")
+                .with_label(
+                    Label::new(error_span)
+                        .with_message(format!("Cannot use the call operator on the type \"{}\"", checked_type.to_string()))
+                        .with_color(Color::Red),
+                )
+                .finish()
             }
             SemanticErrorKind::FnArgumentCountMismatch { expected, received } => {
-                todo!();
+                report_builder
+                .with_message("Function argument count mismatch")
+                .with_label(
+                    Label::new(error_span)
+                        .with_message(format!("This function expects {} arguments, but instead received {}", expected.to_string(), received.to_string()))
+                        .with_color(Color::Red),
+                )
+                .finish()
             }
             SemanticErrorKind::GenericArgumentCountMismatch { expected, received } => {
-                todo!();
+                report_builder
+                .with_message("Generic argument count mismatch")
+                .with_label(
+                    Label::new(error_span)
+                        .with_message(format!("Expected {} type arguments, but instead received {}", expected.to_string(), received.to_string()))
+                        .with_color(Color::Red),
+                )
+                .finish()
             }
             SemanticErrorKind::CannotUseGenericParameterAsValue => {
-                todo!();
+                report_builder
+                .with_message("Cannot use generic parameters as values")
+                .with_label(
+                    Label::new(error_span)
+                        .with_message("Cannot use generic parameters where an expression is expected")
+                        .with_color(Color::Red),
+                )
+                .finish()
             }
             SemanticErrorKind::CannotUseVariableDeclarationAsType => {
-                todo!();
+                report_builder
+                .with_message("Cannot use variable declaration as a type")
+                .with_label(
+                    Label::new(error_span)
+                        .with_message("Cannot use variable declaration as a type")
+                        .with_color(Color::Red),
+                )
+                .finish()
             }
             SemanticErrorKind::VarDeclWithNoConstraintOrInitializer => {
-                todo!();
+                report_builder
+                .with_message("Variable declarations must have a initializer or constraint or both")
+                .with_label(
+                    Label::new(error_span)
+                        .with_message("Variable declarations must have a initializer or constraint or both")
+                        .with_color(Color::Red),
+                )
+                .finish()
             }
-            SemanticErrorKind::UndefinedProperty(identifier_node) => {
-                todo!();
+            SemanticErrorKind::AccessToUndefinedProperty(identifier_node) => {
+                report_builder
+                .with_message("Access to an undefined property")
+                .with_label(
+                    Label::new(error_span)
+                        .with_message(format!("Property {} is not defined", identifier_node.name))
+                        .with_color(Color::Red),
+                )
+                .finish()
             }
             SemanticErrorKind::UnresolvedGenericParam(_) => {
                 todo!();
             }
             SemanticErrorKind::CannotUseIsTypeOnNonUnion => {
-                todo!();
+                report_builder
+                .with_message("Cannot use the \"::is(T)\" method on a non-union type")
+                .with_label(
+                    Label::new(error_span)
+                        .with_message("Cannot use the \"::is(T)\" method on a non-union type")
+                        .with_color(Color::Red),
+                )
+                .finish()
             }
-            SemanticErrorKind::ConflictingGenericBinding { existing, new } => {
-                todo!();
+            SemanticErrorKind::ConflictingGenericBinding { identifier, existing, new } => {
+                report_builder
+                .with_message("Conflicting generic binding")
+                .with_label(
+                    Label::new(error_span)
+                        .with_message(format!("Generic parameter identifier {} is already bound to type {}, cannot re-bind it to {}", identifier, existing.to_string(), new.to_string()))
+                        .with_color(Color::Red),
+                )
+                .finish()
             }
             SemanticErrorKind::TypeAliasMustBeDeclaredAtTopLevel => {
-                todo!();
+                report_builder
+                .with_message("Type aliases must be declared in the file scope")
+                .with_label(
+                    Label::new(error_span)
+                        .with_message("Type aliases must be declared in the file scope")
+                        .with_color(Color::Red),
+                )
+                .finish()
             }
             SemanticErrorKind::StructMustBeDeclaredAtTopLevel => {
-                todo!();
+               report_builder
+                .with_message("Structs must be declared in the file scope")
+                .with_label(
+                    Label::new(error_span)
+                        .with_message("Structs must be declared in the file scope")
+                        .with_color(Color::Red),
+                )
+                .finish()
             }
             SemanticErrorKind::CannotApplyTypeArguments { to } => {
-                todo!();
+                report_builder
+                .with_message("Cannot apply type arguments")
+                .with_label(
+                    Label::new(error_span)
+                        .with_message(format!("Cannot apply type arguments to non-generic type {}", to.to_string()))
+                        .with_color(Color::Red),
+                )
+                .finish()
             }
         };
 
