@@ -413,7 +413,7 @@ pub fn compile_file(file_path: &String, source_code: &String) {
                 .with_message("Return type mismatch")
                 .with_label(
                     Label::new(error_span)
-                        .with_message(format!("Expected the type of the returned expression to be assignable to {}, but instead found {}", expected.to_string(), received.to_string()))
+                        .with_message(format!("Expected the return value to be assignable to {}, found {}", expected.to_string(), received.to_string()))
                         .with_color(Color::Red),
                 )
                 .finish()

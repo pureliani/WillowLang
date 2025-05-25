@@ -1,0 +1,21 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug x.wl",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin",
+                    "willow",
+                ]
+            },
+            "args": [
+                "./x.wl"
+            ],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
