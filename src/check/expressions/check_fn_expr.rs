@@ -90,7 +90,7 @@ pub fn check_fn_expr(
 
     let actual_return_type = if let Some(explicit_return_type) = expected_return_type {
         for return_expr in return_exprs.iter() {
-            let is_assignable = check_is_assignable(&explicit_return_type, &return_expr.ty);
+            let is_assignable = check_is_assignable(&return_expr.ty, &explicit_return_type);
             if !is_assignable {
                 errors.push(SemanticError {
                     kind: SemanticErrorKind::ReturnTypeMismatch {
