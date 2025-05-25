@@ -75,7 +75,13 @@ pub fn check_fn_expr(
     if let Some(final_expr) = checked_final_expr {
         return_exprs.push(*final_expr);
     }
-    let inferred_return_type = union_of(return_exprs.iter().map(|e| e.ty.clone()));
+    let inferred_return_type = if return_exprs.len() > 1 {
+        union_of(return_exprs.iter().map(|e| e.ty.clone()))
+    } else if return_exprs.len() == 1 {
+        return_exprs.get(0).map(|e| e.ty.clone()).unwrap()
+    } else {
+        CheckedType::Void
+    };
 
     let param_types: Vec<CheckedParam> = params
         .into_iter()
