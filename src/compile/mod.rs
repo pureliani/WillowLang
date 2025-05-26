@@ -295,12 +295,12 @@ pub fn compile_file(file_path: &String, source_code: &String) {
                 )
                 .finish(),
             SemanticErrorKind::MixedFloatAndInteger => {
-               report_builder
+                report_builder
                 .with_message("Mixed float and integer operands")
                 .with_label(
                     Label::new(error_span)
                         .with_message(
-                            "Mixing floating-point and integer numbers in an arithmetic operation is not allowed",
+                            "Mixing integer and floating-point numbers in an arithmetic operation is not allowed",
                         )
                         .with_color(Color::Red),
                 )

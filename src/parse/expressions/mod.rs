@@ -93,7 +93,7 @@ impl Parser {
                 let id = self.consume_identifier()?;
                 Expr {
                     kind: ExprKind::Identifier(id),
-                    span: token_span.clone(),
+                    span: token_span,
                 }
             }
             Token {
@@ -103,7 +103,7 @@ impl Parser {
                 let number = self.consume_number()?;
                 Expr {
                     kind: ExprKind::Number { value: number },
-                    span: token_span.clone(),
+                    span: token_span,
                 }
             }
             Token {

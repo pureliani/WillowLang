@@ -106,7 +106,7 @@ impl Parser {
 
         ParsingError {
             kind: ParsingErrorKind::UnexpectedEndOfInput,
-            span: last_token_span.clone(),
+            span: *last_token_span,
         }
     }
 
@@ -241,7 +241,7 @@ impl Parser {
         {
             Some(DocAnnotation {
                 message: doc.to_owned(),
-                span: span.clone(),
+                span: *span,
             })
         } else {
             None

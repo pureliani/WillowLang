@@ -112,15 +112,15 @@ fn parse_number(full_number_str: &str) -> Result<NumberKind, TokenizationErrorKi
     }
 
     if full_number_str.contains('.') {
-        return full_number_str
+        full_number_str
             .parse::<f64>()
             .map(NumberKind::F64)
-            .or(Err(TokenizationErrorKind::InvalidFloatingNumber));
+            .or(Err(TokenizationErrorKind::InvalidFloatingNumber))
     } else {
-        return full_number_str
+        full_number_str
             .parse::<i64>()
             .map(NumberKind::I64)
-            .or(Err(TokenizationErrorKind::InvalidIntegerNumber));
+            .or(Err(TokenizationErrorKind::InvalidIntegerNumber))
     }
 }
 
