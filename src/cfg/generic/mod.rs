@@ -44,9 +44,12 @@ pub enum RValue {
     Temp {
         id: TemporaryId,
         ty: CheckedType,
+    },
+    Var {
+        id: VariableId,
+        ty: CheckedType,
         span: Span,
     },
-    LValue(LValue),
 }
 
 #[derive(Clone, Debug)]
@@ -187,9 +190,9 @@ pub struct ControlFlowGraph {
     pub entry_block: BasicBlockId,
     pub blocks: HashMap<BasicBlockId, BasicBlock>,
 
-    next_temp_id: TemporaryId,
-    next_block_id: BasicBlockId,
-    next_var_id: VariableId,
+    next_temp_id: usize,
+    next_block_id: usize,
+    next_var_id: usize,
 
     var_map: HashMap<IdentifierNode, VariableId>,
 }
