@@ -1,6 +1,6 @@
 use crate::{
     ast::{base::base_declaration::GenericParam, base::base_type::TypeAnnotation},
-    tokenizer::{PunctuationKind, TokenKind},
+    tokenize::{PunctuationKind, TokenKind},
 };
 
 use super::{Parser, ParsingError};

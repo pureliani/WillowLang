@@ -1,7 +1,7 @@
 use crate::{
     ast::base::base_expression::{Expr, ExprKind},
     parse::{Parser, ParsingError},
-    tokenizer::{KeywordKind, TokenKind},
+    tokenize::{KeywordKind, TokenKind},
 };
 
 impl Parser {

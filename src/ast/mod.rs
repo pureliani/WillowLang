@@ -2,7 +2,6 @@ use std::hash::{Hash, Hasher};
 
 pub mod base;
 pub mod checked;
-pub mod monomorphized;
 
 #[derive(Debug, Clone)]
 pub struct IdentifierNode {

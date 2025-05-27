@@ -1,7 +1,7 @@
 use crate::{
     ast::base::base_expression::{Expr, ExprKind},
     parse::{Parser, ParsingError},
-    tokenizer::{PunctuationKind, TokenKind},
+    tokenize::{PunctuationKind, TokenKind},
 };
 
 impl Parser {

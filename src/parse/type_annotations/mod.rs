@@ -7,7 +7,7 @@ use crate::{
         base::base_type::{TypeAnnotation, TypeAnnotationKind},
         Span,
     },
-    tokenizer::{KeywordKind, PunctuationKind, TokenKind},
+    tokenize::{KeywordKind, PunctuationKind, TokenKind},
 };
 
 fn infix_bp(token_kind: &TokenKind) -> Option<(u8, u8)> {
@@ -325,7 +325,7 @@ mod tests {
     #[test]
     fn parses_primitive_types() {
         use crate::ast::Position;
-        use crate::tokenizer::Tokenizer;
+        use crate::tokenize::Tokenizer;
         use pretty_assertions::assert_eq;
 
         let test_cases = vec![
@@ -617,7 +617,7 @@ mod tests {
     #[test]
     fn parses_union_types() {
         use crate::ast::Position;
-        use crate::tokenizer::Tokenizer;
+        use crate::tokenize::Tokenizer;
         use pretty_assertions::assert_eq;
 
         let (tokens, _) = Tokenizer::tokenize("i8 | i16 | i32 | i64");

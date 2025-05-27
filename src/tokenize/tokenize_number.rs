@@ -128,7 +128,7 @@ fn parse_number(full_number_str: &str) -> Result<NumberKind, TokenizationErrorKi
 mod tests {
     use crate::{
         ast::{Position, Span},
-        tokenizer::{NumberKind, Token, TokenKind, Tokenizer},
+        tokenize::{NumberKind, Token, TokenKind, Tokenizer},
     };
     use pretty_assertions::assert_eq;
 

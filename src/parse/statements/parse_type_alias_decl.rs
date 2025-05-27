@@ -4,7 +4,7 @@ use crate::{
         base_statement::{Stmt, StmtKind},
     },
     parse::{DocAnnotation, Parser, ParsingError},
-    tokenizer::{KeywordKind, PunctuationKind},
+    tokenize::{KeywordKind, PunctuationKind},
 };
 
 impl Parser {

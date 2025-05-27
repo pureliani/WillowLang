@@ -4,7 +4,7 @@ use crate::{
         IdentifierNode,
     },
     parse::{Parser, ParsingError},
-    tokenizer::{PunctuationKind, TokenKind},
+    tokenize::{PunctuationKind, TokenKind},
 };
 
 impl Parser {

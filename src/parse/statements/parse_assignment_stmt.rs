@@ -7,7 +7,7 @@ use crate::{
         Span,
     },
     parse::{Parser, ParsingError},
-    tokenizer::PunctuationKind,
+    tokenize::PunctuationKind,
 };
 
 impl Parser {

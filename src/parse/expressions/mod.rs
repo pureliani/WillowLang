@@ -10,7 +10,7 @@ use crate::{
         base::base_expression::{Expr, ExprKind},
         Span,
     },
-    tokenizer::{KeywordKind, PunctuationKind, Token, TokenKind},
+    tokenize::{KeywordKind, PunctuationKind, Token, TokenKind},
 };
 
 use super::{Parser, ParsingError, ParsingErrorKind};

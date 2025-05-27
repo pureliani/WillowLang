@@ -1,6 +1,6 @@
 use crate::{
     ast::{base::base_type::TypeAnnotation, Span},
-    tokenizer::{PunctuationKind, TokenKind},
+    tokenize::{PunctuationKind, TokenKind},
 };
 
 use super::{Parser, ParsingError};

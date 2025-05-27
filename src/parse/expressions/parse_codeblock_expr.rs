@@ -7,7 +7,7 @@ use crate::{
         Span,
     },
     parse::{statements::is_start_of_stmt, Parser, ParsingError, ParsingErrorKind},
-    tokenizer::{PunctuationKind, TokenKind},
+    tokenize::{PunctuationKind, TokenKind},
 };
 
 use super::is_start_of_expr;

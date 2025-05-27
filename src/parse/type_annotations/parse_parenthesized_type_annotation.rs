@@ -1,6 +1,4 @@
-use crate::{
-    ast::base::base_type::TypeAnnotation, parse::ParsingError, tokenizer::PunctuationKind,
-};
+use crate::{ast::base::base_type::TypeAnnotation, parse::ParsingError, tokenize::PunctuationKind};
 
 use super::Parser;
 

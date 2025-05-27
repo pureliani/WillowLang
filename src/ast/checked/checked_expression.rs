@@ -1,7 +1,7 @@
 use crate::{
     ast::{IdentifierNode, Span, StringNode},
     check::utils::substitute_generics::GenericSubstitutionMap,
-    tokenizer::NumberKind,
+    tokenize::NumberKind,
 };
 
 use super::{

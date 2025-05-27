@@ -6,7 +6,7 @@ use crate::{
         },
         Span,
     },
-    tokenizer::NumberKind,
+    tokenize::NumberKind,
 };
 
 pub fn check_numeric_expr(value: NumberKind, span: Span) -> CheckedExpr {

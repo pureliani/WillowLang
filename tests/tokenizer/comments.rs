@@ -1,7 +1,7 @@
 use pretty_assertions::assert_eq;
 use willow::{
     ast::{Position, Span},
-    tokenizer::{KeywordKind, NumberKind, PunctuationKind, Token, TokenKind, Tokenizer},
+    tokenize::{KeywordKind, NumberKind, PunctuationKind, Token, TokenKind, Tokenizer},
 };
 
 #[test]

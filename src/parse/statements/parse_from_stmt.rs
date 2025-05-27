@@ -1,7 +1,7 @@
 use crate::{
     ast::base::base_statement::{Stmt, StmtKind},
     parse::{Parser, ParsingError},
-    tokenizer::{KeywordKind, PunctuationKind, TokenKind},
+    tokenize::{KeywordKind, PunctuationKind, TokenKind},
 };
 
 impl Parser {

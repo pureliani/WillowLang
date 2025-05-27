@@ -15,7 +15,7 @@ use crate::{
         scope::{Scope, ScopeKind, SymbolEntry},
         SemanticError, SemanticErrorKind,
     },
-    tokenizer::NumberKind,
+    tokenize::NumberKind,
 };
 
 pub fn check_type(

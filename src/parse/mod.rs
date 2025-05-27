@@ -12,7 +12,7 @@ pub struct Parser {
 
 use crate::{
     ast::{base::base_statement::Stmt, IdentifierNode, Position, Span, StringNode},
-    tokenizer::{KeywordKind, NumberKind, PunctuationKind, Token, TokenKind},
+    tokenize::{KeywordKind, NumberKind, PunctuationKind, Token, TokenKind},
 };
 
 #[derive(Debug, Clone, PartialEq)]

@@ -1,6 +1,6 @@
 use crate::{
     ast::{IdentifierNode, Span, StringNode},
-    tokenizer::NumberKind,
+    tokenize::NumberKind,
 };
 
 use super::{

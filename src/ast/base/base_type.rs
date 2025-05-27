@@ -1,6 +1,6 @@
 use crate::{
     ast::{IdentifierNode, Span},
-    tokenizer::NumberKind,
+    tokenize::NumberKind,
 };
 
 use super::base_declaration::{GenericParam, Param};

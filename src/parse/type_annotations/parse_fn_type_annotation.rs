@@ -4,7 +4,7 @@ use crate::{
         base_type::{TypeAnnotation, TypeAnnotationKind},
     },
     parse::ParsingError,
-    tokenizer::{PunctuationKind, TokenKind},
+    tokenize::{PunctuationKind, TokenKind},
 };
 
 use super::Parser;

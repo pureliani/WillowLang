@@ -8,7 +8,7 @@ use crate::{
         SemanticError, SemanticErrorKind,
     },
     parse::{Parser, ParsingErrorKind},
-    tokenizer::{TokenizationErrorKind, Tokenizer},
+    tokenize::{TokenizationErrorKind, Tokenizer},
 };
 
 struct FileSourceCache {

@@ -1,6 +1,6 @@
 use crate::{
     ast::{checked::checked_type::CheckedType, IdentifierNode, Span},
-    tokenizer::NumberKind,
+    tokenize::NumberKind,
 };
 
 pub mod check_expr;

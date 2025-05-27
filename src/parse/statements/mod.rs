@@ -13,7 +13,7 @@ pub mod parse_while_stmt;
 use crate::{
     ast::base::base_statement::Stmt,
     parse::{Parser, ParsingErrorKind},
-    tokenizer::{KeywordKind, PunctuationKind, TokenKind},
+    tokenize::{KeywordKind, PunctuationKind, TokenKind},
 };
 
 use super::{expressions::is_start_of_expr, ParsingError};

@@ -4,7 +4,7 @@ use crate::{
         base_expression::{Expr, ExprKind},
     },
     parse::{Parser, ParsingError},
-    tokenizer::{PunctuationKind, TokenKind},
+    tokenize::{PunctuationKind, TokenKind},
 };
 
 impl Parser {
@@ -65,7 +65,7 @@ mod test {
             },
             IdentifierNode, Position, Span,
         },
-        tokenizer::Tokenizer,
+        tokenize::Tokenizer,
     };
     use pretty_assertions::assert_eq;
 
