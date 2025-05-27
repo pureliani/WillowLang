@@ -8,7 +8,6 @@ pub mod check_stmt;
 pub mod check_stmts;
 pub mod expressions;
 pub mod scope;
-pub mod type_flow_graph;
 pub mod utils;
 
 #[derive(Debug, Clone)]
