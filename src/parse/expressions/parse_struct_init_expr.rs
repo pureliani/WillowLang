@@ -7,7 +7,7 @@ use crate::{
     tokenize::{PunctuationKind, TokenKind},
 };
 
-impl Parser {
+impl<'a> Parser<'a> {
     pub fn parse_struct_init_fields(
         &mut self,
     ) -> Result<Vec<(IdentifierNode, Expr)>, ParsingError> {

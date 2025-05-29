@@ -4,14 +4,16 @@ mod parse_generic_params;
 mod statements;
 mod type_annotations;
 
-pub struct Parser {
+pub struct Parser<'a> {
     pub offset: usize,
     pub tokens: Vec<Token>,
     pub checkpoint_offset: usize,
+    pub interner: &'a mut StringInterner<'a>,
 }
 
 use crate::{
     ast::{base::base_statement::Stmt, IdentifierNode, Position, Span, StringNode},
+    compile::string_interner::{InternerId, StringInterner},
     tokenize::{KeywordKind, NumberKind, PunctuationKind, Token, TokenKind},
 };
 
@@ -62,7 +64,7 @@ pub struct ParsingError {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct DocAnnotation {
-    message: String,
+    message: InternerId,
     span: Span,
 }
 

@@ -6,7 +6,7 @@ use crate::{
     parse::{Parser, ParsingError},
 };
 
-impl Parser {
+impl<'a> Parser<'a> {
     pub fn parse_expr_stmt(&mut self, lhs: Expr) -> Result<Stmt, ParsingError> {
         Ok(Stmt {
             span: lhs.span,

@@ -7,7 +7,7 @@ use crate::{
     tokenize::{PunctuationKind, TokenKind},
 };
 
-impl Parser {
+impl<'a> Parser<'a> {
     pub fn parse_fn_expr(&mut self) -> Result<Expr, ParsingError> {
         let start_offset = self.offset;
 
@@ -65,6 +65,7 @@ mod test {
             },
             IdentifierNode, Position, Span,
         },
+        compile::string_interner::StringInterner,
         tokenize::Tokenizer,
     };
     use pretty_assertions::assert_eq;
@@ -72,10 +73,12 @@ mod test {
     #[test]
     fn parses_basic_function() {
         let (tokens, _) = Tokenizer::tokenize("() => {}");
+        let mut interner = StringInterner::new();
         let mut parser = Parser {
             checkpoint_offset: 0,
             offset: 0,
             tokens,
+            interner: &mut interner,
         };
         let actual_ast = parser.parse_expr(0);
         let expected_ast = Ok(Expr {
@@ -107,17 +110,22 @@ mod test {
     #[test]
     fn parses_function_with_params() {
         let (tokens, _) = Tokenizer::tokenize("(a: i32) => {}");
+
+        let mut interner = StringInterner::new();
+        let param_name = interner.intern("a");
+
         let mut parser = Parser {
             checkpoint_offset: 0,
             offset: 0,
             tokens,
+            interner: &mut interner,
         };
         let actual_ast = parser.parse_expr(0);
         let expected_ast = Ok(Expr {
             kind: ExprKind::Fn {
                 params: vec![Param {
                     identifier: IdentifierNode {
-                        name: String::from("a"),
+                        name: param_name,
                         span: Span {
                             start: Position {
                                 line: 1,

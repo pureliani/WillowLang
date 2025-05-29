@@ -7,7 +7,7 @@ use crate::{
     tokenize::{KeywordKind, PunctuationKind, TokenKind},
 };
 
-impl Parser {
+impl<'a> Parser<'a> {
     pub fn parse_enum_decl(
         &mut self,
         documentation: Option<DocAnnotation>,

@@ -5,7 +5,7 @@ use crate::{
 
 use super::{Parser, ParsingError};
 
-impl Parser {
+impl<'a> Parser<'a> {
     pub fn parse_generic_param_constraint(
         &mut self,
     ) -> Result<Option<TypeAnnotation>, ParsingError> {

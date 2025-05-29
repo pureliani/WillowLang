@@ -5,7 +5,7 @@ use crate::{
 
 use super::{Parser, ParsingError};
 
-impl Parser {
+impl<'a> Parser<'a> {
     pub fn parse_optional_generic_args(
         &mut self,
     ) -> Result<(Vec<TypeAnnotation>, Span), ParsingError> {

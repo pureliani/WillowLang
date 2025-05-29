@@ -12,7 +12,7 @@ use crate::{
 
 use super::is_start_of_expr;
 
-impl Parser {
+impl<'a> Parser<'a> {
     pub fn parse_codeblock_expr(&mut self) -> Result<BlockContents, ParsingError> {
         self.consume_punctuation(PunctuationKind::LBrace)?;
 

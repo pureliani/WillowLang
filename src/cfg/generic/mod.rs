@@ -5,6 +5,7 @@ use crate::{
         checked::{checked_declaration::CheckedParam, checked_type::CheckedType},
         IdentifierNode, Span,
     },
+    compile::string_interner::InternerId,
     tokenize::NumberKind,
 };
 
@@ -37,7 +38,7 @@ pub enum RValue {
         span: Span,
     },
     StringLiteral {
-        value: String,
+        value: InternerId,
         ty: CheckedType,
         span: Span,
     },

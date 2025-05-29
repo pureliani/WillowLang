@@ -1,11 +1,13 @@
 use std::hash::{Hash, Hasher};
 
+use crate::compile::string_interner::InternerId;
+
 pub mod base;
 pub mod checked;
 
 #[derive(Debug, Clone)]
 pub struct IdentifierNode {
-    pub name: String,
+    pub name: InternerId,
     pub span: Span,
 }
 
@@ -23,7 +25,7 @@ impl Hash for IdentifierNode {
 
 #[derive(Debug, Clone)]
 pub struct StringNode {
-    pub value: String,
+    pub value: InternerId,
     pub span: Span,
 }
 

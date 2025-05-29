@@ -4,7 +4,7 @@ use crate::{
     tokenize::KeywordKind,
 };
 
-impl Parser {
+impl<'a> Parser<'a> {
     pub fn parse_continue_stmt(&mut self) -> Result<Stmt, ParsingError> {
         let start_offset = self.offset;
         self.consume_keyword(KeywordKind::Continue)?;

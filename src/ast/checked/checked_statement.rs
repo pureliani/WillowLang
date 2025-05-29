@@ -1,4 +1,7 @@
-use crate::ast::{base::base_declaration::EnumDecl, IdentifierNode, Span, StringNode};
+use crate::{
+    ast::{base::base_declaration::EnumDecl, IdentifierNode, Span},
+    compile::string_interner::InternerId,
+};
 
 use super::{
     checked_declaration::{
@@ -25,7 +28,7 @@ pub enum CheckedStmtKind {
         value: CheckedExpr,
     },
     From {
-        path: StringNode,
+        path: InternerId,
         identifiers: Vec<(IdentifierNode, Option<IdentifierNode>)>, // optional alias
     },
     While {

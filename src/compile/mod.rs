@@ -1,5 +1,6 @@
 use ariadne::{Cache, Color, Label, Report, ReportKind, Source};
 use std::{cell::RefCell, collections::HashMap, rc::Rc, vec};
+pub mod string_interner;
 
 use crate::{
     check::{

@@ -1,5 +1,6 @@
 use crate::{
     ast::{checked::checked_type::CheckedType, IdentifierNode, Span},
+    compile::string_interner::InternerId,
     tokenize::NumberKind,
 };
 
@@ -49,10 +50,10 @@ pub enum SemanticErrorKind {
     CannotUseVariableDeclarationAsType,
     VarDeclWithNoConstraintOrInitializer,
     AccessToUndefinedProperty(IdentifierNode),
-    UnresolvedGenericParam(String),
+    UnresolvedGenericParam(InternerId),
     CannotUseIsTypeOnNonUnion,
     ConflictingGenericBinding {
-        identifier: String,
+        identifier: InternerId,
         existing: CheckedType,
         new: CheckedType,
     },

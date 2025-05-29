@@ -1,11 +1,14 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
-use crate::ast::{
-    base::base_declaration::EnumDecl,
-    checked::checked_declaration::{
-        CheckedGenericParam, CheckedGenericStructDecl, CheckedGenericTypeAliasDecl,
-        CheckedStructDecl, CheckedTypeAliasDecl, CheckedVarDecl,
+use crate::{
+    ast::{
+        base::base_declaration::EnumDecl,
+        checked::checked_declaration::{
+            CheckedGenericParam, CheckedGenericStructDecl, CheckedGenericTypeAliasDecl,
+            CheckedStructDecl, CheckedTypeAliasDecl, CheckedVarDecl,
+        },
     },
+    compile::string_interner::InternerId,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -33,7 +36,7 @@ pub enum SymbolEntry {
 #[derive(Debug, Clone)]
 pub struct Scope {
     parent: Option<Rc<RefCell<Scope>>>,
-    symbols: HashMap<String, SymbolEntry>,
+    symbols: HashMap<InternerId, SymbolEntry>,
     pub kind: ScopeKind,
 }
 
@@ -54,12 +57,12 @@ impl Scope {
         }
     }
 
-    pub fn insert(&mut self, key: String, value: SymbolEntry) {
+    pub fn insert(&mut self, key: InternerId, value: SymbolEntry) {
         self.symbols.insert(key, value);
     }
 
-    pub fn lookup(&self, key: &str) -> Option<SymbolEntry> {
-        if let Some(value) = self.symbols.get(key) {
+    pub fn lookup(&self, key: InternerId) -> Option<SymbolEntry> {
+        if let Some(value) = self.symbols.get(&key) {
             return Some(value.clone());
         }
 

@@ -79,7 +79,7 @@ pub fn is_start_of_expr(token_kind: &TokenKind) -> bool {
     }
 }
 
-impl Parser {
+impl<'a> Parser<'a> {
     pub fn parse_expr(&mut self, min_prec: u8) -> Result<Expr, ParsingError> {
         let token = self.current().ok_or(self.unexpected_end_of_input())?;
 
@@ -312,14 +312,17 @@ impl Parser {
                     }
                     TokenKind::Punctuation(PunctuationKind::LParen) => {
                         if let ExprKind::StaticAccess { left, field } = lhs.kind.clone() {
-                            if field.name == "as" || field.name == "is" {
+                            let is_type_cast = field.name == self.interner.intern("as");
+                            let is_type_check = field.name == self.interner.intern("is");
+
+                            if is_type_cast || is_type_check {
                                 let start_offset = self.offset;
                                 self.consume_punctuation(PunctuationKind::LParen)?;
                                 let target_type = self.parse_type_annotation(0)?;
                                 self.consume_punctuation(PunctuationKind::RParen)?;
                                 let span_end = self.get_span(start_offset, self.offset - 1)?;
 
-                                let kind = if field.name == "as" {
+                                let kind = if is_type_cast {
                                     ExprKind::TypeCast {
                                         left,
                                         target: target_type,
