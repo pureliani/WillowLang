@@ -217,30 +217,30 @@ impl NumberKind {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum TokenKind {
-    Identifier(String),
+pub enum TokenKind<'a> {
+    Identifier(&'a str),
     Punctuation(PunctuationKind),
     Keyword(KeywordKind),
-    String(String),
+    String(&'a str),
     Number(NumberKind),
-    Doc(String),
+    Doc(&'a str),
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct Token {
+pub struct Token<'a> {
     pub span: Span,
-    pub kind: TokenKind,
+    pub kind: TokenKind<'a>,
 }
 
-impl TokenKind {
-    pub fn to_string(&self) -> String {
+impl<'a> TokenKind<'a> {
+    pub fn to_string(&self) -> &'a str {
         match self {
-            TokenKind::Identifier(id) => id.to_string(),
+            TokenKind::Identifier(id) => id,
             TokenKind::Punctuation(punctuation_kind) => punctuation_kind.to_string(),
             TokenKind::Keyword(keyword_kind) => keyword_kind.to_string(),
-            TokenKind::String(value) => format!("\"{}\"", value),
+            TokenKind::String(value) => &format!("\"{}\"", value),
             TokenKind::Number(number_kind) => number_kind.to_string(),
-            TokenKind::Doc(doc) => doc.to_owned(),
+            TokenKind::Doc(doc) => doc,
         }
     }
 }
@@ -255,7 +255,7 @@ pub struct Tokenizer<'a> {
 }
 
 impl<'a> Tokenizer<'a> {
-    fn current(&self) -> Option<&str> {
+    fn current(&self) -> Option<&'a str> {
         self.input.graphemes(true).nth(self.grapheme_offset)
     }
 
@@ -273,11 +273,11 @@ impl<'a> Tokenizer<'a> {
         }
     }
 
-    fn peek(&self, i: usize) -> Option<&str> {
+    fn peek(&self, i: usize) -> Option<&'a str> {
         self.input.graphemes(true).nth(self.grapheme_offset + i)
     }
 
-    fn slice(&self, start: usize, end: usize) -> &str {
+    fn slice(&self, start: usize, end: usize) -> &'a str {
         let grapheme_indices: Vec<(usize, &str)> = self.input.grapheme_indices(true).collect();
 
         let start_idx = grapheme_indices[start].0;
@@ -465,7 +465,7 @@ impl<'a> Tokenizer<'a> {
                         }
                     }
                 }
-                Some(punct) => match state.tokenize_punctuation(&punct.to_owned()) {
+                Some(punct) => match state.tokenize_punctuation(punct) {
                     Some(kind) => {
                         let end_pos = Position {
                             line: state.line,

@@ -9,8 +9,8 @@ use crate::{
 
 use super::Parser;
 
-impl<'a> Parser<'a> {
-    pub fn parse_fn_type_annotation(&mut self) -> Result<TypeAnnotation, ParsingError> {
+impl<'a, 'b> Parser<'a, 'b> {
+    pub fn parse_fn_type_annotation(&mut self) -> Result<TypeAnnotation, ParsingError<'a>> {
         let start_offset = self.offset;
 
         let generic_params = self.parse_optional_generic_params()?;

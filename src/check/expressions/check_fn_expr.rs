@@ -44,10 +44,10 @@ pub fn check_fn_expr(
             let checked_constraint = check_type(&param.constraint, errors, fn_scope.clone());
 
             fn_scope.borrow_mut().insert(
-                param.identifier.name.to_owned(),
+                param.identifier.name,
                 SymbolEntry::VarDecl(CheckedVarDecl {
                     documentation: None,
-                    identifier: param.identifier.to_owned(),
+                    identifier: param.identifier,
                     constraint: checked_constraint.clone(),
                     value: None,
                 }),
@@ -55,7 +55,7 @@ pub fn check_fn_expr(
 
             CheckedParam {
                 constraint: checked_constraint,
-                identifier: param.identifier.to_owned(),
+                identifier: param.identifier,
             }
         })
         .collect();

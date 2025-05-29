@@ -35,9 +35,16 @@ fn suffix_bp(token_kind: &TokenKind) -> Option<(u8, ())> {
     Some(priority)
 }
 
-impl Parser {
-    pub fn parse_type_annotation(&mut self, min_prec: u8) -> Result<TypeAnnotation, ParsingError> {
+impl<'a, 'b> Parser<'a, 'b> {
+    pub fn parse_type_annotation(
+        &mut self,
+        min_prec: u8,
+    ) -> Result<TypeAnnotation, ParsingError<'a>> {
         let token = self.current().ok_or(self.unexpected_end_of_input())?;
+        let expected_type_but_found_err = ParsingError {
+            kind: ParsingErrorKind::ExpectedATypeButFound(token.clone()),
+            span: token.span,
+        };
 
         let mut lhs = match token.kind {
             TokenKind::Keyword(KeywordKind::Void) => {
@@ -220,12 +227,7 @@ impl Parser {
                     span,
                 }
             }
-            _ => {
-                return Err(ParsingError {
-                    kind: ParsingErrorKind::ExpectedATypeButFound(token.clone()),
-                    span: token.span,
-                })
-            }
+            _ => return Err(expected_type_but_found_err),
         };
 
         loop {

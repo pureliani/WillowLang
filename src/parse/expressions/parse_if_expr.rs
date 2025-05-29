@@ -4,8 +4,8 @@ use crate::{
     tokenize::{KeywordKind, TokenKind},
 };
 
-impl<'a> Parser<'a> {
-    pub fn parse_if_expr(&mut self) -> Result<Expr, ParsingError> {
+impl<'a, 'b> Parser<'a, 'b> {
+    pub fn parse_if_expr(&mut self) -> Result<Expr, ParsingError<'a>> {
         let start_offset = self.offset;
 
         self.consume_keyword(KeywordKind::If)?;

@@ -7,11 +7,11 @@ use crate::{
     tokenize::{KeywordKind, PunctuationKind, TokenKind},
 };
 
-impl<'a> Parser<'a> {
+impl<'a, 'b> Parser<'a, 'b> {
     pub fn parse_struct_decl(
         &mut self,
         documentation: Option<DocAnnotation>,
-    ) -> Result<Stmt, ParsingError> {
+    ) -> Result<Stmt, ParsingError<'a>> {
         let start_offset = self.offset;
 
         self.consume_keyword(KeywordKind::Struct)?;

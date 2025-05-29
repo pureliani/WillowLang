@@ -78,7 +78,7 @@ pub fn check_type(
         }
         TypeAnnotationKind::Identifier(id) => scope
             .borrow()
-            .lookup(&id.name)
+            .lookup(id.name)
             .map(|entry| match entry {
                 SymbolEntry::GenericStructDecl(decl) => CheckedType::GenericStructDecl(decl),
                 SymbolEntry::StructDecl(decl) => CheckedType::StructDecl(decl),
@@ -98,7 +98,7 @@ pub fn check_type(
             })
             .unwrap_or_else(|| {
                 errors.push(SemanticError {
-                    kind: SemanticErrorKind::UndeclaredType(id.name.clone()),
+                    kind: SemanticErrorKind::UndeclaredType(id.name),
                     span: arg.span,
                 });
                 CheckedType::Unknown

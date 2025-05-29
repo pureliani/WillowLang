@@ -5,10 +5,10 @@ use crate::{
 
 use super::{Parser, ParsingError};
 
-impl<'a> Parser<'a> {
+impl<'a, 'b> Parser<'a, 'b> {
     pub fn parse_generic_param_constraint(
         &mut self,
-    ) -> Result<Option<TypeAnnotation>, ParsingError> {
+    ) -> Result<Option<TypeAnnotation>, ParsingError<'a>> {
         if self.match_token(0, TokenKind::Punctuation(PunctuationKind::Col)) {
             self.advance();
             Ok(Some(self.parse_type_annotation(0)?))
@@ -17,7 +17,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn parse_optional_generic_params(&mut self) -> Result<Vec<GenericParam>, ParsingError> {
+    pub fn parse_optional_generic_params(&mut self) -> Result<Vec<GenericParam>, ParsingError<'a>> {
         if self.match_token(0, TokenKind::Punctuation(PunctuationKind::Lt)) {
             self.advance();
             let result = self.comma_separated(

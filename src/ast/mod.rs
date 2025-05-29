@@ -5,7 +5,7 @@ use crate::compile::string_interner::InternerId;
 pub mod base;
 pub mod checked;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct IdentifierNode {
     pub name: InternerId,
     pub span: Span,
@@ -23,7 +23,7 @@ impl Hash for IdentifierNode {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct StringNode {
     pub value: InternerId,
     pub span: Span,

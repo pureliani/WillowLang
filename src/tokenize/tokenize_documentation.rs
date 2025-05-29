@@ -1,7 +1,7 @@
 use super::{TokenizationErrorKind, Tokenizer};
 
 impl<'a> Tokenizer<'a> {
-    pub fn tokenize_documentation(&mut self) -> Result<String, TokenizationErrorKind> {
+    pub fn tokenize_documentation(&mut self) -> Result<&'a str, TokenizationErrorKind> {
         self.consume();
         self.consume();
         self.consume();
@@ -9,7 +9,7 @@ impl<'a> Tokenizer<'a> {
         let start = self.grapheme_offset;
         while let Some(c) = self.current() {
             if c == "-" && self.peek(1) == Some("-") && self.peek(2) == Some("-") {
-                let doc_content = self.slice(start, self.grapheme_offset).to_owned();
+                let doc_content = self.slice(start, self.grapheme_offset);
                 self.consume();
                 self.consume();
                 self.consume();

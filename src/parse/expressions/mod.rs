@@ -79,8 +79,8 @@ pub fn is_start_of_expr(token_kind: &TokenKind) -> bool {
     }
 }
 
-impl<'a> Parser<'a> {
-    pub fn parse_expr(&mut self, min_prec: u8) -> Result<Expr, ParsingError> {
+impl<'a, 'b> Parser<'a, 'b> {
+    pub fn parse_expr(&mut self, min_prec: u8) -> Result<Expr, ParsingError<'a>> {
         let token = self.current().ok_or(self.unexpected_end_of_input())?;
 
         let token_span = token.span;
@@ -343,7 +343,7 @@ impl<'a> Parser<'a> {
                                 })
                             } else {
                                 return Err(ParsingError {
-                                    kind: ParsingErrorKind::UnknownStaticMethod(field.to_owned()),
+                                    kind: ParsingErrorKind::UnknownStaticMethod(field),
                                     span: field.span,
                                 });
                             }

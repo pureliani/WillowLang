@@ -1,7 +1,4 @@
-use crate::{
-    ast::{IdentifierNode, Span},
-    compile::string_interner::InternerId,
-};
+use crate::ast::{IdentifierNode, Span, StringNode};
 
 use super::{
     base_declaration::{EnumDecl, StructDecl, TypeAliasDecl, VarDecl},
@@ -23,7 +20,7 @@ pub enum StmtKind {
         value: Expr,
     },
     From {
-        path: InternerId,
+        path: StringNode,
         identifiers: Vec<(IdentifierNode, Option<IdentifierNode>)>, // optional alias
     },
     While {

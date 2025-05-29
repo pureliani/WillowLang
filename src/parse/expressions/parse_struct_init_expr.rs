@@ -7,10 +7,10 @@ use crate::{
     tokenize::{PunctuationKind, TokenKind},
 };
 
-impl<'a> Parser<'a> {
+impl<'a, 'b> Parser<'a, 'b> {
     pub fn parse_struct_init_fields(
         &mut self,
-    ) -> Result<Vec<(IdentifierNode, Expr)>, ParsingError> {
+    ) -> Result<Vec<(IdentifierNode, Expr)>, ParsingError<'a>> {
         self.consume_punctuation(PunctuationKind::LBrace)?;
         let args = self.comma_separated(
             |p| {
@@ -25,7 +25,7 @@ impl<'a> Parser<'a> {
         Ok(args)
     }
 
-    pub fn parse_struct_init_expr(&mut self, left: Expr) -> Result<Expr, ParsingError> {
+    pub fn parse_struct_init_expr(&mut self, left: Expr) -> Result<Expr, ParsingError<'a>> {
         let start_offset = self.offset;
 
         let mut span = left.span;

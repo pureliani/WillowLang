@@ -69,7 +69,7 @@ pub fn check_generic_apply_expr(
 
         let substitutions: GenericSubstitutionMap = generic_params
             .into_iter()
-            .map(|gp| gp.identifier.name.clone())
+            .map(|gp| gp.identifier.name)
             .zip(
                 type_args
                     .into_iter()

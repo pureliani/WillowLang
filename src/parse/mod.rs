@@ -4,11 +4,11 @@ mod parse_generic_params;
 mod statements;
 mod type_annotations;
 
-pub struct Parser<'a> {
+pub struct Parser<'a, 'b: 'a> {
     pub offset: usize,
-    pub tokens: Vec<Token>,
+    pub tokens: Vec<Token<'a>>,
     pub checkpoint_offset: usize,
-    pub interner: &'a mut StringInterner<'a>,
+    pub interner: &'b mut StringInterner<'b>,
 }
 
 use crate::{
@@ -18,11 +18,11 @@ use crate::{
 };
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum ParsingErrorKind {
+pub enum ParsingErrorKind<'a> {
     DocMustBeFollowedByDeclaration,
-    ExpectedAnExpressionButFound(Token),
-    ExpectedATypeButFound(Token),
-    InvalidSuffixOperator(Token),
+    ExpectedAnExpressionButFound(Token<'a>),
+    ExpectedATypeButFound(Token<'a>),
+    InvalidSuffixOperator(Token<'a>),
     UnexpectedEndOfInput,
     ExpectedAnIdentifier,
     ExpectedAPunctuationMark(PunctuationKind),
@@ -31,11 +31,11 @@ pub enum ParsingErrorKind {
     ExpectedANumericValue,
     UnknownStaticMethod(IdentifierNode),
     UnexpectedStatementAfterFinalExpression,
-    ExpectedStatementOrExpression { found: TokenKind },
-    UnexpectedTokenAfterFinalExpression { found: TokenKind },
+    ExpectedStatementOrExpression { found: TokenKind<'a> },
+    UnexpectedTokenAfterFinalExpression { found: TokenKind<'a> },
 }
 
-impl ParsingErrorKind {
+impl<'a> ParsingErrorKind<'a> {
     pub fn code(&self) -> usize {
         match self {
             ParsingErrorKind::DocMustBeFollowedByDeclaration { .. } => 1,
@@ -57,8 +57,8 @@ impl ParsingErrorKind {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct ParsingError {
-    pub kind: ParsingErrorKind,
+pub struct ParsingError<'a> {
+    pub kind: ParsingErrorKind<'a>,
     pub span: Span,
 }
 
@@ -68,7 +68,7 @@ pub struct DocAnnotation {
     span: Span,
 }
 
-impl Parser {
+impl<'a, 'b> Parser<'a, 'b> {
     fn match_token(&self, index: usize, kind: TokenKind) -> bool {
         if let Some(token) = self.tokens.get(self.offset + index) {
             return token.kind == kind;
@@ -81,11 +81,11 @@ impl Parser {
         self.offset += 1;
     }
 
-    fn current(&self) -> Option<&Token> {
+    fn current(&self) -> Option<&'a Token> {
         self.tokens.get(self.offset)
     }
 
-    fn unexpected_end_of_input(&self) -> ParsingError {
+    fn unexpected_end_of_input(&self) -> ParsingError<'a> {
         // TODO: fix this
         let first_token_span = Span {
             start: Position {
@@ -112,7 +112,11 @@ impl Parser {
         }
     }
 
-    fn get_span(&mut self, start_offset: usize, end_offset: usize) -> Result<Span, ParsingError> {
+    fn get_span(
+        &mut self,
+        start_offset: usize,
+        end_offset: usize,
+    ) -> Result<Span, ParsingError<'a>> {
         let start = self
             .tokens
             .get(start_offset)
@@ -137,7 +141,7 @@ impl Parser {
         self.offset = self.checkpoint_offset;
     }
 
-    pub fn consume_string(&mut self) -> Result<StringNode, ParsingError> {
+    pub fn consume_string(&mut self) -> Result<StringNode, ParsingError<'a>> {
         if let Some(t) = self.current() {
             match t.clone() {
                 Token {
@@ -146,7 +150,10 @@ impl Parser {
                 } => {
                     self.advance();
 
-                    Ok(StringNode { span, value })
+                    Ok(StringNode {
+                        span,
+                        value: self.interner.intern(&value),
+                    })
                 }
                 t => {
                     return Err(ParsingError {
@@ -160,10 +167,13 @@ impl Parser {
         }
     }
 
-    pub fn consume_punctuation(&mut self, expected: PunctuationKind) -> Result<(), ParsingError> {
+    pub fn consume_punctuation(
+        &mut self,
+        expected: PunctuationKind,
+    ) -> Result<(), ParsingError<'a>> {
         if let Some(token) = self.current() {
             match &token.kind {
-                TokenKind::Punctuation(pk) if pk == &expected => {
+                TokenKind::Punctuation(pk) if pk == expected => {
                     self.advance();
                     Ok(())
                 }
@@ -177,7 +187,7 @@ impl Parser {
         }
     }
 
-    pub fn consume_number(&mut self) -> Result<NumberKind, ParsingError> {
+    pub fn consume_number(&mut self) -> Result<NumberKind, ParsingError<'a>> {
         if let Some(token) = self.current() {
             match token.kind {
                 TokenKind::Number(number_kind) => {
@@ -196,7 +206,7 @@ impl Parser {
         Err(self.unexpected_end_of_input())
     }
 
-    pub fn consume_keyword(&mut self, expected: KeywordKind) -> Result<(), ParsingError> {
+    pub fn consume_keyword(&mut self, expected: KeywordKind) -> Result<(), ParsingError<'a>> {
         if let Some(token) = self.current() {
             match token.kind {
                 TokenKind::Keyword(keyword_kind) if keyword_kind == expected => {
@@ -213,17 +223,14 @@ impl Parser {
         }
     }
 
-    pub fn consume_identifier(&mut self) -> Result<IdentifierNode, ParsingError> {
+    pub fn consume_identifier(&mut self) -> Result<IdentifierNode, ParsingError<'a>> {
         if let Some(token) = self.current() {
-            match &token.kind {
+            match token.kind {
                 TokenKind::Identifier(id) => {
-                    let identifier = id.clone();
                     let span = token.span;
+                    let name = self.interner.intern(id);
                     self.advance();
-                    Ok(IdentifierNode {
-                        name: identifier,
-                        span,
-                    })
+                    Ok(IdentifierNode { name, span })
                 }
                 _ => Err(ParsingError {
                     kind: ParsingErrorKind::ExpectedAnIdentifier,
@@ -242,7 +249,7 @@ impl Parser {
         }) = self.current()
         {
             Some(DocAnnotation {
-                message: doc.to_owned(),
+                message: self.interner.intern(&doc),
                 span: *span,
             })
         } else {
@@ -260,9 +267,9 @@ impl Parser {
         &mut self,
         mut parser: F,
         is_end: E,
-    ) -> Result<Vec<T>, ParsingError>
+    ) -> Result<Vec<T>, ParsingError<'a>>
     where
-        F: FnMut(&mut Self) -> Result<T, ParsingError>,
+        F: FnMut(&mut Self) -> Result<T, ParsingError<'a>>,
         E: Fn(&Self) -> bool,
     {
         let mut items = Vec::new();
@@ -292,15 +299,19 @@ impl Parser {
         Ok(items)
     }
 
-    pub fn parse(tokens: Vec<Token>) -> (Vec<Stmt>, Vec<ParsingError>) {
+    pub fn parse(
+        tokens: Vec<Token<'a>>,
+        interner: &'b mut StringInterner<'b>,
+    ) -> (Vec<Stmt>, Vec<ParsingError<'a>>) {
         let mut state = Parser {
             offset: 0,
             checkpoint_offset: 0,
             tokens,
+            interner,
         };
 
         let mut statements: Vec<Stmt> = vec![];
-        let mut errors: Vec<ParsingError> = vec![];
+        let mut errors: Vec<ParsingError<'a>> = vec![];
 
         while state.current().is_some() {
             let stmt = state.parse_stmt();

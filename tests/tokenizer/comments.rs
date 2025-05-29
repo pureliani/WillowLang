@@ -28,7 +28,7 @@ fn test_skip_single_line_comment() {
                 }
             },
             Token {
-                kind: TokenKind::Identifier("x".to_owned()),
+                kind: TokenKind::Identifier("x"),
                 span: Span {
                     start: Position {
                         line: 2,

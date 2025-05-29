@@ -6,11 +6,12 @@ use crate::{
         checked_type::CheckedType,
     },
     check::{SemanticError, SemanticErrorKind},
+    compile::string_interner::InternerId,
 };
 
 use super::union_of::union_of;
 
-pub type GenericSubstitutionMap = HashMap<String, CheckedType>;
+pub type GenericSubstitutionMap = HashMap<InternerId, CheckedType>;
 
 pub fn substitute_generics(
     ty: &CheckedType,
@@ -23,7 +24,7 @@ pub fn substitute_generics(
             .cloned()
             .unwrap_or_else(|| {
                 errors.push(SemanticError {
-                    kind: SemanticErrorKind::UnresolvedGenericParam(gp.identifier.name.clone()),
+                    kind: SemanticErrorKind::UnresolvedGenericParam(gp.identifier.name),
                     span: gp.identifier.span,
                 });
 

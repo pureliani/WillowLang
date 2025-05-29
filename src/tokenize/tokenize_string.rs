@@ -1,16 +1,16 @@
 use super::{TokenizationErrorKind, Tokenizer};
 
 impl<'a> Tokenizer<'a> {
-    pub fn string(&mut self) -> Result<String, TokenizationErrorKind> {
+    pub fn string(&mut self) -> Result<&'a str, TokenizationErrorKind> {
         self.consume();
         let literal_start = self.grapheme_offset;
 
         while let Some(c) = self.current() {
             match c {
                 "\"" => {
-                    let result = self.slice(literal_start, self.grapheme_offset).to_owned();
+                    let value = self.slice(literal_start, self.grapheme_offset);
                     self.consume();
-                    return Ok(result);
+                    return Ok(value);
                 }
                 "\\" => {
                     self.consume();

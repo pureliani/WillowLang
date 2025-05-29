@@ -11,7 +11,7 @@ fn tokenizes_simple_identifiers() {
     assert_eq!(
         tokens,
         vec![Token {
-            kind: TokenKind::Identifier("hello".to_owned()),
+            kind: TokenKind::Identifier("hello"),
             span: Span {
                 start: Position {
                     line: 1,
@@ -59,7 +59,7 @@ fn tokenizes_sequence_as_identifier() {
     assert_eq!(
         tokens,
         vec![Token {
-            kind: TokenKind::Identifier("structhello".to_owned()),
+            kind: TokenKind::Identifier("structhello"),
             span: Span {
                 start: Position {
                     line: 2,

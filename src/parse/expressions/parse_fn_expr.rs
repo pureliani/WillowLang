@@ -7,8 +7,8 @@ use crate::{
     tokenize::{PunctuationKind, TokenKind},
 };
 
-impl<'a> Parser<'a> {
-    pub fn parse_fn_expr(&mut self) -> Result<Expr, ParsingError> {
+impl<'a, 'b> Parser<'a, 'b> {
+    pub fn parse_fn_expr(&mut self) -> Result<Expr, ParsingError<'a>> {
         let start_offset = self.offset;
 
         let generic_params = self.parse_optional_generic_params()?;

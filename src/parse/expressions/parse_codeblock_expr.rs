@@ -12,8 +12,8 @@ use crate::{
 
 use super::is_start_of_expr;
 
-impl<'a> Parser<'a> {
-    pub fn parse_codeblock_expr(&mut self) -> Result<BlockContents, ParsingError> {
+impl<'a, 'b> Parser<'a, 'b> {
+    pub fn parse_codeblock_expr(&mut self) -> Result<BlockContents, ParsingError<'a>> {
         self.consume_punctuation(PunctuationKind::LBrace)?;
 
         let mut statements = Vec::new();
@@ -26,7 +26,6 @@ impl<'a> Parser<'a> {
 
             let current_token = self
                 .current()
-                .cloned()
                 .ok_or_else(|| self.unexpected_end_of_input())?;
             let current_token_span = current_token.span;
 

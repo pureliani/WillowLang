@@ -45,7 +45,7 @@ pub fn check_generic_params(
             };
 
             scope.borrow_mut().insert(
-                gp.identifier.name.clone(),
+                gp.identifier.name,
                 SymbolEntry::GenericParam(checked_gp.clone()),
             );
             checked_gp
@@ -62,7 +62,7 @@ pub fn check_struct_properties(
         .into_iter()
         .map(|p| CheckedParam {
             constraint: check_type(&p.constraint, errors, scope.clone()),
-            identifier: p.identifier.to_owned(),
+            identifier: p.identifier,
         })
         .collect()
 }
@@ -131,10 +131,9 @@ pub fn check_stmt(
             }
         }
         StmtKind::EnumDecl(decl) => {
-            scope.borrow_mut().insert(
-                decl.identifier.name.clone(),
-                SymbolEntry::EnumDecl(decl.clone()),
-            );
+            scope
+                .borrow_mut()
+                .insert(decl.identifier.name, SymbolEntry::EnumDecl(decl.clone()));
 
             CheckedStmt {
                 kind: CheckedStmtKind::EnumDecl(decl),
@@ -181,7 +180,7 @@ pub fn check_stmt(
 
             let checked_declaration = CheckedVarDecl {
                 documentation,
-                identifier: identifier.to_owned(),
+                identifier: identifier,
                 constraint: final_constraint,
                 value: checked_value,
             };
@@ -310,7 +309,7 @@ pub fn check_stmt(
                         }
                     } else {
                         errors.push(SemanticError {
-                            kind: SemanticErrorKind::UndeclaredIdentifier(id.name.clone()),
+                            kind: SemanticErrorKind::UndeclaredIdentifier(id.name),
                             span: checked_target.span,
                         });
                     }

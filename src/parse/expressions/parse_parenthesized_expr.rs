@@ -4,8 +4,8 @@ use crate::{
     tokenize::PunctuationKind,
 };
 
-impl<'a> Parser<'a> {
-    pub fn parse_parenthesized_expr(&mut self) -> Result<Expr, ParsingError> {
+impl<'a, 'b> Parser<'a, 'b> {
+    pub fn parse_parenthesized_expr(&mut self) -> Result<Expr, ParsingError<'a>> {
         let start_offset = self.offset;
 
         self.consume_punctuation(PunctuationKind::LParen)?;
