@@ -232,19 +232,6 @@ pub struct Token<'a> {
     pub kind: TokenKind<'a>,
 }
 
-impl<'a> TokenKind<'a> {
-    pub fn to_string(&self) -> &'a str {
-        match self {
-            TokenKind::Identifier(id) => id,
-            TokenKind::Punctuation(punctuation_kind) => punctuation_kind.to_string(),
-            TokenKind::Keyword(keyword_kind) => keyword_kind.to_string(),
-            TokenKind::String(value) => &format!("\"{}\"", value),
-            TokenKind::Number(number_kind) => number_kind.to_string(),
-            TokenKind::Doc(doc) => doc,
-        }
-    }
-}
-
 #[derive(Debug)]
 pub struct Tokenizer<'a> {
     input: &'a str,
