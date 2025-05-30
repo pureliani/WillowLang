@@ -22,9 +22,9 @@ use crate::{
 #[derive(Debug, Clone, PartialEq)]
 pub enum ParsingErrorKind<'a> {
     DocMustBeFollowedByDeclaration,
-    ExpectedAnExpressionButFound(&'a Token<'a>),
-    ExpectedATypeButFound(&'a Token<'a>),
-    InvalidSuffixOperator(&'a Token<'a>),
+    ExpectedAnExpressionButFound(Token<'a>),
+    ExpectedATypeButFound(Token<'a>),
+    InvalidSuffixOperator(Token<'a>),
     UnexpectedEndOfInput,
     ExpectedAnIdentifier,
     ExpectedAPunctuationMark(PunctuationKind),
@@ -33,8 +33,8 @@ pub enum ParsingErrorKind<'a> {
     ExpectedANumericValue,
     UnknownStaticMethod(IdentifierNode),
     UnexpectedStatementAfterFinalExpression,
-    ExpectedStatementOrExpression { found: &'a TokenKind<'a> },
-    UnexpectedTokenAfterFinalExpression { found: &'a TokenKind<'a> },
+    ExpectedStatementOrExpression { found: TokenKind<'a> },
+    UnexpectedTokenAfterFinalExpression { found: TokenKind<'a> },
 }
 
 impl<'a> ParsingErrorKind<'a> {
@@ -145,20 +145,17 @@ impl<'a, 'b> Parser<'a, 'b> {
 
     pub fn consume_string(&mut self) -> Result<StringNode, ParsingError<'a>> {
         if let Some(t) = self.current() {
-            match t.clone() {
-                Token {
-                    kind: TokenKind::String(value),
-                    span,
-                } => {
+            match t.kind {
+                TokenKind::String(value) => {
                     self.advance();
 
                     Ok(StringNode {
-                        span,
+                        span: t.span,
                         len: value.graphemes(true).count(),
                         value: self.interner.intern(&value),
                     })
                 }
-                t => {
+                _ => {
                     return Err(ParsingError {
                         kind: ParsingErrorKind::ExpectedAStringValue,
                         span: t.span,

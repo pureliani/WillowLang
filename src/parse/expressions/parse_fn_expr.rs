@@ -181,10 +181,16 @@ mod test {
     #[test]
     fn parses_function_with_generic_params() {
         let (tokens, _) = Tokenizer::tokenize("<AParam>(a: AParam) => {}");
+        let mut interner = StringInterner::new();
+
+        let generic_aparam = interner.intern("AParam");
+        let param_a = interner.intern("a");
+
         let mut parser = Parser {
             checkpoint_offset: 0,
             offset: 0,
             tokens,
+            interner: &mut interner,
         };
         let actual_ast = parser.parse_expr(0);
         let expected_ast = Ok(Expr {
@@ -192,7 +198,7 @@ mod test {
                 generic_params: vec![GenericParam {
                     constraint: None,
                     identifier: IdentifierNode {
-                        name: String::from("AParam"),
+                        name: generic_aparam,
                         span: Span {
                             start: Position {
                                 line: 1,
@@ -209,7 +215,7 @@ mod test {
                 }],
                 params: vec![Param {
                     identifier: IdentifierNode {
-                        name: String::from("a"),
+                        name: param_a,
                         span: Span {
                             start: Position {
                                 line: 1,
@@ -226,7 +232,7 @@ mod test {
                     },
                     constraint: TypeAnnotation {
                         kind: TypeAnnotationKind::Identifier(IdentifierNode {
-                            name: String::from("AParam"),
+                            name: generic_aparam,
                             span: Span {
                                 start: Position {
                                     line: 1,
@@ -279,10 +285,16 @@ mod test {
     #[test]
     fn parses_function_with_return_type() {
         let (tokens, _) = Tokenizer::tokenize("<AParam>(a: AParam): i32 => {}");
+        let mut interner = StringInterner::new();
+
+        let generic_aparam = interner.intern("AParam");
+        let param_a = interner.intern("a");
+
         let mut parser = Parser {
             checkpoint_offset: 0,
             offset: 0,
             tokens,
+            interner: &mut interner,
         };
         let actual_ast = parser.parse_expr(0);
         let expected_ast = Ok(Expr {
@@ -290,7 +302,7 @@ mod test {
                 generic_params: vec![GenericParam {
                     constraint: None,
                     identifier: IdentifierNode {
-                        name: String::from("AParam"),
+                        name: generic_aparam,
                         span: Span {
                             start: Position {
                                 line: 1,
@@ -307,7 +319,7 @@ mod test {
                 }],
                 params: vec![Param {
                     identifier: IdentifierNode {
-                        name: String::from("a"),
+                        name: param_a,
                         span: Span {
                             start: Position {
                                 line: 1,
@@ -323,7 +335,7 @@ mod test {
                     },
                     constraint: TypeAnnotation {
                         kind: TypeAnnotationKind::Identifier(IdentifierNode {
-                            name: String::from("AParam"),
+                            name: generic_aparam,
                             span: Span {
                                 start: Position {
                                     line: 1,

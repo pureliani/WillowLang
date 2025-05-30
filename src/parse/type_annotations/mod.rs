@@ -41,10 +41,6 @@ impl<'a, 'b> Parser<'a, 'b> {
         min_prec: u8,
     ) -> Result<TypeAnnotation, ParsingError<'a>> {
         let token = self.current().ok_or(self.unexpected_end_of_input())?;
-        let expected_type_but_found_err = ParsingError {
-            kind: ParsingErrorKind::ExpectedATypeButFound(token),
-            span: token.span,
-        };
 
         let mut lhs = match token.kind {
             TokenKind::Keyword(KeywordKind::Void) => {
@@ -227,7 +223,12 @@ impl<'a, 'b> Parser<'a, 'b> {
                     span,
                 }
             }
-            _ => return Err(expected_type_but_found_err),
+            _ => {
+                return Err(ParsingError {
+                    kind: ParsingErrorKind::ExpectedATypeButFound(token.clone()),
+                    span: token.span,
+                })
+            }
         };
 
         loop {
@@ -321,6 +322,7 @@ mod tests {
             base::base_type::{TypeAnnotation, TypeAnnotationKind},
             Span,
         },
+        compile::string_interner::StringInterner,
         parse::Parser,
     };
 
@@ -609,6 +611,7 @@ mod tests {
                 offset: 0,
                 checkpoint_offset: 0,
                 tokens,
+                interner: &mut StringInterner::new(),
             };
             let result = parser.parse_type_annotation(0);
 
@@ -627,6 +630,7 @@ mod tests {
             offset: 0,
             checkpoint_offset: 0,
             tokens,
+            interner: &mut StringInterner::new(),
         };
         let result = parser.parse_type_annotation(0);
 
