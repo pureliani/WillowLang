@@ -93,7 +93,7 @@ pub fn check_generic_apply_expr(
                 .into_iter()
                 .map(|p| CheckedParam {
                     constraint: substitute_generics(&p.constraint, &substitutions, errors),
-                    identifier: p.identifier.clone(),
+                    identifier: p.identifier,
                 })
                 .collect();
 
@@ -119,14 +119,14 @@ pub fn check_generic_apply_expr(
                 .into_iter()
                 .map(|p| CheckedParam {
                     constraint: substitute_generics(&p.constraint, &substitutions, errors),
-                    identifier: p.identifier.clone(),
+                    identifier: p.identifier,
                 })
                 .collect();
 
             (
                 CheckedType::StructDecl(CheckedStructDecl {
                     documentation: documentation.clone(),
-                    identifier: identifier.clone(),
+                    identifier,
                     properties: substituted_properties,
                 }),
                 substitutions,

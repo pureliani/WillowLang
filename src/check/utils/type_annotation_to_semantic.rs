@@ -118,7 +118,7 @@ pub fn check_type(
                 .into_iter()
                 .map(|p| CheckedParam {
                     constraint: check_type(&p.constraint, errors, fn_type_scope.clone()),
-                    identifier: p.identifier.clone(),
+                    identifier: p.identifier,
                 })
                 .collect();
 
@@ -138,7 +138,7 @@ pub fn check_type(
                 .into_iter()
                 .map(|p| CheckedParam {
                     constraint: check_type(&p.constraint, errors, fn_type_scope.clone()),
-                    identifier: p.identifier.clone(),
+                    identifier: p.identifier,
                 })
                 .collect();
 

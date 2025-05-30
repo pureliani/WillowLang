@@ -41,7 +41,7 @@ pub fn check_generic_params(
 
             let checked_gp = CheckedGenericParam {
                 constraint: checked_constraint,
-                identifier: gp.identifier.clone(),
+                identifier: gp.identifier,
             };
 
             scope.borrow_mut().insert(
@@ -100,7 +100,7 @@ pub fn check_stmt(
 
             if generic_params.is_empty() {
                 let decl = CheckedStructDecl {
-                    identifier: identifier.clone(),
+                    identifier,
                     documentation,
                     properties: checked_properties,
                 };
@@ -114,7 +114,7 @@ pub fn check_stmt(
                 }
             } else {
                 let decl = CheckedGenericStructDecl {
-                    identifier: identifier.clone(),
+                    identifier,
                     documentation,
                     properties: checked_properties,
                     generic_params,
@@ -217,7 +217,7 @@ pub fn check_stmt(
             let kind = if generic_params.is_empty() {
                 let decl = CheckedTypeAliasDecl {
                     documentation,
-                    identifier: identifier.clone(),
+                    identifier,
                     value: Box::new(checked_value),
                 };
 
@@ -229,7 +229,7 @@ pub fn check_stmt(
             } else {
                 let decl = CheckedGenericTypeAliasDecl {
                     documentation,
-                    identifier: identifier.clone(),
+                    identifier,
                     value: Box::new(checked_value),
                     generic_params,
                 };

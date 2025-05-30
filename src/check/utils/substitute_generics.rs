@@ -41,7 +41,7 @@ pub fn substitute_generics(
             let substituted_params = params
                 .iter()
                 .map(|p| CheckedParam {
-                    identifier: p.identifier.clone(),
+                    identifier: p.identifier,
                     constraint: substitute_generics(&p.constraint, substitution, errors),
                 })
                 .collect();
@@ -62,7 +62,7 @@ pub fn substitute_generics(
             let substituted_params = params
                 .iter()
                 .map(|p| CheckedParam {
-                    identifier: p.identifier.clone(),
+                    identifier: p.identifier,
                     constraint: substitute_generics(&p.constraint, substitution, errors),
                 })
                 .collect();
@@ -82,7 +82,7 @@ pub fn substitute_generics(
                 .properties
                 .iter()
                 .map(|p| CheckedParam {
-                    identifier: p.identifier.clone(),
+                    identifier: p.identifier,
                     constraint: substitute_generics(&p.constraint, substitution, errors),
                 })
                 .collect();
@@ -90,7 +90,7 @@ pub fn substitute_generics(
             CheckedType::StructDecl(CheckedStructDecl {
                 properties: substituted_props,
                 documentation: decl.documentation.clone(),
-                identifier: decl.identifier.clone(), // maybe we should rename this?
+                identifier: decl.identifier, // maybe we should rename this?
             })
         }
         CheckedType::GenericTypeAliasDecl(decl) => {
@@ -99,7 +99,7 @@ pub fn substitute_generics(
             CheckedType::TypeAliasDecl(CheckedTypeAliasDecl {
                 value: Box::new(substituted_value),
                 documentation: decl.documentation.clone(),
-                identifier: decl.identifier.clone(), // maybe we should rename this?
+                identifier: decl.identifier, // maybe we should rename this?
             })
         }
         CheckedType::Array { item_type, size } => CheckedType::Array {

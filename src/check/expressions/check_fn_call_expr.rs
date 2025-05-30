@@ -94,7 +94,7 @@ pub fn check_fn_call_expr(
                     .into_iter()
                     .map(|p| CheckedParam {
                         constraint: substitute_generics(&p.constraint, &substitution, errors),
-                        identifier: p.identifier.clone(),
+                        identifier: p.identifier,
                     })
                     .collect();
 
