@@ -10,16 +10,6 @@ pub struct CheckedParam {
     pub constraint: CheckedType,
 }
 
-impl CheckedParam {
-    pub fn to_string(&self) -> String {
-        format!(
-            "{}: {}",
-            self.identifier.name.clone(),
-            self.constraint.to_string()
-        )
-    }
-}
-
 impl Eq for CheckedParam {}
 impl PartialEq for CheckedParam {
     fn eq(&self, other: &Self) -> bool {
@@ -37,19 +27,6 @@ impl Hash for CheckedParam {
 pub struct CheckedGenericParam {
     pub identifier: IdentifierNode,
     pub constraint: Option<Box<CheckedType>>,
-}
-
-impl CheckedGenericParam {
-    pub fn to_string(&self) -> String {
-        match &self.constraint {
-            Some(c) => {
-                format!("{}: {}", self.identifier.name.clone(), c.to_string())
-            }
-            None => {
-                format!("{}", self.identifier.name.clone())
-            }
-        }
-    }
 }
 
 impl Eq for CheckedGenericParam {}
@@ -71,39 +48,6 @@ pub struct CheckedGenericStructDecl {
     pub documentation: Option<DocAnnotation>,
     pub generic_params: Vec<CheckedGenericParam>,
     pub properties: Vec<CheckedParam>,
-}
-
-impl CheckedGenericStructDecl {
-    pub fn to_string(&self) -> String {
-        let generic_params_str = if !self.generic_params.is_empty() {
-            let joined = self
-                .generic_params
-                .iter()
-                .map(|gp| gp.to_string())
-                .collect::<Vec<String>>()
-                .join(", ");
-
-            format!("<{}>", joined)
-        } else {
-            "".to_owned()
-        };
-
-        let params_str = {
-            let joined = self
-                .properties
-                .iter()
-                .map(|p| p.to_string())
-                .collect::<Vec<String>>()
-                .join(",\n");
-
-            format!("{{ {} }}", joined)
-        };
-
-        format!(
-            "struct {}{} {}",
-            self.identifier.name, generic_params_str, params_str
-        )
-    }
 }
 
 impl Eq for CheckedGenericStructDecl {}
@@ -129,23 +73,6 @@ pub struct CheckedStructDecl {
     pub properties: Vec<CheckedParam>,
 }
 
-impl CheckedStructDecl {
-    pub fn to_string(&self) -> String {
-        let params_str = {
-            let joined = self
-                .properties
-                .iter()
-                .map(|p| p.to_string())
-                .collect::<Vec<String>>()
-                .join(",\n");
-
-            format!("{{ {} }}", joined)
-        };
-
-        format!("struct {} {}", self.identifier.name, params_str)
-    }
-}
-
 impl Eq for CheckedStructDecl {}
 impl PartialEq for CheckedStructDecl {
     fn eq(&self, other: &Self) -> bool {
@@ -165,30 +92,6 @@ pub struct CheckedGenericTypeAliasDecl {
     pub documentation: Option<DocAnnotation>,
     pub generic_params: Vec<CheckedGenericParam>,
     pub value: Box<CheckedType>,
-}
-
-impl CheckedGenericTypeAliasDecl {
-    pub fn to_string(&self) -> String {
-        let generic_params_str = if !self.generic_params.is_empty() {
-            let joined = self
-                .generic_params
-                .iter()
-                .map(|gp| gp.to_string())
-                .collect::<Vec<String>>()
-                .join(", ");
-
-            format!("<{}>", joined)
-        } else {
-            "".to_owned()
-        };
-
-        format!(
-            "type {}{} = {}",
-            self.identifier.name,
-            generic_params_str,
-            self.value.to_string()
-        )
-    }
 }
 
 impl Eq for CheckedGenericTypeAliasDecl {}
@@ -212,12 +115,6 @@ pub struct CheckedTypeAliasDecl {
     pub identifier: IdentifierNode,
     pub documentation: Option<DocAnnotation>,
     pub value: Box<CheckedType>,
-}
-
-impl CheckedTypeAliasDecl {
-    pub fn to_string(&self) -> String {
-        format!("type {} = {}", self.identifier.name, self.value.to_string())
-    }
 }
 
 impl Eq for CheckedTypeAliasDecl {}

@@ -42,7 +42,7 @@ impl<'a, 'b> Parser<'a, 'b> {
     ) -> Result<TypeAnnotation, ParsingError<'a>> {
         let token = self.current().ok_or(self.unexpected_end_of_input())?;
         let expected_type_but_found_err = ParsingError {
-            kind: ParsingErrorKind::ExpectedATypeButFound(token.clone()),
+            kind: ParsingErrorKind::ExpectedATypeButFound(token),
             span: token.span,
         };
 

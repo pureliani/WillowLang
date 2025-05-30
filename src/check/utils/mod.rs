@@ -9,4 +9,5 @@ pub mod is_integer;
 pub mod is_signed;
 pub mod substitute_generics;
 pub mod type_annotation_to_semantic;
+pub mod type_to_string;
 pub mod union_of;

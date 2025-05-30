@@ -41,7 +41,7 @@ pub fn check_identifier_expr(
         })
         .unwrap_or_else(|| {
             errors.push(SemanticError {
-                kind: SemanticErrorKind::UndeclaredIdentifier(id.name),
+                kind: SemanticErrorKind::UndeclaredIdentifier(id),
                 span,
             });
 

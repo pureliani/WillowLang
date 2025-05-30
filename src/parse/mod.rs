@@ -11,6 +11,8 @@ pub struct Parser<'a, 'b: 'a> {
     pub interner: &'b mut StringInterner<'b>,
 }
 
+use unicode_segmentation::UnicodeSegmentation;
+
 use crate::{
     ast::{base::base_statement::Stmt, IdentifierNode, Position, Span, StringNode},
     compile::string_interner::{InternerId, StringInterner},
@@ -20,9 +22,9 @@ use crate::{
 #[derive(Debug, Clone, PartialEq)]
 pub enum ParsingErrorKind<'a> {
     DocMustBeFollowedByDeclaration,
-    ExpectedAnExpressionButFound(Token<'a>),
-    ExpectedATypeButFound(Token<'a>),
-    InvalidSuffixOperator(Token<'a>),
+    ExpectedAnExpressionButFound(&'a Token<'a>),
+    ExpectedATypeButFound(&'a Token<'a>),
+    InvalidSuffixOperator(&'a Token<'a>),
     UnexpectedEndOfInput,
     ExpectedAnIdentifier,
     ExpectedAPunctuationMark(PunctuationKind),
@@ -31,8 +33,8 @@ pub enum ParsingErrorKind<'a> {
     ExpectedANumericValue,
     UnknownStaticMethod(IdentifierNode),
     UnexpectedStatementAfterFinalExpression,
-    ExpectedStatementOrExpression { found: TokenKind<'a> },
-    UnexpectedTokenAfterFinalExpression { found: TokenKind<'a> },
+    ExpectedStatementOrExpression { found: &'a TokenKind<'a> },
+    UnexpectedTokenAfterFinalExpression { found: &'a TokenKind<'a> },
 }
 
 impl<'a> ParsingErrorKind<'a> {
@@ -81,7 +83,7 @@ impl<'a, 'b> Parser<'a, 'b> {
         self.offset += 1;
     }
 
-    fn current(&self) -> Option<&'a Token> {
+    fn current(&self) -> Option<&Token<'a>> {
         self.tokens.get(self.offset)
     }
 
@@ -152,6 +154,7 @@ impl<'a, 'b> Parser<'a, 'b> {
 
                     Ok(StringNode {
                         span,
+                        len: value.graphemes(true).count(),
                         value: self.interner.intern(&value),
                     })
                 }
@@ -173,7 +176,7 @@ impl<'a, 'b> Parser<'a, 'b> {
     ) -> Result<(), ParsingError<'a>> {
         if let Some(token) = self.current() {
             match &token.kind {
-                TokenKind::Punctuation(pk) if pk == expected => {
+                TokenKind::Punctuation(pk) if *pk == expected => {
                     self.advance();
                     Ok(())
                 }

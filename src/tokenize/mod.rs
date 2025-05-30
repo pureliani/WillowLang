@@ -326,7 +326,7 @@ impl<'a> Tokenizer<'a> {
         }
     }
 
-    pub fn tokenize(input: &str) -> (Vec<Token>, Vec<TokenizationError>) {
+    pub fn tokenize(input: &'a str) -> (Vec<Token<'a>>, Vec<TokenizationError>) {
         let mut state = Tokenizer {
             input,
             byte_offset: 0,
@@ -334,7 +334,7 @@ impl<'a> Tokenizer<'a> {
             line: 1,
             col: 1,
         };
-        let mut tokens: Vec<Token> = vec![];
+        let mut tokens: Vec<Token<'a>> = vec![];
         let mut errors: Vec<TokenizationError> = vec![];
 
         loop {

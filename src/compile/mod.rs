@@ -1,11 +1,13 @@
 use ariadne::{Cache, Color, Label, Report, ReportKind, Source};
 use std::{cell::RefCell, collections::HashMap, rc::Rc, vec};
+use string_interner::StringInterner;
 pub mod string_interner;
 
 use crate::{
     check::{
         check_stmts::check_stmts,
         scope::{Scope, ScopeKind},
+        utils::type_to_string::type_to_string,
         SemanticError, SemanticErrorKind,
     },
     parse::{Parser, ParsingErrorKind},
@@ -41,11 +43,14 @@ impl Cache<String> for FileSourceCache {
     }
 }
 
-pub fn compile_file(file_path: &String, source_code: &String) {
+pub fn compile_file<'a, 'b: 'a>(
+    file_path: &String,
+    source_code: &'a String,
+    string_interner: &'b mut StringInterner<'b>,
+) {
     let mut reports: Vec<Report<'_, (String, std::ops::Range<usize>)>> = vec![];
-
     let (tokens, tokenization_errors) = Tokenizer::tokenize(source_code);
-    let (ast, parsing_errors) = Parser::parse(tokens);
+    let (ast, parsing_errors) = Parser::parse(tokens, string_interner);
     let mut semantic_errors: Vec<SemanticError> = vec![];
     let scope = Rc::new(RefCell::new(Scope::new(ScopeKind::File)));
     let analyzed_tree = check_stmts(ast, &mut semantic_errors, scope);
@@ -109,7 +114,7 @@ pub fn compile_file(file_path: &String, source_code: &String) {
                 .finish(),
         };
 
-        reports.push(report)
+        reports.push(report);
     });
 
     parsing_errors.iter().for_each(|e| {
@@ -223,11 +228,12 @@ pub fn compile_file(file_path: &String, source_code: &String) {
                 .finish()
             }
             ParsingErrorKind::UnknownStaticMethod(identifier_node) => {
+                let name = string_interner.resolve(identifier_node.name).unwrap();
                 report_builder
                 .with_message("Unknown static method")
                 .with_label(
                     Label::new(error_span)
-                        .with_message(format!("Static method with name \"{}\" doesn't exist", identifier_node.name))
+                        .with_message(format!("Static method with name \"{}\" doesn't exist", name))
                         .with_color(Color::Red),
                 )
                 .finish()
@@ -264,7 +270,7 @@ pub fn compile_file(file_path: &String, source_code: &String) {
             }
         };
 
-        reports.push(report)
+        reports.push(report);
     });
 
     semantic_errors.into_iter().for_each(|e| {
@@ -313,28 +319,35 @@ pub fn compile_file(file_path: &String, source_code: &String) {
                 .with_label(
                     Label::new(error_span)
                         .with_message(
-                            format!("Cannot compare type \"{}\" to type \"{}\"", of.to_string(), to.to_string()),
+                            format!("Cannot compare type \"{}\" to type \"{}\"", 
+                              type_to_string(of, string_interner),
+                              type_to_string(to, string_interner)
+                            ),
                         )
                         .with_color(Color::Red),
                 )
                 .finish()
             }
             SemanticErrorKind::UndeclaredIdentifier(id) => {
+                let name = string_interner.resolve(id.name).unwrap();
+
                 report_builder
                 .with_message("Undeclared identifier")
                 .with_label(
                     Label::new(error_span)
-                        .with_message(format!("Undeclared identifier \"{}\"", id))
+                        .with_message(format!("Undeclared identifier \"{}\"", name))
                         .with_color(Color::Red),
                 )
                 .finish()
             }
-            SemanticErrorKind::UndeclaredType(t) => {
+            SemanticErrorKind::UndeclaredType(id) => {
+                let name = string_interner.resolve(id.name).unwrap();
+
                 report_builder
                 .with_message("Undeclared type")
                 .with_label(
                     Label::new(error_span)
-                        .with_message(format!("Undeclared type \"{}\"", t))
+                        .with_message(format!("Undeclared type \"{}\"", name))
                         .with_color(Color::Red),
                 )
                 .finish()
@@ -384,7 +397,10 @@ pub fn compile_file(file_path: &String, source_code: &String) {
                 .with_message("Type mismatch")
                 .with_label(
                     Label::new(error_span)
-                        .with_message(format!("Type mismatch, expected {} but instead found {}", expected.to_string(), received.to_string()))
+                        .with_message(format!("Type mismatch, expected {} but instead found {}", 
+                          type_to_string(expected, string_interner),
+                          type_to_string(received, string_interner)
+                        ))
                         .with_color(Color::Red),
                 )
                 .finish()
@@ -414,7 +430,10 @@ pub fn compile_file(file_path: &String, source_code: &String) {
                 .with_message("Return type mismatch")
                 .with_label(
                     Label::new(error_span)
-                        .with_message(format!("Expected the return value to be assignable to {}, found {}", expected.to_string(), received.to_string()))
+                        .with_message(format!("Expected the return value to be assignable to {}, found {}",
+                          type_to_string(expected, string_interner),
+                          type_to_string(received, string_interner)
+                        ))
                         .with_color(Color::Red),
                 )
                 .finish()
@@ -424,7 +443,7 @@ pub fn compile_file(file_path: &String, source_code: &String) {
                 .with_message("Cannot access")
                 .with_label(
                     Label::new(error_span)
-                        .with_message(format!("Cannot use the access operator on the type \"{}\"", checked_type.to_string()))
+                        .with_message(format!("Cannot use the access operator on the type \"{}\"", type_to_string(checked_type, string_interner)))
                         .with_color(Color::Red),
                 )
                 .finish()
@@ -434,7 +453,7 @@ pub fn compile_file(file_path: &String, source_code: &String) {
                 .with_message("Cannot call")
                 .with_label(
                     Label::new(error_span)
-                        .with_message(format!("Cannot use the call operator on the type \"{}\"", checked_type.to_string()))
+                        .with_message(format!("Cannot use the call operator on the type \"{}\"", type_to_string(checked_type, string_interner)))
                         .with_color(Color::Red),
                 )
                 .finish()
@@ -489,12 +508,13 @@ pub fn compile_file(file_path: &String, source_code: &String) {
                 )
                 .finish()
             }
-            SemanticErrorKind::AccessToUndefinedProperty(identifier_node) => {
+            SemanticErrorKind::AccessToUndefinedProperty(id) => {
+                let name = string_interner.resolve(id.name).unwrap();
                 report_builder
                 .with_message("Access to an undefined property")
                 .with_label(
                     Label::new(error_span)
-                        .with_message(format!("Property {} is not defined", identifier_node.name))
+                        .with_message(format!("Property {} is not defined", name))
                         .with_color(Color::Red),
                 )
                 .finish()
@@ -513,11 +533,17 @@ pub fn compile_file(file_path: &String, source_code: &String) {
                 .finish()
             }
             SemanticErrorKind::ConflictingGenericBinding { identifier, existing, new } => {
+                let name = string_interner.resolve(identifier.name).unwrap();
+
                 report_builder
                 .with_message("Conflicting generic binding")
                 .with_label(
                     Label::new(error_span)
-                        .with_message(format!("Generic parameter identifier {} is already bound to type {}, cannot re-bind it to {}", identifier, existing.to_string(), new.to_string()))
+                        .with_message(format!("Generic parameter identifier {} is already bound to type {}, cannot re-bind it to {}", 
+                          name, 
+                          type_to_string(existing, string_interner), 
+                          type_to_string(new, string_interner)
+                        ))
                         .with_color(Color::Red),
                 )
                 .finish()
@@ -547,14 +573,14 @@ pub fn compile_file(file_path: &String, source_code: &String) {
                 .with_message("Cannot apply type arguments")
                 .with_label(
                     Label::new(error_span)
-                        .with_message(format!("Cannot apply type arguments to non-generic type {}", to.to_string()))
+                        .with_message(format!("Cannot apply type arguments to non-generic type {}", type_to_string(to, string_interner)))
                         .with_color(Color::Red),
                 )
                 .finish()
             }
         };
 
-        reports.push(report)
+        reports.push(report);
     });
 
     if !reports.is_empty() {

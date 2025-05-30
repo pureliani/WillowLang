@@ -292,7 +292,7 @@ pub fn check_stmt(
 
             match &checked_target.kind {
                 CheckedExprKind::Identifier(id) => {
-                    let identifier_expr_type = scope.borrow().lookup(&id.name);
+                    let identifier_expr_type = scope.borrow().lookup(id.name);
 
                     if let Some(SymbolEntry::VarDecl(decl)) = identifier_expr_type {
                         let is_assignable =
@@ -309,7 +309,7 @@ pub fn check_stmt(
                         }
                     } else {
                         errors.push(SemanticError {
-                            kind: SemanticErrorKind::UndeclaredIdentifier(id.name),
+                            kind: SemanticErrorKind::UndeclaredIdentifier(*id),
                             span: checked_target.span,
                         });
                     }

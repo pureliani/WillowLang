@@ -98,7 +98,7 @@ pub fn check_type(
             })
             .unwrap_or_else(|| {
                 errors.push(SemanticError {
-                    kind: SemanticErrorKind::UndeclaredType(id.name),
+                    kind: SemanticErrorKind::UndeclaredType(*id),
                     span: arg.span,
                 });
                 CheckedType::Unknown

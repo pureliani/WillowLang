@@ -24,7 +24,7 @@ pub fn substitute_generics(
             .cloned()
             .unwrap_or_else(|| {
                 errors.push(SemanticError {
-                    kind: SemanticErrorKind::UnresolvedGenericParam(gp.identifier.name),
+                    kind: SemanticErrorKind::UnresolvedGenericParam(gp.identifier),
                     span: gp.identifier.span,
                 });
 

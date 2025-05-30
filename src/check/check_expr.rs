@@ -104,18 +104,14 @@ pub fn check_expr(
             kind: CheckedExprKind::BoolLiteral { value },
             ty: CheckedType::Bool,
         },
-        ExprKind::String(string_node) => {
-            let size = string_node.value.len();
-
-            CheckedExpr {
-                span: expr.span,
-                kind: CheckedExprKind::String(string_node),
-                ty: CheckedType::Array {
-                    item_type: Box::new(CheckedType::Char),
-                    size,
-                },
-            }
-        }
+        ExprKind::String(string_node) => CheckedExpr {
+            span: expr.span,
+            kind: CheckedExprKind::String(string_node),
+            ty: CheckedType::Array {
+                item_type: Box::new(CheckedType::Char),
+                size: string_node.len,
+            },
+        },
         ExprKind::Number { value } => check_numeric_expr(value, expr.span),
         ExprKind::Identifier(id) => check_identifier_expr(id, expr.span, errors, scope),
         ExprKind::Fn {

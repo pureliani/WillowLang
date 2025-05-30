@@ -1,6 +1,5 @@
 use crate::{
     ast::{checked::checked_type::CheckedType, IdentifierNode, Span},
-    compile::string_interner::InternerId,
     tokenize::NumberKind,
 };
 
@@ -20,8 +19,8 @@ pub enum SemanticErrorKind {
         of: CheckedType,
         to: CheckedType,
     },
-    UndeclaredIdentifier(InternerId),
-    UndeclaredType(InternerId),
+    UndeclaredIdentifier(IdentifierNode),
+    UndeclaredType(IdentifierNode),
     ReturnKeywordOutsideFunction,
     BreakKeywordOutsideLoop,
     ContinueKeywordOutsideLoop,
@@ -50,10 +49,10 @@ pub enum SemanticErrorKind {
     CannotUseVariableDeclarationAsType,
     VarDeclWithNoConstraintOrInitializer,
     AccessToUndefinedProperty(IdentifierNode),
-    UnresolvedGenericParam(InternerId),
+    UnresolvedGenericParam(IdentifierNode),
     CannotUseIsTypeOnNonUnion,
     ConflictingGenericBinding {
-        identifier: InternerId,
+        identifier: IdentifierNode,
         existing: CheckedType,
         new: CheckedType,
     },

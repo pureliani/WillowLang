@@ -37,17 +37,20 @@ impl<'a, 'b> Parser<'a, 'b> {
                     });
                 }
 
-                let stmt = self.parse_stmt().map_err(|e| {
-                    self.synchronize_stmt();
-                    e
-                })?;
+                let stmt = match self.parse_stmt() {
+                    Ok(s) => s,
+                    Err(e) => {
+                        self.synchronize_stmt();
+                        return Err(e);
+                    }
+                };
                 statements.push(stmt);
                 final_expr = None;
             } else if is_start_of_expr(&current_token.kind) {
                 if final_expr.is_some() {
                     return Err(ParsingError {
                         kind: ParsingErrorKind::UnexpectedTokenAfterFinalExpression {
-                            found: current_token.kind.clone(),
+                            found: &current_token.kind,
                         },
                         span: current_token_span,
                     });
@@ -78,7 +81,7 @@ impl<'a, 'b> Parser<'a, 'b> {
             } else {
                 return Err(ParsingError {
                     kind: ParsingErrorKind::ExpectedStatementOrExpression {
-                        found: current_token.kind.clone(),
+                        found: &current_token.kind,
                     },
                     span: current_token_span,
                 });
@@ -93,7 +96,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                     .ok_or_else(|| self.unexpected_end_of_input())?;
                 return Err(ParsingError {
                     kind: ParsingErrorKind::UnexpectedTokenAfterFinalExpression {
-                        found: unexpected_token.kind.clone(),
+                        found: &unexpected_token.kind,
                     },
                     span: unexpected_token.span,
                 });
