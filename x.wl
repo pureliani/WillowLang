@@ -1,6 +1,6 @@
-let fo = (a: i32, b: i32, c: i8): i32 => {
-    23;
+let isEven = (value: i64): bool => {
+    value % 2 == 0
 };
 
 
-fo(1i32,2i32,3i8);
+isEven(1, 3);
