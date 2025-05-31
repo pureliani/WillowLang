@@ -302,7 +302,7 @@ impl<'a, 'b> Parser<'a, 'b> {
 
     pub fn parse(
         tokens: Vec<Token<'a>>,
-        interner: &'b mut StringInterner<'b>,
+        interner: &'b mut StringInterner<'a>,
     ) -> (Vec<Stmt>, Vec<ParsingError<'a>>) {
         let mut state = Parser {
             offset: 0,

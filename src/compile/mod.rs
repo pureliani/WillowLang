@@ -46,7 +46,7 @@ impl Cache<String> for FileSourceCache {
 pub fn compile_file<'a, 'b: 'a>(
     file_path: &String,
     source_code: &'a String,
-    string_interner: &'b mut StringInterner<'b>,
+    string_interner: &'b mut StringInterner<'a>,
 ) {
     let mut reports: Vec<Report<'_, (String, std::ops::Range<usize>)>> = vec![];
     let (tokens, tokenization_errors) = Tokenizer::tokenize(source_code);

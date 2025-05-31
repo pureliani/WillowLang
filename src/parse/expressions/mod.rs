@@ -205,7 +205,7 @@ impl<'a, 'b> Parser<'a, 'b> {
             }
             _ => {
                 return Err(ParsingError {
-                    kind: ParsingErrorKind::ExpectedAnExpressionButFound(t.clone()),
+                    kind: ParsingErrorKind::ExpectedAnExpressionButFound(token.clone()),
                     span: token.span,
                 })
             }
