@@ -10,7 +10,7 @@ use crate::{
         base::base_expression::{Expr, ExprKind},
         Span,
     },
-    tokenize::{token_kind_to_string, KeywordKind, PunctuationKind, TokenKind},
+    tokenize::{KeywordKind, PunctuationKind, TokenKind},
 };
 
 use super::{Parser, ParsingError, ParsingErrorKind};
@@ -107,10 +107,17 @@ impl<'a, 'b> Parser<'a, 'b> {
             TokenKind::Punctuation(PunctuationKind::Lt) => self.parse_fn_expr()?,
             TokenKind::Punctuation(PunctuationKind::LParen) => {
                 self.place_checkpoint();
-                let result = self.parse_fn_expr().or_else(|_| {
+                let result = self.parse_fn_expr().or_else(|fn_err| {
+                    let offset_after_fn_expr_attempt = self.offset;
                     self.goto_checkpoint();
-                    self.parse_parenthesized_expr()
-                    // TODO: report an error when all parsing attempts fail
+                    self.parse_parenthesized_expr().or_else(|paren_err| {
+                        let offset_after_parenthesized_attempt = self.offset;
+                        if offset_after_fn_expr_attempt > offset_after_parenthesized_attempt {
+                            Err(fn_err)
+                        } else {
+                            Err(paren_err)
+                        }
+                    })
                 })?;
 
                 result
