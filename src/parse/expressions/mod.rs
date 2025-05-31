@@ -10,7 +10,7 @@ use crate::{
         base::base_expression::{Expr, ExprKind},
         Span,
     },
-    tokenize::{KeywordKind, PunctuationKind, Token, TokenKind},
+    tokenize::{KeywordKind, PunctuationKind, TokenKind},
 };
 
 use super::{Parser, ParsingError, ParsingErrorKind};
@@ -85,35 +85,23 @@ impl<'a, 'b> Parser<'a, 'b> {
 
         let token_span = token.span;
 
-        let mut lhs = match token {
-            Token {
-                kind: TokenKind::Identifier(_),
-                ..
-            } => {
+        let mut lhs = match token.kind {
+            TokenKind::Identifier(_) => {
                 let id = self.consume_identifier()?;
                 Expr {
                     kind: ExprKind::Identifier(id),
                     span: token_span,
                 }
             }
-            Token {
-                kind: TokenKind::Number(_),
-                ..
-            } => {
+            TokenKind::Number(_) => {
                 let number = self.consume_number()?;
                 Expr {
                     kind: ExprKind::Number { value: number },
                     span: token_span,
                 }
             }
-            Token {
-                kind: TokenKind::Punctuation(PunctuationKind::Lt),
-                ..
-            } => self.parse_fn_expr()?,
-            Token {
-                kind: TokenKind::Punctuation(PunctuationKind::LParen),
-                ..
-            } => {
+            TokenKind::Punctuation(PunctuationKind::Lt) => self.parse_fn_expr()?,
+            TokenKind::Punctuation(PunctuationKind::LParen) => {
                 self.place_checkpoint();
                 let result = self.parse_fn_expr().or_else(|_| {
                     self.goto_checkpoint();
@@ -123,10 +111,7 @@ impl<'a, 'b> Parser<'a, 'b> {
 
                 result
             }
-            Token {
-                kind: TokenKind::Punctuation(PunctuationKind::LBrace),
-                ..
-            } => {
+            TokenKind::Punctuation(PunctuationKind::LBrace) => {
                 let start_offset = self.offset;
 
                 let block_contents = self.parse_codeblock_expr()?;
@@ -136,10 +121,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                     span: self.get_span(start_offset, self.offset - 1)?,
                 }
             }
-            Token {
-                kind: TokenKind::Punctuation(PunctuationKind::LBracket),
-                ..
-            } => {
+            TokenKind::Punctuation(PunctuationKind::LBracket) => {
                 let start_offset = self.offset;
                 self.consume_punctuation(PunctuationKind::LBracket)?;
                 let items: Vec<Expr> = self
@@ -159,10 +141,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                     span,
                 }
             }
-            Token {
-                kind: TokenKind::Punctuation(PunctuationKind::Minus),
-                ..
-            } => {
+            TokenKind::Punctuation(PunctuationKind::Minus) => {
                 let ((), r_bp) =
                     prefix_bp(&TokenKind::Punctuation(PunctuationKind::Minus)).unwrap();
                 let start_offset = self.offset;
@@ -176,10 +155,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                     span: self.get_span(start_offset, self.offset - 1)?,
                 }
             }
-            Token {
-                kind: TokenKind::Punctuation(PunctuationKind::Not),
-                ..
-            } => {
+            TokenKind::Punctuation(PunctuationKind::Not) => {
                 let ((), r_bp) = prefix_bp(&TokenKind::Punctuation(PunctuationKind::Not)).unwrap();
                 let start_offset = self.offset;
 
@@ -192,39 +168,24 @@ impl<'a, 'b> Parser<'a, 'b> {
                     span: self.get_span(start_offset, self.offset - 1)?,
                 }
             }
-            Token {
-                kind: TokenKind::Keyword(KeywordKind::If),
-                ..
-            } => self.parse_if_expr()?,
-            Token {
-                kind: TokenKind::Keyword(KeywordKind::True),
-                ..
-            } => {
+            TokenKind::Keyword(KeywordKind::If) => self.parse_if_expr()?,
+            TokenKind::Keyword(KeywordKind::True) => {
                 let start_offset = self.offset;
-
                 self.consume_keyword(KeywordKind::True)?;
                 Expr {
                     kind: ExprKind::BoolLiteral { value: true },
                     span: self.get_span(start_offset, self.offset - 1)?,
                 }
             }
-            Token {
-                kind: TokenKind::Keyword(KeywordKind::False),
-                ..
-            } => {
+            TokenKind::Keyword(KeywordKind::False) => {
                 let start_offset = self.offset;
-
                 self.consume_keyword(KeywordKind::False)?;
-
                 Expr {
                     kind: ExprKind::BoolLiteral { value: false },
                     span: self.get_span(start_offset, self.offset - 1)?,
                 }
             }
-            Token {
-                kind: TokenKind::Keyword(KeywordKind::Null),
-                ..
-            } => {
+            TokenKind::Keyword(KeywordKind::Null) => {
                 let start_offset = self.offset;
 
                 self.consume_keyword(KeywordKind::Null)?;
@@ -233,10 +194,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                     span: self.get_span(start_offset, self.offset - 1)?,
                 }
             }
-            Token {
-                kind: TokenKind::String(_),
-                ..
-            } => {
+            TokenKind::String(_) => {
                 let start_offset = self.offset;
 
                 let val = self.consume_string()?;
@@ -245,10 +203,10 @@ impl<'a, 'b> Parser<'a, 'b> {
                     span: self.get_span(start_offset, self.offset - 1)?,
                 }
             }
-            t => {
+            _ => {
                 return Err(ParsingError {
                     kind: ParsingErrorKind::ExpectedAnExpressionButFound(t.clone()),
-                    span: t.span,
+                    span: token.span,
                 })
             }
         };
