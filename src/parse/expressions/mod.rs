@@ -86,12 +86,6 @@ impl<'a, 'b> Parser<'a, 'b> {
         allow_struct_literal_suffix: bool,
     ) -> Result<Expr, ParsingError<'a>> {
         let token = self.current().ok_or(self.unexpected_end_of_input())?;
-        eprintln!(
-            "[DEBUG] parse_expr ENTER: min_prec={}, allow_suffix={}, current_token={}",
-            min_prec,
-            allow_struct_literal_suffix,
-            token_kind_to_string(&token.kind)
-        );
 
         let token_span = token.span;
 
@@ -353,9 +347,6 @@ impl<'a, 'b> Parser<'a, 'b> {
                 let start_pos = lhs.span.start;
 
                 self.advance();
-
-                let upcoming_op_for_debug = op.kind.clone();
-                eprintln!("[DEBUG] parse_expr INFIX ({:?}): current_allow_suffix={}, calling for RHS with allow_suffix={}", upcoming_op_for_debug, allow_struct_literal_suffix, allow_struct_literal_suffix);
 
                 let rhs = self.parse_expr(right_prec, allow_struct_literal_suffix)?;
 
