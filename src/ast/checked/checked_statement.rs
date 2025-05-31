@@ -1,7 +1,4 @@
-use crate::{
-    ast::{base::base_declaration::EnumDecl, IdentifierNode, Span, StringNode},
-    compile::string_interner::InternerId,
-};
+use crate::ast::{base::base_declaration::EnumDecl, IdentifierNode, Span, StringNode};
 
 use super::{
     checked_declaration::{

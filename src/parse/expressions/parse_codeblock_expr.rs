@@ -56,7 +56,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                     });
                 }
 
-                let expr = self.parse_expr(0).map_err(|e| {
+                let expr = self.parse_expr(0, true).map_err(|e| {
                     self.synchronize_expr();
                     e
                 })?;

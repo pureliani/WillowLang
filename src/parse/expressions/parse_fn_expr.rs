@@ -80,7 +80,7 @@ mod test {
             tokens,
             interner: &mut interner,
         };
-        let actual_ast = parser.parse_expr(0);
+        let actual_ast = parser.parse_expr(0, true);
         let expected_ast = Ok(Expr {
             kind: ExprKind::Fn {
                 params: vec![],
@@ -112,7 +112,6 @@ mod test {
         let (tokens, _) = Tokenizer::tokenize("(a: i32) => {}");
 
         let mut interner = StringInterner::new();
-        let param_name = interner.intern("a");
 
         let mut parser = Parser {
             checkpoint_offset: 0,
@@ -120,12 +119,12 @@ mod test {
             tokens,
             interner: &mut interner,
         };
-        let actual_ast = parser.parse_expr(0);
+        let actual_ast = parser.parse_expr(0, true);
         let expected_ast = Ok(Expr {
             kind: ExprKind::Fn {
                 params: vec![Param {
                     identifier: IdentifierNode {
-                        name: param_name,
+                        name: interner.intern("a"),
                         span: Span {
                             start: Position {
                                 line: 1,
@@ -192,7 +191,7 @@ mod test {
             tokens,
             interner: &mut interner,
         };
-        let actual_ast = parser.parse_expr(0);
+        let actual_ast = parser.parse_expr(0, true);
         let expected_ast = Ok(Expr {
             kind: ExprKind::Fn {
                 generic_params: vec![GenericParam {
@@ -296,7 +295,7 @@ mod test {
             tokens,
             interner: &mut interner,
         };
-        let actual_ast = parser.parse_expr(0);
+        let actual_ast = parser.parse_expr(0, true);
         let expected_ast = Ok(Expr {
             kind: ExprKind::Fn {
                 generic_params: vec![GenericParam {

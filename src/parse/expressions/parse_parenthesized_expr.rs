@@ -9,7 +9,7 @@ impl<'a, 'b> Parser<'a, 'b> {
         let start_offset = self.offset;
 
         self.consume_punctuation(PunctuationKind::LParen)?;
-        let expr = self.parse_expr(0)?;
+        let expr = self.parse_expr(0, true)?;
         self.consume_punctuation(PunctuationKind::RParen)?;
 
         let span = self.get_span(start_offset, self.offset - 1)?;

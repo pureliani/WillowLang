@@ -16,7 +16,7 @@ impl<'a, 'b> Parser<'a, 'b> {
             |p| {
                 let name = p.consume_identifier()?;
                 p.consume_punctuation(PunctuationKind::Col)?;
-                let value = p.parse_expr(0)?;
+                let value = p.parse_expr(0, true)?;
                 Ok((name, value))
             },
             |p| p.match_token(0, TokenKind::Punctuation(PunctuationKind::RBrace)),

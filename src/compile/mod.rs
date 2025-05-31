@@ -142,7 +142,7 @@ pub fn compile_file<'a, 'b>(
                 .with_message("Expected an expression")
                 .with_label(
                     Label::new(error_span)
-                        .with_message(format!("Expected an expression but instead found token: {}", token_kind_to_string(&token.kind)))
+                        .with_message(format!("Expected an expression but instead found token \"{}\"", token_kind_to_string(&token.kind)))
                         .with_color(Color::Red),
                 )
                 .finish()
@@ -152,7 +152,7 @@ pub fn compile_file<'a, 'b>(
                 .with_message("Expected a type")
                 .with_label(
                     Label::new(error_span)
-                        .with_message(format!("Expected a type but instead found token: {}", token_kind_to_string(&token.kind)))
+                        .with_message(format!("Expected a type but instead found token \"{}\"", token_kind_to_string(&token.kind)))
                         .with_color(Color::Red),
                 )
                 .finish()
@@ -162,7 +162,7 @@ pub fn compile_file<'a, 'b>(
                 .with_message("Invalid suffix operator")
                 .with_label(
                     Label::new(error_span)
-                        .with_message(format!("Invalid token as expression suffix operator: {}", token_kind_to_string(&token.kind)))
+                        .with_message(format!("Invalid token as expression suffix operator \"{}\"", token_kind_to_string(&token.kind)))
                         .with_color(Color::Red),
                 )
                 .finish()
@@ -253,7 +253,7 @@ pub fn compile_file<'a, 'b>(
                 .with_message("Expected a statement or an expression")
                 .with_label(
                     Label::new(error_span)
-                        .with_message(format!("Expected a statement or an expression but instead found token: {}", token_kind_to_string(found)))
+                        .with_message(format!("Expected a statement or an expression but instead found token \"{}\"", token_kind_to_string(found)))
                         .with_color(Color::Red),
                 )
                 .finish()
@@ -263,7 +263,7 @@ pub fn compile_file<'a, 'b>(
                 .with_message("Unexpected token after final expression")
                 .with_label(
                     Label::new(error_span)
-                        .with_message(format!("Unexpected token after final expression: {}", token_kind_to_string(found)))
+                        .with_message(format!("Unexpected token after final expression \"{}\"", token_kind_to_string(found)))
                         .with_color(Color::Red),
                 )
                 .finish()

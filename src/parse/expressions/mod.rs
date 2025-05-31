@@ -10,7 +10,7 @@ use crate::{
         base::base_expression::{Expr, ExprKind},
         Span,
     },
-    tokenize::{KeywordKind, PunctuationKind, TokenKind},
+    tokenize::{token_kind_to_string, KeywordKind, PunctuationKind, TokenKind},
 };
 
 use super::{Parser, ParsingError, ParsingErrorKind};
@@ -80,8 +80,18 @@ pub fn is_start_of_expr(token_kind: &TokenKind) -> bool {
 }
 
 impl<'a, 'b> Parser<'a, 'b> {
-    pub fn parse_expr(&mut self, min_prec: u8) -> Result<Expr, ParsingError<'a>> {
+    pub fn parse_expr(
+        &mut self,
+        min_prec: u8,
+        allow_struct_literal_suffix: bool,
+    ) -> Result<Expr, ParsingError<'a>> {
         let token = self.current().ok_or(self.unexpected_end_of_input())?;
+        eprintln!(
+            "[DEBUG] parse_expr ENTER: min_prec={}, allow_suffix={}, current_token={}",
+            min_prec,
+            allow_struct_literal_suffix,
+            token_kind_to_string(&token.kind)
+        );
 
         let token_span = token.span;
 
@@ -126,7 +136,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                 self.consume_punctuation(PunctuationKind::LBracket)?;
                 let items: Vec<Expr> = self
                     .comma_separated(
-                        |p| p.parse_expr(0),
+                        |p| p.parse_expr(0, true),
                         |p| p.match_token(0, TokenKind::Punctuation(PunctuationKind::RBracket)),
                     )?
                     .into_iter()
@@ -147,7 +157,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                 let start_offset = self.offset;
 
                 self.consume_punctuation(PunctuationKind::Minus)?;
-                let expr = self.parse_expr(r_bp)?;
+                let expr = self.parse_expr(r_bp, true)?;
                 Expr {
                     kind: ExprKind::Neg {
                         right: Box::new(expr),
@@ -160,7 +170,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                 let start_offset = self.offset;
 
                 self.consume_punctuation(PunctuationKind::Not)?;
-                let expr = self.parse_expr(r_bp)?;
+                let expr = self.parse_expr(r_bp, true)?;
                 Expr {
                     kind: ExprKind::Not {
                         right: Box::new(expr),
@@ -310,7 +320,16 @@ impl<'a, 'b> Parser<'a, 'b> {
                         }
                     }
                     TokenKind::Punctuation(PunctuationKind::LBrace) => {
-                        Some(self.parse_struct_init_expr(lhs_clone)?)
+                        let allow_lhs_kind = matches!(
+                            &lhs_clone.kind,
+                            ExprKind::Identifier(_) | ExprKind::GenericApply { .. }
+                        );
+
+                        if allow_struct_literal_suffix && allow_lhs_kind {
+                            Some(self.parse_struct_init_expr(lhs_clone)?)
+                        } else {
+                            None
+                        }
                     }
                     _ => {
                         return Err(ParsingError {
@@ -335,7 +354,10 @@ impl<'a, 'b> Parser<'a, 'b> {
 
                 self.advance();
 
-                let rhs = self.parse_expr(right_prec)?;
+                let upcoming_op_for_debug = op.kind.clone();
+                eprintln!("[DEBUG] parse_expr INFIX ({:?}): current_allow_suffix={}, calling for RHS with allow_suffix={}", upcoming_op_for_debug, allow_struct_literal_suffix, allow_struct_literal_suffix);
+
+                let rhs = self.parse_expr(right_prec, allow_struct_literal_suffix)?;
 
                 let end_pos = rhs.span.end;
 

@@ -62,7 +62,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                     span: doc.span,
                 })
             } else {
-                let lhs = self.parse_expr(0);
+                let lhs = self.parse_expr(0, true);
 
                 match lhs {
                     Ok(lhs) => {
