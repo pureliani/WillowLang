@@ -226,6 +226,17 @@ pub enum TokenKind<'a> {
     Doc(&'a str),
 }
 
+pub fn token_kind_to_string(kind: &TokenKind) -> String {
+    match *kind {
+        TokenKind::Identifier(id) => id.to_owned(),
+        TokenKind::Punctuation(punctuation_kind) => punctuation_kind.to_string(),
+        TokenKind::Keyword(keyword_kind) => keyword_kind.to_string(),
+        TokenKind::String(value) => value.to_owned(),
+        TokenKind::Number(number_kind) => number_kind.to_string(),
+        TokenKind::Doc(value) => format!("---\n{}\n---", value),
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub struct Token<'a> {
     pub span: Span,
