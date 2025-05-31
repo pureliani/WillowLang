@@ -89,9 +89,6 @@ impl<'a, 'b> Parser<'a, 'b> {
         loop {
             match self.current() {
                 Some(token) => {
-                    if is_start_of_stmt(&token.kind) || is_start_of_expr(&token.kind) {
-                        return;
-                    }
                     if token.kind == TokenKind::Punctuation(PunctuationKind::SemiCol) {
                         self.advance();
                         return;

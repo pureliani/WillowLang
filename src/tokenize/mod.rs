@@ -292,7 +292,7 @@ impl<'a> Tokenizer<'a> {
         while let Some(ch) = self.current() {
             let is_whitespace = ch.chars().all(|c| c.is_whitespace());
 
-            if is_whitespace || ch == ";" || ch == "," {
+            if is_whitespace || ch == ";" {
                 self.consume();
                 break;
             } else {
