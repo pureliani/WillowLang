@@ -4,7 +4,7 @@ mod parse_generic_params;
 mod statements;
 mod type_annotations;
 
-pub struct Parser<'a, 'b: 'a> {
+pub struct Parser<'a, 'b> {
     pub offset: usize,
     pub tokens: Vec<Token<'a>>,
     pub checkpoint_offset: usize,

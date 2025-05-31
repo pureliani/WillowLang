@@ -43,7 +43,7 @@ impl Cache<String> for FileSourceCache {
     }
 }
 
-pub fn compile_file<'a, 'b: 'a>(
+pub fn compile_file<'a, 'b>(
     file_path: &String,
     source_code: &'a String,
     string_interner: &'b mut StringInterner<'a>,
