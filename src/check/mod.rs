@@ -1,5 +1,8 @@
+use std::collections::HashSet;
+
 use crate::{
     ast::{checked::checked_type::CheckedType, IdentifierNode, Span},
+    compile::string_interner::InternerId,
     tokenize::NumberKind,
 };
 
@@ -12,6 +15,10 @@ pub mod utils;
 
 #[derive(Debug, Clone)]
 pub enum SemanticErrorKind {
+    DuplicateStructPropertyInitializer(IdentifierNode),
+    UnknownStructPropertyInitializer(IdentifierNode),
+    MissingStructPropertyInitializer(HashSet<InternerId>),
+    CannotApplyStructInitializer,
     ExpectedANumericOperand,
     MixedSignedAndUnsigned,
     MixedFloatAndInteger,
@@ -94,6 +101,10 @@ impl SemanticErrorKind {
             SemanticErrorKind::CannotApplyTypeArguments { .. } => 26,
             SemanticErrorKind::TypeAliasMustBeDeclaredAtTopLevel => 27,
             SemanticErrorKind::StructMustBeDeclaredAtTopLevel => 28,
+            SemanticErrorKind::DuplicateStructPropertyInitializer { .. } => 29,
+            SemanticErrorKind::UnknownStructPropertyInitializer { .. } => 30,
+            SemanticErrorKind::MissingStructPropertyInitializer { .. } => 31,
+            SemanticErrorKind::CannotApplyStructInitializer => 32,
         }
     }
 }

@@ -1,16 +1,19 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, collections::HashSet, rc::Rc};
 
 use crate::{
     ast::{
         base::base_expression::Expr,
         checked::{
             checked_declaration::{CheckedGenericStructDecl, CheckedStructDecl},
-            checked_expression::CheckedExpr,
+            checked_expression::{CheckedExpr, CheckedExprKind},
             checked_type::CheckedType,
         },
         IdentifierNode, Span,
     },
-    check::{check_expr::check_expr, scope::Scope, SemanticError},
+    check::{
+        check_expr::check_expr, scope::Scope, utils::check_is_assignable::check_is_assignable,
+        SemanticError, SemanticErrorKind,
+    },
 };
 
 pub fn check_struct_init_expr(
@@ -21,12 +24,12 @@ pub fn check_struct_init_expr(
     scope: Rc<RefCell<Scope>>,
 ) -> CheckedExpr {
     let checked_left = check_expr(*left, errors, scope.clone());
-    let checked_fields: Vec<(IdentifierNode, CheckedExpr)> = fields
+    let checked_args: Vec<(IdentifierNode, CheckedExpr)> = fields
         .into_iter()
         .map(|f| (f.0, check_expr(f.1, errors, scope.clone())))
         .collect();
 
-    match checked_left.ty {
+    match &checked_left.ty {
         CheckedType::GenericStructDecl(CheckedGenericStructDecl {
             identifier,
             properties,
@@ -35,17 +38,74 @@ pub fn check_struct_init_expr(
         }) => {
             todo!()
         }
-        CheckedType::StructDecl(CheckedStructDecl {
-            identifier,
-            properties,
-            documentation,
-        }) => {
-            todo!()
+        CheckedType::StructDecl(CheckedStructDecl { properties, .. }) => {
+            let mut arguments = HashSet::new();
+            let mut uninitialized_props: HashSet<_> =
+                properties.iter().map(|p| p.identifier.name).collect();
+
+            checked_args.iter().for_each(|a| {
+                uninitialized_props.remove(&a.0.name);
+                let span = a.0.span;
+                let property = properties.iter().find(|p| p.identifier.name == a.0.name);
+
+                match property {
+                    None => {
+                        errors.push(SemanticError {
+                            kind: SemanticErrorKind::UnknownStructPropertyInitializer(a.0),
+                            span,
+                        });
+                    }
+                    Some(p) => {
+                        if !arguments.insert(a.0) {
+                            errors.push(SemanticError {
+                                kind: SemanticErrorKind::DuplicateStructPropertyInitializer(a.0),
+                                span,
+                            })
+                        } else {
+                            if !check_is_assignable(&a.1.ty, &p.constraint) {
+                                errors.push(SemanticError {
+                                    kind: SemanticErrorKind::TypeMismatch {
+                                        expected: p.constraint.clone(),
+                                        received: a.1.ty.clone(),
+                                    },
+                                    span: a.1.span,
+                                });
+                            }
+                        }
+                    }
+                }
+            });
+
+            if uninitialized_props.len() > 0 {
+                errors.push(SemanticError {
+                    kind: SemanticErrorKind::MissingStructPropertyInitializer(uninitialized_props),
+                    span,
+                });
+            }
+
+            CheckedExpr {
+                ty: checked_left.ty.clone(),
+                kind: CheckedExprKind::StructInit {
+                    left: Box::new(checked_left),
+                    fields: checked_args,
+                },
+                span,
+            }
         }
         _ => {
-            todo!()
+            errors.push(SemanticError {
+                kind: SemanticErrorKind::CannotApplyStructInitializer,
+                span: checked_left.span,
+            });
+
+            CheckedExpr {
+                ty: checked_left.ty.clone(),
+                kind: CheckedExprKind::StructInit {
+                    left: Box::new(checked_left),
+                    fields: checked_args,
+                },
+                span,
+            }
         }
     }
-
-    todo!()
 }
