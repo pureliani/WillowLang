@@ -11,7 +11,10 @@ pub mod parse_var_decl;
 pub mod parse_while_stmt;
 
 use crate::{
-    ast::base::base_statement::Stmt,
+    ast::{
+        base::base_statement::{Stmt, StmtKind},
+        Span,
+    },
     parse::{Parser, ParsingErrorKind},
     tokenize::{KeywordKind, PunctuationKind, TokenKind},
 };
@@ -66,12 +69,28 @@ impl<'a, 'b> Parser<'a, 'b> {
 
                 match lhs {
                     Ok(lhs) => {
-                        if self.match_token(0, TokenKind::Punctuation(PunctuationKind::Eq)) {
+                        if self.match_token(0, TokenKind::Punctuation(PunctuationKind::Eq))
+                            && !self.match_token(1, TokenKind::Punctuation(PunctuationKind::Eq))
+                        {
                             // it's an assignment statement
                             self.parse_assignment_stmt(lhs)
                         } else {
                             // It's a standalone expression statement
-                            self.parse_expr_stmt(lhs)
+                            let start_span = lhs.span;
+                            self.consume_punctuation(PunctuationKind::SemiCol)?;
+                            let end_span = self
+                                .tokens
+                                .get(self.offset - 1)
+                                .map(|t| t.span)
+                                .unwrap_or(start_span);
+
+                            Ok(Stmt {
+                                span: Span {
+                                    start: start_span.start,
+                                    end: end_span.end,
+                                },
+                                kind: StmtKind::Expression(lhs),
+                            })
                         }
                     }
                     Err(e) => Err(e),

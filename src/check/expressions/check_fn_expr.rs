@@ -75,6 +75,7 @@ pub fn check_fn_expr(
     if let Some(final_expr) = checked_final_expr {
         return_exprs.push(*final_expr);
     }
+
     let inferred_return_type = if return_exprs.len() > 1 {
         union_of(return_exprs.iter().map(|e| e.ty.clone()))
     } else if return_exprs.len() == 1 {
@@ -95,17 +96,14 @@ pub fn check_fn_expr(
         return_type.map(|return_t| check_type(&return_t, errors, fn_scope.clone()));
 
     let actual_return_type = if let Some(explicit_return_type) = expected_return_type {
-        for return_expr in return_exprs.iter() {
-            let is_assignable = check_is_assignable(&return_expr.ty, &explicit_return_type);
-            if !is_assignable {
-                errors.push(SemanticError {
-                    kind: SemanticErrorKind::ReturnTypeMismatch {
-                        expected: explicit_return_type.clone(),
-                        received: return_expr.ty.clone(),
-                    },
-                    span: return_expr.span,
-                });
-            }
+        if !check_is_assignable(&inferred_return_type, &explicit_return_type) {
+            errors.push(SemanticError {
+                kind: SemanticErrorKind::ReturnTypeMismatch {
+                    expected: explicit_return_type.clone(),
+                    received: inferred_return_type.clone(),
+                },
+                span: expr_span,
+            });
         }
 
         explicit_return_type

@@ -112,7 +112,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                     self.goto_checkpoint();
                     self.parse_parenthesized_expr().or_else(|paren_err| {
                         let offset_after_parenthesized_attempt = self.offset;
-                        if offset_after_fn_expr_attempt > offset_after_parenthesized_attempt {
+                        if offset_after_fn_expr_attempt >= offset_after_parenthesized_attempt {
                             Err(fn_err)
                         } else {
                             Err(paren_err)
