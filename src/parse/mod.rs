@@ -8,7 +8,7 @@ pub struct Parser<'a, 'b: 'a> {
     pub offset: usize,
     pub tokens: Vec<Token<'a>>,
     pub checkpoint_offset: usize,
-    pub interner: &'b mut StringInterner<'b>,
+    pub interner: &'b mut StringInterner<'a>,
 }
 
 use unicode_segmentation::UnicodeSegmentation;
@@ -145,12 +145,13 @@ impl<'a, 'b> Parser<'a, 'b> {
 
     pub fn consume_string(&mut self) -> Result<StringNode, ParsingError<'a>> {
         if let Some(t) = self.current() {
+            let span = t.span;
             match t.kind {
                 TokenKind::String(value) => {
                     self.advance();
 
                     Ok(StringNode {
-                        span: t.span,
+                        span,
                         len: value.graphemes(true).count(),
                         value: self.interner.intern(&value),
                     })
@@ -249,8 +250,8 @@ impl<'a, 'b> Parser<'a, 'b> {
         }) = self.current()
         {
             Some(DocAnnotation {
-                message: self.interner.intern(&doc),
                 span: *span,
+                message: self.interner.intern(&doc),
             })
         } else {
             None

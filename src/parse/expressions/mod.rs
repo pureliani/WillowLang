@@ -247,7 +247,7 @@ impl<'a, 'b> Parser<'a, 'b> {
             }
             t => {
                 return Err(ParsingError {
-                    kind: ParsingErrorKind::ExpectedAnExpressionButFound(t),
+                    kind: ParsingErrorKind::ExpectedAnExpressionButFound(t.clone()),
                     span: t.span,
                 })
             }
@@ -356,8 +356,8 @@ impl<'a, 'b> Parser<'a, 'b> {
                     }
                     _ => {
                         return Err(ParsingError {
-                            kind: ParsingErrorKind::InvalidSuffixOperator(op),
                             span: op.span,
+                            kind: ParsingErrorKind::InvalidSuffixOperator(op),
                         })
                     }
                 };

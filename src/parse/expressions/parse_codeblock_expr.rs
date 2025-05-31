@@ -50,7 +50,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                 if final_expr.is_some() {
                     return Err(ParsingError {
                         kind: ParsingErrorKind::UnexpectedTokenAfterFinalExpression {
-                            found: &current_token.kind,
+                            found: current_token.kind.clone(),
                         },
                         span: current_token_span,
                     });
@@ -81,7 +81,7 @@ impl<'a, 'b> Parser<'a, 'b> {
             } else {
                 return Err(ParsingError {
                     kind: ParsingErrorKind::ExpectedStatementOrExpression {
-                        found: &current_token.kind,
+                        found: current_token.kind.clone(),
                     },
                     span: current_token_span,
                 });
@@ -96,7 +96,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                     .ok_or_else(|| self.unexpected_end_of_input())?;
                 return Err(ParsingError {
                     kind: ParsingErrorKind::UnexpectedTokenAfterFinalExpression {
-                        found: &unexpected_token.kind,
+                        found: unexpected_token.kind,
                     },
                     span: unexpected_token.span,
                 });
