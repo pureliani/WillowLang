@@ -168,7 +168,7 @@ pub fn check_stmt(
                                 expected: constraint.clone(),
                                 received: value.ty.clone(),
                             },
-                            span: stmt.span,
+                            span: value.span,
                         });
                     }
 
@@ -287,6 +287,7 @@ pub fn check_stmt(
             }
         }
         StmtKind::Assignment { target, value } => {
+            let value_span = value.span;
             let checked_target = check_expr(target, errors, scope.clone());
             let checked_value = check_expr(value, errors, scope.clone());
 
@@ -304,7 +305,7 @@ pub fn check_stmt(
                                     expected: decl.constraint.clone(),
                                     received: checked_value.ty.clone(),
                                 },
-                                span: stmt.span,
+                                span: value_span,
                             });
                         }
                     } else {

@@ -27,7 +27,6 @@ fn suffix_bp(token_kind: &TokenKind) -> Option<(u8, ())> {
     use TokenKind::*;
 
     let priority = match token_kind {
-        Punctuation(LBracket) => (3, ()),
         Punctuation(Lt) => (3, ()),
         _ => return None,
     };
@@ -205,13 +204,40 @@ impl<'a, 'b> Parser<'a, 'b> {
             }
             TokenKind::Punctuation(PunctuationKind::LParen) => {
                 self.place_checkpoint();
-                let type_annotation = self.parse_fn_type_annotation().or_else(|_| {
+                let type_annotation = self.parse_fn_type_annotation().or_else(|fn_err| {
+                    let offset_after_fn_attempt = self.offset;
                     self.goto_checkpoint();
                     self.parse_parenthesized_type_annotation()
-                    // TODO: report an error when all parsing attempts fail
+                        .or_else(|paren_err| {
+                            let offset_after_paren_attempt = self.offset;
+                            if offset_after_fn_attempt >= offset_after_paren_attempt {
+                                Err(fn_err)
+                            } else {
+                                Err(paren_err)
+                            }
+                        })
                 })?;
 
                 type_annotation
+            }
+
+            TokenKind::Punctuation(PunctuationKind::LBracket) => {
+                let start_offset = self.offset;
+
+                self.consume_punctuation(PunctuationKind::LBracket)?;
+                let ty = self.parse_type_annotation(0)?;
+                self.consume_punctuation(PunctuationKind::SemiCol)?;
+                let size = self.consume_number()?;
+                self.consume_punctuation(PunctuationKind::RBracket)?;
+
+                let span = self.get_span(start_offset, self.offset - 1)?;
+                TypeAnnotation {
+                    kind: TypeAnnotationKind::Array {
+                        item_type: Box::new(ty),
+                        size,
+                    },
+                    span,
+                }
             }
             TokenKind::Identifier(_) => {
                 let start_offset = self.offset;
@@ -253,21 +279,6 @@ impl<'a, 'b> Parser<'a, 'b> {
                                 args: generic_args,
                             },
                             span: generic_args_span,
-                        }
-                    }
-                    TokenKind::Punctuation(PunctuationKind::LBracket) => {
-                        self.consume_punctuation(PunctuationKind::LBracket)?;
-                        let start_offset = self.offset;
-
-                        let size = self.consume_number()?;
-                        let span = self.get_span(start_offset, self.offset - 1)?;
-                        self.consume_punctuation(PunctuationKind::RBracket)?;
-                        TypeAnnotation {
-                            kind: TypeAnnotationKind::Array {
-                                left: Box::new(lhs),
-                                size,
-                            },
-                            span,
                         }
                     }
                     _ => break,

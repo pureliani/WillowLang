@@ -24,6 +24,10 @@ pub enum TypeAnnotationKind {
     F64,
     Char,
     Identifier(IdentifierNode),
+    Array {
+        item_type: Box<TypeAnnotation>,
+        size: NumberKind,
+    },
     GenericFnType {
         params: Vec<Param>,
         return_type: Box<TypeAnnotation>,
@@ -36,10 +40,6 @@ pub enum TypeAnnotationKind {
     // Infix types
     Union(Vec<TypeAnnotation>),
     // Suffix types
-    Array {
-        left: Box<TypeAnnotation>,
-        size: NumberKind,
-    },
     GenericApply {
         left: Box<TypeAnnotation>,
         args: Vec<TypeAnnotation>,

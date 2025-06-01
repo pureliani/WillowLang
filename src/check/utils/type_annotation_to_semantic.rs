@@ -153,7 +153,10 @@ pub fn check_type(
                 .map(|i| check_type(&i, errors, scope.clone()))
                 .collect(),
         ),
-        TypeAnnotationKind::Array { left, size } => {
+        TypeAnnotationKind::Array {
+            item_type: left,
+            size,
+        } => {
             let maybe_size: Option<usize> = match size {
                 &NumberKind::USize(v) => Some(v),
                 &NumberKind::U64(v) => v.try_into().ok(),

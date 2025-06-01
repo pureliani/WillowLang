@@ -31,6 +31,10 @@ pub enum CheckedType {
     GenericStructDecl(CheckedGenericStructDecl),
     StructDecl(CheckedStructDecl),
     EnumDecl(EnumDecl),
+    Array {
+        item_type: Box<CheckedType>,
+        size: usize,
+    },
     GenericParam(CheckedGenericParam),
     GenericFnType {
         params: Vec<CheckedParam>,
@@ -43,13 +47,7 @@ pub enum CheckedType {
     },
     GenericTypeAliasDecl(CheckedGenericTypeAliasDecl),
     TypeAliasDecl(CheckedTypeAliasDecl),
-    // Infix types
     Union(HashSet<CheckedType>),
-    // Suffix types
-    Array {
-        item_type: Box<CheckedType>,
-        size: usize,
-    },
     Unknown,
 }
 

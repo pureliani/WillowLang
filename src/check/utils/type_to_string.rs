@@ -158,7 +158,7 @@ pub fn type_to_string(ty: &CheckedType, string_interner: &StringInterner) -> Str
             .join(" | "),
 
         CheckedType::Array { item_type, size } => {
-            format!("({})[{}]", type_to_string(item_type, string_interner), size)
+            format!("[{}; {}]", type_to_string(item_type, string_interner), size)
         }
     }
 }
