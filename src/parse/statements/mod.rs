@@ -19,7 +19,7 @@ use crate::{
     tokenize::{KeywordKind, PunctuationKind, TokenKind},
 };
 
-use super::{expressions::is_start_of_expr, ParsingError};
+use super::ParsingError;
 
 pub fn is_start_of_stmt(token_kind: &TokenKind) -> bool {
     match token_kind {
