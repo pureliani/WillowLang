@@ -1,7 +1,10 @@
-use ariadne::{Cache, Color, Label, Report, ReportKind, Source};
-use std::{cell::RefCell, collections::HashMap, rc::Rc, vec};
+use ariadne::{Color, Label, Report, ReportKind};
+use file_source_cache::FileSourceCache;
+use std::{cell::RefCell, rc::Rc, vec};
 use string_interner::StringInterner;
+
 pub mod string_interner;
+pub mod file_source_cache;
 
 use crate::{
     check::{
@@ -14,40 +17,15 @@ use crate::{
     tokenize::{token_kind_to_string, TokenizationErrorKind, Tokenizer},
 };
 
-struct FileSourceCache {
-    sources: HashMap<String, Source>,
-}
-
-impl FileSourceCache {
-    fn new() -> Self {
-        FileSourceCache {
-            sources: HashMap::new(),
-        }
-    }
-    fn add(&mut self, id: String, source_str: String) {
-        self.sources.insert(id, Source::from(source_str));
-    }
-}
-
-impl Cache<String> for FileSourceCache {
-    type Storage = String;
-
-    fn fetch(&mut self, id: &String) -> Result<&Source<Self::Storage>, impl std::fmt::Debug> {
-        self.sources
-            .get(id)
-            .ok_or_else(|| format!("Source not found: {}", id))
-    }
-
-    fn display<'a>(&self, id: &'a String) -> Option<impl std::fmt::Display + 'a> {
-        Some(Box::new(id.clone()))
-    }
-}
 
 pub fn compile_file<'a, 'b>(
     file_path: &String,
     source_code: &'a String,
     string_interner: &'b mut StringInterner<'a>,
+    file_source_cache: &'b mut FileSourceCache
 ) {
+    file_source_cache.add(file_path.clone(), source_code.clone());
+    
     let mut reports: Vec<Report<'_, (String, std::ops::Range<usize>)>> = vec![];
     let (tokens, tokenization_errors) = Tokenizer::tokenize(source_code);
     let (ast, parsing_errors) = Parser::parse(tokens, string_interner);
@@ -634,12 +612,10 @@ pub fn compile_file<'a, 'b>(
     });
 
     if !reports.is_empty() {
-        let mut cache = FileSourceCache::new();
-        cache.add(file_path.clone(), source_code.clone());
 
         for (index, report) in reports.into_iter().enumerate() {
             println!("\n=============== {} ===============\n", index + 1);
-            report.eprint(&mut cache).unwrap();
+            report.eprint(&mut *file_source_cache).unwrap();
             println!();
         }
     } else {
