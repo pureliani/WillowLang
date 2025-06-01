@@ -29,6 +29,8 @@ pub fn check_struct_init_expr(
         .map(|f| (f.0, check_expr(f.1, errors, scope.clone())))
         .collect();
 
+    // TODO: make sure that checked_left.kind is actually an identifier or genericapply wrapper around an identifier
+
     match &checked_left.ty {
         CheckedType::GenericStructDecl(CheckedGenericStructDecl {
             identifier,
