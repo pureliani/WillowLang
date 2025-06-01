@@ -107,7 +107,7 @@ pub fn check_is_assignable(source_type: &CheckedType, target_type: &CheckedType)
             let compatible_params = source_params
                 .iter()
                 .zip(target_params.iter())
-                .all(|(sp, tp)| check_is_assignable(&sp.constraint, &tp.constraint));
+                .all(|(sp, tp)| check_is_assignable(&tp.constraint, &sp.constraint));
 
             let compatible_returns = check_is_assignable(source_return_type, target_return_type);
 
