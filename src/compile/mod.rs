@@ -418,7 +418,7 @@ pub fn compile_file<'a, 'b>(
                     }
             SemanticErrorKind::CannotAccess(checked_type) => {
                         report_builder
-                        .with_message("Cannot access")
+                        .with_message("Cannot access property")
                         .with_label(
                             Label::new(error_span)
                                 .with_message(format!("Cannot use the access operator on the type \"{}\"", type_to_string(checked_type, string_interner)))

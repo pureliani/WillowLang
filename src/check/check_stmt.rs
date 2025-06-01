@@ -315,7 +315,43 @@ pub fn check_stmt(
                         });
                     }
                 }
-                CheckedExprKind::Access { left, field } => {}
+                CheckedExprKind::Access { left, field } => {
+                    let field_type = match &left.ty {
+                        CheckedType::StructDecl(CheckedStructDecl { properties, .. }) => properties
+                            .into_iter()
+                            .find(|p| p.identifier == *field)
+                            .map(|p| p.constraint.clone())
+                            .unwrap_or_else(|| {
+                                errors.push(SemanticError {
+                                    kind: SemanticErrorKind::AccessToUndefinedProperty(
+                                        field.clone(),
+                                    ),
+                                    span: field.span,
+                                });
+                                CheckedType::Unknown
+                            }),
+                        t => {
+                            errors.push(SemanticError {
+                                kind: SemanticErrorKind::CannotAccess(t.clone()),
+                                span: field.span,
+                            });
+
+                            CheckedType::Unknown
+                        }
+                    };
+
+                    let is_assignable = check_is_assignable(&checked_value.ty, &field_type);
+
+                    if !is_assignable {
+                        errors.push(SemanticError {
+                            kind: SemanticErrorKind::TypeMismatch {
+                                expected: field_type,
+                                received: checked_value.ty.clone(),
+                            },
+                            span: value_span,
+                        });
+                    }
+                }
                 _ => {
                     errors.push(SemanticError {
                         kind: SemanticErrorKind::InvalidAssignmentTarget,

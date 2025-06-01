@@ -236,9 +236,9 @@ impl<'a, 'b> Parser<'a, 'b> {
 
                 let new_lhs = match op.kind {
                     TokenKind::Punctuation(PunctuationKind::Dot) => {
-                        let start_offset = self.offset;
-
                         self.consume_punctuation(PunctuationKind::Dot)?;
+
+                        let start_offset = self.offset;
                         let field = self.consume_identifier()?;
                         Some(Expr {
                             kind: ExprKind::Access {
