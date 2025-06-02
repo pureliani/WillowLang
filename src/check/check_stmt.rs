@@ -9,8 +9,8 @@ use crate::ast::{
     },
     checked::{
         checked_declaration::{
-            CheckedGenericParam, CheckedGenericTypeAliasDecl, CheckedParam, CheckedStructDecl,
-            CheckedTypeAliasDecl, CheckedVarDecl,
+            CheckedGenericParam, CheckedParam, CheckedStructDecl, CheckedTypeAliasDecl,
+            CheckedVarDecl,
         },
         checked_expression::{CheckedBlockContents, CheckedExprKind},
         checked_statement::{CheckedStmt, CheckedStmtKind},
@@ -197,33 +197,18 @@ pub fn check_stmt(
 
             let checked_value = check_type(&value, errors, alias_scope);
 
-            let kind = if generic_params.is_empty() {
-                let decl = CheckedTypeAliasDecl {
-                    documentation,
-                    identifier,
-                    value: Box::new(checked_value),
-                };
-
-                scope
-                    .borrow_mut()
-                    .insert(identifier.name, SymbolEntry::TypeAliasDecl(decl.clone()));
-
-                CheckedStmtKind::TypeAliasDecl(decl)
-            } else {
-                let decl = CheckedGenericTypeAliasDecl {
-                    documentation,
-                    identifier,
-                    value: Box::new(checked_value),
-                    generic_params,
-                };
-
-                scope.borrow_mut().insert(
-                    identifier.name,
-                    SymbolEntry::GenericTypeAliasDecl(decl.clone()),
-                );
-
-                CheckedStmtKind::GenericTypeAliasDecl(decl)
+            let decl = CheckedTypeAliasDecl {
+                documentation,
+                identifier,
+                value: Box::new(checked_value),
+                generic_params,
             };
+
+            scope
+                .borrow_mut()
+                .insert(identifier.name, SymbolEntry::TypeAliasDecl(decl.clone()));
+
+            let kind = CheckedStmtKind::TypeAliasDecl(decl);
 
             CheckedStmt {
                 kind,

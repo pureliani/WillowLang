@@ -1,9 +1,7 @@
 use crate::ast::{base::base_declaration::EnumDecl, IdentifierNode, Span, StringNode};
 
 use super::{
-    checked_declaration::{
-        CheckedGenericTypeAliasDecl, CheckedStructDecl, CheckedTypeAliasDecl, CheckedVarDecl,
-    },
+    checked_declaration::{CheckedStructDecl, CheckedTypeAliasDecl, CheckedVarDecl},
     checked_expression::{CheckedBlockContents, CheckedExpr},
 };
 
@@ -12,7 +10,6 @@ pub enum CheckedStmtKind {
     Expression(CheckedExpr),
     StructDecl(CheckedStructDecl),
     EnumDecl(EnumDecl),
-    GenericTypeAliasDecl(CheckedGenericTypeAliasDecl),
     TypeAliasDecl(CheckedTypeAliasDecl),
     VarDecl(CheckedVarDecl),
     Break,

@@ -4,7 +4,7 @@ use crate::{
     ast::{
         base::base_type::{TypeAnnotation, TypeAnnotationKind},
         checked::{
-            checked_declaration::{CheckedGenericTypeAliasDecl, CheckedParam, CheckedStructDecl},
+            checked_declaration::{CheckedParam, CheckedStructDecl, CheckedTypeAliasDecl},
             checked_type::CheckedType,
         },
     },
@@ -61,7 +61,7 @@ pub fn check_type(
                 }) => {
                     todo!("Return specialized type")
                 }
-                CheckedType::GenericTypeAliasDecl(CheckedGenericTypeAliasDecl {
+                CheckedType::TypeAliasDecl(CheckedTypeAliasDecl {
                     identifier,
                     generic_params,
                     documentation,
@@ -80,7 +80,6 @@ pub fn check_type(
             .map(|entry| match entry {
                 SymbolEntry::StructDecl(decl) => CheckedType::StructDecl(decl),
                 SymbolEntry::EnumDecl(decl) => CheckedType::EnumDecl(decl),
-                SymbolEntry::GenericTypeAliasDecl(decl) => CheckedType::GenericTypeAliasDecl(decl),
                 SymbolEntry::TypeAliasDecl(decl) => CheckedType::TypeAliasDecl(decl),
                 SymbolEntry::GenericParam(generic_param) => {
                     CheckedType::GenericParam(generic_param)

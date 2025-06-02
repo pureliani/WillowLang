@@ -6,8 +6,7 @@ use std::{
 use crate::ast::base::base_declaration::EnumDecl;
 
 use super::checked_declaration::{
-    CheckedGenericParam, CheckedGenericTypeAliasDecl, CheckedParam, CheckedStructDecl,
-    CheckedTypeAliasDecl,
+    CheckedGenericParam, CheckedParam, CheckedStructDecl, CheckedTypeAliasDecl,
 };
 
 #[derive(Clone, Debug)]
@@ -44,7 +43,6 @@ pub enum CheckedType {
         params: Vec<CheckedParam>,
         return_type: Box<CheckedType>,
     },
-    GenericTypeAliasDecl(CheckedGenericTypeAliasDecl),
     TypeAliasDecl(CheckedTypeAliasDecl),
     Union(HashSet<CheckedType>),
     Unknown,
@@ -95,7 +93,6 @@ impl PartialEq for CheckedType {
                     return_type: br,
                 },
             ) => ap == bp && ar == br,
-            (CheckedType::GenericTypeAliasDecl(a), CheckedType::GenericTypeAliasDecl(b)) => a == b,
             (CheckedType::TypeAliasDecl(a), CheckedType::TypeAliasDecl(b)) => a == b,
             (CheckedType::Union(a_items), CheckedType::Union(b_items)) => {
                 if a_items.len() != b_items.len() {
@@ -161,7 +158,6 @@ impl Hash for CheckedType {
                 params.hash(state);
                 return_type.hash(state);
             }
-            CheckedType::GenericTypeAliasDecl(gta) => gta.hash(state),
             CheckedType::TypeAliasDecl(ta) => ta.hash(state),
             CheckedType::Union(items) => {
                 // For order-insensitive hashing of unions:

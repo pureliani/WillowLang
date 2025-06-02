@@ -94,13 +94,14 @@ pub fn substitute_generics(
                 generic_params: vec![],
             })
         }
-        CheckedType::GenericTypeAliasDecl(decl) => {
+        CheckedType::TypeAliasDecl(decl) => {
             let substituted_value = substitute_generics(&decl.value, substitutions, errors);
 
             CheckedType::TypeAliasDecl(CheckedTypeAliasDecl {
                 value: Box::new(substituted_value),
                 documentation: decl.documentation.clone(),
                 identifier: decl.identifier, // maybe we should rename this?
+                generic_params: vec![],
             })
         }
         CheckedType::Array { item_type, size } => CheckedType::Array {
@@ -132,7 +133,6 @@ pub fn substitute_generics(
         | CheckedType::Void
         | CheckedType::Null
         | CheckedType::Unknown
-        | CheckedType::TypeAliasDecl(_)
         | CheckedType::EnumDecl(_) => ty.clone(),
     }
 }
