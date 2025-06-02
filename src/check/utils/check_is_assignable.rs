@@ -60,41 +60,9 @@ pub fn check_is_assignable(source_type: &CheckedType, target_type: &CheckedType)
             FnType {
                 params: source_params,
                 return_type: source_return_type,
-            },
-            FnType {
-                params: target_params,
-                return_type: target_return_type,
-            },
-        )
-        | (
-            GenericFnType {
-                params: source_params,
-                return_type: source_return_type,
-                ..
-            },
-            GenericFnType {
-                params: target_params,
-                return_type: target_return_type,
-                ..
-            },
-        )
-        | (
-            GenericFnType {
-                params: source_params,
-                return_type: source_return_type,
                 ..
             },
             FnType {
-                params: target_params,
-                return_type: target_return_type,
-            },
-        )
-        | (
-            FnType {
-                params: source_params,
-                return_type: source_return_type,
-            },
-            GenericFnType {
                 params: target_params,
                 return_type: target_return_type,
                 ..

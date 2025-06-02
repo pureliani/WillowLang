@@ -28,14 +28,10 @@ pub enum TypeAnnotationKind {
         item_type: Box<TypeAnnotation>,
         size: NumberKind,
     },
-    GenericFnType {
-        params: Vec<Param>,
-        return_type: Box<TypeAnnotation>,
-        generic_params: Vec<GenericParam>,
-    },
     FnType {
         params: Vec<Param>,
         return_type: Box<TypeAnnotation>,
+        generic_params: Vec<GenericParam>,
     },
     // Infix types
     Union(Vec<TypeAnnotation>),

@@ -91,7 +91,7 @@ pub fn type_to_string(ty: &CheckedType, string_interner: &StringInterner) -> Str
 
             name
         }
-        CheckedType::GenericFnType {
+        CheckedType::FnType {
             params,
             return_type,
             generic_params,
@@ -112,23 +112,6 @@ pub fn type_to_string(ty: &CheckedType, string_interner: &StringInterner) -> Str
                 "({}{} => {})",
                 generic_params_str, params_str, return_type_str
             )
-        }
-        CheckedType::FnType {
-            params,
-            return_type,
-        } => {
-            let params_str = {
-                let joined = params
-                    .iter()
-                    .map(|p| param_to_string(p, string_interner))
-                    .collect::<Vec<String>>()
-                    .join(", ");
-
-                format!("({})", joined)
-            };
-            let return_type_str = type_to_string(&return_type, string_interner);
-
-            format!("({} => {})", params_str, return_type_str)
         }
         CheckedType::TypeAliasDecl(CheckedTypeAliasDecl {
             generic_params,

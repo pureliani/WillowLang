@@ -41,34 +41,6 @@ pub fn check_fn_call_expr(
         CheckedType::FnType {
             params,
             return_type,
-        } => {
-            call_result_type = *return_type.clone();
-
-            if checked_args.len() != params.len() {
-                errors.push(SemanticError {
-                    kind: SemanticErrorKind::FnArgumentCountMismatch {
-                        expected: params.len(),
-                        received: checked_args.len(),
-                    },
-                    span: span,
-                });
-            } else {
-                for (param, arg) in params.iter().zip(checked_args.iter()) {
-                    if !check_is_assignable(&arg.ty, &param.constraint) {
-                        errors.push(SemanticError {
-                            kind: SemanticErrorKind::TypeMismatch {
-                                expected: param.constraint.clone(),
-                                received: arg.ty.clone(),
-                            },
-                            span: arg.span,
-                        });
-                    }
-                }
-            }
-        }
-        CheckedType::GenericFnType {
-            params,
-            return_type,
             generic_params: _,
         } => {
             if checked_args.len() != params.len() {

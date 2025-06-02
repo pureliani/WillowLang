@@ -9,7 +9,7 @@ use crate::{
         },
         checked::{
             checked_declaration::{CheckedParam, CheckedVarDecl},
-            checked_expression::{CheckedBlockContents, CheckedExpr, CheckedExprKind, GenericFn},
+            checked_expression::{CheckedBlockContents, CheckedExpr, CheckedExprKind},
             checked_type::CheckedType,
         },
         Span,
@@ -111,37 +111,20 @@ pub fn check_fn_expr(
         inferred_return_type
     };
 
-    if generic_params.is_empty() {
-        let expr_type = CheckedType::FnType {
-            params: param_types,
-            return_type: Box::new(actual_return_type.clone()),
-        };
+    let expr_type = CheckedType::FnType {
+        params: param_types,
+        return_type: Box::new(actual_return_type.clone()),
+        generic_params: checked_generic_params.clone(),
+    };
 
-        CheckedExpr {
-            span: expr_span,
-            ty: expr_type,
-            kind: CheckedExprKind::Fn {
-                params: checked_params,
-                body: checked_body,
-                return_type: actual_return_type,
-            },
-        }
-    } else {
-        let expr_type = CheckedType::GenericFnType {
-            params: param_types,
-            return_type: Box::new(actual_return_type.clone()),
-            generic_params: checked_generic_params.clone(),
-        };
-
-        CheckedExpr {
-            span: expr_span,
-            ty: expr_type,
-            kind: CheckedExprKind::GenericFn(GenericFn {
-                params: checked_params,
-                body: checked_body,
-                return_type: actual_return_type,
-                generic_params: checked_generic_params,
-            }),
-        }
+    CheckedExpr {
+        span: expr_span,
+        ty: expr_type,
+        kind: CheckedExprKind::Fn {
+            params: checked_params,
+            body: checked_body,
+            return_type: actual_return_type,
+            generic_params: checked_generic_params,
+        },
     }
 }

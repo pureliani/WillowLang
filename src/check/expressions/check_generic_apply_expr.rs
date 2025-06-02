@@ -4,8 +4,8 @@ use crate::{
     ast::{
         base::{base_expression::Expr, base_type::TypeAnnotation},
         checked::{
-            checked_declaration::{CheckedGenericParam, CheckedParam, CheckedStructDecl},
-            checked_expression::{CheckedExpr, CheckedExprKind},
+            checked_declaration::{CheckedGenericParam, CheckedStructDecl},
+            checked_expression::CheckedExpr,
             checked_type::CheckedType,
         },
         Span,
@@ -35,7 +35,7 @@ pub fn check_generic_apply_expr(
         .map(|type_arg| (type_arg.span, check_type(&type_arg, errors, scope.clone())))
         .collect();
 
-    let mut get_substitutions = |generic_params: Vec<CheckedGenericParam>,
+    let mut get_substitutions = |generic_params: &Vec<CheckedGenericParam>,
                                  type_args: Vec<(Span, CheckedType)>|
      -> GenericSubstitutionMap {
         if generic_params.len() != type_args.len() {
@@ -79,57 +79,19 @@ pub fn check_generic_apply_expr(
         substitutions
     };
 
-    let (type_kind, substitutions) = match checked_left.ty.clone() {
-        CheckedType::GenericFnType {
-            params,
-            return_type,
-            generic_params,
-        } => {
+    let (type_kind, substitutions) = match &checked_left.ty {
+        t @ CheckedType::FnType { generic_params, .. } => {
             let substitutions = get_substitutions(generic_params, type_args);
 
-            let substituted_params: Vec<_> = params
-                .into_iter()
-                .map(|p| CheckedParam {
-                    constraint: substitute_generics(&p.constraint, &substitutions, errors),
-                    identifier: p.identifier,
-                })
-                .collect();
+            let result = substitute_generics(&t, &substitutions, errors);
 
-            let substituted_return_type = substitute_generics(&return_type, &substitutions, errors);
-
-            (
-                CheckedType::FnType {
-                    params: substituted_params,
-                    return_type: Box::new(substituted_return_type),
-                },
-                substitutions,
-            )
+            (result, substitutions)
         }
-        CheckedType::StructDecl(CheckedStructDecl {
-            identifier,
-            documentation,
-            generic_params,
-            properties,
-        }) => {
+        t @ CheckedType::StructDecl(CheckedStructDecl { generic_params, .. }) => {
             let substitutions = get_substitutions(generic_params, type_args);
+            let result = substitute_generics(&t, &substitutions, errors);
 
-            let substituted_properties: Vec<_> = properties
-                .into_iter()
-                .map(|p| CheckedParam {
-                    constraint: substitute_generics(&p.constraint, &substitutions, errors),
-                    identifier: p.identifier,
-                })
-                .collect();
-
-            (
-                CheckedType::StructDecl(CheckedStructDecl {
-                    documentation: documentation.clone(),
-                    identifier,
-                    properties: substituted_properties,
-                    generic_params: vec![],
-                }),
-                substitutions,
-            )
+            (result, substitutions)
         }
         _ => {
             errors.push(SemanticError {
@@ -146,9 +108,6 @@ pub fn check_generic_apply_expr(
     CheckedExpr {
         span,
         ty: type_kind,
-        kind: CheckedExprKind::GenericSpecialization {
-            target: Box::new(checked_left),
-            substitutions,
-        },
+        kind: todo!(),
     }
 }

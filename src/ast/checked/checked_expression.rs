@@ -1,6 +1,5 @@
 use crate::{
     ast::{IdentifierNode, Span, StringNode},
-    check::utils::substitute_generics::GenericSubstitutionMap,
     tokenize::NumberKind,
 };
 
@@ -14,14 +13,6 @@ use super::{
 pub struct CheckedBlockContents {
     pub statements: Vec<CheckedStmt>,
     pub final_expr: Option<Box<CheckedExpr>>,
-}
-
-#[derive(Clone, Debug)]
-pub struct GenericFn {
-    pub params: Vec<CheckedParam>,
-    pub body: CheckedBlockContents,
-    pub return_type: CheckedType,
-    pub generic_params: Vec<CheckedGenericParam>,
 }
 
 #[derive(Clone, Debug)]
@@ -122,21 +113,17 @@ pub enum CheckedExprKind {
     String(StringNode),
     Identifier(IdentifierNode),
     // Complex expressions
-    GenericFn(GenericFn),
     Fn {
         params: Vec<CheckedParam>,
         body: CheckedBlockContents,
         return_type: CheckedType,
+        generic_params: Vec<CheckedGenericParam>,
     },
     If {
         condition: Box<CheckedExpr>,
         then_branch: CheckedBlockContents,
         else_if_branches: Vec<(Box<CheckedExpr>, CheckedBlockContents)>,
         else_branch: Option<CheckedBlockContents>,
-    },
-    GenericSpecialization {
-        target: Box<CheckedExpr>,
-        substitutions: GenericSubstitutionMap,
     },
     ArrayLiteral {
         items: Vec<CheckedExpr>,

@@ -46,7 +46,7 @@ pub fn check_type(
                 .collect();
 
             match checked_target {
-                CheckedType::GenericFnType {
+                CheckedType::FnType {
                     params,
                     return_type,
                     generic_params,
@@ -100,7 +100,7 @@ pub fn check_type(
                 CheckedType::Unknown
             }),
 
-        TypeAnnotationKind::GenericFnType {
+        TypeAnnotationKind::FnType {
             params,
             return_type,
             generic_params,
@@ -118,29 +118,10 @@ pub fn check_type(
                 })
                 .collect();
 
-            CheckedType::GenericFnType {
-                params: checked_params,
-                return_type: Box::new(check_type(&return_type, errors, fn_type_scope.clone())),
-                generic_params: checked_generic_params,
-            }
-        }
-        TypeAnnotationKind::FnType {
-            params,
-            return_type,
-        } => {
-            let fn_type_scope = scope.borrow().child(ScopeKind::FnType);
-
-            let checked_params = params
-                .into_iter()
-                .map(|p| CheckedParam {
-                    constraint: check_type(&p.constraint, errors, fn_type_scope.clone()),
-                    identifier: p.identifier,
-                })
-                .collect();
-
             CheckedType::FnType {
                 params: checked_params,
                 return_type: Box::new(check_type(&return_type, errors, fn_type_scope.clone())),
+                generic_params: checked_generic_params,
             }
         }
         TypeAnnotationKind::Union(items) => CheckedType::Union(

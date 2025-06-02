@@ -30,10 +30,10 @@ pub fn substitute_generics(
 
                 CheckedType::Unknown
             }),
-        CheckedType::GenericFnType {
+        CheckedType::FnType {
             params,
             return_type,
-            generic_params: _, // not needed
+            generic_params: _,
         } => {
             // IMPORTANT: When substituting within a function type, we DON'T
             // substitute its *own* generic parameters.
@@ -51,27 +51,7 @@ pub fn substitute_generics(
             CheckedType::FnType {
                 params: substituted_params,
                 return_type: Box::new(substituted_return_type),
-            }
-        }
-        CheckedType::FnType {
-            params,
-            return_type,
-        } => {
-            // This case could be needed when a closure uses generic parameter which was defined by parent
-
-            let substituted_params = params
-                .iter()
-                .map(|p| CheckedParam {
-                    identifier: p.identifier,
-                    constraint: substitute_generics(&p.constraint, substitutions, errors),
-                })
-                .collect();
-
-            let substituted_return_type = substitute_generics(return_type, substitutions, errors);
-
-            CheckedType::FnType {
-                params: substituted_params,
-                return_type: Box::new(substituted_return_type),
+                generic_params: vec![],
             }
         }
         CheckedType::StructDecl(decl) => {

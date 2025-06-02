@@ -34,14 +34,10 @@ pub enum CheckedType {
         size: usize,
     },
     GenericParam(CheckedGenericParam),
-    GenericFnType {
-        params: Vec<CheckedParam>,
-        return_type: Box<CheckedType>,
-        generic_params: Vec<CheckedGenericParam>,
-    },
     FnType {
         params: Vec<CheckedParam>,
         return_type: Box<CheckedType>,
+        generic_params: Vec<CheckedGenericParam>,
     },
     TypeAliasDecl(CheckedTypeAliasDecl),
     Union(HashSet<CheckedType>),
@@ -72,27 +68,17 @@ impl PartialEq for CheckedType {
             (CheckedType::EnumDecl(a), CheckedType::EnumDecl(b)) => a == b,
             (CheckedType::GenericParam(a), CheckedType::GenericParam(b)) => a == b,
             (
-                CheckedType::GenericFnType {
+                CheckedType::FnType {
                     params: ap,
                     return_type: ar,
                     generic_params: agp,
                 },
-                CheckedType::GenericFnType {
+                CheckedType::FnType {
                     params: bp,
                     return_type: br,
                     generic_params: bgp,
                 },
             ) => ap == bp && ar == br && agp == bgp,
-            (
-                CheckedType::FnType {
-                    params: ap,
-                    return_type: ar,
-                },
-                CheckedType::FnType {
-                    params: bp,
-                    return_type: br,
-                },
-            ) => ap == bp && ar == br,
             (CheckedType::TypeAliasDecl(a), CheckedType::TypeAliasDecl(b)) => a == b,
             (CheckedType::Union(a_items), CheckedType::Union(b_items)) => {
                 if a_items.len() != b_items.len() {
@@ -142,7 +128,7 @@ impl Hash for CheckedType {
             CheckedType::StructDecl(sd) => sd.hash(state),
             CheckedType::EnumDecl(e) => e.hash(state),
             CheckedType::GenericParam(gp) => gp.hash(state),
-            CheckedType::GenericFnType {
+            CheckedType::FnType {
                 params,
                 return_type,
                 generic_params,
@@ -150,13 +136,6 @@ impl Hash for CheckedType {
                 params.hash(state);
                 return_type.hash(state);
                 generic_params.hash(state);
-            }
-            CheckedType::FnType {
-                params,
-                return_type,
-            } => {
-                params.hash(state);
-                return_type.hash(state);
             }
             CheckedType::TypeAliasDecl(ta) => ta.hash(state),
             CheckedType::Union(items) => {

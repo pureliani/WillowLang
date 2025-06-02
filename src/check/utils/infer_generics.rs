@@ -56,7 +56,7 @@ pub fn infer_generics(
             }
         }
         (
-            CheckedType::GenericFnType {
+            CheckedType::FnType {
                 params: generic_params,
                 return_type: generic_return_type,
                 generic_params: _,
@@ -64,16 +64,7 @@ pub fn infer_generics(
             CheckedType::FnType {
                 params: concrete_params,
                 return_type: concrete_return_type,
-            },
-        )
-        | (
-            CheckedType::FnType {
-                params: generic_params,
-                return_type: generic_return_type,
-            },
-            CheckedType::FnType {
-                params: concrete_params,
-                return_type: concrete_return_type,
+                generic_params: _,
             },
         ) => {
             for (generic_param, concrete_param) in generic_params.iter().zip(concrete_params.iter())
