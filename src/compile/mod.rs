@@ -1,4 +1,4 @@
-use ariadne::{Color, Label, Report, ReportKind};
+use ariadne::{Color, Config, Label, Report, ReportKind};
 use file_source_cache::FileSourceCache;
 use std::{cell::RefCell, rc::Rc, vec};
 use string_interner::StringInterner;
@@ -33,13 +33,15 @@ pub fn compile_file<'a, 'b>(
     let scope = Rc::new(RefCell::new(Scope::new(ScopeKind::File)));
     let analyzed_tree = check_stmts(ast, &mut semantic_errors, scope);
 
+    let ariadne_config = Config::new().with_index_type(ariadne::IndexType::Byte);
+
     tokenization_errors.iter().for_each(|e| {
         let error_span = (
             file_path.clone(),
             e.span.start.byte_offset..e.span.end.byte_offset,
         );
         let report_builder = Report::build(ReportKind::Error, error_span.clone())
-            .with_code(format!("T{}", e.kind.code()));
+            .with_code(format!("T{}", e.kind.code())).with_config(ariadne_config);
 
         let report = match &e.kind {
             TokenizationErrorKind::UnterminatedString => report_builder
@@ -102,7 +104,7 @@ pub fn compile_file<'a, 'b>(
         );
 
         let report_builder = Report::build(ReportKind::Error, error_span.clone())
-            .with_code(format!("P{}", e.kind.code()));
+            .with_code(format!("P{}", e.kind.code())).with_config(ariadne_config);
 
         let report = match &e.kind {
             ParsingErrorKind::DocMustBeFollowedByDeclaration => {
@@ -258,7 +260,7 @@ pub fn compile_file<'a, 'b>(
         );
 
         let report_builder = Report::build(ReportKind::Error, error_span.clone())
-            .with_code(format!("S{}", e.kind.code()));
+            .with_code(format!("S{}", e.kind.code())).with_config(ariadne_config);
 
         let report = match &e.kind {
             SemanticErrorKind::ExpectedANumericOperand => report_builder

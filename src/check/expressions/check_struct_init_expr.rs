@@ -41,12 +41,10 @@ pub fn check_struct_init_expr(
             todo!()
         }
         CheckedType::StructDecl(CheckedStructDecl { properties, .. }) => {
-            let mut arguments = HashSet::new();
             let mut uninitialized_props: HashSet<_> =
                 properties.iter().map(|p| p.identifier.name).collect();
 
             checked_args.iter().for_each(|a| {
-                uninitialized_props.remove(&a.0.name);
                 let span = a.0.span;
                 let property = properties.iter().find(|p| p.identifier.name == a.0.name);
 
@@ -58,7 +56,7 @@ pub fn check_struct_init_expr(
                         });
                     }
                     Some(p) => {
-                        if !arguments.insert(a.0) {
+                        if !uninitialized_props.remove(&a.0.name) {
                             errors.push(SemanticError {
                                 kind: SemanticErrorKind::DuplicateStructPropertyInitializer(a.0),
                                 span,

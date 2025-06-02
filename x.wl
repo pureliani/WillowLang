@@ -3,10 +3,7 @@ struct User {
     isAdmin: bool
 }
 
-
 let u = User {
-    id: 1,
-    isAdmin: true
+    isAdmin: true,
+    isAdmin: false
 };
-
-let x: User | null ;
