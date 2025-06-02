@@ -3,8 +3,8 @@ use crate::{
         base::base_declaration::EnumDecl,
         checked::{
             checked_declaration::{
-                CheckedGenericParam, CheckedGenericStructDecl, CheckedGenericTypeAliasDecl,
-                CheckedParam, CheckedStructDecl, CheckedTypeAliasDecl,
+                CheckedGenericParam, CheckedGenericTypeAliasDecl, CheckedParam, CheckedStructDecl,
+                CheckedTypeAliasDecl,
             },
             checked_type::CheckedType,
         },
@@ -72,7 +72,7 @@ pub fn type_to_string(ty: &CheckedType, string_interner: &StringInterner) -> Str
         CheckedType::F64 => String::from("f64"),
         CheckedType::Char => String::from("char"),
         CheckedType::Unknown => String::from("unknown"),
-        CheckedType::GenericStructDecl(CheckedGenericStructDecl {
+        CheckedType::StructDecl(CheckedStructDecl {
             generic_params,
             identifier,
             ..
@@ -81,11 +81,6 @@ pub fn type_to_string(ty: &CheckedType, string_interner: &StringInterner) -> Str
             let generic_params_str = generic_params_to_string(generic_params, string_interner);
 
             format!("{}{}", name, generic_params_str)
-        }
-        CheckedType::StructDecl(CheckedStructDecl { identifier, .. }) => {
-            let name = identifier_to_string(identifier.name, string_interner);
-
-            name
         }
         CheckedType::EnumDecl(EnumDecl { identifier, .. }) => {
             let name = identifier_to_string(identifier.name, string_interner);

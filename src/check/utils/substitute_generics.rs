@@ -15,11 +15,11 @@ pub type GenericSubstitutionMap = HashMap<InternerId, CheckedType>;
 
 pub fn substitute_generics(
     ty: &CheckedType,
-    substitution: &GenericSubstitutionMap,
+    substitutions: &GenericSubstitutionMap,
     errors: &mut Vec<SemanticError>,
 ) -> CheckedType {
     match &ty {
-        CheckedType::GenericParam(gp) => substitution
+        CheckedType::GenericParam(gp) => substitutions
             .get(&gp.identifier.name)
             .cloned()
             .unwrap_or_else(|| {
@@ -42,11 +42,11 @@ pub fn substitute_generics(
                 .iter()
                 .map(|p| CheckedParam {
                     identifier: p.identifier,
-                    constraint: substitute_generics(&p.constraint, substitution, errors),
+                    constraint: substitute_generics(&p.constraint, substitutions, errors),
                 })
                 .collect();
 
-            let substituted_return_type = substitute_generics(return_type, substitution, errors);
+            let substituted_return_type = substitute_generics(return_type, substitutions, errors);
 
             CheckedType::FnType {
                 params: substituted_params,
@@ -63,18 +63,18 @@ pub fn substitute_generics(
                 .iter()
                 .map(|p| CheckedParam {
                     identifier: p.identifier,
-                    constraint: substitute_generics(&p.constraint, substitution, errors),
+                    constraint: substitute_generics(&p.constraint, substitutions, errors),
                 })
                 .collect();
 
-            let substituted_return_type = substitute_generics(return_type, substitution, errors);
+            let substituted_return_type = substitute_generics(return_type, substitutions, errors);
 
             CheckedType::FnType {
                 params: substituted_params,
                 return_type: Box::new(substituted_return_type),
             }
         }
-        CheckedType::GenericStructDecl(decl) => {
+        CheckedType::StructDecl(decl) => {
             // Similar to FnType, a struct definition's generic params are local.
             // We substitute types *within* its properties if those types refer
             // to generics from the *outer* substitution context.
@@ -83,7 +83,7 @@ pub fn substitute_generics(
                 .iter()
                 .map(|p| CheckedParam {
                     identifier: p.identifier,
-                    constraint: substitute_generics(&p.constraint, substitution, errors),
+                    constraint: substitute_generics(&p.constraint, substitutions, errors),
                 })
                 .collect();
 
@@ -91,10 +91,11 @@ pub fn substitute_generics(
                 properties: substituted_props,
                 documentation: decl.documentation.clone(),
                 identifier: decl.identifier, // maybe we should rename this?
+                generic_params: vec![],
             })
         }
         CheckedType::GenericTypeAliasDecl(decl) => {
-            let substituted_value = substitute_generics(&decl.value, substitution, errors);
+            let substituted_value = substitute_generics(&decl.value, substitutions, errors);
 
             CheckedType::TypeAliasDecl(CheckedTypeAliasDecl {
                 value: Box::new(substituted_value),
@@ -103,13 +104,13 @@ pub fn substitute_generics(
             })
         }
         CheckedType::Array { item_type, size } => CheckedType::Array {
-            item_type: Box::new(substitute_generics(item_type, substitution, errors)),
+            item_type: Box::new(substitute_generics(item_type, substitutions, errors)),
             size: *size,
         },
         CheckedType::Union(items) => {
             let substituted_items = items
                 .iter()
-                .map(|t| substitute_generics(t, substitution, errors));
+                .map(|t| substitute_generics(t, substitutions, errors));
 
             // Re-apply union_of logic to simplify the result
             union_of(substituted_items)
@@ -132,7 +133,6 @@ pub fn substitute_generics(
         | CheckedType::Null
         | CheckedType::Unknown
         | CheckedType::TypeAliasDecl(_)
-        | CheckedType::StructDecl(_)
         | CheckedType::EnumDecl(_) => ty.clone(),
     }
 }

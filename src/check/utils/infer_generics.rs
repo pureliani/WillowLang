@@ -11,19 +11,19 @@ pub fn infer_generics(
     substitution: &mut GenericSubstitutionMap,
     errors: &mut Vec<SemanticError>,
 ) {
-    match (&expected, &received) {
+    match (expected, received) {
         // Handle generics
-        (CheckedType::GenericParam(gp), received_kind) => {
-            let name = &gp.identifier.name;
+        (CheckedType::GenericParam(expected_generic_param), received_kind) => {
+            let name = &expected_generic_param.identifier.name;
             if let Some(existing) = substitution.get(name) {
-                if &existing != received_kind {
+                if existing != received_kind {
                     errors.push(SemanticError {
                         kind: SemanticErrorKind::ConflictingGenericBinding {
-                            identifier: gp.identifier,
+                            identifier: expected_generic_param.identifier,
                             existing: existing.clone(),
                             new: received.clone(),
                         },
-                        span: gp.identifier.span,
+                        span: expected_generic_param.identifier.span,
                     });
                 }
             } else {
@@ -33,19 +33,19 @@ pub fn infer_generics(
         // Recursively check components (arrays, structs, etc.)
         (
             CheckedType::Array {
-                item_type: maybe_generic,
+                item_type: expected_item_type,
                 ..
             },
             CheckedType::Array {
-                item_type: concrete,
+                item_type: received_item_type,
                 ..
             },
         ) => {
-            infer_generics(maybe_generic, concrete, substitution, errors);
+            infer_generics(expected_item_type, received_item_type, substitution, errors);
         }
-        (CheckedType::GenericStructDecl(generic), CheckedType::StructDecl(concrete)) => {
+        (CheckedType::StructDecl(expected), CheckedType::StructDecl(received)) => {
             for (generic_prop, concrete_prop) in
-                generic.properties.iter().zip(concrete.properties.iter())
+                expected.properties.iter().zip(received.properties.iter())
             {
                 infer_generics(
                     &generic_prop.constraint,

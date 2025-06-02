@@ -6,8 +6,8 @@ use std::{
 use crate::ast::base::base_declaration::EnumDecl;
 
 use super::checked_declaration::{
-    CheckedGenericParam, CheckedGenericStructDecl, CheckedGenericTypeAliasDecl, CheckedParam,
-    CheckedStructDecl, CheckedTypeAliasDecl,
+    CheckedGenericParam, CheckedGenericTypeAliasDecl, CheckedParam, CheckedStructDecl,
+    CheckedTypeAliasDecl,
 };
 
 #[derive(Clone, Debug)]
@@ -28,7 +28,6 @@ pub enum CheckedType {
     F32,
     F64,
     Char,
-    GenericStructDecl(CheckedGenericStructDecl),
     StructDecl(CheckedStructDecl),
     EnumDecl(EnumDecl),
     Array {
@@ -71,7 +70,6 @@ impl PartialEq for CheckedType {
             (CheckedType::F32, CheckedType::F32) => true,
             (CheckedType::F64, CheckedType::F64) => true,
             (CheckedType::Char, CheckedType::Char) => true,
-            (CheckedType::GenericStructDecl(a), CheckedType::GenericStructDecl(b)) => a == b,
             (CheckedType::StructDecl(a), CheckedType::StructDecl(b)) => a == b,
             (CheckedType::EnumDecl(a), CheckedType::EnumDecl(b)) => a == b,
             (CheckedType::GenericParam(a), CheckedType::GenericParam(b)) => a == b,
@@ -144,7 +142,6 @@ impl Hash for CheckedType {
             CheckedType::F32 => {}
             CheckedType::F64 => {}
             CheckedType::Char => {}
-            CheckedType::GenericStructDecl(gsd) => gsd.hash(state),
             CheckedType::StructDecl(sd) => sd.hash(state),
             CheckedType::EnumDecl(e) => e.hash(state),
             CheckedType::GenericParam(gp) => gp.hash(state),

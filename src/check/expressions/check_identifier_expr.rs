@@ -24,7 +24,6 @@ pub fn check_identifier_expr(
         .borrow()
         .lookup(id.name)
         .map(|entry| match entry {
-            SymbolEntry::GenericStructDecl(decl) => CheckedType::GenericStructDecl(decl),
             SymbolEntry::StructDecl(decl) => CheckedType::StructDecl(decl),
             SymbolEntry::GenericTypeAliasDecl(decl) => CheckedType::GenericTypeAliasDecl(decl),
             SymbolEntry::TypeAliasDecl(decl) => CheckedType::TypeAliasDecl(decl),

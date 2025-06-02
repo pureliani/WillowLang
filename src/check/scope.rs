@@ -4,8 +4,8 @@ use crate::{
     ast::{
         base::base_declaration::EnumDecl,
         checked::checked_declaration::{
-            CheckedGenericParam, CheckedGenericStructDecl, CheckedGenericTypeAliasDecl,
-            CheckedStructDecl, CheckedTypeAliasDecl, CheckedVarDecl,
+            CheckedGenericParam, CheckedGenericTypeAliasDecl, CheckedStructDecl,
+            CheckedTypeAliasDecl, CheckedVarDecl,
         },
     },
     compile::string_interner::InternerId,
@@ -24,7 +24,6 @@ pub enum ScopeKind {
 
 #[derive(Debug, Clone)]
 pub enum SymbolEntry {
-    GenericStructDecl(CheckedGenericStructDecl),
     StructDecl(CheckedStructDecl),
     EnumDecl(EnumDecl),
     VarDecl(CheckedVarDecl),

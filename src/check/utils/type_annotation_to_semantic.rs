@@ -4,9 +4,7 @@ use crate::{
     ast::{
         base::base_type::{TypeAnnotation, TypeAnnotationKind},
         checked::{
-            checked_declaration::{
-                CheckedGenericStructDecl, CheckedGenericTypeAliasDecl, CheckedParam,
-            },
+            checked_declaration::{CheckedGenericTypeAliasDecl, CheckedParam, CheckedStructDecl},
             checked_type::CheckedType,
         },
     },
@@ -55,7 +53,7 @@ pub fn check_type(
                 } => {
                     todo!("Return specialized type")
                 }
-                CheckedType::GenericStructDecl(CheckedGenericStructDecl {
+                CheckedType::StructDecl(CheckedStructDecl {
                     identifier,
                     generic_params,
                     documentation,
@@ -80,7 +78,6 @@ pub fn check_type(
             .borrow()
             .lookup(id.name)
             .map(|entry| match entry {
-                SymbolEntry::GenericStructDecl(decl) => CheckedType::GenericStructDecl(decl),
                 SymbolEntry::StructDecl(decl) => CheckedType::StructDecl(decl),
                 SymbolEntry::EnumDecl(decl) => CheckedType::EnumDecl(decl),
                 SymbolEntry::GenericTypeAliasDecl(decl) => CheckedType::GenericTypeAliasDecl(decl),

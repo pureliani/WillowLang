@@ -9,8 +9,8 @@ use crate::ast::{
     },
     checked::{
         checked_declaration::{
-            CheckedGenericParam, CheckedGenericStructDecl, CheckedGenericTypeAliasDecl,
-            CheckedParam, CheckedStructDecl, CheckedTypeAliasDecl, CheckedVarDecl,
+            CheckedGenericParam, CheckedGenericTypeAliasDecl, CheckedParam, CheckedStructDecl,
+            CheckedTypeAliasDecl, CheckedVarDecl,
         },
         checked_expression::{CheckedBlockContents, CheckedExprKind},
         checked_statement::{CheckedStmt, CheckedStmtKind},
@@ -98,36 +98,19 @@ pub fn check_stmt(
             let checked_properties =
                 check_struct_properties(&properties, errors, struct_scope.clone());
 
-            if generic_params.is_empty() {
-                let decl = CheckedStructDecl {
-                    identifier,
-                    documentation,
-                    properties: checked_properties,
-                };
-                scope
-                    .borrow_mut()
-                    .insert(identifier.name, SymbolEntry::StructDecl(decl.clone()));
+            let decl = CheckedStructDecl {
+                identifier,
+                documentation,
+                properties: checked_properties,
+                generic_params,
+            };
+            scope
+                .borrow_mut()
+                .insert(identifier.name, SymbolEntry::StructDecl(decl.clone()));
 
-                CheckedStmt {
-                    kind: CheckedStmtKind::StructDecl(decl),
-                    span: stmt.span,
-                }
-            } else {
-                let decl = CheckedGenericStructDecl {
-                    identifier,
-                    documentation,
-                    properties: checked_properties,
-                    generic_params,
-                };
-                scope.borrow_mut().insert(
-                    identifier.name,
-                    SymbolEntry::GenericStructDecl(decl.clone()),
-                );
-
-                CheckedStmt {
-                    kind: CheckedStmtKind::GenericStructDecl(decl),
-                    span: stmt.span,
-                }
+            CheckedStmt {
+                kind: CheckedStmtKind::StructDecl(decl),
+                span: stmt.span,
             }
         }
         StmtKind::EnumDecl(decl) => {
