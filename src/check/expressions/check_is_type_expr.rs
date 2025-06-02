@@ -25,6 +25,7 @@ pub fn check_is_type_expr(
     let checked_left = check_expr(*left, errors, scope.clone());
     let checked_target = check_type(&target, errors, scope);
 
+    // TODO: do an actual check
     if !matches!(checked_left.ty, CheckedType::Union { .. }) {
         errors.push(SemanticError {
             kind: SemanticErrorKind::CannotUseIsTypeOnNonUnion,
