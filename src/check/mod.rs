@@ -15,6 +15,7 @@ pub mod utils;
 
 #[derive(Debug, Clone)]
 pub enum SemanticErrorKind {
+    VarDeclWithoutInitializer,
     DuplicateStructPropertyInitializer(IdentifierNode),
     UnknownStructPropertyInitializer(IdentifierNode),
     MissingStructPropertyInitializer(HashSet<InternerId>),
@@ -54,7 +55,6 @@ pub enum SemanticErrorKind {
     },
     CannotUseGenericParameterAsValue,
     CannotUseVariableDeclarationAsType,
-    VarDeclWithNoConstraintOrInitializer,
     AccessToUndefinedProperty(IdentifierNode),
     UnresolvedGenericParam(IdentifierNode),
     CannotUseIsTypeOnNonUnion,
@@ -90,7 +90,7 @@ impl SemanticErrorKind {
             SemanticErrorKind::CannotCall(..) => 15,
             SemanticErrorKind::CannotUseGenericParameterAsValue => 16,
             SemanticErrorKind::CannotUseVariableDeclarationAsType => 17,
-            SemanticErrorKind::VarDeclWithNoConstraintOrInitializer => 18,
+            SemanticErrorKind::VarDeclWithoutInitializer => 18,
             SemanticErrorKind::AccessToUndefinedProperty(..) => 19,
             SemanticErrorKind::CannotUseIsTypeOnNonUnion => 20,
             SemanticErrorKind::InvalidArraySizeValue(..) => 21,

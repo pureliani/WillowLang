@@ -151,14 +151,6 @@ pub fn check_stmt(
             let checked_constraint = constraint.map(|c| check_type(&c, errors, scope.clone()));
 
             let final_constraint = match (&checked_value, checked_constraint) {
-                (None, None) => {
-                    errors.push(SemanticError {
-                        kind: SemanticErrorKind::VarDeclWithNoConstraintOrInitializer,
-                        span: stmt.span,
-                    });
-
-                    CheckedType::Unknown
-                }
                 (Some(value), Some(constraint)) => {
                     let is_assignable = check_is_assignable(&value.ty, &constraint);
 
@@ -175,7 +167,15 @@ pub fn check_stmt(
                     constraint
                 }
                 (Some(value), None) => value.ty.clone(),
-                (None, Some(t)) => t.clone(),
+
+                (None, _) => {
+                    errors.push(SemanticError {
+                        kind: SemanticErrorKind::VarDeclWithoutInitializer,
+                        span: stmt.span,
+                    });
+
+                    CheckedType::Unknown
+                }
             };
 
             let checked_declaration = CheckedVarDecl {

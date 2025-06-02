@@ -5,8 +5,8 @@ struct User {
 
 
 let u = User {
-    id: 1i8,
+    id: 1,
     isAdmin: true
 };
 
-(() => {5}).over18d;
+let x: User | null ;
