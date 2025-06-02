@@ -7,10 +7,13 @@ use crate::{
             checked_declaration::{CheckedParam, CheckedStructDecl, CheckedTypeAliasDecl},
             checked_type::CheckedType,
         },
+        Span,
     },
     check::{
         check_stmt::check_generic_params,
+        expressions::check_generic_apply_expr::build_substitutions,
         scope::{Scope, ScopeKind, SymbolEntry},
+        utils::substitute_generics::substitute_generics,
         SemanticError, SemanticErrorKind,
     },
     tokenize::NumberKind,
@@ -39,38 +42,31 @@ pub fn check_type(
         TypeAnnotationKind::F64 => CheckedType::F64,
         TypeAnnotationKind::Char => CheckedType::Char,
         TypeAnnotationKind::GenericApply { left, args } => {
-            let checked_target = check_type(&left, errors, scope.clone());
-            let checked_args: Vec<CheckedType> = args
+            let checked_left = check_type(&left, errors, scope.clone());
+            let checked_args: Vec<(Span, CheckedType)> = args
                 .into_iter()
-                .map(|arg| check_type(&arg, errors, scope.clone()))
+                .map(|arg| (arg.span, check_type(&arg, errors, scope.clone())))
                 .collect();
 
-            match checked_target {
-                CheckedType::FnType {
-                    params,
-                    return_type,
-                    generic_params,
-                } => {
-                    todo!("Return specialized type")
-                }
-                CheckedType::StructDecl(CheckedStructDecl {
-                    identifier,
-                    generic_params,
-                    documentation,
-                    properties,
-                }) => {
-                    todo!("Return specialized type")
-                }
-                CheckedType::TypeAliasDecl(CheckedTypeAliasDecl {
-                    identifier,
-                    generic_params,
-                    documentation,
-                    value,
-                }) => {
-                    todo!("Return specialized type")
+            match &checked_left {
+                t @ CheckedType::FnType { generic_params, .. }
+                | t @ CheckedType::StructDecl(CheckedStructDecl { generic_params, .. })
+                | t @ CheckedType::TypeAliasDecl(CheckedTypeAliasDecl { generic_params, .. }) => {
+                    let substitutions =
+                        build_substitutions(generic_params, checked_args, arg.span, errors);
+                    let substituted = substitute_generics(t, &substitutions, errors);
+
+                    substituted
                 }
                 _ => {
-                    todo!("Push an error when target is non generic type")
+                    errors.push(SemanticError {
+                        kind: SemanticErrorKind::CannotApplyTypeArguments {
+                            to: checked_left.clone(),
+                        },
+                        span: left.span,
+                    });
+
+                    CheckedType::Unknown
                 }
             }
         }

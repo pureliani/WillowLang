@@ -22,6 +22,53 @@ use crate::{
     },
 };
 
+pub fn build_substitutions(
+    generic_params: &Vec<CheckedGenericParam>,
+    type_args: Vec<(Span, CheckedType)>,
+    span: Span,
+    errors: &mut Vec<SemanticError>,
+) -> GenericSubstitutionMap {
+    if generic_params.len() != type_args.len() {
+        errors.push(SemanticError {
+            kind: SemanticErrorKind::GenericArgumentCountMismatch {
+                expected: generic_params.len(),
+                received: type_args.len(),
+            },
+            span,
+        });
+    } else {
+        generic_params
+            .iter()
+            .zip(type_args.iter())
+            .for_each(|(gp, ta)| {
+                if let Some(constraint) = &gp.constraint {
+                    if !check_is_assignable(&ta.1, constraint) {
+                        errors.push(SemanticError {
+                            kind: SemanticErrorKind::TypeMismatch {
+                                expected: *constraint.clone(),
+                                received: ta.1.clone(),
+                            },
+                            span: ta.0,
+                        });
+                    }
+                }
+            });
+    };
+
+    let substitutions: GenericSubstitutionMap = generic_params
+        .into_iter()
+        .map(|gp| gp.identifier.name)
+        .zip(
+            type_args
+                .into_iter()
+                .map(|ta| ta.1)
+                .chain(iter::repeat(CheckedType::Unknown)),
+        )
+        .collect();
+
+    substitutions
+}
+
 pub fn check_generic_apply_expr(
     left: Box<Expr>,
     args: Vec<TypeAnnotation>,
@@ -35,63 +82,18 @@ pub fn check_generic_apply_expr(
         .map(|type_arg| (type_arg.span, check_type(&type_arg, errors, scope.clone())))
         .collect();
 
-    let mut get_substitutions = |generic_params: &Vec<CheckedGenericParam>,
-                                 type_args: Vec<(Span, CheckedType)>|
-     -> GenericSubstitutionMap {
-        if generic_params.len() != type_args.len() {
-            errors.push(SemanticError {
-                kind: SemanticErrorKind::GenericArgumentCountMismatch {
-                    expected: generic_params.len(),
-                    received: type_args.len(),
-                },
-                span,
-            });
-        } else {
-            generic_params
-                .iter()
-                .zip(type_args.iter())
-                .for_each(|(gp, ta)| {
-                    if let Some(constraint) = &gp.constraint {
-                        if !check_is_assignable(&ta.1, constraint) {
-                            errors.push(SemanticError {
-                                kind: SemanticErrorKind::TypeMismatch {
-                                    expected: *constraint.clone(),
-                                    received: ta.1.clone(),
-                                },
-                                span: ta.0,
-                            });
-                        }
-                    }
-                });
-        };
-
-        let substitutions: GenericSubstitutionMap = generic_params
-            .into_iter()
-            .map(|gp| gp.identifier.name)
-            .zip(
-                type_args
-                    .into_iter()
-                    .map(|ta| ta.1)
-                    .chain(iter::repeat(CheckedType::Unknown)),
-            )
-            .collect();
-
-        substitutions
-    };
-
     let (type_kind, substitutions) = match &checked_left.ty {
         t @ CheckedType::FnType { generic_params, .. } => {
-            let substitutions = get_substitutions(generic_params, type_args);
+            let substitutions = build_substitutions(generic_params, type_args, span, errors);
+            let substituted = substitute_generics(&t, &substitutions, errors);
 
-            let result = substitute_generics(&t, &substitutions, errors);
-
-            (result, substitutions)
+            (substituted, substitutions)
         }
         t @ CheckedType::StructDecl(CheckedStructDecl { generic_params, .. }) => {
-            let substitutions = get_substitutions(generic_params, type_args);
-            let result = substitute_generics(&t, &substitutions, errors);
+            let substitutions = build_substitutions(generic_params, type_args, span, errors);
+            let substituted = substitute_generics(&t, &substitutions, errors);
 
-            (result, substitutions)
+            (substituted, substitutions)
         }
         _ => {
             errors.push(SemanticError {
