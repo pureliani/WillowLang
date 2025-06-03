@@ -7,6 +7,7 @@ pub mod file_source_cache;
 pub mod string_interner;
 
 use crate::{
+    ast::checked::checked_type::CheckedType,
     check::{
         check_stmts::check_stmts,
         scope::{Scope, ScopeKind},
@@ -264,379 +265,405 @@ pub fn compile_file<'a, 'b>(
 
         let report = match &e.kind {
             SemanticErrorKind::ExpectedANumericOperand => report_builder
-                                        .with_message("Expected a numeric operand")
-                                        .with_label(
-                                            Label::new(error_span)
-                                                .with_message("Expected this value to have a numeric type")
-                                                .with_color(Color::Red),
-                                        )
-                                        .finish(),
+                                                .with_message("Expected a numeric operand")
+                                                .with_label(
+                                                    Label::new(error_span)
+                                                        .with_message("Expected this value to have a numeric type")
+                                                        .with_color(Color::Red),
+                                                )
+                                                .finish(),
             SemanticErrorKind::MixedSignedAndUnsigned => report_builder
-                                        .with_message("Mixed signed and unsigned operands")
-                                        .with_label(
-                                            Label::new(error_span)
-                                                .with_message(
-                                                    "Mixing signed and unsigned operands in an arithmetic operation is not allowed",
+                                                .with_message("Mixed signed and unsigned operands")
+                                                .with_label(
+                                                    Label::new(error_span)
+                                                        .with_message(
+                                                            "Mixing signed and unsigned operands in an arithmetic operation is not allowed",
+                                                        )
+                                                        .with_color(Color::Red),
                                                 )
-                                                .with_color(Color::Red),
-                                        )
-                                        .finish(),
+                                                .finish(),
             SemanticErrorKind::MixedFloatAndInteger => {
-                                        report_builder
-                                        .with_message("Mixed float and integer operands")
-                                        .with_label(
-                                            Label::new(error_span)
-                                                .with_message(
-                                                    "Mixing integer and floating-point numbers in an arithmetic operation is not allowed",
+                                                report_builder
+                                                .with_message("Mixed float and integer operands")
+                                                .with_label(
+                                                    Label::new(error_span)
+                                                        .with_message(
+                                                            "Mixing integer and floating-point numbers in an arithmetic operation is not allowed",
+                                                        )
+                                                        .with_color(Color::Red),
                                                 )
-                                                .with_color(Color::Red),
-                                        )
-                                        .finish()
-                                    }
+                                                .finish()
+                                            }
             SemanticErrorKind::CannotCompareType { of, to } => {
-                                        report_builder
-                                        .with_message("Cannot compare types")
-                                        .with_label(
-                                            Label::new(error_span)
-                                                .with_message(
-                                                    format!("Cannot compare type \"{}\" to type \"{}\"", 
-                                                      type_to_string(of, string_interner),
-                                                      type_to_string(to, string_interner)
-                                                    ),
+                                                report_builder
+                                                .with_message("Cannot compare types")
+                                                .with_label(
+                                                    Label::new(error_span)
+                                                        .with_message(
+                                                            format!("Cannot compare type \"{}\" to type \"{}\"", 
+                                                              type_to_string(of, string_interner),
+                                                              type_to_string(to, string_interner)
+                                                            ),
+                                                        )
+                                                        .with_color(Color::Red),
                                                 )
-                                                .with_color(Color::Red),
-                                        )
-                                        .finish()
-                                    }
+                                                .finish()
+                                            }
             SemanticErrorKind::UndeclaredIdentifier(id) => {
-                                        let name = string_interner.resolve(id.name).unwrap();
+                                                let name = string_interner.resolve(id.name).unwrap();
 
-                                        report_builder
-                                        .with_message("Undeclared identifier")
-                                        .with_label(
-                                            Label::new(error_span)
-                                                .with_message(format!("Undeclared identifier \"{}\"", name))
-                                                .with_color(Color::Red),
-                                        )
-                                        .finish()
-                                    }
+                                                report_builder
+                                                .with_message("Undeclared identifier")
+                                                .with_label(
+                                                    Label::new(error_span)
+                                                        .with_message(format!("Undeclared identifier \"{}\"", name))
+                                                        .with_color(Color::Red),
+                                                )
+                                                .finish()
+                                            }
             SemanticErrorKind::UndeclaredType(id) => {
-                                        let name = string_interner.resolve(id.name).unwrap();
+                                                let name = string_interner.resolve(id.name).unwrap();
 
-                                        report_builder
-                                        .with_message("Undeclared type")
-                                        .with_label(
-                                            Label::new(error_span)
-                                                .with_message(format!("Undeclared type \"{}\"", name))
-                                                .with_color(Color::Red),
-                                        )
-                                        .finish()
-                                    }
+                                                report_builder
+                                                .with_message("Undeclared type")
+                                                .with_label(
+                                                    Label::new(error_span)
+                                                        .with_message(format!("Undeclared type \"{}\"", name))
+                                                        .with_color(Color::Red),
+                                                )
+                                                .finish()
+                                            }
             SemanticErrorKind::ReturnKeywordOutsideFunction => {
-                                        report_builder
-                                        .with_message("Keyword \"return\" used outside of a function scope")
-                                        .with_label(
-                                            Label::new(error_span)
-                                                .with_message("Cannot use the \"return\" keyword outside of a function scope")
-                                                .with_color(Color::Red),
-                                        )
-                                        .finish()
-                                    }
+                                                report_builder
+                                                .with_message("Keyword \"return\" used outside of a function scope")
+                                                .with_label(
+                                                    Label::new(error_span)
+                                                        .with_message("Cannot use the \"return\" keyword outside of a function scope")
+                                                        .with_color(Color::Red),
+                                                )
+                                                .finish()
+                                            }
             SemanticErrorKind::BreakKeywordOutsideLoop => {
-                                        report_builder
-                                        .with_message("Keyword \"break\" used outside of a loop scope")
-                                        .with_label(
-                                            Label::new(error_span)
-                                                .with_message("Cannot use the \"break\" keyword outside of a loop scope")
-                                                .with_color(Color::Red),
-                                        )
-                                        .finish()
-                                    }
+                                                report_builder
+                                                .with_message("Keyword \"break\" used outside of a loop scope")
+                                                .with_label(
+                                                    Label::new(error_span)
+                                                        .with_message("Cannot use the \"break\" keyword outside of a loop scope")
+                                                        .with_color(Color::Red),
+                                                )
+                                                .finish()
+                                            }
             SemanticErrorKind::ContinueKeywordOutsideLoop => {
-                                        report_builder
-                                        .with_message("Keyword \"continue\" used outside of a loop scope")
-                                        .with_label(
-                                            Label::new(error_span)
-                                                .with_message("Cannot use the \"continue\" keyword outside of a loop scope")
-                                                .with_color(Color::Red),
-                                        )
-                                        .finish()
-                                    }
+                                                report_builder
+                                                .with_message("Keyword \"continue\" used outside of a loop scope")
+                                                .with_label(
+                                                    Label::new(error_span)
+                                                        .with_message("Cannot use the \"continue\" keyword outside of a loop scope")
+                                                        .with_color(Color::Red),
+                                                )
+                                                .finish()
+                                            }
             SemanticErrorKind::InvalidAssignmentTarget => {
-                                        report_builder
-                                        .with_message("Invalid assignment target")
-                                        .with_label(
-                                            Label::new(error_span)
+                                                report_builder
                                                 .with_message("Invalid assignment target")
-                                                .with_color(Color::Red),
-                                        )
-                                        .finish()
-                                    }
+                                                .with_label(
+                                                    Label::new(error_span)
+                                                        .with_message("Invalid assignment target")
+                                                        .with_color(Color::Red),
+                                                )
+                                                .finish()
+                                            }
             SemanticErrorKind::TypeMismatch { expected, received } => {
-                                        report_builder
-                                        .with_message("Type mismatch")
-                                        .with_label(
-                                            Label::new(error_span)
-                                                .with_message(format!("Type mismatch, expected {} but instead found {}", 
-                                                  type_to_string(expected, string_interner),
-                                                  type_to_string(received, string_interner)
-                                                ))
-                                                .with_color(Color::Red),
-                                        )
-                                        .finish()
-                                    }
+                                                report_builder
+                                                .with_message("Type mismatch")
+                                                .with_label(
+                                                    Label::new(error_span)
+                                                        .with_message(format!("Type mismatch, expected {} but instead found {}", 
+                                                          type_to_string(expected, string_interner),
+                                                          type_to_string(received, string_interner)
+                                                        ))
+                                                        .with_color(Color::Red),
+                                                )
+                                                .finish()
+                                            }
             SemanticErrorKind::InvalidArraySizeValue(number_kind) => {
-                                        report_builder
-                                        .with_message("Invalid array size")
-                                        .with_label(
-                                            Label::new(error_span)
-                                                .with_message(format!("Invalid array size: {}", number_kind.to_string()))
-                                                .with_color(Color::Red),
-                                        )
-                                        .finish()
-                                    }
+                                                report_builder
+                                                .with_message("Invalid array size")
+                                                .with_label(
+                                                    Label::new(error_span)
+                                                        .with_message(format!("Invalid array size: {}", number_kind.to_string()))
+                                                        .with_color(Color::Red),
+                                                )
+                                                .finish()
+                                            }
             SemanticErrorKind::ReturnNotLastStatement => {
-                                        report_builder
-                                        .with_message("Expected the return statement to be the last statement in the function")
-                                        .with_label(
-                                            Label::new(error_span)
+                                                report_builder
                                                 .with_message("Expected the return statement to be the last statement in the function")
-                                                .with_color(Color::Red),
-                                        )
-                                        .finish()
-                                    }
+                                                .with_label(
+                                                    Label::new(error_span)
+                                                        .with_message("Expected the return statement to be the last statement in the function")
+                                                        .with_color(Color::Red),
+                                                )
+                                                .finish()
+                                            }
             SemanticErrorKind::ReturnTypeMismatch { expected, received } => {
-                                        report_builder
-                                        .with_message("Return type mismatch")
-                                        .with_label(
-                                            Label::new(error_span)
-                                                .with_message(format!("Expected the return value to be assignable to {}, found {}",
-                                                  type_to_string(expected, string_interner),
-                                                  type_to_string(received, string_interner)
-                                                ))
-                                                .with_color(Color::Red),
-                                        )
-                                        .finish()
-                                    }
+                                                report_builder
+                                                .with_message("Return type mismatch")
+                                                .with_label(
+                                                    Label::new(error_span)
+                                                        .with_message(format!("Expected the return value to be assignable to {}, found {}",
+                                                          type_to_string(expected, string_interner),
+                                                          type_to_string(received, string_interner)
+                                                        ))
+                                                        .with_color(Color::Red),
+                                                )
+                                                .finish()
+                                            }
             SemanticErrorKind::CannotAccess(checked_type) => {
-                                        report_builder
-                                        .with_message("Cannot access property")
-                                        .with_label(
-                                            Label::new(error_span)
-                                                .with_message(format!("Cannot use the access operator on the type \"{}\"", type_to_string(checked_type, string_interner)))
-                                                .with_color(Color::Red),
-                                        )
-                                        .finish()
-                                    }
+                                                report_builder
+                                                .with_message("Cannot access property")
+                                                .with_label(
+                                                    Label::new(error_span)
+                                                        .with_message(format!("Cannot use the access operator on the type \"{}\"", type_to_string(checked_type, string_interner)))
+                                                        .with_color(Color::Red),
+                                                )
+                                                .finish()
+                                            }
             SemanticErrorKind::CannotCall(checked_type) => {
-                                        report_builder
-                                        .with_message("Cannot call")
-                                        .with_label(
-                                            Label::new(error_span)
-                                                .with_message(format!("Cannot use the call operator on the type \"{}\"", type_to_string(checked_type, string_interner)))
-                                                .with_color(Color::Red),
-                                        )
-                                        .finish()
-                                    }
+                                                report_builder
+                                                .with_message("Cannot call")
+                                                .with_label(
+                                                    Label::new(error_span)
+                                                        .with_message(format!("Cannot use the call operator on the type \"{}\"", type_to_string(checked_type, string_interner)))
+                                                        .with_color(Color::Red),
+                                                )
+                                                .finish()
+                                            }
             SemanticErrorKind::FnArgumentCountMismatch { expected, received } => {
-                                        report_builder
-                                        .with_message("Function argument count mismatch")
-                                        .with_label(
-                                            Label::new(error_span)
-                                                .with_message(format!("This function expects {} arguments, but instead received {}", expected.to_string(), received.to_string()))
-                                                .with_color(Color::Red),
-                                        )
-                                        .finish()
-                                    }
+                                                report_builder
+                                                .with_message("Function argument count mismatch")
+                                                .with_label(
+                                                    Label::new(error_span)
+                                                        .with_message(format!("This function expects {} arguments, but instead received {}", expected.to_string(), received.to_string()))
+                                                        .with_color(Color::Red),
+                                                )
+                                                .finish()
+                                            }
             SemanticErrorKind::GenericArgumentCountMismatch { expected, received } => {
-                                        report_builder
-                                        .with_message("Generic argument count mismatch")
-                                        .with_label(
-                                            Label::new(error_span)
-                                                .with_message(format!("Expected {} type arguments, but instead received {}", expected.to_string(), received.to_string()))
-                                                .with_color(Color::Red),
-                                        )
-                                        .finish()
-                                    }
+                                                report_builder
+                                                .with_message("Generic argument count mismatch")
+                                                .with_label(
+                                                    Label::new(error_span)
+                                                        .with_message(format!("Expected {} type arguments, but instead received {}", expected.to_string(), received.to_string()))
+                                                        .with_color(Color::Red),
+                                                )
+                                                .finish()
+                                            }
             SemanticErrorKind::CannotUseGenericParameterAsValue => {
-                                        report_builder
-                                        .with_message("Cannot use generic parameters as values")
-                                        .with_label(
-                                            Label::new(error_span)
-                                                .with_message("Cannot use generic parameters where an expression is expected")
-                                                .with_color(Color::Red),
-                                        )
-                                        .finish()
-                                    }
+                                                report_builder
+                                                .with_message("Cannot use generic parameters as values")
+                                                .with_label(
+                                                    Label::new(error_span)
+                                                        .with_message("Cannot use generic parameters where an expression is expected")
+                                                        .with_color(Color::Red),
+                                                )
+                                                .finish()
+                                            }
             SemanticErrorKind::CannotUseVariableDeclarationAsType => {
-                                        report_builder
-                                        .with_message("Cannot use variable declaration as a type")
-                                        .with_label(
-                                            Label::new(error_span)
+                                                report_builder
                                                 .with_message("Cannot use variable declaration as a type")
-                                                .with_color(Color::Red),
-                                        )
-                                        .finish()
-                                    }
+                                                .with_label(
+                                                    Label::new(error_span)
+                                                        .with_message("Cannot use variable declaration as a type")
+                                                        .with_color(Color::Red),
+                                                )
+                                                .finish()
+                                            }
             SemanticErrorKind::AccessToUndefinedProperty(id) => {
-                                        let name = string_interner.resolve(id.name).unwrap();
-                                        report_builder
-                                        .with_message("Access to an undefined property")
-                                        .with_label(
-                                            Label::new(error_span)
-                                                .with_message(format!("Property {} is not defined", name))
-                                                .with_color(Color::Red),
-                                        )
-                                        .finish()
-                                    }
+                                                let name = string_interner.resolve(id.name).unwrap();
+                                                report_builder
+                                                .with_message("Access to an undefined property")
+                                                .with_label(
+                                                    Label::new(error_span)
+                                                        .with_message(format!("Property {} is not defined", name))
+                                                        .with_color(Color::Red),
+                                                )
+                                                .finish()
+                                            }
             SemanticErrorKind::UnresolvedGenericParam(gp) => {
-                                        let name = string_interner.resolve(gp.name).unwrap();
-                                        report_builder
-                                        .with_message("Unresolved generic parameter")
-                                        .with_label(
-                                            Label::new(error_span)
-                                                .with_message(format!("Could not resolve generic parameter with name \"{}\"", name))
-                                                .with_color(Color::Red),
-                                        )
-                                        .finish()
-                                    }
+                                                let name = string_interner.resolve(gp.name).unwrap();
+                                                report_builder
+                                                .with_message("Unresolved generic parameter")
+                                                .with_label(
+                                                    Label::new(error_span)
+                                                        .with_message(format!("Could not resolve generic parameter with name \"{}\"", name))
+                                                        .with_color(Color::Red),
+                                                )
+                                                .finish()
+                                            }
             SemanticErrorKind::CannotUseIsTypeOnNonUnion => {
-                                        report_builder
-                                        .with_message("Cannot use the \"::is(T)\" method on a non-union type")
-                                        .with_label(
-                                            Label::new(error_span)
+                                                report_builder
                                                 .with_message("Cannot use the \"::is(T)\" method on a non-union type")
-                                                .with_color(Color::Red),
-                                        )
-                                        .finish()
-                                    }
+                                                .with_label(
+                                                    Label::new(error_span)
+                                                        .with_message("Cannot use the \"::is(T)\" method on a non-union type")
+                                                        .with_color(Color::Red),
+                                                )
+                                                .finish()
+                                            }
             SemanticErrorKind::ConflictingGenericBinding { identifier, existing, new } => {
-                                        let name = string_interner.resolve(identifier.name).unwrap();
+                                                let name = string_interner.resolve(identifier.name).unwrap();
 
-                                        report_builder
-                                        .with_message("Conflicting generic binding")
-                                        .with_label(
-                                            Label::new(error_span)
-                                                .with_message(format!("Generic parameter identifier {} is already bound to type {}, cannot re-bind it to {}", 
-                                                  name,
-                                                  type_to_string(existing, string_interner),
-                                                  type_to_string(new, string_interner)
-                                                ))
-                                                .with_color(Color::Red),
-                                        )
-                                        .finish()
-                                    }
+                                                report_builder
+                                                .with_message("Conflicting generic binding")
+                                                .with_label(
+                                                    Label::new(error_span)
+                                                        .with_message(format!("Generic parameter identifier {} is already bound to type {}, cannot re-bind it to {}", 
+                                                          name,
+                                                          type_to_string(existing, string_interner),
+                                                          type_to_string(new, string_interner)
+                                                        ))
+                                                        .with_color(Color::Red),
+                                                )
+                                                .finish()
+                                            }
             SemanticErrorKind::TypeAliasMustBeDeclaredAtTopLevel => {
-                                        report_builder
-                                        .with_message("Type aliases must be declared in the file scope")
-                                        .with_label(
-                                            Label::new(error_span)
+                                                report_builder
                                                 .with_message("Type aliases must be declared in the file scope")
-                                                .with_color(Color::Red),
-                                        )
-                                        .finish()
-                                    }
+                                                .with_label(
+                                                    Label::new(error_span)
+                                                        .with_message("Type aliases must be declared in the file scope")
+                                                        .with_color(Color::Red),
+                                                )
+                                                .finish()
+                                            }
             SemanticErrorKind::StructMustBeDeclaredAtTopLevel => {
-                                       report_builder
-                                        .with_message("Structs must be declared in the file scope")
-                                        .with_label(
-                                            Label::new(error_span)
+                                               report_builder
                                                 .with_message("Structs must be declared in the file scope")
-                                                .with_color(Color::Red),
-                                        )
-                                        .finish()
-                                    }
+                                                .with_label(
+                                                    Label::new(error_span)
+                                                        .with_message("Structs must be declared in the file scope")
+                                                        .with_color(Color::Red),
+                                                )
+                                                .finish()
+                                            }
             SemanticErrorKind::CannotApplyTypeArguments { to } => {
-                                        report_builder
-                                        .with_message("Cannot apply type arguments")
-                                        .with_label(
-                                            Label::new(error_span)
-                                                .with_message(format!("Cannot apply type arguments to non-generic type {}", type_to_string(to, string_interner)))
-                                                .with_color(Color::Red),
-                                        )
-                                        .finish()
-                                    }
+                                                report_builder
+                                                .with_message("Cannot apply type arguments")
+                                                .with_label(
+                                                    Label::new(error_span)
+                                                        .with_message(format!("Cannot apply type arguments to non-generic type {}", type_to_string(to, string_interner)))
+                                                        .with_color(Color::Red),
+                                                )
+                                                .finish()
+                                            }
             SemanticErrorKind::DuplicateStructPropertyInitializer(id)=> {
-                                        let name = string_interner.resolve(id.name).unwrap();
-                                        report_builder
-                                        .with_message("Duplicate initializer for a struct property")
-                                        .with_label(
-                                            Label::new(error_span)
-                                                .with_message(format!("Struct property \"{}\" cannot be initialized multiple times", name))
-                                                .with_color(Color::Red),
-                                        )
-                                        .finish()
-                                    },
+                                                let name = string_interner.resolve(id.name).unwrap();
+                                                report_builder
+                                                .with_message("Duplicate initializer for a struct property")
+                                                .with_label(
+                                                    Label::new(error_span)
+                                                        .with_message(format!("Struct property \"{}\" cannot be initialized multiple times", name))
+                                                        .with_color(Color::Red),
+                                                )
+                                                .finish()
+                                            },
             SemanticErrorKind::UnknownStructPropertyInitializer(id) => {
-                                        let name = string_interner.resolve(id.name).unwrap();
-                                        report_builder
-                                        .with_message("Unknown property in the struct initializer")
-                                        .with_label(
-                                            Label::new(error_span)
-                                                .with_message(format!("Unknown struct property \"{}\"", name))
-                                                .with_color(Color::Red),
-                                        )
-                                        .finish()
-                                    },
+                                                let name = string_interner.resolve(id.name).unwrap();
+                                                report_builder
+                                                .with_message("Unknown property in the struct initializer")
+                                                .with_label(
+                                                    Label::new(error_span)
+                                                        .with_message(format!("Unknown struct property \"{}\"", name))
+                                                        .with_color(Color::Red),
+                                                )
+                                                .finish()
+                                            },
             SemanticErrorKind::MissingStructPropertyInitializer(missing_fields) => {
-                                        let field_names: Vec<&'a str> = missing_fields.into_iter().map(|f| {
-                                            string_interner.resolve(*f).unwrap()
-                                        }).collect();
-                                        let joined = field_names.iter().map(|n| format!("\"{}\"", n) ).collect::<Vec<String>>().join(", ");
-                                        report_builder
-                                        .with_message("Missing property initializers")
-                                        .with_label(
-                                            Label::new(error_span)
-                                                .with_message(format!("Missing initializers for the following struct properties {}", joined))
-                                                .with_color(Color::Red),
-                                        )
-                                        .finish()
-                                    },
+                                                let field_names: Vec<&'a str> = missing_fields.into_iter().map(|f| {
+                                                    string_interner.resolve(*f).unwrap()
+                                                }).collect();
+                                                let joined = field_names.iter().map(|n| format!("\"{}\"", n) ).collect::<Vec<String>>().join(", ");
+                                                report_builder
+                                                .with_message("Missing property initializers")
+                                                .with_label(
+                                                    Label::new(error_span)
+                                                        .with_message(format!("Missing initializers for the following struct properties {}", joined))
+                                                        .with_color(Color::Red),
+                                                )
+                                                .finish()
+                                            },
             SemanticErrorKind::CannotApplyStructInitializer => {
-                                        report_builder
-                                        .with_message("Cannot apply struct initializer")
-                                        .with_label(
-                                            Label::new(error_span)
-                                                .with_message("Cannot apply struct initializer to this expression")
-                                                .with_color(Color::Red),
-                                        )
-                                        .finish()
-                                    },
+                                                report_builder
+                                                .with_message("Cannot apply struct initializer")
+                                                .with_label(
+                                                    Label::new(error_span)
+                                                        .with_message("Cannot apply struct initializer to this expression")
+                                                        .with_color(Color::Red),
+                                                )
+                                                .finish()
+                                            },
             SemanticErrorKind::VarDeclWithoutInitializer => {
-                                        report_builder
-                                        .with_message("Variable declarations must have an initializer")
-                                        .with_label(
-                                            Label::new(error_span)
-                                                .with_message("This variable declaration must have an initializer")
-                                                .with_color(Color::Red),
-                                        )
-                                        .finish()
-                                    },
+                                                report_builder
+                                                .with_message("Variable declarations must have an initializer")
+                                                .with_label(
+                                                    Label::new(error_span)
+                                                        .with_message("This variable declaration must have an initializer")
+                                                        .with_color(Color::Red),
+                                                )
+                                                .finish()
+                                            },
             SemanticErrorKind::CouldNotSubstituteGenericParam { generic_param, with_type } => {
-                                        let gp_name = string_interner.resolve(generic_param.identifier.name).unwrap();
+                                                let gp_name = string_interner.resolve(generic_param.identifier.name).unwrap();
 
-                                        let gp_string = match &generic_param.constraint {
-                                                Some(c) => {
-                                                    format!("{}: {}", gp_name, type_to_string(c, string_interner))
-                                                },
-                                                None => {
-                                                    format!("{}",gp_name)
-                                                }
-                                            };
+                                                let gp_string = match &generic_param.constraint {
+                                                        Some(c) => {
+                                                            format!("{}: {}", gp_name, type_to_string(c, string_interner))
+                                                        },
+                                                        None => {
+                                                            format!("{}",gp_name)
+                                                        }
+                                                    };
 
-                                        report_builder
-                                        .with_message("Could not substitute generic param")
-                                        .with_label(
-                                            Label::new(error_span)
-                                                .with_message(format!("Could not substitute generic param \"{}\" with type \"{}\"", 
-                                                gp_string,
-                                                type_to_string(with_type, string_interner)
-                                            ))
-                                                .with_color(Color::Red),
-                                        )
-                                        .finish()
-                                    },
-                                };
+                                                report_builder
+                                                .with_message("Could not substitute generic param")
+                                                .with_label(
+                                                    Label::new(error_span)
+                                                        .with_message(format!("Could not substitute generic param \"{}\" with type \"{}\"", 
+                                                        gp_string,
+                                                        type_to_string(with_type, string_interner)
+                                                    ))
+                                                        .with_color(Color::Red),
+                                                )
+                                                .finish()
+                                            },
+            SemanticErrorKind::AmbiguousGenericInferenceForUnion { received, expected } =>  {
+                                                 report_builder
+                                                .with_message("Ambiguous generic inference for union")
+                                                .with_label(
+                                                    Label::new(error_span)
+                                                        .with_message(format!("There are multiple ways to infer generic parameters in \"{}\" from \"{}\"", 
+                                                            type_to_string(&CheckedType::Union(expected.clone()), string_interner),
+                                                            type_to_string(received, string_interner)
+                                                    ))
+                                                        .with_color(Color::Red),
+                                                )
+                                                .finish()
+                                            },
+            SemanticErrorKind::FailedToInferGenericsInUnion { expected_union, received } =>  {
+                                                 report_builder
+                                                .with_message("Failed to infer generic parameters in union")
+                                                .with_label(
+                                                    Label::new(error_span)
+                                                        .with_message(format!("Failed to infer generic parameters in \"{}\" from {}", 
+                                                        type_to_string(&CheckedType::Union(expected_union.clone()), string_interner),
+                                                        type_to_string(received, string_interner)
+                                                    ))
+                                                        .with_color(Color::Red),
+                                                )
+                                                .finish()
+                                            },
+                                        };
 
         reports.push(report);
     });

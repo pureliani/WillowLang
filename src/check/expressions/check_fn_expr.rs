@@ -38,6 +38,8 @@ pub fn check_fn_expr(
 ) -> CheckedExpr {
     let fn_scope = scope.borrow().child(ScopeKind::Function);
 
+    let checked_generic_params = check_generic_params(&generic_params, errors, fn_scope.clone());
+
     let checked_params: Vec<CheckedParam> = params
         .iter()
         .map(|param| {
@@ -59,7 +61,6 @@ pub fn check_fn_expr(
             }
         })
         .collect();
-    let checked_generic_params = check_generic_params(&generic_params, errors, fn_scope.clone());
 
     let checked_statements = check_stmts(body.statements, errors, fn_scope.clone());
     let checked_final_expr = body

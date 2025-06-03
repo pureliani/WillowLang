@@ -18,6 +18,14 @@ pub mod utils;
 
 #[derive(Debug, Clone)]
 pub enum SemanticErrorKind {
+    AmbiguousGenericInferenceForUnion {
+        expected: HashSet<CheckedType>,
+        received: CheckedType,
+    },
+    FailedToInferGenericsInUnion {
+        expected_union: HashSet<CheckedType>,
+        received: CheckedType,
+    },
     CouldNotSubstituteGenericParam {
         generic_param: CheckedGenericParam,
         with_type: CheckedType,
@@ -113,6 +121,8 @@ impl SemanticErrorKind {
             SemanticErrorKind::MissingStructPropertyInitializer { .. } => 31,
             SemanticErrorKind::CannotApplyStructInitializer => 32,
             SemanticErrorKind::CouldNotSubstituteGenericParam { .. } => 33,
+            SemanticErrorKind::AmbiguousGenericInferenceForUnion { .. } => 34,
+            SemanticErrorKind::FailedToInferGenericsInUnion { .. } => 35,
         }
     }
 }

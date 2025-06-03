@@ -139,11 +139,6 @@ impl Hash for CheckedType {
             }
             CheckedType::TypeAliasDecl(ta) => ta.hash(state),
             CheckedType::Union(items) => {
-                // For order-insensitive hashing of unions:
-                // 1. Hash the length.
-                // 2. Hash each item's hash XORed together (or summed, but XOR is common).
-                //    This makes the order not matter.
-                // A more robust way is to sort a temporary list of hashes.
                 state.write_usize(items.len());
                 if !items.is_empty() {
                     let mut item_hashes: Vec<u64> = items
@@ -154,7 +149,7 @@ impl Hash for CheckedType {
                             item_hasher.finish()
                         })
                         .collect();
-                    item_hashes.sort_unstable(); // Sort hashes for canonical order
+                    item_hashes.sort_unstable();
                     for h in item_hashes {
                         h.hash(state);
                     }
