@@ -1,6 +1,5 @@
-let foo = <T, U>(arg1: T, arg2: U): T => {
-    let x: U | T = true;
+let foo = <T, U>(arg1: T | U): T => {
     arg1
 };
 
-foo(5i32, 2);
+foo(1);

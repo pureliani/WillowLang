@@ -106,7 +106,7 @@ pub fn infer_generics(
             if successful_substitutions.is_empty() {
                 errors.push(SemanticError {
                     kind: SemanticErrorKind::FailedToInferGenericsInUnion {
-                        expected_union: expected_union.iter().cloned().collect(),
+                        expected_union: expected_union.clone(),
                         received: received.clone(),
                     },
                     // TODO: fix this once we have the checked type's span
