@@ -1,5 +1,6 @@
 use crate::{
     ast::{IdentifierNode, Span, StringNode},
+    check::utils::substitute_generics::GenericSubstitutionMap,
     tokenize::NumberKind,
 };
 
@@ -127,6 +128,10 @@ pub enum CheckedExprKind {
     },
     ArrayLiteral {
         items: Vec<CheckedExpr>,
+    },
+    TypeSpecialization {
+        target: Box<CheckedExpr>,
+        substitutions: GenericSubstitutionMap,
     },
     Block(CheckedBlockContents),
 }

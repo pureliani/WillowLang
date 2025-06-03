@@ -39,7 +39,31 @@ pub fn check_is_assignable(source_type: &CheckedType, target_type: &CheckedType)
                 }
             }
         }
-        (StructDecl(source), StructDecl(target)) => source == target,
+        (source, GenericParam(target)) => match (&source, &target.constraint) {
+            (_, None) => true,
+            (source, Some(right_constraint)) => check_is_assignable(source, right_constraint),
+        },
+        (StructDecl(source), StructDecl(target)) => {
+            if source.properties.len() != target.properties.len() {
+                return false;
+            }
+
+            let same_name = source.identifier.name == target.identifier.name;
+
+            let assignable_props =
+                source
+                    .properties
+                    .iter()
+                    .zip(target.properties.iter())
+                    .all(|(sp, tp)| {
+                        let same_name = sp.identifier.name == tp.identifier.name;
+                        let assignable = check_is_assignable(&sp.constraint, &tp.constraint);
+
+                        same_name && assignable
+                    });
+
+            same_name && assignable_props
+        }
         (EnumDecl(source), EnumDecl(target)) => source == target,
         (
             Array {

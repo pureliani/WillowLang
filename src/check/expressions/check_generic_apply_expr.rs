@@ -5,7 +5,7 @@ use crate::{
         base::{base_expression::Expr, base_type::TypeAnnotation},
         checked::{
             checked_declaration::{CheckedGenericParam, CheckedStructDecl},
-            checked_expression::CheckedExpr,
+            checked_expression::{CheckedExpr, CheckedExprKind},
             checked_type::CheckedType,
         },
         Span,
@@ -110,6 +110,9 @@ pub fn check_generic_apply_expr(
     CheckedExpr {
         span,
         ty: type_kind,
-        kind: todo!(),
+        kind: CheckedExprKind::TypeSpecialization {
+            target: Box::new(checked_left),
+            substitutions,
+        },
     }
 }
