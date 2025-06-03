@@ -20,11 +20,11 @@ use crate::{
 };
 
 pub fn check_type(
-    arg: &TypeAnnotation,
+    annotation: &TypeAnnotation,
     errors: &mut Vec<SemanticError>,
     scope: Rc<RefCell<Scope>>,
 ) -> CheckedType {
-    match &arg.kind {
+    match &annotation.kind {
         TypeAnnotationKind::Void => CheckedType::Void,
         TypeAnnotationKind::Null => CheckedType::Null,
         TypeAnnotationKind::Bool => CheckedType::Bool,
@@ -53,7 +53,7 @@ pub fn check_type(
                 | t @ CheckedType::StructDecl(CheckedStructDecl { generic_params, .. })
                 | t @ CheckedType::TypeAliasDecl(CheckedTypeAliasDecl { generic_params, .. }) => {
                     let substitutions =
-                        build_substitutions(generic_params, checked_args, arg.span, errors);
+                        build_substitutions(generic_params, checked_args, annotation.span, errors);
                     let substituted = substitute_generics(t, &substitutions, errors);
 
                     substituted
@@ -83,7 +83,7 @@ pub fn check_type(
                 SymbolEntry::VarDecl(_) => {
                     errors.push(SemanticError {
                         kind: SemanticErrorKind::CannotUseVariableDeclarationAsType,
-                        span: arg.span,
+                        span: annotation.span,
                     });
                     CheckedType::Unknown
                 }
@@ -91,7 +91,7 @@ pub fn check_type(
             .unwrap_or_else(|| {
                 errors.push(SemanticError {
                     kind: SemanticErrorKind::UndeclaredType(*id),
-                    span: arg.span,
+                    span: annotation.span,
                 });
                 CheckedType::Unknown
             }),
@@ -157,7 +157,7 @@ pub fn check_type(
                 None => {
                     errors.push(SemanticError {
                         kind: SemanticErrorKind::InvalidArraySizeValue(*size),
-                        span: arg.span,
+                        span: annotation.span,
                     });
                     let _ = check_type(&left, errors, scope.clone()); // Process for errors, ignore result
                     CheckedType::Unknown

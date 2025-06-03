@@ -5,7 +5,7 @@ use crate::{
         checked_declaration::{CheckedParam, CheckedStructDecl, CheckedTypeAliasDecl},
         checked_type::CheckedType,
     },
-    check::{SemanticError, SemanticErrorKind},
+    check::{utils::check_is_assignable::check_is_assignable, SemanticError, SemanticErrorKind},
     compile::string_interner::InternerId,
 };
 
@@ -18,18 +18,35 @@ pub fn substitute_generics(
     substitutions: &GenericSubstitutionMap,
     errors: &mut Vec<SemanticError>,
 ) -> CheckedType {
-    match &ty {
-        CheckedType::GenericParam(gp) => substitutions
-            .get(&gp.identifier.name)
-            .cloned()
-            .unwrap_or_else(|| {
-                errors.push(SemanticError {
-                    kind: SemanticErrorKind::UnresolvedGenericParam(gp.identifier),
-                    span: gp.identifier.span,
+    match ty {
+        CheckedType::GenericParam(gp) => {
+            let to_substitute = substitutions
+                .get(&gp.identifier.name)
+                .cloned()
+                .unwrap_or_else(|| {
+                    errors.push(SemanticError {
+                        kind: SemanticErrorKind::UnresolvedGenericParam(gp.identifier),
+                        span: gp.identifier.span,
+                    });
+
+                    CheckedType::Unknown
                 });
 
-                CheckedType::Unknown
-            }),
+            match &gp.constraint {
+                Some(c) if !check_is_assignable(&to_substitute, c) => {
+                    errors.push(SemanticError {
+                        kind: SemanticErrorKind::CouldNotSubstituteGenericParam {
+                            generic_param: gp.clone(),
+                            with_type: to_substitute,
+                        },
+                        span: gp.identifier.span,
+                    });
+
+                    *c.clone()
+                }
+                _ => to_substitute,
+            }
+        }
         CheckedType::FnType {
             params,
             return_type,

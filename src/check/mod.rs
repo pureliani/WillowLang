@@ -1,7 +1,10 @@
 use std::collections::HashSet;
 
 use crate::{
-    ast::{checked::checked_type::CheckedType, IdentifierNode, Span},
+    ast::{
+        checked::{checked_declaration::CheckedGenericParam, checked_type::CheckedType},
+        IdentifierNode, Span,
+    },
     compile::string_interner::InternerId,
     tokenize::NumberKind,
 };
@@ -15,6 +18,10 @@ pub mod utils;
 
 #[derive(Debug, Clone)]
 pub enum SemanticErrorKind {
+    CouldNotSubstituteGenericParam {
+        generic_param: CheckedGenericParam,
+        with_type: CheckedType,
+    },
     VarDeclWithoutInitializer,
     DuplicateStructPropertyInitializer(IdentifierNode),
     UnknownStructPropertyInitializer(IdentifierNode),
@@ -105,6 +112,7 @@ impl SemanticErrorKind {
             SemanticErrorKind::UnknownStructPropertyInitializer { .. } => 30,
             SemanticErrorKind::MissingStructPropertyInitializer { .. } => 31,
             SemanticErrorKind::CannotApplyStructInitializer => 32,
+            SemanticErrorKind::CouldNotSubstituteGenericParam { .. } => 33,
         }
     }
 }

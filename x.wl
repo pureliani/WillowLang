@@ -1,9 +1,9 @@
-struct User<T: bool> {
-    id: T,
-    isAdmin: bool
+struct User<T: bool | i32, Y: bool> {
+    a: T,
+    b: Y
 }
 
 let u = User {
-    id: 1,
-    isAdmin: true
+    a: 1i32,
+    b: 23
 };
