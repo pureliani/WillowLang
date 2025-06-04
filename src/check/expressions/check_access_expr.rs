@@ -10,17 +10,17 @@ use crate::{
         },
         IdentifierNode, Span,
     },
-    check::{check_expr::check_expr, scope::Scope, SemanticError, SemanticErrorKind},
+    check::{scope::Scope, SemanticChecker, SemanticError, SemanticErrorKind},
 };
 
+impl<'a> SemanticChecker<'a> {}
 pub fn check_access_expr(
     left: Box<Expr>,
     field: IdentifierNode,
     span: Span,
-    errors: &mut Vec<SemanticError>,
     scope: Rc<RefCell<Scope>>,
 ) -> CheckedExpr {
-    let checked_left = check_expr(*left, errors, scope);
+    let checked_left = check_expr(*left, errors, scope, span_registry);
 
     let expr_type = match &checked_left.ty {
         CheckedType::StructDecl(CheckedStructDecl { properties, .. }) => properties

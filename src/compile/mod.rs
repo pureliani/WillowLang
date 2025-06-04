@@ -4,6 +4,7 @@ use std::{cell::RefCell, rc::Rc, vec};
 use string_interner::StringInterner;
 
 pub mod file_source_cache;
+pub mod span_registry;
 pub mod string_interner;
 
 use crate::{
@@ -14,6 +15,7 @@ use crate::{
         utils::type_to_string::type_to_string,
         SemanticError, SemanticErrorKind,
     },
+    compile::span_registry::SpanRegistry,
     parse::{Parser, ParsingErrorKind},
     tokenize::{token_kind_to_string, TokenizationErrorKind, Tokenizer},
 };
@@ -25,13 +27,13 @@ pub fn compile_file<'a, 'b>(
     file_source_cache: &'b mut FileSourceCache,
 ) {
     file_source_cache.add(file_path.clone(), source_code.clone());
+    let mut span_registry = SpanRegistry::new();
 
     let mut reports: Vec<Report<'_, (String, std::ops::Range<usize>)>> = vec![];
     let (tokens, tokenization_errors) = Tokenizer::tokenize(source_code);
     let (ast, parsing_errors) = Parser::parse(tokens, string_interner);
-    let mut semantic_errors: Vec<SemanticError> = vec![];
-    let scope = Rc::new(RefCell::new(Scope::new(ScopeKind::File)));
-    let analyzed_tree = check_stmts(ast, &mut semantic_errors, scope);
+
+    let analyzed_tree = check_stmts(ast, &mut span_registry);
 
     let ariadne_config = Config::new().with_index_type(ariadne::IndexType::Byte);
 

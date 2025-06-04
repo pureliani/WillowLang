@@ -25,7 +25,9 @@ use crate::{
         },
         SemanticError, SemanticErrorKind,
     },
+    compile::SpanRegistry,
 };
+impl<'a> SemanticChecker<'a> {}
 
 pub fn check_fn_expr(
     params: Vec<Param>,
@@ -33,17 +35,20 @@ pub fn check_fn_expr(
     return_type: Option<TypeAnnotation>,
     generic_params: Vec<GenericParam>,
     expr_span: Span,
-    errors: &mut Vec<SemanticError>,
+
     scope: Rc<RefCell<Scope>>,
+    ,
 ) -> CheckedExpr {
     let fn_scope = scope.borrow().child(ScopeKind::Function);
 
-    let checked_generic_params = check_generic_params(&generic_params, errors, fn_scope.clone());
+    let checked_generic_params =
+        check_generic_params(&generic_params, errors, fn_scope.clone(), span_registry);
 
     let checked_params: Vec<CheckedParam> = params
         .iter()
         .map(|param| {
-            let checked_constraint = check_type(&param.constraint, errors, fn_scope.clone());
+            let checked_constraint =
+                check_type(&param.constraint, errors, fn_scope.clone(), span_registry);
 
             fn_scope.borrow_mut().insert(
                 param.identifier.name,
@@ -62,17 +67,22 @@ pub fn check_fn_expr(
         })
         .collect();
 
-    let checked_statements = check_stmts(body.statements, errors, fn_scope.clone());
+    let checked_statements = check_stmts(body.statements, errors, fn_scope.clone(), span_registry);
     let checked_final_expr = body
         .final_expr
-        .map(|fe| Box::new(check_expr(*fe, errors, fn_scope.clone())));
+        .map(|fe| Box::new(check_expr(*fe, errors, fn_scope.clone(), span_registry)));
 
     let checked_body = CheckedBlockContents {
         statements: checked_statements.clone(),
         final_expr: checked_final_expr.clone(),
     };
 
-    let mut return_exprs = check_returns(&checked_statements, errors, fn_scope.clone());
+    let mut return_exprs = check_returns(
+        &checked_statements,
+        errors,
+        fn_scope.clone(),
+        &span_registry,
+    );
     if let Some(final_expr) = checked_final_expr {
         return_exprs.push(*final_expr);
     }
@@ -88,13 +98,13 @@ pub fn check_fn_expr(
     let param_types: Vec<CheckedParam> = params
         .into_iter()
         .map(|p| CheckedParam {
-            constraint: check_type(&p.constraint, errors, fn_scope.clone()),
+            constraint: check_type(&p.constraint, errors, fn_scope.clone(), span_registry),
             identifier: p.identifier,
         })
         .collect();
 
     let expected_return_type =
-        return_type.map(|return_t| check_type(&return_t, errors, fn_scope.clone()));
+        return_type.map(|return_t| check_type(&return_t, errors, fn_scope.clone(), span_registry));
 
     let actual_return_type = if let Some(explicit_return_type) = expected_return_type {
         if !check_is_assignable(&inferred_return_type, &explicit_return_type) {

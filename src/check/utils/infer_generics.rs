@@ -9,7 +9,6 @@ pub fn infer_generics(
     expected: &CheckedType,
     received: &CheckedType,
     substitution: &mut GenericSubstitutionMap,
-    errors: &mut Vec<SemanticError>,
 ) {
     match (expected, received) {
         (CheckedType::GenericParam(expected_generic_param), received_kind) => {
@@ -22,7 +21,19 @@ pub fn infer_generics(
                             existing: existing.clone(),
                             new: received.clone(),
                         },
-                        span: expected_generic_param.identifier.span,
+                        // TODO: somehow use the span of the received type
+                        span: Span {
+                            start: Position {
+                                line: 0,
+                                col: 0,
+                                byte_offset: 0,
+                            },
+                            end: Position {
+                                line: 0,
+                                col: 0,
+                                byte_offset: 0,
+                            },
+                        },
                     });
                 }
             } else {

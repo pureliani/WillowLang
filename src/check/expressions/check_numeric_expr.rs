@@ -6,10 +6,16 @@ use crate::{
         },
         Span,
     },
+    compile::SpanRegistry,
     tokenize::NumberKind,
 };
+impl<'a> SemanticChecker<'a> {}
 
-pub fn check_numeric_expr(value: NumberKind, span: Span) -> CheckedExpr {
+pub fn check_numeric_expr(
+    value: NumberKind,
+    span: Span,
+    
+) -> CheckedExpr {
     let ty = match value {
         NumberKind::I64(_) => CheckedType::I64,
         NumberKind::I32(_) => CheckedType::I32,

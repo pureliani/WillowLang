@@ -6,12 +6,14 @@ use crate::{
         checked_statement::{CheckedStmt, CheckedStmtKind},
     },
     check::{scope::Scope, SemanticError, SemanticErrorKind},
+    compile::SpanRegistry,
 };
 
 pub fn check_returns(
     statements: &[CheckedStmt],
-    errors: &mut Vec<SemanticError>,
+
     scope: Rc<RefCell<Scope>>,
+    span_registry: &SpanRegistry,
 ) -> Vec<CheckedExpr> {
     let mut returns: Vec<CheckedExpr> = vec![];
 
@@ -29,7 +31,12 @@ pub fn check_returns(
                 returns.push(expr.clone());
             }
             CheckedStmtKind::While { body, .. } => {
-                returns.extend(check_returns(&body.statements, errors, scope.clone()));
+                returns.extend(check_returns(
+                    &body.statements,
+                    errors,
+                    scope.clone(),
+                    span_registry,
+                ));
             }
             CheckedStmtKind::Expression(expr) => {
                 if let CheckedExprKind::If {
@@ -43,20 +50,32 @@ pub fn check_returns(
                         &then_branch.statements,
                         errors,
                         scope.clone(),
+                        span_registry,
                     ));
 
                     for (_, block) in else_if_branches {
-                        returns.extend(check_returns(&block.statements, errors, scope.clone()));
+                        returns.extend(check_returns(
+                            &block.statements,
+                            errors,
+                            scope.clone(),
+                            span_registry,
+                        ));
                     }
                     if let Some(else_block) = else_branch {
                         returns.extend(check_returns(
                             &else_block.statements,
                             errors,
                             scope.clone(),
+                            span_registry,
                         ));
                     }
                 } else if let CheckedExprKind::Block(block) = &expr.kind {
-                    returns.extend(check_returns(&block.statements, errors, scope.clone()));
+                    returns.extend(check_returns(
+                        &block.statements,
+                        errors,
+                        scope.clone(),
+                        span_registry,
+                    ));
                     if let Some(final_expr) = &block.final_expr {
                         returns.push(*final_expr.clone());
                     }

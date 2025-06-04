@@ -13,15 +13,17 @@ use crate::{
         check_expr::check_expr, scope::Scope, utils::check_is_assignable::check_is_assignable,
         SemanticError, SemanticErrorKind,
     },
+    compile::SpanRegistry,
 };
+impl<'a> SemanticChecker<'a> {}
 
 pub fn check_logical_negation_expr(
     right: Box<Expr>,
     span: Span,
-    errors: &mut Vec<SemanticError>,
     scope: Rc<RefCell<Scope>>,
+    
 ) -> CheckedExpr {
-    let checked_right = check_expr(*right, errors, scope);
+    let checked_right = check_expr(*right, errors, scope, span_registry);
 
     let mut expr_type = CheckedType::Bool;
 

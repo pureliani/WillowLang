@@ -13,17 +13,18 @@ use crate::{
         check_expr::check_expr, scope::Scope, utils::type_annotation_to_semantic::check_type,
         SemanticError, SemanticErrorKind,
     },
+    compile::SpanRegistry,
 };
+impl<'a> SemanticChecker<'a> {}
 
 pub fn check_is_type_expr(
     left: Box<Expr>,
     target: TypeAnnotation,
     span: Span,
-    errors: &mut Vec<SemanticError>,
     scope: Rc<RefCell<Scope>>,
 ) -> CheckedExpr {
-    let checked_left = check_expr(*left, errors, scope.clone());
-    let checked_target = check_type(&target, errors, scope);
+    let checked_left = check_expr(*left, errors, scope.clone(), span_registry);
+    let checked_target = check_type(&target, errors, scope, span_registry);
 
     // TODO: do an actual check
     if !matches!(checked_left.ty, CheckedType::Union { .. }) {

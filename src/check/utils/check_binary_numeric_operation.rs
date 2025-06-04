@@ -11,11 +11,7 @@ use super::{
     is_signed::is_signed,
 };
 
-pub fn check_binary_numeric_operation(
-    left: &CheckedExpr,
-    right: &CheckedExpr,
-    errors: &mut Vec<SemanticError>,
-) -> CheckedType {
+pub fn check_binary_numeric_operation(left: &CheckedExpr, right: &CheckedExpr) -> CheckedType {
     let combined_span = Span {
         start: left.span.start,
         end: right.span.end,

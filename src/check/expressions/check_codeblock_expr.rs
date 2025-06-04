@@ -15,20 +15,25 @@ use crate::{
         scope::{Scope, ScopeKind},
         SemanticError,
     },
+    compile::SpanRegistry,
 };
+impl<'a> SemanticChecker<'a> {}
 
 pub fn check_codeblock_expr(
     block_contents: BlockContents,
     span: Span,
-    errors: &mut Vec<SemanticError>,
     scope: Rc<RefCell<Scope>>,
 ) -> CheckedExpr {
     let block_scope = scope.borrow().child(ScopeKind::CodeBlock);
 
-    let checked_codeblock_statements =
-        check_stmts(block_contents.statements, errors, block_scope.clone());
+    let checked_codeblock_statements = check_stmts(
+        block_contents.statements,
+        errors,
+        block_scope.clone(),
+        span_registry,
+    );
     let checked_codeblock_final_expr = block_contents.final_expr.map(|fe| {
-        let checked_final_expr = check_expr(*fe, errors, block_scope.clone());
+        let checked_final_expr = check_expr(*fe, errors, block_scope.clone(), span_registry);
 
         Box::new(checked_final_expr)
     });

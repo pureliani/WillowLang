@@ -13,15 +13,18 @@ use crate::{
         check_expr::check_expr, scope::Scope, utils::is_signed::is_signed, SemanticError,
         SemanticErrorKind,
     },
+    compile::SpanRegistry,
 };
+impl<'a> SemanticChecker<'a> {}
 
 pub fn check_arithmetic_negation_expr(
     right: Box<Expr>,
     span: Span,
-    errors: &mut Vec<SemanticError>,
+
     scope: Rc<RefCell<Scope>>,
+    ,
 ) -> CheckedExpr {
-    let checked_right = check_expr(*right, errors, scope);
+    let checked_right = check_expr(*right, errors, scope, span_registry);
 
     let expr_type = match &checked_right.ty {
         t if is_signed(&t) => t.clone(),

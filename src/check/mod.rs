@@ -1,19 +1,22 @@
-use std::collections::HashSet;
+use std::{cell::RefCell, collections::HashSet, rc::Rc};
 
 use crate::{
     ast::{
-        checked::{checked_declaration::CheckedGenericParam, checked_type::CheckedType},
+        base::base_statement::Stmt,
+        checked::{
+            checked_declaration::CheckedGenericParam, checked_statement::CheckedStmt,
+            checked_type::CheckedType,
+        },
         IdentifierNode, Span,
     },
-    compile::string_interner::InternerId,
+    check::scope::{Scope, ScopeKind},
+    compile::{span_registry::SpanRegistry, string_interner::InternerId},
     tokenize::NumberKind,
 };
 
-pub mod check_expr;
-pub mod check_stmt;
-pub mod check_stmts;
 pub mod expressions;
 pub mod scope;
+pub mod statements;
 pub mod utils;
 
 #[derive(Debug, Clone)]
@@ -131,4 +134,29 @@ impl SemanticErrorKind {
 pub struct SemanticError {
     pub kind: SemanticErrorKind,
     pub span: Span,
+}
+
+#[derive(Debug)]
+pub struct SemanticChecker<'a> {
+    errors: &'a mut Vec<SemanticError>,
+    span_registry: &'a mut SpanRegistry,
+}
+
+impl<'a> SemanticChecker<'a> {
+    pub fn check(
+        statements: Vec<Stmt>,
+        span_registry: &mut SpanRegistry,
+    ) -> (Vec<CheckedStmt>, Vec<SemanticError>) {
+        let mut errors: Vec<SemanticError> = vec![];
+        let scope = Rc::new(RefCell::new(Scope::new(ScopeKind::File)));
+
+        let mut checker = SemanticChecker {
+            errors: &mut errors,
+            span_registry,
+        };
+
+        let stmts = checker.check_stmts(statements, scope);
+
+        (stmts, errors)
+    }
 }

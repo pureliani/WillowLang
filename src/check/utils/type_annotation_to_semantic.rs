@@ -16,13 +16,15 @@ use crate::{
         utils::substitute_generics::substitute_generics,
         SemanticError, SemanticErrorKind,
     },
+    compile::SpanRegistry,
     tokenize::NumberKind,
 };
 
 pub fn check_type(
     annotation: &TypeAnnotation,
-    errors: &mut Vec<SemanticError>,
+
     scope: Rc<RefCell<Scope>>,
+    ,
 ) -> CheckedType {
     match &annotation.kind {
         TypeAnnotationKind::Void => CheckedType::Void,
@@ -42,10 +44,15 @@ pub fn check_type(
         TypeAnnotationKind::F64 => CheckedType::F64,
         TypeAnnotationKind::Char => CheckedType::Char,
         TypeAnnotationKind::GenericApply { left, args } => {
-            let checked_left = check_type(&left, errors, scope.clone());
+            let checked_left = check_type(&left, errors, scope.clone(), span_registry);
             let checked_args: Vec<(Span, CheckedType)> = args
                 .into_iter()
-                .map(|arg| (arg.span, check_type(&arg, errors, scope.clone())))
+                .map(|arg| {
+                    (
+                        arg.span,
+                        check_type(&arg, errors, scope.clone(), span_registry),
+                    )
+                })
                 .collect();
 
             match &checked_left {
@@ -103,27 +110,41 @@ pub fn check_type(
         } => {
             let fn_type_scope = scope.borrow().child(ScopeKind::FnType);
 
-            let checked_generic_params =
-                check_generic_params(&generic_params, errors, fn_type_scope.clone());
+            let checked_generic_params = check_generic_params(
+                &generic_params,
+                errors,
+                fn_type_scope.clone(),
+                span_registry,
+            );
 
             let checked_params = params
                 .into_iter()
                 .map(|p| CheckedParam {
-                    constraint: check_type(&p.constraint, errors, fn_type_scope.clone()),
+                    constraint: check_type(
+                        &p.constraint,
+                        errors,
+                        fn_type_scope.clone(),
+                        span_registry,
+                    ),
                     identifier: p.identifier,
                 })
                 .collect();
 
             CheckedType::FnType {
                 params: checked_params,
-                return_type: Box::new(check_type(&return_type, errors, fn_type_scope.clone())),
+                return_type: Box::new(check_type(
+                    &return_type,
+                    errors,
+                    fn_type_scope.clone(),
+                    span_registry,
+                )),
                 generic_params: checked_generic_params,
             }
         }
         TypeAnnotationKind::Union(items) => CheckedType::Union(
             items
                 .iter()
-                .map(|i| check_type(&i, errors, scope.clone()))
+                .map(|i| check_type(&i, errors, scope.clone(), span_registry))
                 .collect(),
         ),
         TypeAnnotationKind::Array {
@@ -148,7 +169,7 @@ pub fn check_type(
 
             match maybe_size {
                 Some(valid_size) => {
-                    let item_type = check_type(&left, errors, scope.clone());
+                    let item_type = check_type(&left, errors, scope.clone(), span_registry);
                     CheckedType::Array {
                         item_type: Box::new(item_type),
                         size: valid_size,
@@ -159,7 +180,7 @@ pub fn check_type(
                         kind: SemanticErrorKind::InvalidArraySizeValue(*size),
                         span: annotation.span,
                     });
-                    let _ = check_type(&left, errors, scope.clone()); // Process for errors, ignore result
+                    let _ = check_type(&left, errors, scope.clone(), span_registry); // Process for errors, ignore result
                     CheckedType::Unknown
                 }
             }

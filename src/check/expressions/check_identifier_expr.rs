@@ -12,13 +12,16 @@ use crate::{
         scope::{Scope, SymbolEntry},
         SemanticError, SemanticErrorKind,
     },
+    compile::SpanRegistry,
 };
+impl<'a> SemanticChecker<'a> {}
 
 pub fn check_identifier_expr(
     id: IdentifierNode,
     span: Span,
-    errors: &mut Vec<SemanticError>,
+
     scope: Rc<RefCell<Scope>>,
+    ,
 ) -> CheckedExpr {
     let ty = scope
         .borrow()

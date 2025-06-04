@@ -20,13 +20,13 @@ use crate::{
         },
         SemanticError, SemanticErrorKind,
     },
+    compile::SpanRegistry,
 };
 
 pub fn build_substitutions(
     generic_params: &Vec<CheckedGenericParam>,
     type_args: Vec<(Span, CheckedType)>,
     span: Span,
-    errors: &mut Vec<SemanticError>,
 ) -> GenericSubstitutionMap {
     if generic_params.len() != type_args.len() {
         errors.push(SemanticError {
@@ -68,18 +68,25 @@ pub fn build_substitutions(
 
     substitutions
 }
+impl<'a> SemanticChecker<'a> {}
 
 pub fn check_generic_apply_expr(
     left: Box<Expr>,
     args: Vec<TypeAnnotation>,
     span: Span,
-    errors: &mut Vec<SemanticError>,
+
     scope: Rc<RefCell<Scope>>,
+    ,
 ) -> CheckedExpr {
-    let checked_left = check_expr(*left, errors, scope.clone());
+    let checked_left = check_expr(*left, errors, scope.clone(), span_registry);
     let type_args: Vec<_> = args
         .into_iter()
-        .map(|type_arg| (type_arg.span, check_type(&type_arg, errors, scope.clone())))
+        .map(|type_arg| {
+            (
+                type_arg.span,
+                check_type(&type_arg, errors, scope.clone(), span_registry),
+            )
+        })
         .collect();
 
     let (type_kind, substitutions) = match &checked_left.ty {

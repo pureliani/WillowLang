@@ -7,13 +7,14 @@ use crate::{
         Span,
     },
     check::{scope::Scope, SemanticError},
+    compile::SpanRegistry,
 };
+impl<'a> SemanticChecker<'a> {}
 
 pub fn check_type_cast_expr(
     left: Box<Expr>,
     target: TypeAnnotation,
     span: Span,
-    errors: &mut Vec<SemanticError>,
     scope: Rc<RefCell<Scope>>,
 ) -> CheckedExpr {
     todo!()

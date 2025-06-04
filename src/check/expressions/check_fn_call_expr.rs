@@ -20,19 +20,22 @@ use crate::{
         },
         SemanticError, SemanticErrorKind,
     },
+    compile::SpanRegistry,
 };
+impl<'a> SemanticChecker<'a> {}
 
 pub fn check_fn_call_expr(
     left: Box<Expr>,
     args: Vec<Expr>,
     span: Span,
-    errors: &mut Vec<SemanticError>,
+
     scope: Rc<RefCell<Scope>>,
+    ,
 ) -> CheckedExpr {
-    let checked_left = check_expr(*left, errors, scope.clone());
+    let checked_left = check_expr(*left, errors, scope.clone(), span_registry);
     let checked_args: Vec<_> = args
         .into_iter()
-        .map(|arg| check_expr(arg, errors, scope.clone()))
+        .map(|arg| check_expr(arg, errors, scope.clone(), span_registry))
         .collect();
 
     let mut call_result_type = CheckedType::Unknown;

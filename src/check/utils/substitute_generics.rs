@@ -16,7 +16,6 @@ pub type GenericSubstitutionMap = HashMap<InternerId, CheckedType>;
 pub fn substitute_generics(
     ty: &CheckedType,
     substitutions: &GenericSubstitutionMap,
-    errors: &mut Vec<SemanticError>,
 ) -> CheckedType {
     match ty {
         CheckedType::GenericParam(gp) => {

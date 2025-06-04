@@ -20,21 +20,26 @@ use crate::{
         },
         SemanticError, SemanticErrorKind,
     },
-    compile::string_interner::InternerId,
+    compile::{string_interner::InternerId, SpanRegistry},
 };
+impl<'a> SemanticChecker<'a> {}
 
 pub fn check_struct_init_expr(
     left_expr: Box<Expr>,
     fields: Vec<(IdentifierNode, Expr)>,
     span: Span,
-    errors: &mut Vec<SemanticError>,
     scope: Rc<RefCell<Scope>>,
 ) -> CheckedExpr {
-    let checked_left = check_expr(*left_expr, errors, scope.clone());
+    let checked_left = check_expr(*left_expr, errors, scope.clone(), span_registry);
 
     let checked_args: Vec<(IdentifierNode, CheckedExpr)> = fields
         .into_iter()
-        .map(|(ident, expr)| (ident, check_expr(expr, errors, scope.clone())))
+        .map(|(ident, expr)| {
+            (
+                ident,
+                check_expr(expr, errors, scope.clone(), span_registry),
+            )
+        })
         .collect();
 
     // TODO: make sure that checked_left.kind is actually an identifier or genericapply wrapper around an identifier
