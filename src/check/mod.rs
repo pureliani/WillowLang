@@ -140,6 +140,7 @@ pub struct SemanticError {
 pub struct SemanticChecker<'a> {
     errors: &'a mut Vec<SemanticError>,
     span_registry: &'a mut SpanRegistry,
+    node_counter: usize,
 }
 
 impl<'a> SemanticChecker<'a> {
@@ -153,6 +154,7 @@ impl<'a> SemanticChecker<'a> {
         let mut checker = SemanticChecker {
             errors: &mut errors,
             span_registry,
+            node_counter: 0,
         };
 
         let stmts = checker.check_stmts(statements, scope);

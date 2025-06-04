@@ -150,7 +150,6 @@ pub fn check_stmt(
                     constraint
                 }
                 (Some(value), None) => value.ty.clone(),
-
                 (None, _) => {
                     errors.push(SemanticError {
                         kind: SemanticErrorKind::VarDeclWithoutInitializer,

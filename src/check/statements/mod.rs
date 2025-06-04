@@ -76,10 +76,13 @@ impl<'a> SemanticChecker<'a> {
     }
 
     pub fn check_stmt(&mut self, stmt: Stmt, scope: Rc<RefCell<Scope>>) -> CheckedStmt {
+        let node_id = self.get_node_id();
+        self.span_registry.insert_span(node_id, stmt.span);
+
         match stmt.kind {
             StmtKind::Expression(expr) => CheckedStmt {
                 kind: CheckedStmtKind::Expression(self.check_expr(expr, scope)),
-                span: stmt.span,
+                node_id,
             },
             StmtKind::StructDecl(StructDecl {
                 identifier,
@@ -114,7 +117,7 @@ impl<'a> SemanticChecker<'a> {
 
                 CheckedStmt {
                     kind: CheckedStmtKind::StructDecl(decl),
-                    span: stmt.span,
+                    node_id,
                 }
             }
             StmtKind::EnumDecl(decl) => {
@@ -124,7 +127,7 @@ impl<'a> SemanticChecker<'a> {
 
                 CheckedStmt {
                     kind: CheckedStmtKind::EnumDecl(decl),
-                    span: stmt.span,
+                    node_id,
                 }
             }
             StmtKind::VarDecl(VarDecl {
@@ -179,7 +182,7 @@ impl<'a> SemanticChecker<'a> {
 
                 CheckedStmt {
                     kind: CheckedStmtKind::VarDecl(checked_declaration),
-                    span: stmt.span,
+                    node_id,
                 }
             }
             StmtKind::TypeAliasDecl(TypeAliasDecl {
@@ -215,48 +218,45 @@ impl<'a> SemanticChecker<'a> {
 
                 let kind = CheckedStmtKind::TypeAliasDecl(decl);
 
-                CheckedStmt {
-                    kind,
-                    span: stmt.span,
-                }
+                CheckedStmt { kind, node_id }
             }
             StmtKind::Break => {
                 if !scope.borrow().is_loop_scope() {
                     self.errors.push(SemanticError {
                         kind: SemanticErrorKind::BreakKeywordOutsideLoop,
-                        span: stmt.span,
+                        node_id,
                     });
                 }
 
                 CheckedStmt {
                     kind: CheckedStmtKind::Break,
-                    span: stmt.span,
+                    node_id,
                 }
             }
             StmtKind::Continue => {
                 if !scope.borrow().is_loop_scope() {
                     self.errors.push(SemanticError {
                         kind: SemanticErrorKind::ContinueKeywordOutsideLoop,
-                        span: stmt.span,
+                        node_id,
                     });
                 }
 
                 CheckedStmt {
                     kind: CheckedStmtKind::Continue,
-                    span: stmt.span,
+                    node_id,
                 }
             }
             StmtKind::Return(expr) => {
                 if !scope.borrow().is_function_scope() {
                     self.errors.push(SemanticError {
                         kind: SemanticErrorKind::ReturnKeywordOutsideFunction,
-                        span: stmt.span,
+                        node_id,
                     });
                 }
 
                 CheckedStmt {
                     kind: CheckedStmtKind::Return(self.check_expr(expr, scope)),
-                    span: stmt.span,
+                    node_id,
                 }
             }
             StmtKind::Assignment { target, value } => {
@@ -341,12 +341,12 @@ impl<'a> SemanticChecker<'a> {
                         target: checked_target,
                         value: checked_value,
                     },
-                    span: stmt.span,
+                    node_id,
                 }
             }
             StmtKind::From { path, identifiers } => CheckedStmt {
                 kind: CheckedStmtKind::From { identifiers, path },
-                span: stmt.span,
+                node_id,
             },
             StmtKind::While { condition, body } => {
                 let while_scope = scope.borrow().child(ScopeKind::While);
@@ -377,7 +377,7 @@ impl<'a> SemanticChecker<'a> {
                             statements: checked_body_statements,
                         },
                     },
-                    span: stmt.span,
+                    node_id,
                 }
             }
         }

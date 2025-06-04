@@ -1,4 +1,4 @@
-use crate::ast::{base::base_declaration::EnumDecl, IdentifierNode, Span, StringNode};
+use crate::ast::{base::base_declaration::EnumDecl, IdentifierNode, NodeId, StringNode};
 
 use super::{
     checked_declaration::{CheckedStructDecl, CheckedTypeAliasDecl, CheckedVarDecl},
@@ -32,5 +32,5 @@ pub enum CheckedStmtKind {
 #[derive(Clone, Debug)]
 pub struct CheckedStmt {
     pub kind: CheckedStmtKind,
-    pub span: Span,
+    pub node_id: NodeId,
 }
