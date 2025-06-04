@@ -10,48 +10,47 @@ use crate::{
     },
     check::{
         scope::{Scope, SymbolEntry},
-        SemanticError, SemanticErrorKind,
+        SemanticChecker, SemanticError, SemanticErrorKind,
     },
-    compile::SpanRegistry,
 };
-impl<'a> SemanticChecker<'a> {}
 
-pub fn check_identifier_expr(
-    id: IdentifierNode,
-    span: Span,
+impl<'a> SemanticChecker<'a> {
+    pub fn check_identifier_expr(
+        &mut self,
+        id: IdentifierNode,
+        span: Span,
+        scope: Rc<RefCell<Scope>>,
+    ) -> CheckedExpr {
+        let ty = scope
+            .borrow()
+            .lookup(id.name)
+            .map(|entry| match entry {
+                SymbolEntry::StructDecl(decl) => CheckedType::StructDecl(decl),
+                SymbolEntry::TypeAliasDecl(decl) => CheckedType::TypeAliasDecl(decl),
+                SymbolEntry::EnumDecl(decl) => CheckedType::EnumDecl(decl),
+                SymbolEntry::VarDecl(decl) => decl.constraint,
+                SymbolEntry::GenericParam(_) => {
+                    self.errors.push(SemanticError {
+                        kind: SemanticErrorKind::CannotUseGenericParameterAsValue,
+                        span,
+                    });
 
-    scope: Rc<RefCell<Scope>>,
-    ,
-) -> CheckedExpr {
-    let ty = scope
-        .borrow()
-        .lookup(id.name)
-        .map(|entry| match entry {
-            SymbolEntry::StructDecl(decl) => CheckedType::StructDecl(decl),
-            SymbolEntry::TypeAliasDecl(decl) => CheckedType::TypeAliasDecl(decl),
-            SymbolEntry::EnumDecl(decl) => CheckedType::EnumDecl(decl),
-            SymbolEntry::VarDecl(decl) => decl.constraint,
-            SymbolEntry::GenericParam(_) => {
-                errors.push(SemanticError {
-                    kind: SemanticErrorKind::CannotUseGenericParameterAsValue,
+                    CheckedType::Unknown
+                }
+            })
+            .unwrap_or_else(|| {
+                self.errors.push(SemanticError {
+                    kind: SemanticErrorKind::UndeclaredIdentifier(id),
                     span,
                 });
 
                 CheckedType::Unknown
-            }
-        })
-        .unwrap_or_else(|| {
-            errors.push(SemanticError {
-                kind: SemanticErrorKind::UndeclaredIdentifier(id),
-                span,
             });
 
-            CheckedType::Unknown
-        });
-
-    CheckedExpr {
-        ty,
-        span,
-        kind: CheckedExprKind::Identifier(id),
+        CheckedExpr {
+            ty,
+            span,
+            kind: CheckedExprKind::Identifier(id),
+        }
     }
 }

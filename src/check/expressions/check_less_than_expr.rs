@@ -11,6 +11,7 @@ use crate::{
     },
     check::{scope::Scope, SemanticChecker},
 };
+
 impl<'a> SemanticChecker<'a> {
     pub fn check_less_than_expr(
         &mut self,

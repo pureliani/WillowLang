@@ -9,37 +9,35 @@ use crate::{
         },
         Span,
     },
-    check::{
-        check_expr::check_expr, scope::Scope, utils::type_annotation_to_semantic::check_type,
-        SemanticError, SemanticErrorKind,
-    },
-    compile::SpanRegistry,
+    check::{scope::Scope, SemanticChecker, SemanticError, SemanticErrorKind},
 };
-impl<'a> SemanticChecker<'a> {}
 
-pub fn check_is_type_expr(
-    left: Box<Expr>,
-    target: TypeAnnotation,
-    span: Span,
-    scope: Rc<RefCell<Scope>>,
-) -> CheckedExpr {
-    let checked_left = check_expr(*left, errors, scope.clone(), span_registry);
-    let checked_target = check_type(&target, errors, scope, span_registry);
+impl<'a> SemanticChecker<'a> {
+    pub fn check_is_type_expr(
+        &mut self,
+        left: Box<Expr>,
+        target: TypeAnnotation,
+        span: Span,
+        scope: Rc<RefCell<Scope>>,
+    ) -> CheckedExpr {
+        let checked_left = self.check_expr(*left, scope.clone());
+        let checked_target = self.check_type(&target, scope);
 
-    // TODO: do an actual check
-    if !matches!(checked_left.ty, CheckedType::Union { .. }) {
-        errors.push(SemanticError {
-            kind: SemanticErrorKind::CannotUseIsTypeOnNonUnion,
+        // TODO: do an actual check
+        if !matches!(checked_left.ty, CheckedType::Union { .. }) {
+            self.errors.push(SemanticError {
+                kind: SemanticErrorKind::CannotUseIsTypeOnNonUnion,
+                span,
+            });
+        }
+
+        CheckedExpr {
             span,
-        });
-    }
-
-    CheckedExpr {
-        span,
-        ty: CheckedType::Bool,
-        kind: CheckedExprKind::IsType {
-            left: Box::new(checked_left),
-            target: checked_target,
-        },
+            ty: CheckedType::Bool,
+            kind: CheckedExprKind::IsType {
+                left: Box::new(checked_left),
+                target: checked_target,
+            },
+        }
     }
 }

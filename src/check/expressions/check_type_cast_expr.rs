@@ -6,16 +6,17 @@ use crate::{
         checked::checked_expression::CheckedExpr,
         Span,
     },
-    check::{scope::Scope, SemanticError},
-    compile::SpanRegistry,
+    check::{scope::Scope, SemanticChecker},
 };
-impl<'a> SemanticChecker<'a> {}
 
-pub fn check_type_cast_expr(
-    left: Box<Expr>,
-    target: TypeAnnotation,
-    span: Span,
-    scope: Rc<RefCell<Scope>>,
-) -> CheckedExpr {
-    todo!()
+impl<'a> SemanticChecker<'a> {
+    pub fn check_type_cast_expr(
+        &mut self,
+        left: Box<Expr>,
+        target: TypeAnnotation,
+        span: Span,
+        scope: Rc<RefCell<Scope>>,
+    ) -> CheckedExpr {
+        todo!()
+    }
 }

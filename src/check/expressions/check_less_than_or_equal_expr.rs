@@ -9,37 +9,34 @@ use crate::{
         },
         Span,
     },
-    check::{
-        check_expr::check_expr, scope::Scope,
-        utils::check_binary_numeric_operation::check_binary_numeric_operation, SemanticError,
-    },
-    compile::SpanRegistry,
+    check::{scope::Scope, SemanticChecker},
 };
-impl<'a> SemanticChecker<'a> {}
 
-pub fn check_less_than_or_equal_expr(
-    left: Box<Expr>,
-    right: Box<Expr>,
-    span: Span,
-    scope: Rc<RefCell<Scope>>,
-    
-) -> CheckedExpr {
-    let checked_left = check_expr(*left, errors, scope.clone(), span_registry);
-    let checked_right = check_expr(*right, errors, scope, span_registry);
-    let checked_op = check_binary_numeric_operation(&checked_left, &checked_right, errors);
+impl<'a> SemanticChecker<'a> {
+    pub fn check_less_than_or_equal_expr(
+        &mut self,
+        left: Box<Expr>,
+        right: Box<Expr>,
+        span: Span,
+        scope: Rc<RefCell<Scope>>,
+    ) -> CheckedExpr {
+        let checked_left = self.check_expr(*left, scope.clone());
+        let checked_right = self.check_expr(*right, scope);
+        let checked_op = self.check_binary_numeric_operation(&checked_left, &checked_right);
 
-    let expr_type = if checked_op == CheckedType::Unknown {
-        CheckedType::Unknown
-    } else {
-        CheckedType::Bool
-    };
+        let expr_type = if checked_op == CheckedType::Unknown {
+            CheckedType::Unknown
+        } else {
+            CheckedType::Bool
+        };
 
-    CheckedExpr {
-        span,
-        ty: expr_type,
-        kind: CheckedExprKind::LessThanOrEqual {
-            left: Box::new(checked_left),
-            right: Box::new(checked_right),
-        },
+        CheckedExpr {
+            span,
+            ty: expr_type,
+            kind: CheckedExprKind::LessThanOrEqual {
+                left: Box::new(checked_left),
+                right: Box::new(checked_right),
+            },
+        }
     }
 }

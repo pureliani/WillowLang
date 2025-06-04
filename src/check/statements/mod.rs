@@ -3,11 +3,14 @@ use std::{cell::RefCell, rc::Rc};
 use crate::{
     ast::{
         base::{
-            base_declaration::{StructDecl, TypeAliasDecl, VarDecl},
+            base_declaration::{GenericParam, Param, StructDecl, TypeAliasDecl, VarDecl},
             base_statement::{Stmt, StmtKind},
         },
         checked::{
-            checked_declaration::{CheckedStructDecl, CheckedTypeAliasDecl, CheckedVarDecl},
+            checked_declaration::{
+                CheckedGenericParam, CheckedParam, CheckedStructDecl, CheckedTypeAliasDecl,
+                CheckedVarDecl,
+            },
             checked_expression::{CheckedBlockContents, CheckedExprKind},
             checked_statement::{CheckedStmt, CheckedStmtKind},
             checked_type::CheckedType,
@@ -20,6 +23,47 @@ use crate::{
 };
 
 impl<'a> SemanticChecker<'a> {
+    pub fn check_generic_params(
+        &mut self,
+        generic_params: &[GenericParam],
+        scope: Rc<RefCell<Scope>>,
+    ) -> Vec<CheckedGenericParam> {
+        generic_params
+            .into_iter()
+            .map(|gp| {
+                let checked_constraint = gp
+                    .constraint
+                    .as_ref()
+                    .map(|constraint| Box::new(self.check_type(constraint, scope.clone())));
+
+                let checked_gp = CheckedGenericParam {
+                    constraint: checked_constraint,
+                    identifier: gp.identifier,
+                };
+
+                scope.borrow_mut().insert(
+                    gp.identifier.name,
+                    SymbolEntry::GenericParam(checked_gp.clone()),
+                );
+                checked_gp
+            })
+            .collect()
+    }
+
+    pub fn check_struct_properties(
+        &mut self,
+        properties: &Vec<Param>,
+        scope: Rc<RefCell<Scope>>,
+    ) -> Vec<CheckedParam> {
+        properties
+            .into_iter()
+            .map(|p| CheckedParam {
+                constraint: self.check_type(&p.constraint, scope.clone()),
+                identifier: p.identifier,
+            })
+            .collect()
+    }
+
     pub fn check_stmts(
         &mut self,
         statements: Vec<Stmt>,

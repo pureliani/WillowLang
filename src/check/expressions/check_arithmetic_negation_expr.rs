@@ -10,52 +10,51 @@ use crate::{
         Span,
     },
     check::{
-        check_expr::check_expr, scope::Scope, utils::is_signed::is_signed, SemanticError,
+        scope::Scope, utils::is_signed::is_signed, SemanticChecker, SemanticError,
         SemanticErrorKind,
     },
-    compile::SpanRegistry,
 };
-impl<'a> SemanticChecker<'a> {}
 
-pub fn check_arithmetic_negation_expr(
-    right: Box<Expr>,
-    span: Span,
+impl<'a> SemanticChecker<'a> {
+    pub fn check_arithmetic_negation_expr(
+        &mut self,
+        right: Box<Expr>,
+        span: Span,
+        scope: Rc<RefCell<Scope>>,
+    ) -> CheckedExpr {
+        let checked_right = self.check_expr(*right, scope);
 
-    scope: Rc<RefCell<Scope>>,
-    ,
-) -> CheckedExpr {
-    let checked_right = check_expr(*right, errors, scope, span_registry);
+        let expr_type = match &checked_right.ty {
+            t if is_signed(&t) => t.clone(),
+            unexpected_type => {
+                let expected = HashSet::from([
+                    CheckedType::I8,
+                    CheckedType::I16,
+                    CheckedType::I32,
+                    CheckedType::I64,
+                    CheckedType::ISize,
+                    CheckedType::F32,
+                    CheckedType::F64,
+                ]);
 
-    let expr_type = match &checked_right.ty {
-        t if is_signed(&t) => t.clone(),
-        unexpected_type => {
-            let expected = HashSet::from([
-                CheckedType::I8,
-                CheckedType::I16,
-                CheckedType::I32,
-                CheckedType::I64,
-                CheckedType::ISize,
-                CheckedType::F32,
-                CheckedType::F64,
-            ]);
+                self.errors.push(SemanticError {
+                    kind: SemanticErrorKind::TypeMismatch {
+                        expected: CheckedType::Union(expected),
+                        received: unexpected_type.clone(),
+                    },
+                    span: checked_right.span,
+                });
 
-            errors.push(SemanticError {
-                kind: SemanticErrorKind::TypeMismatch {
-                    expected: CheckedType::Union(expected),
-                    received: unexpected_type.clone(),
-                },
-                span: checked_right.span,
-            });
+                CheckedType::Unknown
+            }
+        };
 
-            CheckedType::Unknown
+        CheckedExpr {
+            span,
+            ty: expr_type,
+            kind: CheckedExprKind::Neg {
+                right: Box::new(checked_right),
+            },
         }
-    };
-
-    CheckedExpr {
-        span,
-        ty: expr_type,
-        kind: CheckedExprKind::Neg {
-            right: Box::new(checked_right),
-        },
     }
 }

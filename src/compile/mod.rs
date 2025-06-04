@@ -1,6 +1,5 @@
 use ariadne::{Color, Config, Label, Report, ReportKind};
 use file_source_cache::FileSourceCache;
-use std::{cell::RefCell, rc::Rc, vec};
 use string_interner::StringInterner;
 
 pub mod file_source_cache;
@@ -9,12 +8,7 @@ pub mod string_interner;
 
 use crate::{
     ast::checked::checked_type::CheckedType,
-    check::{
-        check_stmts::check_stmts,
-        scope::{Scope, ScopeKind},
-        utils::type_to_string::type_to_string,
-        SemanticError, SemanticErrorKind,
-    },
+    check::{utils::type_to_string::type_to_string, SemanticChecker, SemanticErrorKind},
     compile::span_registry::SpanRegistry,
     parse::{Parser, ParsingErrorKind},
     tokenize::{token_kind_to_string, TokenizationErrorKind, Tokenizer},
@@ -32,8 +26,7 @@ pub fn compile_file<'a, 'b>(
     let mut reports: Vec<Report<'_, (String, std::ops::Range<usize>)>> = vec![];
     let (tokens, tokenization_errors) = Tokenizer::tokenize(source_code);
     let (ast, parsing_errors) = Parser::parse(tokens, string_interner);
-
-    let analyzed_tree = check_stmts(ast, &mut span_registry);
+    let (analyzed_tree, semantic_errors) = SemanticChecker::check(ast, &mut span_registry);
 
     let ariadne_config = Config::new().with_index_type(ariadne::IndexType::Byte);
 

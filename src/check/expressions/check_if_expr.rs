@@ -11,10 +11,11 @@ use crate::{
     },
     check::{
         scope::{Scope, ScopeKind},
-        utils::{check_is_assignable::check_is_assignable, union_of::union_of},
+        utils::union_of::union_of,
         SemanticChecker, SemanticError, SemanticErrorKind,
     },
 };
+
 impl<'a> SemanticChecker<'a> {
     pub fn check_if_expr(
         &mut self,
@@ -28,7 +29,7 @@ impl<'a> SemanticChecker<'a> {
         let mut if_else_expr_type = CheckedType::Void;
 
         let checked_condition = self.check_expr(*condition, scope.clone());
-        if !check_is_assignable(&checked_condition.ty, &CheckedType::Bool) {
+        if !self.check_is_assignable(&checked_condition.ty, &CheckedType::Bool) {
             self.errors.push(SemanticError {
                 kind: SemanticErrorKind::TypeMismatch {
                     expected: CheckedType::Bool,
@@ -61,7 +62,7 @@ impl<'a> SemanticChecker<'a> {
                 .into_iter()
                 .map(|ei| {
                     let checked_condition = self.check_expr(*ei.0, scope.clone());
-                    if !check_is_assignable(&checked_condition.ty, &CheckedType::Bool) {
+                    if !self.check_is_assignable(&checked_condition.ty, &CheckedType::Bool) {
                         self.errors.push(SemanticError {
                             kind: SemanticErrorKind::TypeMismatch {
                                 expected: CheckedType::Bool,

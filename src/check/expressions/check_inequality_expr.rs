@@ -10,42 +10,43 @@ use crate::{
         Span,
     },
     check::{
-        check_expr::check_expr, scope::Scope, utils::check_is_equatable::check_is_equatable,
+        scope::Scope, utils::check_is_equatable::check_is_equatable, SemanticChecker,
         SemanticError, SemanticErrorKind,
     },
-    compile::SpanRegistry,
 };
-impl<'a> SemanticChecker<'a> {}
 
-pub fn check_inequality_expr(
-    left: Box<Expr>,
-    right: Box<Expr>,
-    span: Span,
-    scope: Rc<RefCell<Scope>>,
-) -> CheckedExpr {
-    let mut ty = CheckedType::Bool;
+impl<'a> SemanticChecker<'a> {
+    pub fn check_inequality_expr(
+        &mut self,
+        left: Box<Expr>,
+        right: Box<Expr>,
+        span: Span,
+        scope: Rc<RefCell<Scope>>,
+    ) -> CheckedExpr {
+        let mut ty = CheckedType::Bool;
 
-    let checked_left = check_expr(*left, errors, scope.clone(), span_registry);
-    let checked_right = check_expr(*right, errors, scope, span_registry);
+        let checked_left = self.check_expr(*left, scope.clone());
+        let checked_right = self.check_expr(*right, scope);
 
-    if !check_is_equatable(&checked_left.ty, &checked_right.ty) {
-        errors.push(SemanticError {
-            kind: SemanticErrorKind::CannotCompareType {
-                of: checked_left.ty.clone(),
-                to: checked_right.ty.clone(),
-            },
+        if !check_is_equatable(&checked_left.ty, &checked_right.ty) {
+            self.errors.push(SemanticError {
+                kind: SemanticErrorKind::CannotCompareType {
+                    of: checked_left.ty.clone(),
+                    to: checked_right.ty.clone(),
+                },
+                span,
+            });
+
+            ty = CheckedType::Unknown;
+        }
+
+        CheckedExpr {
+            ty,
             span,
-        });
-
-        ty = CheckedType::Unknown;
-    }
-
-    CheckedExpr {
-        ty,
-        span,
-        kind: CheckedExprKind::NotEqual {
-            left: Box::new(checked_left),
-            right: Box::new(checked_right),
-        },
+            kind: CheckedExprKind::NotEqual {
+                left: Box::new(checked_left),
+                right: Box::new(checked_right),
+            },
+        }
     }
 }
