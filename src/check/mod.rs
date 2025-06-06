@@ -3,11 +3,7 @@ use std::{cell::RefCell, collections::HashSet, rc::Rc};
 use crate::{
     ast::{
         base::base_statement::Stmt,
-        checked::{
-            checked_declaration::{CheckedGenericParam, CheckedVarDecl},
-            checked_statement::CheckedStmt,
-            checked_type::CheckedType,
-        },
+        checked::{checked_declaration::CheckedGenericParam, checked_statement::CheckedStmt, checked_type::CheckedType},
         IdentifierNode, Span,
     },
     check::scope::{Scope, ScopeKind},
@@ -113,11 +109,9 @@ pub enum SemanticError {
         span: Span,
     },
     CannotUseGenericParameterAsValue {
-        param: CheckedGenericParam,
         span: Span,
     },
     CannotUseVariableDeclarationAsType {
-        var: CheckedVarDecl,
         span: Span,
     },
     AccessToUndefinedProperty {

@@ -13,8 +13,6 @@ impl<'a> SemanticChecker<'a> {
         span: Span,
         scope: Rc<RefCell<Scope>>,
     ) -> CheckedExpr {
-        let node_id = self.get_node_id();
-        self.span_registry.insert_span(node_id, span);
         todo!()
     }
 }

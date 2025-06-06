@@ -13,9 +13,6 @@ use super::{get_numeric_type_rank::get_numeric_type_rank, is_float::is_float, is
 
 impl<'a> SemanticChecker<'a> {
     pub fn check_binary_numeric_operation(&mut self, left: &CheckedExpr, right: &CheckedExpr, span: Span) -> CheckedType {
-        let node_id = self.get_node_id();
-        self.span_registry.insert_span(node_id, span);
-
         let left_type = if is_float(&left.ty.kind) || is_integer(&left.ty.kind) {
             &left.ty
         } else {

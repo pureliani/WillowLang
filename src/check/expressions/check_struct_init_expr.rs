@@ -6,13 +6,11 @@ use crate::{
         checked::{
             checked_declaration::{CheckedParam, CheckedStructDecl},
             checked_expression::{CheckedExpr, CheckedExprKind},
-            checked_type::CheckedTypeKind,
+            checked_type::{CheckedType, CheckedTypeKind},
         },
         IdentifierNode, Span,
     },
-    check::{
-        scope::Scope, utils::substitute_generics::GenericSubstitutionMap, SemanticChecker, SemanticError, SemanticErrorKind,
-    },
+    check::{scope::Scope, utils::substitute_generics::GenericSubstitutionMap, SemanticChecker, SemanticError},
     compile::string_interner::InternerId,
 };
 
@@ -24,9 +22,6 @@ impl<'a> SemanticChecker<'a> {
         span: Span,
         scope: Rc<RefCell<Scope>>,
     ) -> CheckedExpr {
-        let node_id = self.get_node_id();
-        self.span_registry.insert_span(node_id, span);
-
         let checked_left = self.check_expr(*left_expr, scope.clone());
 
         let checked_args: Vec<(IdentifierNode, CheckedExpr)> = fields
@@ -36,8 +31,8 @@ impl<'a> SemanticChecker<'a> {
 
         // TODO: make sure that checked_left.kind is actually an identifier or genericapply wrapper around an identifier
 
-        match &checked_left.ty {
-            CheckedTypeKind::StructDecl { decl, .. } => {
+        match &checked_left.ty.kind {
+            CheckedTypeKind::StructDecl(decl) => {
                 let mut substitutions = GenericSubstitutionMap::new();
                 let mut uninitialized_props: HashSet<InternerId> = decl.properties.iter().map(|p| p.identifier.name).collect();
 
@@ -46,18 +41,14 @@ impl<'a> SemanticChecker<'a> {
 
                     match prop {
                         None => {
-                            self.errors.push(SemanticError {
-                                kind: SemanticErrorKind::UnknownStructPropertyInitializer(arg_ident.clone()),
-                                span: arg_ident.span,
-                            });
+                            self.errors
+                                .push(SemanticError::UnknownStructPropertyInitializer { id: arg_ident.clone() });
                         }
                         Some(prop) => {
                             let already_initialized = !uninitialized_props.remove(&arg_ident.name);
                             if already_initialized {
-                                self.errors.push(SemanticError {
-                                    kind: SemanticErrorKind::DuplicateStructPropertyInitializer(arg_ident.clone()),
-                                    span: arg_ident.span,
-                                });
+                                self.errors
+                                    .push(SemanticError::DuplicateStructPropertyInitializer { id: arg_ident.clone() });
                             } else {
                                 self.infer_generics(&prop.constraint, &arg_expr.ty, &mut substitutions);
                             }
@@ -77,32 +68,30 @@ impl<'a> SemanticChecker<'a> {
                 for (arg_ident, arg_expr) in &checked_args {
                     if let Some(final_prop) = final_properties.iter().find(|p| p.identifier.name == arg_ident.name) {
                         if !self.check_is_assignable(&arg_expr.ty, &final_prop.constraint) {
-                            self.errors.push(SemanticError {
-                                kind: SemanticErrorKind::TypeMismatch {
-                                    expected: final_prop.constraint.clone(),
-                                    received: arg_expr.ty.clone(),
-                                },
-                                span: arg_expr.span,
+                            self.errors.push(SemanticError::TypeMismatch {
+                                expected: final_prop.constraint.clone(),
+                                received: arg_expr.ty.clone(),
                             });
                         }
                     }
                 }
 
                 if !uninitialized_props.is_empty() {
-                    self.errors.push(SemanticError {
-                        kind: SemanticErrorKind::MissingStructPropertyInitializer(uninitialized_props),
+                    self.errors.push(SemanticError::MissingStructPropertyInitializer {
+                        missing_props: uninitialized_props,
                         span,
                     });
                 }
 
-                let final_struct_type = CheckedTypeKind::StructDecl {
-                    decl: CheckedStructDecl {
+                let final_struct_type = CheckedType {
+                    kind: CheckedTypeKind::StructDecl(CheckedStructDecl {
                         identifier: decl.identifier,
                         documentation: decl.documentation.clone(),
                         properties: final_properties,
                         generic_params: vec![],
-                    },
-                    node_id,
+                        span: decl.span,
+                    }),
+                    span,
                 };
 
                 CheckedExpr {
@@ -111,21 +100,22 @@ impl<'a> SemanticChecker<'a> {
                         left: Box::new(checked_left),
                         fields: checked_args,
                     },
-                    span,
                 }
             }
             _ => {
-                self.errors.push(SemanticError {
-                    kind: SemanticErrorKind::CannotApplyStructInitializer,
-                    span: checked_left.span,
+                self.errors.push(SemanticError::CannotApplyStructInitializer {
+                    span: checked_left.ty.span,
                 });
+
                 CheckedExpr {
-                    ty: CheckedTypeKind::Unknown { node_id },
+                    ty: CheckedType {
+                        kind: CheckedTypeKind::Unknown,
+                        span,
+                    },
                     kind: CheckedExprKind::StructInit {
                         left: Box::new(checked_left),
                         fields: checked_args,
                     },
-                    span,
                 }
             }
         }

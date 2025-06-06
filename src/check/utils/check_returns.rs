@@ -3,9 +3,9 @@ use std::{cell::RefCell, rc::Rc};
 use crate::{
     ast::checked::{
         checked_expression::{CheckedExpr, CheckedExprKind},
-        checked_statement::{CheckedStmt, CheckedStmt},
+        checked_statement::CheckedStmt,
     },
-    check::{scope::Scope, SemanticChecker, SemanticError, SemanticErrorKind},
+    check::{scope::Scope, SemanticChecker, SemanticError},
 };
 
 impl<'a> SemanticChecker<'a> {
@@ -15,13 +15,10 @@ impl<'a> SemanticChecker<'a> {
         let stmt_count = statements.len();
 
         for (i, stmt) in statements.iter().enumerate() {
-            match &stmt.kind {
+            match &stmt {
                 CheckedStmt::Return(expr) => {
                     if i < stmt_count - 1 {
-                        self.errors.push(SemanticError {
-                            kind: SemanticErrorKind::ReturnNotLastStatement,
-                            span: stmt.span,
-                        });
+                        self.errors.push(SemanticError::ReturnNotLastStatement { span: expr.ty.span });
                     }
                     returns.push(expr.clone());
                 }

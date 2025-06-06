@@ -10,7 +10,7 @@ use crate::{
             checked_declaration::{CheckedGenericParam, CheckedParam, CheckedStructDecl, CheckedTypeAliasDecl, CheckedVarDecl},
             checked_expression::{CheckedBlockContents, CheckedExprKind},
             checked_statement::CheckedStmt,
-            checked_type::CheckedTypeKind,
+            checked_type::{CheckedType, CheckedTypeKind},
         },
     },
     check::{
@@ -62,28 +62,16 @@ impl<'a> SemanticChecker<'a> {
 
     pub fn check_stmt(&mut self, stmt: Stmt, scope: Rc<RefCell<Scope>>) -> CheckedStmt {
         match stmt.kind {
-            StmtKind::Expression(expr) => {
-                let node_id = self.get_node_id();
-                self.span_registry.insert_span(node_id, stmt.span);
-                CheckedStmt {
-                    kind: CheckedStmt::Expression(self.check_expr(expr, scope)),
-                    node_id,
-                }
-            }
+            StmtKind::Expression(expr) => CheckedStmt::Expression(self.check_expr(expr, scope)),
             StmtKind::StructDecl(StructDecl {
                 identifier,
                 documentation,
                 generic_params,
                 properties,
             }) => {
-                let node_id = self.get_node_id();
-                self.span_registry.insert_span(node_id, stmt.span);
-
                 if !scope.borrow().is_file_scope() {
-                    self.errors.push(SemanticError {
-                        kind: SemanticErrorKind::StructMustBeDeclaredAtTopLevel,
-                        span: stmt.span,
-                    });
+                    self.errors
+                        .push(SemanticError::StructMustBeDeclaredAtTopLevel { span: stmt.span });
                 }
 
                 let struct_scope = scope.borrow().child(ScopeKind::Struct);
@@ -97,28 +85,20 @@ impl<'a> SemanticChecker<'a> {
                     documentation,
                     properties: checked_properties,
                     generic_params,
+                    span: stmt.span,
                 };
                 scope
                     .borrow_mut()
                     .insert(identifier.name, SymbolEntry::StructDecl(decl.clone()));
 
-                CheckedStmt {
-                    kind: CheckedStmt::StructDecl(decl),
-                    node_id,
-                }
+                CheckedStmt::StructDecl(decl)
             }
             StmtKind::EnumDecl(decl) => {
-                let node_id = self.get_node_id();
-                self.span_registry.insert_span(node_id, stmt.span);
-
                 scope
                     .borrow_mut()
                     .insert(decl.identifier.name, SymbolEntry::EnumDecl(decl.clone()));
 
-                CheckedStmt {
-                    kind: CheckedStmt::EnumDecl(decl),
-                    node_id,
-                }
+                CheckedStmt::EnumDecl(decl)
             }
             StmtKind::VarDecl(VarDecl {
                 identifier,
@@ -126,9 +106,6 @@ impl<'a> SemanticChecker<'a> {
                 constraint,
                 value,
             }) => {
-                let node_id = self.get_node_id();
-                self.span_registry.insert_span(node_id, stmt.span);
-
                 let checked_value = value.map(|v| self.check_expr(v, scope.clone()));
 
                 let checked_constraint = constraint.map(|c| self.check_type(&c, scope.clone()));
@@ -138,12 +115,9 @@ impl<'a> SemanticChecker<'a> {
                         let is_assignable = self.check_is_assignable(&value.ty, &constraint);
 
                         if !is_assignable {
-                            self.errors.push(SemanticError {
-                                kind: SemanticErrorKind::TypeMismatch {
-                                    expected: constraint.clone(),
-                                    received: value.ty.clone(),
-                                },
-                                span: value.span,
+                            self.errors.push(SemanticError::TypeMismatch {
+                                expected: constraint.clone(),
+                                received: value.ty.clone(),
                             });
                         }
 
@@ -152,12 +126,12 @@ impl<'a> SemanticChecker<'a> {
                     (Some(value), None) => value.ty.clone(),
 
                     (None, _) => {
-                        self.errors.push(SemanticError {
-                            kind: SemanticErrorKind::VarDeclWithoutInitializer,
-                            span: stmt.span,
-                        });
+                        self.errors.push(SemanticError::VarDeclWithoutInitializer { span: stmt.span });
 
-                        CheckedTypeKind::Unknown { node_id }
+                        CheckedType {
+                            kind: CheckedTypeKind::Unknown,
+                            span: identifier.span,
+                        }
                     }
                 };
 
@@ -172,10 +146,7 @@ impl<'a> SemanticChecker<'a> {
                     .borrow_mut()
                     .insert(identifier.name, SymbolEntry::VarDecl(checked_declaration.clone()));
 
-                CheckedStmt {
-                    kind: CheckedStmt::VarDecl(checked_declaration),
-                    node_id,
-                }
+                CheckedStmt::VarDecl(checked_declaration)
             }
             StmtKind::TypeAliasDecl(TypeAliasDecl {
                 identifier,
@@ -183,14 +154,9 @@ impl<'a> SemanticChecker<'a> {
                 generic_params,
                 value,
             }) => {
-                let node_id = self.get_node_id();
-                self.span_registry.insert_span(node_id, stmt.span);
-
                 if !scope.borrow().is_file_scope() {
-                    self.errors.push(SemanticError {
-                        kind: SemanticErrorKind::TypeAliasMustBeDeclaredAtTopLevel,
-                        span: stmt.span,
-                    });
+                    self.errors
+                        .push(SemanticError::TypeAliasMustBeDeclaredAtTopLevel { span: stmt.span });
                 }
 
                 let alias_scope = scope.borrow().child(ScopeKind::TypeAlias);
@@ -204,69 +170,39 @@ impl<'a> SemanticChecker<'a> {
                     identifier,
                     value: Box::new(checked_value),
                     generic_params,
+                    span: stmt.span,
                 };
 
                 scope
                     .borrow_mut()
                     .insert(identifier.name, SymbolEntry::TypeAliasDecl(decl.clone()));
 
-                let kind = CheckedStmt::TypeAliasDecl(decl);
-
-                CheckedStmt { kind, node_id }
+                CheckedStmt::TypeAliasDecl(decl)
             }
             StmtKind::Break => {
-                let node_id = self.get_node_id();
-                self.span_registry.insert_span(node_id, stmt.span);
-
                 if !scope.borrow().is_loop_scope() {
-                    self.errors.push(SemanticError {
-                        kind: SemanticErrorKind::BreakKeywordOutsideLoop,
-                        node_id,
-                    });
+                    self.errors.push(SemanticError::BreakKeywordOutsideLoop { span: stmt.span });
                 }
 
-                CheckedStmt {
-                    kind: CheckedStmt::Break,
-                    node_id,
-                }
+                CheckedStmt::Break { span: stmt.span }
             }
             StmtKind::Continue => {
-                let node_id = self.get_node_id();
-                self.span_registry.insert_span(node_id, stmt.span);
-
                 if !scope.borrow().is_loop_scope() {
-                    self.errors.push(SemanticError {
-                        kind: SemanticErrorKind::ContinueKeywordOutsideLoop,
-                        node_id,
-                    });
+                    self.errors
+                        .push(SemanticError::ContinueKeywordOutsideLoop { span: stmt.span });
                 }
 
-                CheckedStmt {
-                    kind: CheckedStmt::Continue,
-                    node_id,
-                }
+                CheckedStmt::Continue { span: stmt.span }
             }
             StmtKind::Return(expr) => {
-                let node_id = self.get_node_id();
-                self.span_registry.insert_span(node_id, stmt.span);
-
                 if !scope.borrow().is_function_scope() {
-                    self.errors.push(SemanticError {
-                        kind: SemanticErrorKind::ReturnKeywordOutsideFunction,
-                        node_id,
-                    });
+                    self.errors
+                        .push(SemanticError::ReturnKeywordOutsideFunction { span: stmt.span });
                 }
 
-                CheckedStmt {
-                    kind: CheckedStmt::Return(self.check_expr(expr, scope)),
-                    node_id,
-                }
+                CheckedStmt::Return(self.check_expr(expr, scope))
             }
             StmtKind::Assignment { target, value } => {
-                let node_id = self.get_node_id();
-                self.span_registry.insert_span(node_id, stmt.span);
-
-                let value_span = value.span;
                 let checked_target = self.check_expr(target, scope.clone());
                 let checked_value = self.check_expr(value, scope.clone());
 
@@ -278,91 +214,79 @@ impl<'a> SemanticChecker<'a> {
                             let is_assignable = self.check_is_assignable(&checked_value.ty, &decl.constraint);
 
                             if !is_assignable {
-                                self.errors.push(SemanticError {
-                                    kind: SemanticErrorKind::TypeMismatch {
-                                        expected: decl.constraint.clone(),
-                                        received: checked_value.ty.clone(),
-                                    },
-                                    span: value_span,
+                                self.errors.push(SemanticError::TypeMismatch {
+                                    expected: decl.constraint.clone(),
+                                    received: checked_value.ty.clone(),
                                 });
                             }
                         } else {
-                            self.errors.push(SemanticError {
-                                kind: SemanticErrorKind::UndeclaredIdentifier(*id),
-                                span: checked_target.span,
-                            });
+                            self.errors.push(SemanticError::UndeclaredIdentifier { id: *id });
                         }
                     }
                     CheckedExprKind::Access { left, field } => {
-                        let field_type = match &left.ty {
-                            CheckedTypeKind::StructDecl {
-                                decl: CheckedStructDecl { properties, .. },
-                                node_id,
-                            } => properties
+                        let field_type = match &left.ty.kind {
+                            CheckedTypeKind::StructDecl(CheckedStructDecl { properties, .. }) => properties
                                 .into_iter()
                                 .find(|p| p.identifier == *field)
                                 .map(|p| p.constraint.clone())
                                 .unwrap_or_else(|| {
-                                    self.errors.push(SemanticError {
-                                        kind: SemanticErrorKind::AccessToUndefinedProperty(field.clone()),
-                                        span: field.span,
-                                    });
-                                    CheckedTypeKind::Unknown { node_id: *node_id }
-                                }),
-                            t => {
-                                self.errors.push(SemanticError {
-                                    kind: SemanticErrorKind::CannotAccess(t.clone()),
-                                    span: field.span,
-                                });
+                                    self.errors
+                                        .push(SemanticError::AccessToUndefinedProperty { property: field.clone() });
 
-                                CheckedTypeKind::Unknown { node_id }
+                                    CheckedType {
+                                        kind: CheckedTypeKind::Unknown,
+                                        span: field.span,
+                                    }
+                                }),
+                            _ => {
+                                self.errors.push(SemanticError::CannotAccess { target: left.ty.clone() });
+
+                                CheckedType {
+                                    kind: CheckedTypeKind::Unknown,
+                                    span: field.span,
+                                }
                             }
                         };
 
                         let is_assignable = self.check_is_assignable(&checked_value.ty, &field_type);
 
                         if !is_assignable {
-                            self.errors.push(SemanticError {
-                                kind: SemanticErrorKind::TypeMismatch {
-                                    expected: field_type,
-                                    received: checked_value.ty.clone(),
-                                },
-                                span: value_span,
+                            self.errors.push(SemanticError::TypeMismatch {
+                                expected: field_type,
+                                received: checked_value.ty.clone(),
                             });
                         }
                     }
                     _ => {
-                        self.errors.push(SemanticError {
-                            kind: SemanticErrorKind::InvalidAssignmentTarget,
-                            span: checked_target.span,
+                        self.errors.push(SemanticError::InvalidAssignmentTarget {
+                            target: checked_target.ty.clone(),
                         });
                     }
                 }
 
-                CheckedStmt {
-                    kind: CheckedStmt::Assignment {
-                        target: checked_target,
-                        value: checked_value,
-                    },
-                    node_id,
+                CheckedStmt::Assignment {
+                    target: checked_target,
+                    value: checked_value,
                 }
             }
-            StmtKind::From { path, identifiers } => CheckedStmt {
-                kind: CheckedStmt::From { identifiers, path },
-                node_id,
+            StmtKind::From { path, identifiers } => CheckedStmt::From {
+                identifiers,
+                path,
+                span: stmt.span,
             },
             StmtKind::While { condition, body } => {
                 let while_scope = scope.borrow().child(ScopeKind::While);
 
                 let checked_condition = self.check_expr(*condition, scope.clone());
+                let expected_condition = CheckedType {
+                    kind: CheckedTypeKind::Bool,
+                    span: checked_condition.ty.span,
+                };
 
-                if !self.check_is_assignable(&checked_condition.ty, &CheckedTypeKind::Bool) {
-                    self.errors.push(SemanticError {
-                        kind: SemanticErrorKind::TypeMismatch {
-                            expected: CheckedTypeKind::Bool,
-                            received: checked_condition.ty.clone(),
-                        },
-                        span: checked_condition.span,
+                if !self.check_is_assignable(&checked_condition.ty, &expected_condition) {
+                    self.errors.push(SemanticError::TypeMismatch {
+                        expected: expected_condition,
+                        received: checked_condition.ty.clone(),
                     });
                 }
 
@@ -372,15 +296,13 @@ impl<'a> SemanticChecker<'a> {
 
                 let checked_body_statements = self.check_stmts(body.statements, while_scope);
 
-                CheckedStmt {
-                    kind: CheckedStmt::While {
-                        condition: Box::new(checked_condition),
-                        body: CheckedBlockContents {
-                            final_expr: checked_final_expr,
-                            statements: checked_body_statements,
-                        },
+                CheckedStmt::While {
+                    condition: Box::new(checked_condition),
+                    body: CheckedBlockContents {
+                        final_expr: checked_final_expr,
+                        statements: checked_body_statements,
                     },
-                    node_id,
+                    span: stmt.span,
                 }
             }
         }

@@ -18,7 +18,7 @@ impl<'a> SemanticChecker<'a> {
         let checked_left = self.check_expr(*left, scope.clone());
         let checked_args: Vec<_> = args.into_iter().map(|arg| self.check_expr(arg, scope.clone())).collect();
 
-        match &checked_left.ty.kind {
+        let return_type = match &checked_left.ty.kind {
             CheckedTypeKind::FnType(CheckedFnType {
                 params,
                 return_type,
@@ -31,6 +31,11 @@ impl<'a> SemanticChecker<'a> {
                         received: checked_args.len(),
                         span,
                     });
+
+                    CheckedType {
+                        kind: CheckedTypeKind::Unknown,
+                        span,
+                    }
                 } else {
                     let mut substitutions: GenericSubstitutionMap = HashMap::new();
 
@@ -45,18 +50,14 @@ impl<'a> SemanticChecker<'a> {
                         .map(|p| CheckedParam {
                             constraint: self.substitute_generics(&p.constraint, &substitutions),
                             identifier: p.identifier,
-                            span: p.span,
                         })
                         .collect();
 
                     for (param, arg) in substituted_params.into_iter().zip(checked_args.iter()) {
                         if !self.check_is_assignable(&arg.ty, &param.constraint) {
-                            self.errors.push(SemanticError {
-                                kind: SemanticErrorKind::TypeMismatch {
-                                    expected: param.constraint,
-                                    received: arg.ty.clone(),
-                                },
-                                span: arg.span,
+                            self.errors.push(SemanticError::TypeMismatch {
+                                expected: param.constraint,
+                                received: arg.ty.clone(),
                             });
                         }
                     }
@@ -64,17 +65,20 @@ impl<'a> SemanticChecker<'a> {
                     substituted_return
                 }
             }
-            non_callable_type => {
-                self.errors.push(SemanticError {
-                    kind: SemanticErrorKind::CannotCall(non_callable_type.clone()),
-                    span: checked_left.span,
+            _ => {
+                self.errors.push(SemanticError::CannotCall {
+                    target: checked_left.ty.clone(),
                 });
+
+                CheckedType {
+                    kind: CheckedTypeKind::Unknown,
+                    span,
+                }
             }
-        }
+        };
 
         CheckedExpr {
-            node_id,
-            ty: call_result_type,
+            ty: return_type,
             kind: CheckedExprKind::FnCall {
                 left: Box::new(checked_left),
                 args: checked_args,

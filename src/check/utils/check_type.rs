@@ -4,13 +4,13 @@ use crate::{
     ast::{
         base::base_type::{TypeAnnotation, TypeAnnotationKind},
         checked::{
-            checked_declaration::{CheckedParam, CheckedStructDecl, CheckedTypeAliasDecl},
+            checked_declaration::{CheckedFnType, CheckedParam, CheckedStructDecl, CheckedTypeAliasDecl},
             checked_type::{CheckedType, CheckedTypeKind},
         },
     },
     check::{
         scope::{Scope, ScopeKind, SymbolEntry},
-        SemanticChecker, SemanticError, SemanticErrorKind,
+        SemanticChecker, SemanticError,
     },
     tokenize::NumberKind,
 };
@@ -38,30 +38,21 @@ impl<'a> SemanticChecker<'a> {
                 let checked_left = self.check_type(&left, scope.clone());
                 let checked_args: Vec<CheckedType> = args.into_iter().map(|arg| self.check_type(&arg, scope.clone())).collect();
 
-                match &checked_left {
-                    t @ CheckedTypeKind::FnType { generic_params, .. }
-                    | t @ CheckedTypeKind::StructDecl {
-                        decl: CheckedStructDecl { generic_params, .. },
-                        ..
-                    }
-                    | t @ CheckedTypeKind::TypeAliasDecl {
-                        decl: CheckedTypeAliasDecl { generic_params, .. },
-                        ..
-                    } => {
+                match &checked_left.kind {
+                    CheckedTypeKind::FnType(CheckedFnType { generic_params, .. })
+                    | CheckedTypeKind::StructDecl(CheckedStructDecl { generic_params, .. })
+                    | CheckedTypeKind::TypeAliasDecl(CheckedTypeAliasDecl { generic_params, .. }) => {
                         let substitutions = self.build_substitutions(generic_params, checked_args, annotation.span);
-                        let substituted = self.substitute_generics(t, &substitutions);
+                        let substituted = self.substitute_generics(&checked_left, &substitutions);
 
-                        substituted
+                        substituted.kind
                     }
                     _ => {
-                        self.errors.push(SemanticError {
-                            kind: SemanticErrorKind::CannotApplyTypeArguments {
-                                to: checked_left.clone(),
-                            },
-                            span: left.span,
+                        self.errors.push(SemanticError::CannotApplyTypeArguments {
+                            to: checked_left.clone(),
                         });
 
-                        CheckedTypeKind::Unknown { node_id }
+                        CheckedTypeKind::Unknown
                     }
                 }
             }
@@ -69,24 +60,20 @@ impl<'a> SemanticChecker<'a> {
                 .borrow()
                 .lookup(id.name)
                 .map(|entry| match entry {
-                    SymbolEntry::StructDecl(decl) => CheckedTypeKind::StructDecl { decl, node_id },
-                    SymbolEntry::EnumDecl(decl) => CheckedTypeKind::EnumDecl { decl, node_id },
-                    SymbolEntry::TypeAliasDecl(decl) => CheckedTypeKind::TypeAliasDecl { decl, node_id },
-                    SymbolEntry::GenericParam(decl) => CheckedTypeKind::GenericParam { decl, node_id },
+                    SymbolEntry::StructDecl(decl) => CheckedTypeKind::StructDecl(decl),
+                    SymbolEntry::EnumDecl(decl) => CheckedTypeKind::EnumDecl(decl),
+                    SymbolEntry::TypeAliasDecl(decl) => CheckedTypeKind::TypeAliasDecl(decl),
+                    SymbolEntry::GenericParam(decl) => CheckedTypeKind::GenericParam(decl),
                     SymbolEntry::VarDecl(_) => {
-                        self.errors.push(SemanticError {
-                            kind: SemanticErrorKind::CannotUseVariableDeclarationAsType,
-                            span: annotation.span,
-                        });
-                        CheckedTypeKind::Unknown { node_id }
+                        self.errors
+                            .push(SemanticError::CannotUseVariableDeclarationAsType { span: annotation.span });
+
+                        CheckedTypeKind::Unknown
                     }
                 })
                 .unwrap_or_else(|| {
-                    self.errors.push(SemanticError {
-                        kind: SemanticErrorKind::UndeclaredType(*id),
-                        span: annotation.span,
-                    });
-                    CheckedTypeKind::Unknown { node_id }
+                    self.errors.push(SemanticError::UndeclaredType { id: *id });
+                    CheckedTypeKind::Unknown
                 }),
 
             TypeAnnotationKind::FnType {
@@ -106,12 +93,12 @@ impl<'a> SemanticChecker<'a> {
                     })
                     .collect();
 
-                CheckedTypeKind::FnType {
+                CheckedTypeKind::FnType(CheckedFnType {
                     params: checked_params,
                     return_type: Box::new(self.check_type(&return_type, fn_type_scope.clone())),
                     generic_params: checked_generic_params,
-                    node_id,
-                }
+                    span: annotation.span,
+                })
             }
             TypeAnnotationKind::Union(items) => {
                 CheckedTypeKind::Union(items.iter().map(|i| self.check_type(&i, scope.clone())).collect())
@@ -139,16 +126,15 @@ impl<'a> SemanticChecker<'a> {
                         CheckedTypeKind::Array {
                             item_type: Box::new(item_type),
                             size: valid_size,
-                            node_id,
                         }
                     }
                     None => {
-                        self.errors.push(SemanticError {
-                            kind: SemanticErrorKind::InvalidArraySizeValue(*size),
+                        self.errors.push(SemanticError::InvalidArraySizeValue {
                             span: annotation.span,
+                            value: *size,
                         });
                         let _ = self.check_type(&left, scope.clone()); // Process for errors, ignore result
-                        CheckedTypeKind::Unknown { node_id }
+                        CheckedTypeKind::Unknown
                     }
                 }
             }

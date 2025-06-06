@@ -22,7 +22,6 @@ impl<'a> SemanticChecker<'a> {
         let expr_type = self.check_binary_numeric_operation(&checked_left, &checked_right, span);
 
         CheckedExpr {
-            span,
             ty: expr_type,
             kind: CheckedExprKind::Multiply {
                 left: Box::new(checked_left),

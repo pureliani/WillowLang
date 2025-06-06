@@ -5,14 +5,14 @@ use crate::{
         base::base_expression::{BlockContents, Expr},
         checked::{
             checked_expression::{CheckedBlockContents, CheckedExpr, CheckedExprKind},
-            checked_type::CheckedTypeKind,
+            checked_type::{CheckedType, CheckedTypeKind},
         },
         Span,
     },
     check::{
         scope::{Scope, ScopeKind},
         utils::union_of::union_of,
-        SemanticChecker, SemanticError, SemanticErrorKind,
+        SemanticChecker, SemanticError,
     },
 };
 
@@ -26,31 +26,32 @@ impl<'a> SemanticChecker<'a> {
         span: Span,
         scope: Rc<RefCell<Scope>>,
     ) -> CheckedExpr {
-        let node_id = self.get_node_id();
-        self.span_registry.insert_span(node_id, span);
-
-        let mut if_else_expr_type = CheckedTypeKind::Void { node_id };
+        let mut expr_type = CheckedType {
+            kind: CheckedTypeKind::Void,
+            span,
+        };
 
         let checked_condition = self.check_expr(*condition, scope.clone());
-        let expected = CheckedTypeKind::Bool { node_id };
+        let expected = CheckedType {
+            kind: CheckedTypeKind::Bool,
+            span: checked_condition.ty.span,
+        };
 
         if !self.check_is_assignable(&checked_condition.ty, &expected) {
-            self.errors.push(SemanticError {
-                kind: SemanticErrorKind::TypeMismatch {
-                    expected,
-                    received: checked_condition.ty.clone(),
-                },
-                span: checked_condition.span,
+            self.errors.push(SemanticError::TypeMismatch {
+                expected,
+                received: checked_condition.ty.clone(),
             });
+
+            expr_type.kind = CheckedTypeKind::Unknown;
         }
 
         let then_branch_scope = scope.borrow().child(ScopeKind::CodeBlock);
         let checked_then_branch_statements = self.check_stmts(then_branch.statements, then_branch_scope.clone());
-
         let checked_then_branch_final_expr = then_branch.final_expr.map(|fe| {
             let checked_final_expr = self.check_expr(*fe, then_branch_scope.clone());
 
-            if_else_expr_type = union_of([if_else_expr_type.clone(), checked_final_expr.ty.clone()]);
+            expr_type = union_of([expr_type.clone(), checked_final_expr.ty.clone()], checked_final_expr.ty.span);
 
             Box::new(checked_final_expr)
         });
@@ -64,15 +65,17 @@ impl<'a> SemanticChecker<'a> {
             .into_iter()
             .map(|ei| {
                 let checked_condition = self.check_expr(*ei.0, scope.clone());
-                let expected = CheckedTypeKind::Bool { node_id };
+                let expected = CheckedType {
+                    kind: CheckedTypeKind::Bool,
+                    span: checked_condition.ty.span,
+                };
                 if !self.check_is_assignable(&checked_condition.ty, &expected) {
-                    self.errors.push(SemanticError {
-                        kind: SemanticErrorKind::TypeMismatch {
-                            expected,
-                            received: checked_condition.ty.clone(),
-                        },
-                        span: checked_condition.span,
+                    self.errors.push(SemanticError::TypeMismatch {
+                        expected,
+                        received: checked_condition.ty.clone(),
                     });
+
+                    expr_type.kind = CheckedTypeKind::Unknown;
                 }
 
                 let else_if_scope = scope.borrow().child(ScopeKind::CodeBlock);
@@ -80,7 +83,7 @@ impl<'a> SemanticChecker<'a> {
                 let checked_codeblock_final_expr = ei.1.final_expr.map(|fe| {
                     let checked_final_expr = self.check_expr(*fe, else_if_scope.clone());
 
-                    if_else_expr_type = union_of([if_else_expr_type.clone(), checked_final_expr.ty.clone()]);
+                    expr_type = union_of([expr_type.clone(), checked_final_expr.ty.clone()], checked_final_expr.ty.span);
 
                     Box::new(checked_final_expr)
                 });
@@ -101,7 +104,7 @@ impl<'a> SemanticChecker<'a> {
             let checked_final_expr = br.final_expr.map(|fe| {
                 let checked_final_expr = self.check_expr(*fe, else_scope);
 
-                if_else_expr_type = union_of([if_else_expr_type.clone(), checked_final_expr.ty.clone()]);
+                expr_type = union_of([expr_type.clone(), checked_final_expr.ty.clone()], checked_final_expr.ty.span);
 
                 Box::new(checked_final_expr)
             });
@@ -113,8 +116,7 @@ impl<'a> SemanticChecker<'a> {
         });
 
         CheckedExpr {
-            ty: if_else_expr_type,
-            span,
+            ty: expr_type,
             kind: CheckedExprKind::If {
                 condition: Box::new(checked_condition),
                 then_branch: checked_then_branch,

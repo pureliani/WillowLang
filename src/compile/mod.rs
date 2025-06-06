@@ -139,7 +139,7 @@ pub fn compile_file<'a, 'b>(
         let span = e.span();
         let error_span = span.start.byte_offset..span.end.byte_offset;
         let label = Label::primary(interned_fp, error_span);
-        let err = Diagnostic::error().with_code(format!("P{}", e.code()));
+        let err = Diagnostic::error().with_code(format!("S{}", e.code()));
 
         let diagnostic = match &e {
             SemanticError::ExpectedANumericOperand { .. } => err
@@ -358,7 +358,7 @@ pub fn compile_file<'a, 'b>(
     if !errors.is_empty() {
         for (index, diagnostic) in errors.into_iter().enumerate() {
             println!("\n=============== {} ===============\n", index + 1);
-            term::emit(&mut writer.lock(), &config, files, &diagnostic);
+            let _ = term::emit(&mut writer.lock(), &config, files, &diagnostic);
             println!();
         }
     } else {

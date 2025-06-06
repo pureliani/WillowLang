@@ -20,9 +20,6 @@ impl<'a> SemanticChecker<'a> {
         span: Span,
         scope: Rc<RefCell<Scope>>,
     ) -> CheckedExpr {
-        let node_id = self.get_node_id();
-        self.span_registry.insert_span(node_id, span);
-
         let checked_left = self.check_expr(*left, scope.clone());
         let checked_right = self.check_expr(*right, scope);
         let checked_op = self.check_binary_numeric_operation(&checked_left, &checked_right, span);

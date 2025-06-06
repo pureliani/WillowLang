@@ -11,7 +11,6 @@ use super::checked_expression::CheckedExpr;
 pub struct CheckedParam {
     pub identifier: IdentifierNode,
     pub constraint: CheckedType,
-    pub span: Span,
 }
 
 impl Eq for CheckedParam {}
@@ -31,7 +30,6 @@ impl Hash for CheckedParam {
 pub struct CheckedGenericParam {
     pub identifier: IdentifierNode,
     pub constraint: Option<Box<CheckedType>>,
-    pub span: Span,
 }
 
 impl Eq for CheckedGenericParam {}
@@ -121,5 +119,4 @@ pub struct CheckedVarDecl {
     pub documentation: Option<DocAnnotation>,
     pub constraint: CheckedType,
     pub value: Option<CheckedExpr>,
-    pub span: Span,
 }

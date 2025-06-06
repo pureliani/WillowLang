@@ -5,36 +5,37 @@ use crate::{
         base::base_expression::Expr,
         checked::{
             checked_expression::{CheckedExpr, CheckedExprKind},
-            checked_type::CheckedTypeKind,
+            checked_type::{CheckedType, CheckedTypeKind},
         },
         Span,
     },
-    check::{scope::Scope, SemanticChecker, SemanticError, SemanticErrorKind},
+    check::{scope::Scope, SemanticChecker, SemanticError},
 };
 
 impl<'a> SemanticChecker<'a> {
     pub fn check_logical_negation_expr(&mut self, right: Box<Expr>, span: Span, scope: Rc<RefCell<Scope>>) -> CheckedExpr {
-        let node_id = self.get_node_id();
-        self.span_registry.insert_span(node_id, span);
-
         let checked_right = self.check_expr(*right, scope);
 
-        let expected = CheckedTypeKind::Bool { node_id };
-        let mut expr_type = expected.clone();
+        let expected_right = CheckedType {
+            kind: CheckedTypeKind::Bool,
+            span: checked_right.ty.span,
+        };
 
-        if !self.check_is_assignable(&checked_right.ty, &expected) {
-            self.errors.push(SemanticError {
-                kind: SemanticErrorKind::TypeMismatch {
-                    expected,
-                    received: checked_right.ty.clone(),
-                },
-                span,
+        let mut expr_type = CheckedType {
+            kind: CheckedTypeKind::Bool,
+            span,
+        };
+
+        if !self.check_is_assignable(&checked_right.ty, &expected_right) {
+            self.errors.push(SemanticError::TypeMismatch {
+                expected: expected_right,
+                received: checked_right.ty.clone(),
             });
-            expr_type = CheckedTypeKind::Unknown { node_id }
+
+            expr_type.kind = CheckedTypeKind::Unknown
         }
 
         CheckedExpr {
-            span,
             ty: expr_type,
             kind: CheckedExprKind::Not {
                 right: Box::new(checked_right),

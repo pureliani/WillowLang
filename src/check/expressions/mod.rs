@@ -34,7 +34,7 @@ use crate::{
         base::base_expression::{Expr, ExprKind},
         checked::{
             checked_expression::{CheckedExpr, CheckedExprKind},
-            checked_type::CheckedTypeKind,
+            checked_type::{CheckedType, CheckedTypeKind},
         },
     },
     check::SemanticChecker,
@@ -67,37 +67,33 @@ impl<'a> SemanticChecker<'a> {
             ExprKind::GenericApply { left, args } => self.check_generic_apply_expr(left, args, expr.span, scope),
             ExprKind::FnCall { left, args } => self.check_fn_call_expr(left, args, expr.span, scope),
             ExprKind::StructInit { left, fields } => self.check_struct_init_expr(left, fields, expr.span, scope),
-            ExprKind::Null => {
-                let node_id = self.get_node_id();
-                self.span_registry.insert_span(node_id, expr.span);
-                CheckedExpr {
+            ExprKind::Null => CheckedExpr {
+                kind: CheckedExprKind::Null,
+                ty: CheckedType {
+                    kind: CheckedTypeKind::Null,
                     span: expr.span,
-                    kind: CheckedExprKind::Null,
-                    ty: CheckedTypeKind::Null { node_id },
-                }
-            }
-            ExprKind::BoolLiteral { value } => {
-                let node_id = self.get_node_id();
-                self.span_registry.insert_span(node_id, expr.span);
-                CheckedExpr {
+                },
+            },
+            ExprKind::BoolLiteral { value } => CheckedExpr {
+                kind: CheckedExprKind::BoolLiteral { value },
+                ty: CheckedType {
+                    kind: CheckedTypeKind::Bool,
                     span: expr.span,
-                    kind: CheckedExprKind::BoolLiteral { value },
-                    ty: CheckedTypeKind::Bool { node_id },
-                }
-            }
-            ExprKind::String(string_node) => {
-                let node_id = self.get_node_id();
-                self.span_registry.insert_span(node_id, expr.span);
-                CheckedExpr {
+                },
+            },
+            ExprKind::String(string_node) => CheckedExpr {
+                kind: CheckedExprKind::String(string_node),
+                ty: CheckedType {
                     span: expr.span,
-                    kind: CheckedExprKind::String(string_node),
-                    ty: CheckedTypeKind::Array {
-                        item_type: Box::new(CheckedTypeKind::Char { node_id }),
+                    kind: CheckedTypeKind::Array {
+                        item_type: Box::new(CheckedType {
+                            kind: CheckedTypeKind::Char,
+                            span: expr.span, // TODO: come up with better span
+                        }),
                         size: string_node.len,
-                        node_id,
                     },
-                }
-            }
+                },
+            },
             ExprKind::Number { value } => self.check_numeric_expr(value, expr.span),
             ExprKind::Identifier(id) => self.check_identifier_expr(id, expr.span, scope),
             ExprKind::Fn {

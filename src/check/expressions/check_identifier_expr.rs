@@ -4,50 +4,40 @@ use crate::{
     ast::{
         checked::{
             checked_expression::{CheckedExpr, CheckedExprKind},
-            checked_type::CheckedTypeKind,
+            checked_type::{CheckedType, CheckedTypeKind},
         },
         IdentifierNode, Span,
     },
     check::{
         scope::{Scope, SymbolEntry},
-        SemanticChecker, SemanticError, SemanticErrorKind,
+        SemanticChecker, SemanticError,
     },
 };
 
 impl<'a> SemanticChecker<'a> {
     pub fn check_identifier_expr(&mut self, id: IdentifierNode, span: Span, scope: Rc<RefCell<Scope>>) -> CheckedExpr {
-        let node_id = self.get_node_id();
-        self.span_registry.insert_span(node_id, span);
-
-        let ty = scope
+        let kind = scope
             .borrow()
             .lookup(id.name)
             .map(|entry| match entry {
-                SymbolEntry::StructDecl(decl) => CheckedTypeKind::StructDecl { decl, node_id },
-                SymbolEntry::TypeAliasDecl(decl) => CheckedTypeKind::TypeAliasDecl { decl, node_id },
-                SymbolEntry::EnumDecl(decl) => CheckedTypeKind::EnumDecl { decl, node_id },
-                SymbolEntry::VarDecl(decl) => decl.constraint,
+                SymbolEntry::StructDecl(decl) => CheckedTypeKind::StructDecl(decl),
+                SymbolEntry::TypeAliasDecl(decl) => CheckedTypeKind::TypeAliasDecl(decl),
+                SymbolEntry::EnumDecl(decl) => CheckedTypeKind::EnumDecl(decl),
+                SymbolEntry::VarDecl(decl) => decl.constraint.kind,
                 SymbolEntry::GenericParam(_) => {
-                    self.errors.push(SemanticError {
-                        kind: SemanticErrorKind::CannotUseGenericParameterAsValue,
-                        span,
-                    });
+                    self.errors.push(SemanticError::CannotUseGenericParameterAsValue { span });
 
-                    CheckedTypeKind::Unknown { node_id }
+                    CheckedTypeKind::Unknown
                 }
             })
             .unwrap_or_else(|| {
-                self.errors.push(SemanticError {
-                    kind: SemanticErrorKind::UndeclaredIdentifier(id),
-                    span,
-                });
+                self.errors.push(SemanticError::UndeclaredIdentifier { id });
 
-                CheckedTypeKind::Unknown { node_id }
+                CheckedTypeKind::Unknown
             });
 
         CheckedExpr {
-            ty,
-            span,
+            ty: CheckedType { kind, span },
             kind: CheckedExprKind::Identifier(id),
         }
     }
