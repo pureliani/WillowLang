@@ -80,11 +80,7 @@ pub fn is_start_of_expr(token_kind: &TokenKind) -> bool {
 }
 
 impl<'a, 'b> Parser<'a, 'b> {
-    pub fn parse_expr(
-        &mut self,
-        min_prec: u8,
-        allow_struct_literal_suffix: bool,
-    ) -> Result<Expr, ParsingError<'a>> {
+    pub fn parse_expr(&mut self, min_prec: u8, allow_struct_literal_suffix: bool) -> Result<Expr, ParsingError<'a>> {
         let token = self.current().ok_or(self.unexpected_end_of_input())?;
 
         let token_span = token.span;
@@ -153,16 +149,13 @@ impl<'a, 'b> Parser<'a, 'b> {
                 }
             }
             TokenKind::Punctuation(PunctuationKind::Minus) => {
-                let ((), r_bp) =
-                    prefix_bp(&TokenKind::Punctuation(PunctuationKind::Minus)).unwrap();
+                let ((), r_bp) = prefix_bp(&TokenKind::Punctuation(PunctuationKind::Minus)).unwrap();
                 let start_offset = self.offset;
 
                 self.consume_punctuation(PunctuationKind::Minus)?;
                 let expr = self.parse_expr(r_bp, true)?;
                 Expr {
-                    kind: ExprKind::Neg {
-                        right: Box::new(expr),
-                    },
+                    kind: ExprKind::Neg { right: Box::new(expr) },
                     span: self.get_span(start_offset, self.offset - 1)?,
                 }
             }
@@ -173,9 +166,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                 self.consume_punctuation(PunctuationKind::Not)?;
                 let expr = self.parse_expr(r_bp, true)?;
                 Expr {
-                    kind: ExprKind::Not {
-                        right: Box::new(expr),
-                    },
+                    kind: ExprKind::Not { right: Box::new(expr) },
                     span: self.get_span(start_offset, self.offset - 1)?,
                 }
             }
@@ -264,9 +255,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                     TokenKind::Punctuation(PunctuationKind::Lt) => {
                         self.place_checkpoint();
 
-                        if let Ok((generic_args, generic_args_span)) =
-                            self.parse_optional_generic_args()
-                        {
+                        if let Ok((generic_args, generic_args_span)) = self.parse_optional_generic_args() {
                             Some(Expr {
                                 kind: ExprKind::GenericApply {
                                     left: Box::new(lhs_clone),
@@ -321,10 +310,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                         }
                     }
                     TokenKind::Punctuation(PunctuationKind::LBrace) => {
-                        let allow_lhs_kind = matches!(
-                            &lhs_clone.kind,
-                            ExprKind::Identifier(_) | ExprKind::GenericApply { .. }
-                        );
+                        let allow_lhs_kind = matches!(&lhs_clone.kind, ExprKind::Identifier(_) | ExprKind::GenericApply { .. });
 
                         if allow_struct_literal_suffix && allow_lhs_kind {
                             Some(self.parse_struct_init_expr(lhs_clone)?)

@@ -5,52 +5,67 @@ use crate::{
         base::base_expression::Expr,
         checked::{
             checked_expression::{CheckedExpr, CheckedExprKind},
-            checked_type::CheckedType,
+            checked_type::{CheckedType, CheckedTypeKind},
         },
         Span,
     },
-    check::{
-        scope::Scope, utils::is_signed::is_signed, SemanticChecker, SemanticError,
-        SemanticErrorKind,
-    },
+    check::{scope::Scope, utils::is_signed::is_signed, SemanticChecker, SemanticError},
 };
 
 impl<'a> SemanticChecker<'a> {
-    pub fn check_arithmetic_negation_expr(
-        &mut self,
-        right: Box<Expr>,
-        span: Span,
-        scope: Rc<RefCell<Scope>>,
-    ) -> CheckedExpr {
+    pub fn check_arithmetic_negation_expr(&mut self, right: Box<Expr>, span: Span, scope: Rc<RefCell<Scope>>) -> CheckedExpr {
         let checked_right = self.check_expr(*right, scope);
 
-        let expr_type = match &checked_right.ty {
-            t if is_signed(&t) => t.clone(),
-            unexpected_type => {
+        let expr_type = match &checked_right.ty.kind {
+            t if is_signed(&t) => CheckedType { kind: t.clone(), span },
+            _ => {
                 let expected = HashSet::from([
-                    CheckedType::I8,
-                    CheckedType::I16,
-                    CheckedType::I32,
-                    CheckedType::I64,
-                    CheckedType::ISize,
-                    CheckedType::F32,
-                    CheckedType::F64,
+                    CheckedType {
+                        kind: CheckedTypeKind::I8,
+                        span: checked_right.ty.span,
+                    },
+                    CheckedType {
+                        kind: CheckedTypeKind::I16,
+                        span: checked_right.ty.span,
+                    },
+                    CheckedType {
+                        kind: CheckedTypeKind::I32,
+                        span: checked_right.ty.span,
+                    },
+                    CheckedType {
+                        kind: CheckedTypeKind::I64,
+                        span: checked_right.ty.span,
+                    },
+                    CheckedType {
+                        kind: CheckedTypeKind::ISize,
+                        span: checked_right.ty.span,
+                    },
+                    CheckedType {
+                        kind: CheckedTypeKind::F32,
+                        span: checked_right.ty.span,
+                    },
+                    CheckedType {
+                        kind: CheckedTypeKind::F64,
+                        span: checked_right.ty.span,
+                    },
                 ]);
 
-                self.errors.push(SemanticError {
-                    kind: SemanticErrorKind::TypeMismatch {
-                        expected: CheckedType::Union(expected),
-                        received: unexpected_type.clone(),
+                self.errors.push(SemanticError::TypeMismatch {
+                    expected: CheckedType {
+                        kind: CheckedTypeKind::Union(expected),
+                        span: checked_right.ty.span,
                     },
-                    span: checked_right.span,
+                    received: checked_right.ty.clone(),
                 });
 
-                CheckedType::Unknown
+                CheckedType {
+                    kind: CheckedTypeKind::Unknown,
+                    span,
+                }
             }
         };
 
         CheckedExpr {
-            span,
             ty: expr_type,
             kind: CheckedExprKind::Neg {
                 right: Box::new(checked_right),

@@ -35,10 +35,7 @@ fn suffix_bp(token_kind: &TokenKind) -> Option<(u8, ())> {
 }
 
 impl<'a, 'b> Parser<'a, 'b> {
-    pub fn parse_type_annotation(
-        &mut self,
-        min_prec: u8,
-    ) -> Result<TypeAnnotation, ParsingError<'a>> {
+    pub fn parse_type_annotation(&mut self, min_prec: u8) -> Result<TypeAnnotation, ParsingError<'a>> {
         let token = self.current().ok_or(self.unexpected_end_of_input())?;
 
         let mut lhs = match token.kind {
@@ -207,15 +204,14 @@ impl<'a, 'b> Parser<'a, 'b> {
                 let type_annotation = self.parse_fn_type_annotation().or_else(|fn_err| {
                     let offset_after_fn_attempt = self.offset;
                     self.goto_checkpoint();
-                    self.parse_parenthesized_type_annotation()
-                        .or_else(|paren_err| {
-                            let offset_after_paren_attempt = self.offset;
-                            if offset_after_fn_attempt >= offset_after_paren_attempt {
-                                Err(fn_err)
-                            } else {
-                                Err(paren_err)
-                            }
-                        })
+                    self.parse_parenthesized_type_annotation().or_else(|paren_err| {
+                        let offset_after_paren_attempt = self.offset;
+                        if offset_after_fn_attempt >= offset_after_paren_attempt {
+                            Err(fn_err)
+                        } else {
+                            Err(paren_err)
+                        }
+                    })
                 })?;
 
                 type_annotation
@@ -270,8 +266,7 @@ impl<'a, 'b> Parser<'a, 'b> {
 
                 lhs = match op.kind {
                     TokenKind::Punctuation(PunctuationKind::Lt) => {
-                        let (generic_args, generic_args_span) =
-                            self.parse_optional_generic_args()?;
+                        let (generic_args, generic_args_span) = self.parse_optional_generic_args()?;
 
                         TypeAnnotation {
                             kind: TypeAnnotationKind::GenericApply {
@@ -304,13 +299,12 @@ impl<'a, 'b> Parser<'a, 'b> {
                             end: end_span.end,
                         };
 
-                        let kind =
-                            if let TypeAnnotationKind::Union(existing_variants) = &mut lhs.kind {
-                                existing_variants.push(rhs);
-                                lhs.kind
-                            } else {
-                                TypeAnnotationKind::Union(vec![lhs, rhs])
-                            };
+                        let kind = if let TypeAnnotationKind::Union(existing_variants) = &mut lhs.kind {
+                            existing_variants.push(rhs);
+                            lhs.kind
+                        } else {
+                            TypeAnnotationKind::Union(vec![lhs, rhs])
+                        };
 
                         TypeAnnotation { kind, span }
                     }

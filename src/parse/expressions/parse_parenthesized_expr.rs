@@ -14,9 +14,6 @@ impl<'a, 'b> Parser<'a, 'b> {
 
         let span = self.get_span(start_offset, self.offset - 1)?;
 
-        Ok(Expr {
-            kind: expr.kind,
-            span,
-        })
+        Ok(Expr { kind: expr.kind, span })
     }
 }

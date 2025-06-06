@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::{
     ast::{
-        checked::{checked_declaration::CheckedParam, checked_type::CheckedType},
+        checked::{checked_declaration::CheckedParam, checked_type::CheckedTypeKind},
         IdentifierNode, Span,
     },
     compile::string_interner::InternerId,
@@ -24,31 +24,31 @@ pub struct TemporaryId(usize);
 #[derive(Clone, Debug)]
 pub enum RValue {
     NullLiteral {
-        ty: CheckedType,
+        ty: CheckedTypeKind,
         span: Span,
     },
     BoolLiteral {
         value: bool,
-        ty: CheckedType,
+        ty: CheckedTypeKind,
         span: Span,
     },
     NumberLiteral {
         value: NumberKind,
-        ty: CheckedType,
+        ty: CheckedTypeKind,
         span: Span,
     },
     StringLiteral {
         value: InternerId,
-        ty: CheckedType,
+        ty: CheckedTypeKind,
         span: Span,
     },
     Temp {
         id: TemporaryId,
-        ty: CheckedType,
+        ty: CheckedTypeKind,
     },
     Var {
         id: VariableId,
-        ty: CheckedType,
+        ty: CheckedTypeKind,
         span: Span,
     },
 }
@@ -57,14 +57,14 @@ pub enum RValue {
 pub enum LValue {
     Var {
         id: VariableId,
-        ty: CheckedType,
+        ty: CheckedTypeKind,
         span: Span,
     },
     FieldAccess {
         object_temp: TemporaryId,
-        object_type: CheckedType,
+        object_type: CheckedTypeKind,
         field_name: IdentifierNode,
-        field_type: CheckedType,
+        field_type: CheckedTypeKind,
         span: Span,
     },
 }
@@ -82,7 +82,7 @@ pub enum CFGInstruction {
     // This pointer is of a "raw pointer" to the `result_type` type.
     New {
         destination: TemporaryId,
-        result_type: CheckedType,
+        result_type: CheckedTypeKind,
         allocation_site_id: AllocationSiteId,
         span: Span,
     },
@@ -97,7 +97,7 @@ pub enum CFGInstruction {
         op_kind: UnaryOperationKind,
         destination: TemporaryId,
         operand: RValue,
-        result_type: CheckedType,
+        result_type: CheckedTypeKind,
         span: Span,
     },
     BinaryOp {
@@ -105,19 +105,19 @@ pub enum CFGInstruction {
         destination: TemporaryId,
         left: RValue,
         right: RValue,
-        result_type: CheckedType,
+        result_type: CheckedTypeKind,
         span: Span,
     },
     TypeCast {
         destination: TemporaryId,
         operand: RValue,
-        target_type: CheckedType,
+        target_type: CheckedTypeKind,
         span: Span,
     },
     IsType {
         destination: TemporaryId,
         operand_to_check: RValue,
-        type_to_check_against: CheckedType,
+        type_to_check_against: CheckedTypeKind,
         // result_type is implicitly Bool
         span: Span,
     },
@@ -125,7 +125,7 @@ pub enum CFGInstruction {
         destination: Option<TemporaryId>, // For non-void functions
         function_rvalue: RValue, // RValue that evaluates to a function (e.g., Var holding func, or direct func identifier)
         args: Vec<RValue>,
-        result_type: CheckedType,
+        result_type: CheckedTypeKind,
         span: Span,
     },
     Nop {
@@ -186,7 +186,7 @@ pub struct BasicBlock {
 pub struct ControlFlowGraph {
     pub function_name: IdentifierNode,
     pub parameters: Vec<(VariableId, CheckedParam)>,
-    pub return_type: CheckedType,
+    pub return_type: CheckedTypeKind,
 
     pub entry_block: BasicBlockId,
     pub blocks: HashMap<BasicBlockId, BasicBlock>,

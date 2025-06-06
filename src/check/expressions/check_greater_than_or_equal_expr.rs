@@ -5,7 +5,7 @@ use crate::{
         base::base_expression::Expr,
         checked::{
             checked_expression::{CheckedExpr, CheckedExprKind},
-            checked_type::CheckedType,
+            checked_type::CheckedTypeKind,
         },
         Span,
     },
@@ -20,18 +20,21 @@ impl<'a> SemanticChecker<'a> {
         span: Span,
         scope: Rc<RefCell<Scope>>,
     ) -> CheckedExpr {
+        let node_id = self.get_node_id();
+        self.span_registry.insert_span(node_id, span);
+
         let checked_left = self.check_expr(*left, scope.clone());
         let checked_right = self.check_expr(*right, scope);
-        let checked_op = self.check_binary_numeric_operation(&checked_left, &checked_right);
+        let checked_op = self.check_binary_numeric_operation(&checked_left, &checked_right, span);
 
-        let expr_type = if checked_op == CheckedType::Unknown {
-            CheckedType::Unknown
+        let expr_type = if matches!(checked_op, CheckedTypeKind::Unknown { .. }) {
+            checked_op
         } else {
-            CheckedType::Bool
+            CheckedTypeKind::Bool { node_id }
         };
 
         CheckedExpr {
-            span,
+            node_id,
             ty: expr_type,
             kind: CheckedExprKind::GreaterThanOrEqual {
                 left: Box::new(checked_left),

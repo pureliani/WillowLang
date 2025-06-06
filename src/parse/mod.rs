@@ -102,11 +102,7 @@ impl<'a, 'b> Parser<'a, 'b> {
             },
         };
 
-        let last_token_span = self
-            .tokens
-            .last()
-            .map(|t| &t.span)
-            .unwrap_or(&first_token_span);
+        let last_token_span = self.tokens.last().map(|t| &t.span).unwrap_or(&first_token_span);
 
         ParsingError {
             kind: ParsingErrorKind::UnexpectedEndOfInput,
@@ -114,20 +110,10 @@ impl<'a, 'b> Parser<'a, 'b> {
         }
     }
 
-    fn get_span(
-        &mut self,
-        start_offset: usize,
-        end_offset: usize,
-    ) -> Result<Span, ParsingError<'a>> {
-        let start = self
-            .tokens
-            .get(start_offset)
-            .ok_or(self.unexpected_end_of_input())?;
+    fn get_span(&mut self, start_offset: usize, end_offset: usize) -> Result<Span, ParsingError<'a>> {
+        let start = self.tokens.get(start_offset).ok_or(self.unexpected_end_of_input())?;
 
-        let end = self
-            .tokens
-            .get(end_offset)
-            .ok_or(self.unexpected_end_of_input())?;
+        let end = self.tokens.get(end_offset).ok_or(self.unexpected_end_of_input())?;
 
         Ok(Span {
             start: start.span.start,
@@ -168,10 +154,7 @@ impl<'a, 'b> Parser<'a, 'b> {
         }
     }
 
-    pub fn consume_punctuation(
-        &mut self,
-        expected: PunctuationKind,
-    ) -> Result<(), ParsingError<'a>> {
+    pub fn consume_punctuation(&mut self, expected: PunctuationKind) -> Result<(), ParsingError<'a>> {
         if let Some(token) = self.current() {
             match &token.kind {
                 TokenKind::Punctuation(pk) if *pk == expected => {
@@ -264,11 +247,7 @@ impl<'a, 'b> Parser<'a, 'b> {
         result
     }
 
-    pub fn comma_separated<F, T, E>(
-        &mut self,
-        mut parser: F,
-        is_end: E,
-    ) -> Result<Vec<T>, ParsingError<'a>>
+    pub fn comma_separated<F, T, E>(&mut self, mut parser: F, is_end: E) -> Result<Vec<T>, ParsingError<'a>>
     where
         F: FnMut(&mut Self) -> Result<T, ParsingError<'a>>,
         E: Fn(&Self) -> bool,
@@ -300,10 +279,7 @@ impl<'a, 'b> Parser<'a, 'b> {
         Ok(items)
     }
 
-    pub fn parse(
-        tokens: Vec<Token<'a>>,
-        interner: &'b mut StringInterner<'a>,
-    ) -> (Vec<Stmt>, Vec<ParsingError<'a>>) {
+    pub fn parse(tokens: Vec<Token<'a>>, interner: &'b mut StringInterner<'a>) -> (Vec<Stmt>, Vec<ParsingError<'a>>) {
         let mut state = Parser {
             offset: 0,
             checkpoint_offset: 0,

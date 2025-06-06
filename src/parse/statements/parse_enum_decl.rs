@@ -8,10 +8,7 @@ use crate::{
 };
 
 impl<'a, 'b> Parser<'a, 'b> {
-    pub fn parse_enum_decl(
-        &mut self,
-        documentation: Option<DocAnnotation>,
-    ) -> Result<Stmt, ParsingError<'a>> {
+    pub fn parse_enum_decl(&mut self, documentation: Option<DocAnnotation>) -> Result<Stmt, ParsingError<'a>> {
         let start_offset = self.offset;
 
         self.consume_keyword(KeywordKind::Enum)?;
@@ -30,6 +27,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                 identifier,
                 documentation,
                 variants,
+                span,
             }),
             span,
         })

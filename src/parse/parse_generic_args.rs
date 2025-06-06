@@ -6,9 +6,7 @@ use crate::{
 use super::{Parser, ParsingError};
 
 impl<'a, 'b> Parser<'a, 'b> {
-    pub fn parse_optional_generic_args(
-        &mut self,
-    ) -> Result<(Vec<TypeAnnotation>, Span), ParsingError<'a>> {
+    pub fn parse_optional_generic_args(&mut self) -> Result<(Vec<TypeAnnotation>, Span), ParsingError<'a>> {
         let start_offset = self.offset;
         if self.match_token(0, TokenKind::Punctuation(PunctuationKind::Lt)) {
             self.advance();

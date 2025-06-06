@@ -13,6 +13,7 @@ use super::{
 pub struct BlockContents {
     pub statements: Vec<Stmt>,
     pub final_expr: Option<Box<Expr>>,
+    pub span: Span,
 }
 
 #[derive(Clone, Debug, PartialEq)]

@@ -1,14 +1,16 @@
-use crate::{ast::checked::checked_type::CheckedType, check::SemanticChecker};
+use crate::{
+    ast::checked::{
+        checked_declaration::CheckedFnType,
+        checked_type::{CheckedType, CheckedTypeKind},
+    },
+    check::SemanticChecker,
+};
 
 impl<'a> SemanticChecker<'a> {
-    pub fn check_is_assignable(
-        &mut self,
-        source_type: &CheckedType,
-        target_type: &CheckedType,
-    ) -> bool {
-        use CheckedType::*;
+    pub fn check_is_assignable(&mut self, source_type: &CheckedType, target_type: &CheckedType) -> bool {
+        use CheckedTypeKind::*;
 
-        match (source_type, target_type) {
+        match (&source_type.kind, &target_type.kind) {
             (I8, I8)
             | (I16, I16)
             | (I32, I32)
@@ -31,24 +33,19 @@ impl<'a> SemanticChecker<'a> {
                     .iter()
                     .any(|target_item| self.check_is_assignable(source_item, target_item))
             }),
-            (source, Union(target)) => target
+            (_, Union(target)) => target
                 .iter()
-                .any(|target_item| self.check_is_assignable(source, target_item)),
-            (GenericParam(source), GenericParam(target)) => {
-                match (&source.constraint, &target.constraint) {
-                    (None, None) => true,
-                    (Some(_), None) => true,
-                    (None, Some(_)) => false,
-                    (Some(left_constraint), Some(right_constraint)) => {
-                        self.check_is_assignable(left_constraint, right_constraint)
-                    }
-                }
-            }
+                .any(|target_item| self.check_is_assignable(source_type, target_item)),
+
+            (GenericParam(source), GenericParam(target)) => match (&source.constraint, &target.constraint) {
+                (None, None) => true,
+                (Some(_), None) => true,
+                (None, Some(_)) => false,
+                (Some(left_constraint), Some(right_constraint)) => self.check_is_assignable(left_constraint, right_constraint),
+            },
             (source, GenericParam(target)) => match (&source, &target.constraint) {
                 (_, None) => true,
-                (source, Some(right_constraint)) => {
-                    self.check_is_assignable(source, right_constraint)
-                }
+                (_, Some(right_constraint)) => self.check_is_assignable(source_type, right_constraint),
             },
             (StructDecl(source), StructDecl(target)) => {
                 if source.properties.len() != target.properties.len() {
@@ -57,18 +54,12 @@ impl<'a> SemanticChecker<'a> {
 
                 let same_name = source.identifier.name == target.identifier.name;
 
-                let assignable_props =
-                    source
-                        .properties
-                        .iter()
-                        .zip(target.properties.iter())
-                        .all(|(sp, tp)| {
-                            let same_name = sp.identifier.name == tp.identifier.name;
-                            let assignable =
-                                self.check_is_assignable(&sp.constraint, &tp.constraint);
+                let assignable_props = source.properties.iter().zip(target.properties.iter()).all(|(sp, tp)| {
+                    let same_name = sp.identifier.name == tp.identifier.name;
+                    let assignable = self.check_is_assignable(&sp.constraint, &tp.constraint);
 
-                            same_name && assignable
-                        });
+                    same_name && assignable
+                });
 
                 same_name && assignable_props
             }
@@ -77,28 +68,30 @@ impl<'a> SemanticChecker<'a> {
                 Array {
                     item_type: source_type,
                     size: source_size,
+                    ..
                 },
                 Array {
                     item_type: target_type,
                     size: target_size,
+                    ..
                 },
             ) => {
                 let same_size = source_size == target_size;
-                let assignable_types = self.check_is_assignable(source_type, target_type);
+                let assignable_types = self.check_is_assignable(&source_type, &target_type);
 
                 same_size && assignable_types
             }
             (
-                FnType {
+                FnType(CheckedFnType {
                     params: source_params,
                     return_type: source_return_type,
                     ..
-                },
-                FnType {
+                }),
+                FnType(CheckedFnType {
                     params: target_params,
                     return_type: target_return_type,
                     ..
-                },
+                }),
             ) => {
                 if source_params.len() != target_params.len() {
                     return false;
@@ -109,13 +102,12 @@ impl<'a> SemanticChecker<'a> {
                     .zip(target_params.iter())
                     .all(|(sp, tp)| self.check_is_assignable(&tp.constraint, &sp.constraint));
 
-                let compatible_returns =
-                    self.check_is_assignable(source_return_type, target_return_type);
+                let compatible_returns = self.check_is_assignable(source_return_type, target_return_type);
 
                 compatible_params && compatible_returns
             }
-            (TypeAliasDecl(source), target) => self.check_is_assignable(&source.value, target),
-            (source, TypeAliasDecl(target)) => self.check_is_assignable(source, &target.value),
+            (TypeAliasDecl(source), _) => self.check_is_assignable(&source.value, target_type),
+            (_, TypeAliasDecl(target)) => self.check_is_assignable(source_type, &target.value),
             _ => false,
         }
     }

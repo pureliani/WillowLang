@@ -3,9 +3,7 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 use crate::{
     ast::{
         base::base_declaration::EnumDecl,
-        checked::checked_declaration::{
-            CheckedGenericParam, CheckedStructDecl, CheckedTypeAliasDecl, CheckedVarDecl,
-        },
+        checked::checked_declaration::{CheckedGenericParam, CheckedStructDecl, CheckedTypeAliasDecl, CheckedVarDecl},
     },
     compile::string_interner::InternerId,
 };
@@ -72,10 +70,7 @@ impl Scope {
 
     pub fn is_function_scope(&self) -> bool {
         if self.kind != ScopeKind::Function {
-            self.parent
-                .as_ref()
-                .map(|p| p.borrow().is_function_scope())
-                .unwrap_or(false)
+            self.parent.as_ref().map(|p| p.borrow().is_function_scope()).unwrap_or(false)
         } else {
             true
         }

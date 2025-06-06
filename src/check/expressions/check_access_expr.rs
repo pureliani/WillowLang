@@ -6,11 +6,11 @@ use crate::{
         checked::{
             checked_declaration::CheckedStructDecl,
             checked_expression::{CheckedExpr, CheckedExprKind},
-            checked_type::CheckedType,
+            checked_type::{CheckedType, CheckedTypeKind},
         },
         IdentifierNode, Span,
     },
-    check::{scope::Scope, SemanticChecker, SemanticError, SemanticErrorKind},
+    check::{scope::Scope, SemanticChecker, SemanticError},
 };
 
 impl<'a> SemanticChecker<'a> {
@@ -23,35 +23,38 @@ impl<'a> SemanticChecker<'a> {
     ) -> CheckedExpr {
         let checked_left = self.check_expr(*left, scope);
 
-        let expr_type = match &checked_left.ty {
-            CheckedType::StructDecl(CheckedStructDecl { properties, .. }) => properties
+        let expr_type = match &checked_left.ty.kind {
+            // TODO: Add enum declaration handler
+            CheckedTypeKind::StructDecl(CheckedStructDecl { properties, .. }) => properties
                 .into_iter()
                 .find(|p| p.identifier == field)
                 .map(|p| p.constraint.clone())
                 .unwrap_or_else(|| {
-                    self.errors.push(SemanticError {
-                        kind: SemanticErrorKind::AccessToUndefinedProperty(field.clone()),
-                        span: span,
-                    });
-                    CheckedType::Unknown
+                    self.errors.push(SemanticError::AccessToUndefinedProperty { property: field });
+
+                    CheckedType {
+                        kind: CheckedTypeKind::Unknown,
+                        span,
+                    }
                 }),
-            t => {
-                self.errors.push(SemanticError {
-                    kind: SemanticErrorKind::CannotAccess(t.clone()),
-                    span: field.span,
+            _ => {
+                self.errors.push(SemanticError::CannotAccess {
+                    target: checked_left.ty.clone(),
                 });
 
-                CheckedType::Unknown
+                CheckedType {
+                    kind: CheckedTypeKind::Unknown,
+                    span,
+                }
             }
         };
 
         CheckedExpr {
+            ty: expr_type,
             kind: CheckedExprKind::Access {
                 left: Box::new(checked_left.clone()),
                 field,
             },
-            span,
-            ty: expr_type,
         }
     }
 }

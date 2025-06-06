@@ -19,10 +19,9 @@ impl<'a> SemanticChecker<'a> {
     ) -> CheckedExpr {
         let checked_left = self.check_expr(*left, scope.clone());
         let checked_right = self.check_expr(*right, scope);
-        let expr_type = self.check_binary_numeric_operation(&checked_left, &checked_right);
+        let expr_type = self.check_binary_numeric_operation(&checked_left, &checked_right, span);
 
         CheckedExpr {
-            span,
             kind: CheckedExprKind::Divide {
                 left: Box::new(checked_left),
                 right: Box::new(checked_right),

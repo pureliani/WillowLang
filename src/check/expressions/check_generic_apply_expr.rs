@@ -1,4 +1,4 @@
-use std::{cell::RefCell, iter, rc::Rc};
+use std::{cell::RefCell, rc::Rc};
 
 use crate::{
     ast::{
@@ -6,59 +6,43 @@ use crate::{
         checked::{
             checked_declaration::{CheckedGenericParam, CheckedStructDecl},
             checked_expression::{CheckedExpr, CheckedExprKind},
-            checked_type::CheckedType,
+            checked_type::{CheckedType, CheckedTypeKind},
         },
         Span,
     },
-    check::{
-        scope::Scope, utils::substitute_generics::GenericSubstitutionMap, SemanticChecker,
-        SemanticError, SemanticErrorKind,
-    },
+    check::{scope::Scope, utils::substitute_generics::GenericSubstitutionMap, SemanticChecker, SemanticError},
 };
 
 impl<'a> SemanticChecker<'a> {
     pub fn build_substitutions(
         &mut self,
         generic_params: &Vec<CheckedGenericParam>,
-        type_args: Vec<(Span, CheckedType)>,
+        type_args: Vec<CheckedType>,
         span: Span,
     ) -> GenericSubstitutionMap {
         if generic_params.len() != type_args.len() {
-            self.errors.push(SemanticError {
-                kind: SemanticErrorKind::GenericArgumentCountMismatch {
-                    expected: generic_params.len(),
-                    received: type_args.len(),
-                },
+            self.errors.push(SemanticError::GenericArgumentCountMismatch {
+                expected: generic_params.len(),
+                received: type_args.len(),
                 span,
             });
         } else {
-            generic_params
-                .iter()
-                .zip(type_args.iter())
-                .for_each(|(gp, ta)| {
-                    if let Some(constraint) = &gp.constraint {
-                        if !self.check_is_assignable(&ta.1, constraint) {
-                            self.errors.push(SemanticError {
-                                kind: SemanticErrorKind::TypeMismatch {
-                                    expected: *constraint.clone(),
-                                    received: ta.1.clone(),
-                                },
-                                span: ta.0,
-                            });
-                        }
+            generic_params.iter().zip(type_args.iter()).for_each(|(gp, ta)| {
+                if let Some(constraint) = &gp.constraint {
+                    if !self.check_is_assignable(&ta.1, constraint) {
+                        self.errors.push(SemanticError::TypeMismatch {
+                            expected: *constraint.clone(),
+                            received: ta.clone(),
+                        });
                     }
-                });
+                }
+            });
         };
 
         let substitutions: GenericSubstitutionMap = generic_params
             .into_iter()
             .map(|gp| gp.identifier.name)
-            .zip(
-                type_args
-                    .into_iter()
-                    .map(|ta| ta.1)
-                    .chain(iter::repeat(CheckedType::Unknown)),
-            )
+            .zip(type_args.into_iter().map(|ta| ta.1))
             .collect();
 
         substitutions
@@ -80,13 +64,16 @@ impl<'a> SemanticChecker<'a> {
             .collect();
 
         let (type_kind, substitutions) = match &checked_left.ty {
-            t @ CheckedType::FnType { generic_params, .. } => {
+            t @ CheckedTypeKind::FnType { generic_params, .. } => {
                 let substitutions = self.build_substitutions(generic_params, type_args, span);
                 let substituted = self.substitute_generics(&t, &substitutions);
 
                 (substituted, substitutions)
             }
-            t @ CheckedType::StructDecl(CheckedStructDecl { generic_params, .. }) => {
+            t @ CheckedTypeKind::StructDecl {
+                decl: CheckedStructDecl { generic_params, .. },
+                ..
+            } => {
                 let substitutions = self.build_substitutions(generic_params, type_args, span);
                 let substituted = self.substitute_generics(&t, &substitutions);
 
@@ -100,12 +87,12 @@ impl<'a> SemanticChecker<'a> {
                     span,
                 });
 
-                (CheckedType::Unknown, GenericSubstitutionMap::new())
+                (CheckedTypeKind::Unknown { node_id }, GenericSubstitutionMap::new())
             }
         };
 
         CheckedExpr {
-            span,
+            node_id,
             ty: type_kind,
             kind: CheckedExprKind::TypeSpecialization {
                 target: Box::new(checked_left),

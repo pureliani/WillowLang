@@ -1,6 +1,9 @@
 use std::hash::{Hash, Hasher};
 
-use crate::{ast::IdentifierNode, parse::DocAnnotation};
+use crate::{
+    ast::{IdentifierNode, Span},
+    parse::DocAnnotation,
+};
 
 use super::{base_expression::Expr, base_type::TypeAnnotation};
 
@@ -29,6 +32,7 @@ pub struct EnumDecl {
     pub identifier: IdentifierNode,
     pub documentation: Option<DocAnnotation>,
     pub variants: Vec<IdentifierNode>,
+    pub span: Span,
 }
 
 impl Eq for EnumDecl {}

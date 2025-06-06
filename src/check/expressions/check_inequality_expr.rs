@@ -5,14 +5,11 @@ use crate::{
         base::base_expression::Expr,
         checked::{
             checked_expression::{CheckedExpr, CheckedExprKind},
-            checked_type::CheckedType,
+            checked_type::CheckedTypeKind,
         },
         Span,
     },
-    check::{
-        scope::Scope, utils::check_is_equatable::check_is_equatable, SemanticChecker,
-        SemanticError, SemanticErrorKind,
-    },
+    check::{scope::Scope, utils::check_is_equatable::check_is_equatable, SemanticChecker, SemanticError, SemanticErrorKind},
 };
 
 impl<'a> SemanticChecker<'a> {
@@ -23,7 +20,10 @@ impl<'a> SemanticChecker<'a> {
         span: Span,
         scope: Rc<RefCell<Scope>>,
     ) -> CheckedExpr {
-        let mut ty = CheckedType::Bool;
+        let node_id = self.get_node_id();
+        self.span_registry.insert_span(node_id, span);
+
+        let mut ty = CheckedTypeKind::Bool { node_id };
 
         let checked_left = self.check_expr(*left, scope.clone());
         let checked_right = self.check_expr(*right, scope);
@@ -37,7 +37,7 @@ impl<'a> SemanticChecker<'a> {
                 span,
             });
 
-            ty = CheckedType::Unknown;
+            ty = CheckedTypeKind::Unknown { node_id };
         }
 
         CheckedExpr {

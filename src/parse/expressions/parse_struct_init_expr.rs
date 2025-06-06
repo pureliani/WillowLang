@@ -8,9 +8,7 @@ use crate::{
 };
 
 impl<'a, 'b> Parser<'a, 'b> {
-    pub fn parse_struct_init_fields(
-        &mut self,
-    ) -> Result<Vec<(IdentifierNode, Expr)>, ParsingError<'a>> {
+    pub fn parse_struct_init_fields(&mut self) -> Result<Vec<(IdentifierNode, Expr)>, ParsingError<'a>> {
         self.consume_punctuation(PunctuationKind::LBrace)?;
         let args = self.comma_separated(
             |p| {

@@ -5,7 +5,7 @@ use crate::{
         base::base_expression::Expr,
         checked::{
             checked_expression::{CheckedExpr, CheckedExprKind},
-            checked_type::CheckedType,
+            checked_type::CheckedTypeKind,
         },
         Span,
     },
@@ -13,25 +13,24 @@ use crate::{
 };
 
 impl<'a> SemanticChecker<'a> {
-    pub fn check_logical_negation_expr(
-        &mut self,
-        right: Box<Expr>,
-        span: Span,
-        scope: Rc<RefCell<Scope>>,
-    ) -> CheckedExpr {
+    pub fn check_logical_negation_expr(&mut self, right: Box<Expr>, span: Span, scope: Rc<RefCell<Scope>>) -> CheckedExpr {
+        let node_id = self.get_node_id();
+        self.span_registry.insert_span(node_id, span);
+
         let checked_right = self.check_expr(*right, scope);
 
-        let mut expr_type = CheckedType::Bool;
+        let expected = CheckedTypeKind::Bool { node_id };
+        let mut expr_type = expected.clone();
 
-        if !self.check_is_assignable(&checked_right.ty, &CheckedType::Bool) {
+        if !self.check_is_assignable(&checked_right.ty, &expected) {
             self.errors.push(SemanticError {
                 kind: SemanticErrorKind::TypeMismatch {
-                    expected: CheckedType::Bool,
+                    expected,
                     received: checked_right.ty.clone(),
                 },
                 span,
             });
-            expr_type = CheckedType::Unknown
+            expr_type = CheckedTypeKind::Unknown { node_id }
         }
 
         CheckedExpr {

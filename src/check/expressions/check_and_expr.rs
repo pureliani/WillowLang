@@ -5,47 +5,49 @@ use crate::{
         base::base_expression::Expr,
         checked::{
             checked_expression::{CheckedExpr, CheckedExprKind},
-            checked_type::CheckedType,
+            checked_type::{CheckedType, CheckedTypeKind},
         },
         Span,
     },
-    check::{scope::Scope, SemanticChecker, SemanticError, SemanticErrorKind},
+    check::{scope::Scope, SemanticChecker, SemanticError},
 };
 
 impl<'a> SemanticChecker<'a> {
-    pub fn check_and_expr(
-        &mut self,
-        left: Box<Expr>,
-        right: Box<Expr>,
-        span: Span,
-        scope: Rc<RefCell<Scope>>,
-    ) -> CheckedExpr {
-        let mut expr_type = CheckedType::Bool;
+    pub fn check_and_expr(&mut self, left: Box<Expr>, right: Box<Expr>, span: Span, scope: Rc<RefCell<Scope>>) -> CheckedExpr {
+        let mut expr_type = CheckedType {
+            kind: CheckedTypeKind::Bool,
+            span,
+        };
 
         let checked_left = self.check_expr(*left, scope.clone());
         let checked_right = self.check_expr(*right, scope);
 
-        if !self.check_is_assignable(&checked_left.ty, &CheckedType::Bool) {
-            self.errors.push(SemanticError {
-                kind: SemanticErrorKind::TypeMismatch {
-                    expected: CheckedType::Bool,
-                    received: checked_left.ty.clone(),
-                },
-                span: checked_left.span,
+        let expected_left = CheckedType {
+            kind: CheckedTypeKind::Bool,
+            span: checked_left.ty.span,
+        };
+
+        if !self.check_is_assignable(&checked_left.ty, &expected_left) {
+            self.errors.push(SemanticError::TypeMismatch {
+                expected: expected_left,
+                received: checked_left.ty.clone(),
             });
 
-            expr_type = CheckedType::Unknown;
+            expr_type.kind = CheckedTypeKind::Unknown;
         }
 
-        if !self.check_is_assignable(&checked_right.ty, &CheckedType::Bool) {
-            self.errors.push(SemanticError {
-                kind: SemanticErrorKind::TypeMismatch {
-                    expected: CheckedType::Bool,
-                    received: checked_right.ty.clone(),
-                },
-                span: checked_right.span,
+        let expected_right = CheckedType {
+            kind: CheckedTypeKind::Bool,
+            span: checked_right.ty.span,
+        };
+
+        if !self.check_is_assignable(&checked_right.ty, &expected_right) {
+            self.errors.push(SemanticError::TypeMismatch {
+                expected: expected_right,
+                received: checked_right.ty.clone(),
             });
-            expr_type = CheckedType::Unknown;
+
+            expr_type.kind = CheckedTypeKind::Unknown;
         }
 
         CheckedExpr {
@@ -53,7 +55,6 @@ impl<'a> SemanticChecker<'a> {
                 left: Box::new(checked_left),
                 right: Box::new(checked_right),
             },
-            span,
             ty: expr_type,
         }
     }

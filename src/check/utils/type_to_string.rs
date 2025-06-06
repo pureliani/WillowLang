@@ -2,10 +2,8 @@ use crate::{
     ast::{
         base::base_declaration::EnumDecl,
         checked::{
-            checked_declaration::{
-                CheckedGenericParam, CheckedParam, CheckedStructDecl, CheckedTypeAliasDecl,
-            },
-            checked_type::CheckedType,
+            checked_declaration::{CheckedFnType, CheckedGenericParam, CheckedParam, CheckedStructDecl, CheckedTypeAliasDecl},
+            checked_type::CheckedTypeKind,
         },
     },
     compile::string_interner::{InternerId, StringInterner},
@@ -19,15 +17,12 @@ fn identifier_to_string(id: InternerId, string_interner: &StringInterner) -> Str
 
 fn param_to_string(param: &CheckedParam, string_interner: &StringInterner) -> String {
     let name = identifier_to_string(param.identifier.name, string_interner);
-    let constraint = type_to_string(&param.constraint, string_interner);
+    let constraint = type_to_string(&param.constraint.kind, string_interner);
 
     format!("{}: {}", name, constraint)
 }
 
-fn generic_params_to_string(
-    generic_params: &Vec<CheckedGenericParam>,
-    string_interner: &StringInterner,
-) -> String {
+fn generic_params_to_string(generic_params: &Vec<CheckedGenericParam>, string_interner: &StringInterner) -> String {
     if !generic_params.is_empty() {
         let joined = generic_params
             .iter()
@@ -36,7 +31,7 @@ fn generic_params_to_string(
 
                 match &gp.constraint {
                     Some(c) => {
-                        format!("{}: {}", name, type_to_string(c, string_interner))
+                        format!("{}: {}", name, type_to_string(&c.kind, string_interner))
                     }
                     None => {
                         format!("{}", name)
@@ -52,26 +47,26 @@ fn generic_params_to_string(
     }
 }
 
-pub fn type_to_string(ty: &CheckedType, string_interner: &StringInterner) -> String {
+pub fn type_to_string(ty: &CheckedTypeKind, string_interner: &StringInterner) -> String {
     match ty {
-        CheckedType::Void => String::from("void"),
-        CheckedType::Null => String::from("null"),
-        CheckedType::Bool => String::from("bool"),
-        CheckedType::U8 => String::from("u8"),
-        CheckedType::U16 => String::from("u16"),
-        CheckedType::U32 => String::from("u32"),
-        CheckedType::U64 => String::from("u64"),
-        CheckedType::USize => String::from("usize"),
-        CheckedType::ISize => String::from("isize"),
-        CheckedType::I8 => String::from("i8"),
-        CheckedType::I16 => String::from("i16"),
-        CheckedType::I32 => String::from("i32"),
-        CheckedType::I64 => String::from("i64"),
-        CheckedType::F32 => String::from("f32"),
-        CheckedType::F64 => String::from("f64"),
-        CheckedType::Char => String::from("char"),
-        CheckedType::Unknown => String::from("unknown"),
-        CheckedType::StructDecl(CheckedStructDecl {
+        CheckedTypeKind::Void => String::from("void"),
+        CheckedTypeKind::Null => String::from("null"),
+        CheckedTypeKind::Bool => String::from("bool"),
+        CheckedTypeKind::U8 => String::from("u8"),
+        CheckedTypeKind::U16 => String::from("u16"),
+        CheckedTypeKind::U32 => String::from("u32"),
+        CheckedTypeKind::U64 => String::from("u64"),
+        CheckedTypeKind::USize => String::from("usize"),
+        CheckedTypeKind::ISize => String::from("isize"),
+        CheckedTypeKind::I8 => String::from("i8"),
+        CheckedTypeKind::I16 => String::from("i16"),
+        CheckedTypeKind::I32 => String::from("i32"),
+        CheckedTypeKind::I64 => String::from("i64"),
+        CheckedTypeKind::F32 => String::from("f32"),
+        CheckedTypeKind::F64 => String::from("f64"),
+        CheckedTypeKind::Char => String::from("char"),
+        CheckedTypeKind::Unknown => String::from("unknown"),
+        CheckedTypeKind::StructDecl(CheckedStructDecl {
             generic_params,
             identifier,
             ..
@@ -81,21 +76,22 @@ pub fn type_to_string(ty: &CheckedType, string_interner: &StringInterner) -> Str
 
             format!("{}{}", name, generic_params_str)
         }
-        CheckedType::EnumDecl(EnumDecl { identifier, .. }) => {
+        CheckedTypeKind::EnumDecl(EnumDecl { identifier, .. }) => {
             let name = identifier_to_string(identifier.name, string_interner);
 
             name
         }
-        CheckedType::GenericParam(CheckedGenericParam { identifier, .. }) => {
+        CheckedTypeKind::GenericParam(CheckedGenericParam { identifier, .. }) => {
             let name = identifier_to_string(identifier.name, string_interner);
 
             name
         }
-        CheckedType::FnType {
+        CheckedTypeKind::FnType(CheckedFnType {
             params,
             return_type,
             generic_params,
-        } => {
+            span: _,
+        }) => {
             let generic_params_str = generic_params_to_string(generic_params, string_interner);
             let params_str = {
                 let joined = params
@@ -106,14 +102,11 @@ pub fn type_to_string(ty: &CheckedType, string_interner: &StringInterner) -> Str
 
                 format!("({})", joined)
             };
-            let return_type_str = type_to_string(&return_type, string_interner);
+            let return_type_str = type_to_string(&return_type.kind, string_interner);
 
-            format!(
-                "({}{} => {})",
-                generic_params_str, params_str, return_type_str
-            )
+            format!("({}{} => {})", generic_params_str, params_str, return_type_str)
         }
-        CheckedType::TypeAliasDecl(CheckedTypeAliasDecl {
+        CheckedTypeKind::TypeAliasDecl(CheckedTypeAliasDecl {
             generic_params,
             identifier,
             ..
@@ -123,14 +116,14 @@ pub fn type_to_string(ty: &CheckedType, string_interner: &StringInterner) -> Str
 
             format!("{}{}", name, generic_params_str)
         }
-        CheckedType::Union(hash_set) => hash_set
+        CheckedTypeKind::Union(hash_set) => hash_set
             .iter()
-            .map(|t| type_to_string(t, string_interner))
+            .map(|t| type_to_string(&t.kind, string_interner))
             .collect::<Vec<String>>()
             .join(" | "),
 
-        CheckedType::Array { item_type, size } => {
-            format!("[{}; {}]", type_to_string(item_type, string_interner), size)
+        CheckedTypeKind::Array { item_type, size } => {
+            format!("[{}; {}]", type_to_string(&item_type.kind, string_interner), size)
         }
     }
 }

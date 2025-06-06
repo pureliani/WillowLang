@@ -1,7 +1,7 @@
 use std::collections::{hash_map::Entry, HashMap};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct InternerId(usize);
+pub struct InternerId(pub usize);
 
 #[derive(Debug, Clone)]
 pub struct StringInterner<'a> {

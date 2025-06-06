@@ -10,14 +10,14 @@ use crate::{
         checked::{
             checked_declaration::{CheckedParam, CheckedVarDecl},
             checked_expression::{CheckedBlockContents, CheckedExpr, CheckedExprKind},
-            checked_type::CheckedType,
+            checked_type::CheckedTypeKind,
         },
         Span,
     },
     check::{
         scope::{Scope, ScopeKind, SymbolEntry},
         utils::union_of::union_of,
-        SemanticChecker, SemanticError, SemanticErrorKind,
+        SemanticChecker, SemanticError,
     },
 };
 
@@ -28,7 +28,7 @@ impl<'a> SemanticChecker<'a> {
         body: BlockContents,
         return_type: Option<TypeAnnotation>,
         generic_params: Vec<GenericParam>,
-        expr_span: Span,
+        span: Span,
         scope: Rc<RefCell<Scope>>,
     ) -> CheckedExpr {
         let fn_scope = scope.borrow().child(ScopeKind::Function);
@@ -39,6 +39,10 @@ impl<'a> SemanticChecker<'a> {
             .iter()
             .map(|param| {
                 let checked_constraint = self.check_type(&param.constraint, fn_scope.clone());
+                let span = Span {
+                    start: param.identifier.span.start,
+                    end: param.constraint.span.end,
+                };
 
                 fn_scope.borrow_mut().insert(
                     param.identifier.name,
@@ -47,6 +51,7 @@ impl<'a> SemanticChecker<'a> {
                         identifier: param.identifier,
                         constraint: checked_constraint.clone(),
                         value: None,
+                        span,
                     }),
                 );
 
@@ -57,10 +62,9 @@ impl<'a> SemanticChecker<'a> {
             })
             .collect();
 
+        self.check_codeblock_expr(body, body);
         let checked_statements = self.check_stmts(body.statements, fn_scope.clone());
-        let checked_final_expr = body
-            .final_expr
-            .map(|fe| Box::new(self.check_expr(*fe, fn_scope.clone())));
+        let checked_final_expr = body.final_expr.map(|fe| Box::new(self.check_expr(*fe, fn_scope.clone())));
 
         let checked_body = CheckedBlockContents {
             statements: checked_statements.clone(),
@@ -77,7 +81,7 @@ impl<'a> SemanticChecker<'a> {
         } else if return_exprs.len() == 1 {
             return_exprs.get(0).map(|e| e.ty.clone()).unwrap()
         } else {
-            CheckedType::Void
+            CheckedTypeKind::Void { node_id }
         };
 
         let param_types: Vec<CheckedParam> = params
@@ -88,8 +92,7 @@ impl<'a> SemanticChecker<'a> {
             })
             .collect();
 
-        let expected_return_type =
-            return_type.map(|return_t| self.check_type(&return_t, fn_scope.clone()));
+        let expected_return_type = return_type.map(|return_t| self.check_type(&return_t, fn_scope.clone()));
 
         let actual_return_type = if let Some(explicit_return_type) = expected_return_type {
             if !self.check_is_assignable(&inferred_return_type, &explicit_return_type) {
@@ -98,7 +101,7 @@ impl<'a> SemanticChecker<'a> {
                         expected: explicit_return_type.clone(),
                         received: inferred_return_type.clone(),
                     },
-                    span: expr_span,
+                    span,
                 });
             }
 
@@ -107,14 +110,15 @@ impl<'a> SemanticChecker<'a> {
             inferred_return_type
         };
 
-        let expr_type = CheckedType::FnType {
+        let expr_type = CheckedTypeKind::FnType {
             params: param_types,
             return_type: Box::new(actual_return_type.clone()),
             generic_params: checked_generic_params.clone(),
+            node_id,
         };
 
         CheckedExpr {
-            span: expr_span,
+            node_id,
             ty: expr_type,
             kind: CheckedExprKind::Fn {
                 params: checked_params,

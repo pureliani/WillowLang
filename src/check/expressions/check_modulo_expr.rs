@@ -10,16 +10,10 @@ use crate::{
 };
 
 impl<'a> SemanticChecker<'a> {
-    pub fn check_modulo_expr(
-        &mut self,
-        left: Box<Expr>,
-        right: Box<Expr>,
-        span: Span,
-        scope: Rc<RefCell<Scope>>,
-    ) -> CheckedExpr {
+    pub fn check_modulo_expr(&mut self, left: Box<Expr>, right: Box<Expr>, span: Span, scope: Rc<RefCell<Scope>>) -> CheckedExpr {
         let checked_left = self.check_expr(*left, scope.clone());
         let checked_right = self.check_expr(*right, scope);
-        let expr_type = self.check_binary_numeric_operation(&checked_left, &checked_right);
+        let expr_type = self.check_binary_numeric_operation(&checked_left, &checked_right, span);
 
         CheckedExpr {
             span,

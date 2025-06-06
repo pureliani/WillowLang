@@ -1,18 +1,14 @@
 use std::fs;
 
 use ariadne::{Color, Fmt};
-use willow::compile::{
-    compile_file, file_source_cache::FileSourceCache, string_interner::StringInterner,
-};
+use codespan_reporting::files::SimpleFiles;
+use willow::compile::{compile_file, string_interner::StringInterner};
 
 fn main() {
     let file_path = match std::env::args().nth(1) {
         Some(path) => path,
         None => {
-            eprintln!(
-                "{}",
-                "\nExpected file path to the program entry\n".fg(Color::BrightRed)
-            );
+            eprintln!("{}", "\nExpected file path to the program entry\n".fg(Color::BrightRed));
             return;
         }
     };
@@ -30,12 +26,7 @@ fn main() {
     };
 
     let mut string_interner = StringInterner::new();
-    let mut file_source_cache = FileSourceCache::new();
+    let mut files = SimpleFiles::<String, String>::new();
 
-    compile_file(
-        &file_path,
-        &source_code,
-        &mut string_interner,
-        &mut file_source_cache,
-    );
+    compile_file(&file_path, &source_code, &mut string_interner, &mut file_source_cache);
 }

@@ -78,11 +78,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                             // It's a standalone expression statement
                             let start_span = lhs.span;
                             self.consume_punctuation(PunctuationKind::SemiCol)?;
-                            let end_span = self
-                                .tokens
-                                .get(self.offset - 1)
-                                .map(|t| t.span)
-                                .unwrap_or(start_span);
+                            let end_span = self.tokens.get(self.offset - 1).map(|t| t.span).unwrap_or(start_span);
 
                             Ok(Stmt {
                                 span: Span {

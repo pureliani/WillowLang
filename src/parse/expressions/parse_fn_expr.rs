@@ -19,10 +19,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                 p.consume_punctuation(PunctuationKind::Col)?;
                 let constraint = p.parse_type_annotation(0)?;
 
-                Ok(Param {
-                    constraint,
-                    identifier,
-                })
+                Ok(Param { constraint, identifier })
             },
             |p| p.match_token(0, TokenKind::Punctuation(PunctuationKind::RParen)),
         )?;
@@ -87,6 +84,18 @@ mod test {
                 body: BlockContents {
                     final_expr: None,
                     statements: vec![],
+                    span: Span {
+                        start: Position {
+                            line: 1,
+                            col: 7,
+                            byte_offset: 6,
+                        },
+                        end: Position {
+                            line: 1,
+                            col: 9,
+                            byte_offset: 8,
+                        },
+                    },
                 },
                 return_type: None,
                 generic_params: vec![],
@@ -157,6 +166,18 @@ mod test {
                 body: BlockContents {
                     final_expr: None,
                     statements: vec![],
+                    span: Span {
+                        start: Position {
+                            line: 1,
+                            col: 13,
+                            byte_offset: 12,
+                        },
+                        end: Position {
+                            line: 1,
+                            col: 15,
+                            byte_offset: 14,
+                        },
+                    },
                 },
                 return_type: None,
                 generic_params: vec![],
@@ -262,6 +283,18 @@ mod test {
                 body: BlockContents {
                     final_expr: None,
                     statements: vec![],
+                    span: Span {
+                        start: Position {
+                            line: 1,
+                            col: 24,
+                            byte_offset: 23,
+                        },
+                        end: Position {
+                            line: 1,
+                            col: 26,
+                            byte_offset: 25,
+                        },
+                    },
                 },
                 return_type: None,
             },
@@ -365,6 +398,18 @@ mod test {
                 body: BlockContents {
                     final_expr: None,
                     statements: vec![],
+                    span: Span {
+                        start: Position {
+                            line: 1,
+                            col: 29,
+                            byte_offset: 28,
+                        },
+                        end: Position {
+                            line: 1,
+                            col: 31,
+                            byte_offset: 30,
+                        },
+                    },
                 },
                 return_type: Some(TypeAnnotation {
                     kind: TypeAnnotationKind::I32,

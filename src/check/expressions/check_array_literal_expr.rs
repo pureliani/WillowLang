@@ -5,7 +5,7 @@ use crate::{
         base::base_expression::Expr,
         checked::{
             checked_expression::{CheckedExpr, CheckedExprKind},
-            checked_type::CheckedType,
+            checked_type::{CheckedType, CheckedTypeKind},
         },
         Span,
     },
@@ -13,32 +13,24 @@ use crate::{
 };
 
 impl<'a> SemanticChecker<'a> {
-    pub fn check_array_literal_expr(
-        &mut self,
-        items: Vec<Expr>,
-        span: Span,
-        scope: Rc<RefCell<Scope>>,
-    ) -> CheckedExpr {
+    pub fn check_array_literal_expr(&mut self, items: Vec<Expr>, span: Span, scope: Rc<RefCell<Scope>>) -> CheckedExpr {
         let size = items.len();
 
-        let checked_items: Vec<CheckedExpr> = items
-            .into_iter()
-            .map(|item| self.check_expr(item, scope.clone()))
-            .collect();
+        let checked_items: Vec<CheckedExpr> = items.into_iter().map(|item| self.check_expr(item, scope.clone())).collect();
 
-        let unionized_types = union_of(checked_items.iter().map(|item| item.ty.clone()));
+        let unionized_types = union_of(checked_items.iter().map(|item| item.ty.clone()), span);
 
-        let expr_type = CheckedType::Array {
-            item_type: Box::new(unionized_types),
-            size,
+        let expr_type = CheckedType {
+            kind: CheckedTypeKind::Array {
+                item_type: Box::new(unionized_types),
+                size,
+            },
+            span,
         };
 
         CheckedExpr {
-            span,
             ty: expr_type,
-            kind: CheckedExprKind::ArrayLiteral {
-                items: checked_items,
-            },
+            kind: CheckedExprKind::ArrayLiteral { items: checked_items },
         }
     }
 }

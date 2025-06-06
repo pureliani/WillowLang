@@ -5,7 +5,7 @@ use crate::{
         base::{base_expression::Expr, base_type::TypeAnnotation},
         checked::{
             checked_expression::{CheckedExpr, CheckedExprKind},
-            checked_type::CheckedType,
+            checked_type::CheckedTypeKind,
         },
         Span,
     },
@@ -20,11 +20,14 @@ impl<'a> SemanticChecker<'a> {
         span: Span,
         scope: Rc<RefCell<Scope>>,
     ) -> CheckedExpr {
+        let node_id = self.get_node_id();
+        self.span_registry.insert_span(node_id, span);
+
         let checked_left = self.check_expr(*left, scope.clone());
         let checked_target = self.check_type(&target, scope);
 
         // TODO: do an actual check
-        if !matches!(checked_left.ty, CheckedType::Union { .. }) {
+        if !matches!(checked_left.ty, CheckedTypeKind::Union { .. }) {
             self.errors.push(SemanticError {
                 kind: SemanticErrorKind::CannotUseIsTypeOnNonUnion,
                 span,
@@ -33,7 +36,7 @@ impl<'a> SemanticChecker<'a> {
 
         CheckedExpr {
             span,
-            ty: CheckedType::Bool,
+            ty: CheckedTypeKind::Bool { node_id },
             kind: CheckedExprKind::IsType {
                 left: Box::new(checked_left),
                 target: checked_target,

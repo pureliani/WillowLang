@@ -21,10 +21,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                 p.consume_punctuation(PunctuationKind::Col)?;
                 let constraint = p.parse_type_annotation(0)?;
 
-                Ok(Param {
-                    constraint,
-                    identifier,
-                })
+                Ok(Param { constraint, identifier })
             },
             |p| p.match_token(0, TokenKind::Punctuation(PunctuationKind::RParen)),
         )?;

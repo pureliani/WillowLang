@@ -430,39 +430,37 @@ impl<'a> Tokenizer<'a> {
                         state.synchronize();
                     }
                 },
-                Some("-") if state.peek(1) == Some("-") && state.peek(2) == Some("-") => {
-                    match state.tokenize_documentation() {
-                        Ok(content) => {
-                            let end_pos = Position {
-                                line: state.line,
-                                col: state.col,
-                                byte_offset: state.byte_offset,
-                            };
-                            tokens.push(Token {
-                                kind: TokenKind::Doc(content),
-                                span: Span {
-                                    start: start_pos,
-                                    end: end_pos,
-                                },
-                            })
-                        }
-                        Err(kind) => {
-                            let end_pos = Position {
-                                line: state.line,
-                                col: state.col,
-                                byte_offset: state.byte_offset,
-                            };
-                            errors.push(TokenizationError {
-                                kind,
-                                span: Span {
-                                    start: start_pos,
-                                    end: end_pos,
-                                },
-                            });
-                            state.synchronize();
-                        }
+                Some("-") if state.peek(1) == Some("-") && state.peek(2) == Some("-") => match state.tokenize_documentation() {
+                    Ok(content) => {
+                        let end_pos = Position {
+                            line: state.line,
+                            col: state.col,
+                            byte_offset: state.byte_offset,
+                        };
+                        tokens.push(Token {
+                            kind: TokenKind::Doc(content),
+                            span: Span {
+                                start: start_pos,
+                                end: end_pos,
+                            },
+                        })
                     }
-                }
+                    Err(kind) => {
+                        let end_pos = Position {
+                            line: state.line,
+                            col: state.col,
+                            byte_offset: state.byte_offset,
+                        };
+                        errors.push(TokenizationError {
+                            kind,
+                            span: Span {
+                                start: start_pos,
+                                end: end_pos,
+                            },
+                        });
+                        state.synchronize();
+                    }
+                },
                 Some(punct) => match state.tokenize_punctuation(punct) {
                     Some(kind) => {
                         let end_pos = Position {

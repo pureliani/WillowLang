@@ -3,14 +3,16 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use crate::ast::base::base_declaration::EnumDecl;
-
-use super::checked_declaration::{
-    CheckedGenericParam, CheckedParam, CheckedStructDecl, CheckedTypeAliasDecl,
+use crate::ast::{
+    base::base_declaration::EnumDecl,
+    checked::checked_declaration::{CheckedFnType, CheckedStructDecl, CheckedTypeAliasDecl},
+    Span,
 };
 
+use super::checked_declaration::CheckedGenericParam;
+
 #[derive(Clone, Debug)]
-pub enum CheckedType {
+pub enum CheckedTypeKind {
     Void,
     Null,
     Bool,
@@ -27,118 +29,94 @@ pub enum CheckedType {
     F32,
     F64,
     Char,
+    Array { item_type: Box<CheckedType>, size: usize },
     StructDecl(CheckedStructDecl),
-    EnumDecl(EnumDecl),
-    Array {
-        item_type: Box<CheckedType>,
-        size: usize,
-    },
     GenericParam(CheckedGenericParam),
-    FnType {
-        params: Vec<CheckedParam>,
-        return_type: Box<CheckedType>,
-        generic_params: Vec<CheckedGenericParam>,
-    },
+    EnumDecl(EnumDecl),
     TypeAliasDecl(CheckedTypeAliasDecl),
+    FnType(CheckedFnType),
     Union(HashSet<CheckedType>),
     Unknown,
 }
 
-impl Eq for CheckedType {}
-impl PartialEq for CheckedType {
+impl Eq for CheckedTypeKind {}
+impl PartialEq for CheckedTypeKind {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (CheckedType::Void, CheckedType::Void) => true,
-            (CheckedType::Null, CheckedType::Null) => true,
-            (CheckedType::Bool, CheckedType::Bool) => true,
-            (CheckedType::U8, CheckedType::U8) => true,
-            (CheckedType::U16, CheckedType::U16) => true,
-            (CheckedType::U32, CheckedType::U32) => true,
-            (CheckedType::U64, CheckedType::U64) => true,
-            (CheckedType::USize, CheckedType::USize) => true,
-            (CheckedType::ISize, CheckedType::ISize) => true,
-            (CheckedType::I8, CheckedType::I8) => true,
-            (CheckedType::I16, CheckedType::I16) => true,
-            (CheckedType::I32, CheckedType::I32) => true,
-            (CheckedType::I64, CheckedType::I64) => true,
-            (CheckedType::F32, CheckedType::F32) => true,
-            (CheckedType::F64, CheckedType::F64) => true,
-            (CheckedType::Char, CheckedType::Char) => true,
-            (CheckedType::StructDecl(a), CheckedType::StructDecl(b)) => a == b,
-            (CheckedType::EnumDecl(a), CheckedType::EnumDecl(b)) => a == b,
-            (CheckedType::GenericParam(a), CheckedType::GenericParam(b)) => a == b,
-            (
-                CheckedType::FnType {
-                    params: ap,
-                    return_type: ar,
-                    generic_params: agp,
-                },
-                CheckedType::FnType {
-                    params: bp,
-                    return_type: br,
-                    generic_params: bgp,
-                },
-            ) => ap == bp && ar == br && agp == bgp,
-            (CheckedType::TypeAliasDecl(a), CheckedType::TypeAliasDecl(b)) => a == b,
-            (CheckedType::Union(a_items), CheckedType::Union(b_items)) => {
+            (CheckedTypeKind::Void, CheckedTypeKind::Void) => true,
+            (CheckedTypeKind::Null, CheckedTypeKind::Null) => true,
+            (CheckedTypeKind::Bool, CheckedTypeKind::Bool) => true,
+            (CheckedTypeKind::U8, CheckedTypeKind::U8) => true,
+            (CheckedTypeKind::U16, CheckedTypeKind::U16) => true,
+            (CheckedTypeKind::U32, CheckedTypeKind::U32) => true,
+            (CheckedTypeKind::U64, CheckedTypeKind::U64) => true,
+            (CheckedTypeKind::USize, CheckedTypeKind::USize) => true,
+            (CheckedTypeKind::ISize, CheckedTypeKind::ISize) => true,
+            (CheckedTypeKind::I8, CheckedTypeKind::I8) => true,
+            (CheckedTypeKind::I16, CheckedTypeKind::I16) => true,
+            (CheckedTypeKind::I32, CheckedTypeKind::I32) => true,
+            (CheckedTypeKind::I64, CheckedTypeKind::I64) => true,
+            (CheckedTypeKind::F32, CheckedTypeKind::F32) => true,
+            (CheckedTypeKind::F64, CheckedTypeKind::F64) => true,
+            (CheckedTypeKind::Char, CheckedTypeKind::Char) => true,
+            (CheckedTypeKind::Unknown, CheckedTypeKind::Unknown) => true,
+            (CheckedTypeKind::GenericParam(a), CheckedTypeKind::GenericParam(b)) => a == b,
+            (CheckedTypeKind::TypeAliasDecl(a), CheckedTypeKind::TypeAliasDecl(b)) => a == b,
+            (CheckedTypeKind::StructDecl(a), CheckedTypeKind::StructDecl(b)) => a == b,
+            (CheckedTypeKind::EnumDecl(a), CheckedTypeKind::EnumDecl(b)) => a == b,
+            (CheckedTypeKind::FnType(a), CheckedTypeKind::FnType(b)) => a == b,
+            (CheckedTypeKind::Union(a_items), CheckedTypeKind::Union(b_items)) => {
                 if a_items.len() != b_items.len() {
                     return false;
                 }
                 // Order-insensitive comparison for unions
-                a_items.iter().all(|item_a| b_items.contains(item_a))
-                    && b_items.iter().all(|item_b| a_items.contains(item_b))
+                a_items.iter().all(|item_a| b_items.contains(item_a)) && b_items.iter().all(|item_b| a_items.contains(item_b))
             }
             (
-                CheckedType::Array {
+                CheckedTypeKind::Array {
                     item_type: ai,
                     size: asize,
+                    ..
                 },
-                CheckedType::Array {
+                CheckedTypeKind::Array {
                     item_type: bi,
                     size: bsize,
+                    ..
                 },
             ) => ai == bi && asize == bsize,
-            (CheckedType::Unknown, CheckedType::Unknown) => true,
             _ => false,
         }
     }
 }
 
-impl Hash for CheckedType {
+impl Hash for CheckedTypeKind {
     fn hash<H: Hasher>(&self, state: &mut H) {
         std::mem::discriminant(self).hash(state);
 
         match self {
-            CheckedType::Void => {}
-            CheckedType::Null => {}
-            CheckedType::Bool => {}
-            CheckedType::U8 => {}
-            CheckedType::U16 => {}
-            CheckedType::U32 => {}
-            CheckedType::U64 => {}
-            CheckedType::USize => {}
-            CheckedType::ISize => {}
-            CheckedType::I8 => {}
-            CheckedType::I16 => {}
-            CheckedType::I32 => {}
-            CheckedType::I64 => {}
-            CheckedType::F32 => {}
-            CheckedType::F64 => {}
-            CheckedType::Char => {}
-            CheckedType::StructDecl(sd) => sd.hash(state),
-            CheckedType::EnumDecl(e) => e.hash(state),
-            CheckedType::GenericParam(gp) => gp.hash(state),
-            CheckedType::FnType {
-                params,
-                return_type,
-                generic_params,
-            } => {
-                params.hash(state);
-                return_type.hash(state);
-                generic_params.hash(state);
-            }
-            CheckedType::TypeAliasDecl(ta) => ta.hash(state),
-            CheckedType::Union(items) => {
+            CheckedTypeKind::Void => {}
+            CheckedTypeKind::Null => {}
+            CheckedTypeKind::Bool => {}
+            CheckedTypeKind::U8 => {}
+            CheckedTypeKind::U16 => {}
+            CheckedTypeKind::U32 => {}
+            CheckedTypeKind::U64 => {}
+            CheckedTypeKind::USize => {}
+            CheckedTypeKind::ISize => {}
+            CheckedTypeKind::I8 => {}
+            CheckedTypeKind::I16 => {}
+            CheckedTypeKind::I32 => {}
+            CheckedTypeKind::I64 => {}
+            CheckedTypeKind::F32 => {}
+            CheckedTypeKind::F64 => {}
+            CheckedTypeKind::Char => {}
+            CheckedTypeKind::Unknown => {}
+            CheckedTypeKind::GenericParam(decl) => decl.hash(state),
+            CheckedTypeKind::TypeAliasDecl(decl) => decl.hash(state),
+            CheckedTypeKind::EnumDecl(decl) => decl.hash(state),
+            CheckedTypeKind::StructDecl(decl) => decl.hash(state),
+            CheckedTypeKind::FnType(decl) => decl.hash(state),
+            CheckedTypeKind::Union(items) => {
                 state.write_usize(items.len());
                 if !items.is_empty() {
                     let mut item_hashes: Vec<u64> = items
@@ -155,11 +133,28 @@ impl Hash for CheckedType {
                     }
                 }
             }
-            CheckedType::Array { item_type, size } => {
+            CheckedTypeKind::Array { item_type, size, .. } => {
                 item_type.hash(state);
                 size.hash(state);
             }
-            CheckedType::Unknown => {}
         }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct CheckedType {
+    pub kind: CheckedTypeKind,
+    pub span: Span,
+}
+
+impl Eq for CheckedType {}
+impl PartialEq for CheckedType {
+    fn eq(&self, other: &Self) -> bool {
+        self.kind == other.kind
+    }
+}
+impl Hash for CheckedType {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.kind.hash(state);
     }
 }

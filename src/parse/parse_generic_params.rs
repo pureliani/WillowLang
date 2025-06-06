@@ -6,9 +6,7 @@ use crate::{
 use super::{Parser, ParsingError};
 
 impl<'a, 'b> Parser<'a, 'b> {
-    pub fn parse_generic_param_constraint(
-        &mut self,
-    ) -> Result<Option<TypeAnnotation>, ParsingError<'a>> {
+    pub fn parse_generic_param_constraint(&mut self) -> Result<Option<TypeAnnotation>, ParsingError<'a>> {
         if self.match_token(0, TokenKind::Punctuation(PunctuationKind::Col)) {
             self.advance();
             Ok(Some(self.parse_type_annotation(0)?))
