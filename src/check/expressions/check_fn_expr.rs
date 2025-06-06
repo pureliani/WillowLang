@@ -81,14 +81,6 @@ impl<'a> SemanticChecker<'a> {
             }
         };
 
-        let param_types: Vec<CheckedParam> = params
-            .into_iter()
-            .map(|p| CheckedParam {
-                constraint: self.check_type(&p.constraint, fn_scope.clone()),
-                identifier: p.identifier,
-            })
-            .collect();
-
         let expected_return_type = return_type.map(|return_t| self.check_type(&return_t, fn_scope.clone()));
 
         let actual_return_type = if let Some(explicit_return_type) = expected_return_type {
@@ -106,7 +98,7 @@ impl<'a> SemanticChecker<'a> {
 
         let expr_type = CheckedType {
             kind: CheckedTypeKind::FnType(CheckedFnType {
-                params: param_types,
+                params: checked_params.clone(),
                 return_type: Box::new(actual_return_type.clone()),
                 generic_params: checked_generic_params.clone(),
                 span,
