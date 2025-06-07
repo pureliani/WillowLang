@@ -26,9 +26,10 @@ pub enum SemanticError {
         expected_union: HashSet<CheckedType>,
         received: CheckedType,
     },
-    CouldNotSubstituteGenericParam {
+    IncompatibleGenericParamSubstitution {
         generic_param: CheckedGenericParam,
-        with_type: CheckedType,
+        arg_type: CheckedType,
+        is_inferred: bool,
     },
     VarDeclWithoutInitializer {
         span: Span,
@@ -144,7 +145,7 @@ impl SemanticError {
         match self {
             SemanticError::AmbiguousGenericInferenceForUnion { received, .. } => received.span,
             SemanticError::FailedToInferGenericsInUnion { received, .. } => received.span,
-            SemanticError::CouldNotSubstituteGenericParam { with_type, .. } => with_type.span,
+            SemanticError::IncompatibleGenericParamSubstitution { arg_type: with_type, .. } => with_type.span,
             SemanticError::VarDeclWithoutInitializer { span } => *span,
             SemanticError::DuplicateStructFieldInitializer { id } => id.span,
             SemanticError::UnknownStructFieldInitializer { id } => id.span,
@@ -214,7 +215,7 @@ impl SemanticError {
             SemanticError::UnknownStructFieldInitializer { .. } => 30,
             SemanticError::MissingStructFieldInitializer { .. } => 31,
             SemanticError::CannotApplyStructInitializer { .. } => 32,
-            SemanticError::CouldNotSubstituteGenericParam { .. } => 33,
+            SemanticError::IncompatibleGenericParamSubstitution { .. } => 33,
             SemanticError::AmbiguousGenericInferenceForUnion { .. } => 34,
             SemanticError::FailedToInferGenericsInUnion { .. } => 35,
         }

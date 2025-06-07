@@ -186,11 +186,18 @@ pub fn compile_file<'a, 'b>(
                 .with_message("Invalid assignment target")
                 .with_label(label.with_message("Invalid assignment target")),
             SemanticError::TypeMismatch { expected, received } => {
-                err.with_message("Type mismatch").with_label(label.with_message(format!(
-                    "Type mismatch, expected {} but instead found {}",
-                    type_to_string(&expected.kind, string_interner),
-                    type_to_string(&received.kind, string_interner)
-                )))
+                let constraint_str = type_to_string(&expected.kind, string_interner);
+                let declaration_of_expected = expected.span.start.byte_offset..expected.span.end.byte_offset;
+
+                err.with_message("Type mismatch").with_labels(vec![
+                    label.with_message(format!(
+                        "Type mismatch, expected {} but instead found {}",
+                        constraint_str,
+                        type_to_string(&received.kind, string_interner)
+                    )),
+                    Label::secondary(interned_fp, declaration_of_expected)
+                        .with_message(format!("expected type \"{}\" originated here", constraint_str)),
+                ])
             }
             SemanticError::InvalidArraySizeValue { value, .. } => err
                 .with_message("Invalid array size")
@@ -212,17 +219,23 @@ pub fn compile_file<'a, 'b>(
                     type_to_string(&target.kind, string_interner)
                 )))
             }
-            SemanticError::CannotCall { target } => err.with_message("Cannot call").with_label(label.with_message(format!(
-                "Cannot use the call operator on the type \"{}\"",
-                type_to_string(&target.kind, string_interner)
-            ))),
-            SemanticError::FnArgumentCountMismatch { expected, received, .. } => err
-                .with_message("Function argument count mismatch")
-                .with_label(label.with_message(format!(
-                    "This function expects {} arguments, but instead received {}",
-                    expected.to_string(),
-                    received.to_string()
-                ))),
+            SemanticError::CannotCall { target } => {
+                err.with_message("Cannot use the function call operator")
+                    .with_label(label.with_message(format!(
+                        "Cannot use the function calling operator on the type \"{}\"",
+                        type_to_string(&target.kind, string_interner)
+                    )))
+            }
+            SemanticError::FnArgumentCountMismatch { expected, received, .. } => {
+                let s = if *expected > 1 { "s" } else { "" };
+                err.with_message("Function argument count mismatch")
+                    .with_label(label.with_message(format!(
+                        "This function expects {} argument{}, but instead received {}",
+                        expected.to_string(),
+                        s,
+                        received.to_string()
+                    )))
+            }
             SemanticError::GenericArgumentCountMismatch { expected, received, .. } => err
                 .with_message("Generic argument count mismatch")
                 .with_label(label.with_message(format!(
@@ -306,10 +319,12 @@ pub fn compile_file<'a, 'b>(
             SemanticError::VarDeclWithoutInitializer { .. } => err
                 .with_message("Variable declarations must have an initializer")
                 .with_label(label.with_message("This variable declaration must have an initializer")),
-            SemanticError::CouldNotSubstituteGenericParam {
+            SemanticError::IncompatibleGenericParamSubstitution {
                 generic_param,
-                with_type,
+                arg_type: with_type,
+                is_inferred,
             } => {
+                let inferred_message = if *is_inferred { "inferred" } else { "provided" };
                 let gp_name = string_interner.resolve(generic_param.identifier.name).unwrap();
 
                 let gp_string = match &generic_param.constraint {
@@ -329,14 +344,16 @@ pub fn compile_file<'a, 'b>(
 
                 let argument_span = with_type.span.start.byte_offset..with_type.span.end.byte_offset;
 
-                err.with_message("Could not substitute generic param").with_labels(vec![
-                    Label::secondary(interned_fp, gp_span).with_message(format!(
-                        "Could not substitute generic param \"{}\" with type \"{}\"",
-                        gp_string,
-                        type_to_string(&with_type.kind, string_interner)
-                    )),
-                    Label::primary(interned_fp, argument_span).with_message("type argument originated here"),
-                ])
+                err.with_message("Generic param received incompatible type argument")
+                    .with_labels(vec![
+                        Label::secondary(interned_fp, gp_span).with_message(format!(
+                            "Generic param \"{}\" received incompatible type argument \"{}\"",
+                            gp_string,
+                            type_to_string(&with_type.kind, string_interner)
+                        )),
+                        Label::primary(interned_fp, argument_span)
+                            .with_message(format!("type argument {} here", inferred_message)),
+                    ])
             }
             SemanticError::AmbiguousGenericInferenceForUnion { received, expected } => err
                 .with_message("Ambiguous generic inference for union")

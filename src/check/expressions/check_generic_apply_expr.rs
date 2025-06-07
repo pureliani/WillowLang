@@ -26,6 +26,7 @@ impl<'a> SemanticChecker<'a> {
         arg_source: GenericArgumentSource,
         error_span: Span,
     ) -> Option<GenericSubstitutionMap> {
+        let is_inferred = matches!(arg_source, GenericArgumentSource::Inferred { .. });
         let mut working_substitutions = GenericSubstitutionMap::new();
         let mut preliminary_ok = true;
 
@@ -59,9 +60,10 @@ impl<'a> SemanticChecker<'a> {
             if let Some(substituted_type) = working_substitutions.get(&gp_decl.identifier.name) {
                 if let Some(constraint) = &gp_decl.constraint {
                     if !self.check_is_assignable(substituted_type, constraint) {
-                        self.errors.push(SemanticError::CouldNotSubstituteGenericParam {
+                        self.errors.push(SemanticError::IncompatibleGenericParamSubstitution {
                             generic_param: gp_decl.clone(),
-                            with_type: substituted_type.clone(),
+                            arg_type: substituted_type.clone(),
+                            is_inferred,
                         });
 
                         all_constraints_ok = false;
