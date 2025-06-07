@@ -27,7 +27,6 @@ impl<'a> SemanticChecker<'a> {
             span,
         };
 
-        // TODO: do an actual check
         if !matches!(checked_left.ty.kind, CheckedTypeKind::Union(..)) {
             self.errors.push(SemanticError::CannotUseIsTypeOnNonUnion {
                 target: checked_left.ty.clone(),
