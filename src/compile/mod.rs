@@ -12,7 +12,6 @@ pub mod string_interner;
 
 use crate::{
     ast::checked::checked_type::CheckedTypeKind,
-    cfg::generic,
     check::{utils::type_to_string::type_to_string, SemanticChecker, SemanticError},
     parse::{Parser, ParsingErrorKind},
     tokenize::{token_kind_to_string, TokenizationErrorKind, Tokenizer},
@@ -366,7 +365,7 @@ pub fn compile_file<'a, 'b>(
 
     if !errors.is_empty() {
         println!();
-        for (index, diagnostic) in errors.into_iter().enumerate() {
+        for diagnostic in errors {
             let _ = term::emit(&mut writer.lock(), &config, files, &diagnostic);
         }
     } else {
