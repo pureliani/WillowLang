@@ -127,6 +127,7 @@ impl<'a> SemanticChecker<'a> {
                     }
                 }
             }
+            CheckedTypeKind::Unknown => {}
             _ => {
                 self.errors.push(SemanticError::CannotApplyStructInitializer {
                     span: checked_left.ty.span,

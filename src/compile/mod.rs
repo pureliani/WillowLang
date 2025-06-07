@@ -325,12 +325,12 @@ pub fn compile_file<'a, 'b>(
                 let argument_span = with_type.span.start.byte_offset..with_type.span.end.byte_offset;
 
                 err.with_message("Could not substitute generic param").with_labels(vec![
-                    Label::primary(interned_fp, gp_span).with_message(format!(
+                    Label::secondary(interned_fp, gp_span).with_message(format!(
                         "Could not substitute generic param \"{}\" with type \"{}\"",
                         gp_string,
                         type_to_string(&with_type.kind, string_interner)
                     )),
-                    Label::primary(interned_fp, argument_span).with_message("type argument provided here"),
+                    Label::primary(interned_fp, argument_span).with_message("type argument originated here"),
                 ])
             }
             SemanticError::AmbiguousGenericInferenceForUnion { received, expected } => err

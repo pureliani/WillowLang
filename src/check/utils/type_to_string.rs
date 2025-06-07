@@ -69,12 +69,18 @@ pub fn type_to_string(ty: &CheckedTypeKind, string_interner: &StringInterner) ->
         CheckedTypeKind::StructDecl(CheckedStructDecl {
             generic_params,
             identifier,
+            fields,
             ..
         }) => {
             let name = identifier_to_string(identifier.name, string_interner);
             let generic_params_str = generic_params_to_string(generic_params, string_interner);
+            let joined = fields
+                .iter()
+                .map(|f| param_to_string(f, string_interner))
+                .collect::<Vec<String>>()
+                .join(", ");
 
-            format!("{}{}", name, generic_params_str)
+            format!("{}{} {{ {} }}", name, generic_params_str, joined)
         }
         CheckedTypeKind::EnumDecl(EnumDecl { identifier, .. }) => {
             let name = identifier_to_string(identifier.name, string_interner);
