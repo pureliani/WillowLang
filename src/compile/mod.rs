@@ -12,6 +12,7 @@ pub mod string_interner;
 
 use crate::{
     ast::checked::checked_type::CheckedTypeKind,
+    cfg::generic,
     check::{utils::type_to_string::type_to_string, SemanticChecker, SemanticError},
     parse::{Parser, ParsingErrorKind},
     tokenize::{token_kind_to_string, TokenizationErrorKind, Tokenizer},
@@ -320,8 +321,13 @@ pub fn compile_file<'a, 'b>(
                         format!("{}", gp_name)
                     }
                 };
+                let gp_span_start = generic_param.identifier.span.start.byte_offset;
+                let gp_span = if let Some(c) = &generic_param.constraint {
+                    gp_span_start..c.span.end.byte_offset
+                } else {
+                    gp_span_start..generic_param.identifier.span.end.byte_offset
+                };
 
-                let gp_span = generic_param.identifier.span.start.byte_offset..generic_param.identifier.span.end.byte_offset;
                 let argument_span = with_type.span.start.byte_offset..with_type.span.end.byte_offset;
 
                 err.with_message("Could not substitute generic param").with_labels(vec![
