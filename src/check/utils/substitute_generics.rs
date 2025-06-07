@@ -16,29 +16,15 @@ pub type GenericSubstitutionMap = HashMap<InternerId, CheckedType>;
 impl<'a> SemanticChecker<'a> {
     pub fn substitute_generics(&mut self, ty: &CheckedType, substitutions: &GenericSubstitutionMap) -> CheckedType {
         match &ty.kind {
-            CheckedTypeKind::GenericParam(gp) => {
-                let to_substitute = substitutions.get(&gp.identifier.name).cloned().unwrap_or_else(|| {
-                    self.errors
-                        .push(SemanticError::UnresolvedGenericParam { param: gp.identifier });
+            CheckedTypeKind::GenericParam(gp) => substitutions.get(&gp.identifier.name).cloned().unwrap_or_else(|| {
+                self.errors
+                    .push(SemanticError::UnresolvedGenericParam { param: gp.identifier });
 
-                    CheckedType {
-                        kind: CheckedTypeKind::Unknown,
-                        span: ty.span,
-                    }
-                });
-
-                match &gp.constraint {
-                    Some(c) if !self.check_is_assignable(&to_substitute, c) => {
-                        self.errors.push(SemanticError::CouldNotSubstituteGenericParam {
-                            generic_param: gp.clone(),
-                            with_type: to_substitute,
-                        });
-
-                        *c.clone()
-                    }
-                    _ => to_substitute,
+                CheckedType {
+                    kind: CheckedTypeKind::Unknown,
+                    span: ty.span,
                 }
-            }
+            }),
             CheckedTypeKind::FnType(CheckedFnType {
                 params,
                 return_type,
@@ -70,10 +56,10 @@ impl<'a> SemanticChecker<'a> {
             }
             CheckedTypeKind::StructDecl(decl) => {
                 // Similar to FnType, a struct definition's generic params are local.
-                // We substitute types *within* its properties if those types refer
+                // We substitute types *within* its fields if those types refer
                 // to generics from the *outer* substitution context.
-                let substituted_props = decl
-                    .properties
+                let substituted_fields = decl
+                    .fields
                     .iter()
                     .map(|p| CheckedParam {
                         identifier: p.identifier,
@@ -83,7 +69,7 @@ impl<'a> SemanticChecker<'a> {
 
                 CheckedType {
                     kind: CheckedTypeKind::StructDecl(CheckedStructDecl {
-                        properties: substituted_props,
+                        fields: substituted_fields,
                         documentation: decl.documentation.clone(),
                         identifier: decl.identifier, // maybe we should rename this?
                         generic_params: vec![],

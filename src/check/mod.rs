@@ -33,14 +33,14 @@ pub enum SemanticError {
     VarDeclWithoutInitializer {
         span: Span,
     },
-    DuplicateStructPropertyInitializer {
+    DuplicateStructFieldInitializer {
         id: IdentifierNode,
     },
-    UnknownStructPropertyInitializer {
+    UnknownStructFieldInitializer {
         id: IdentifierNode,
     },
-    MissingStructPropertyInitializer {
-        missing_props: HashSet<InternerId>,
+    MissingStructFieldInitializer {
+        missing_fields: HashSet<InternerId>,
         span: Span,
     },
     CannotApplyStructInitializer {
@@ -114,8 +114,8 @@ pub enum SemanticError {
     CannotUseVariableDeclarationAsType {
         span: Span,
     },
-    AccessToUndefinedProperty {
-        property: IdentifierNode,
+    AccessToUndefinedField {
+        field: IdentifierNode,
     },
     UnresolvedGenericParam {
         param: IdentifierNode,
@@ -146,9 +146,9 @@ impl SemanticError {
             SemanticError::FailedToInferGenericsInUnion { received, .. } => received.span,
             SemanticError::CouldNotSubstituteGenericParam { with_type, .. } => with_type.span,
             SemanticError::VarDeclWithoutInitializer { span } => *span,
-            SemanticError::DuplicateStructPropertyInitializer { id } => id.span,
-            SemanticError::UnknownStructPropertyInitializer { id } => id.span,
-            SemanticError::MissingStructPropertyInitializer { span, .. } => *span,
+            SemanticError::DuplicateStructFieldInitializer { id } => id.span,
+            SemanticError::UnknownStructFieldInitializer { id } => id.span,
+            SemanticError::MissingStructFieldInitializer { span, .. } => *span,
             SemanticError::CannotApplyStructInitializer { span } => *span,
             SemanticError::ExpectedANumericOperand { span } => *span,
             SemanticError::MixedSignedAndUnsigned { span } => *span,
@@ -170,8 +170,8 @@ impl SemanticError {
             SemanticError::GenericArgumentCountMismatch { span, .. } => *span,
             SemanticError::CannotUseGenericParameterAsValue { span, .. } => *span,
             SemanticError::CannotUseVariableDeclarationAsType { span, .. } => *span,
-            SemanticError::AccessToUndefinedProperty { property } => property.span,
-            SemanticError::UnresolvedGenericParam { param: property } => property.span,
+            SemanticError::AccessToUndefinedField { field } => field.span,
+            SemanticError::UnresolvedGenericParam { param } => param.span,
             SemanticError::CannotUseIsTypeOnNonUnion { target } => target.span,
             SemanticError::ConflictingGenericBinding { new, .. } => new.span,
             SemanticError::TypeAliasMustBeDeclaredAtTopLevel { span } => *span,
@@ -200,7 +200,7 @@ impl SemanticError {
             SemanticError::CannotUseGenericParameterAsValue { .. } => 16,
             SemanticError::CannotUseVariableDeclarationAsType { .. } => 17,
             SemanticError::VarDeclWithoutInitializer { .. } => 18,
-            SemanticError::AccessToUndefinedProperty { .. } => 19,
+            SemanticError::AccessToUndefinedField { .. } => 19,
             SemanticError::CannotUseIsTypeOnNonUnion { .. } => 20,
             SemanticError::InvalidArraySizeValue { .. } => 21,
             SemanticError::FnArgumentCountMismatch { .. } => 22,
@@ -210,9 +210,9 @@ impl SemanticError {
             SemanticError::CannotApplyTypeArguments { .. } => 26,
             SemanticError::TypeAliasMustBeDeclaredAtTopLevel { .. } => 27,
             SemanticError::StructMustBeDeclaredAtTopLevel { .. } => 28,
-            SemanticError::DuplicateStructPropertyInitializer { .. } => 29,
-            SemanticError::UnknownStructPropertyInitializer { .. } => 30,
-            SemanticError::MissingStructPropertyInitializer { .. } => 31,
+            SemanticError::DuplicateStructFieldInitializer { .. } => 29,
+            SemanticError::UnknownStructFieldInitializer { .. } => 30,
+            SemanticError::MissingStructFieldInitializer { .. } => 31,
             SemanticError::CannotApplyStructInitializer { .. } => 32,
             SemanticError::CouldNotSubstituteGenericParam { .. } => 33,
             SemanticError::AmbiguousGenericInferenceForUnion { .. } => 34,

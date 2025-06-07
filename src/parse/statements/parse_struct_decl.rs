@@ -15,7 +15,7 @@ impl<'a, 'b> Parser<'a, 'b> {
         let name = self.consume_identifier()?;
         let generic_params = self.parse_optional_generic_params()?;
         self.consume_punctuation(PunctuationKind::LBrace)?;
-        let properties = self.comma_separated(
+        let fields = self.comma_separated(
             |p| {
                 let name = p.consume_identifier()?;
                 p.consume_punctuation(PunctuationKind::Col)?;
@@ -37,7 +37,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                 identifier: name,
                 documentation,
                 generic_params,
-                properties,
+                fields,
             }),
             span,
         })

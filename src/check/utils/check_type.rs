@@ -9,6 +9,7 @@ use crate::{
         },
     },
     check::{
+        expressions::check_generic_apply_expr::GenericArgumentSource,
         scope::{Scope, ScopeKind, SymbolEntry},
         SemanticChecker, SemanticError,
     },
@@ -42,10 +43,19 @@ impl<'a> SemanticChecker<'a> {
                     CheckedTypeKind::FnType(CheckedFnType { generic_params, .. })
                     | CheckedTypeKind::StructDecl(CheckedStructDecl { generic_params, .. })
                     | CheckedTypeKind::TypeAliasDecl(CheckedTypeAliasDecl { generic_params, .. }) => {
-                        let substitutions = self.build_substitutions(generic_params, checked_args, annotation.span);
-                        let substituted = self.substitute_generics(&checked_left, &substitutions);
+                        let substitutions_opt = self.build_substitution_map(
+                            generic_params,
+                            GenericArgumentSource::Explicit(checked_args),
+                            annotation.span,
+                        );
 
-                        substituted.kind
+                        if let Some(substitutions) = substitutions_opt {
+                            let substituted = self.substitute_generics(&checked_left, &substitutions);
+
+                            substituted.kind
+                        } else {
+                            CheckedTypeKind::Unknown
+                        }
                     }
                     _ => {
                         self.errors.push(SemanticError::CannotApplyTypeArguments {

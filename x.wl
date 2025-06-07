@@ -1,4 +1,4 @@
-let foo = (arg1: i32) => {
+let foo = <T: i32>(arg1: T) => {
     arg1
 };
 

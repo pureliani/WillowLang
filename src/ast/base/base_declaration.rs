@@ -24,7 +24,7 @@ pub struct StructDecl {
     pub identifier: IdentifierNode,
     pub documentation: Option<DocAnnotation>,
     pub generic_params: Vec<GenericParam>,
-    pub properties: Vec<Param>,
+    pub fields: Vec<Param>,
 }
 
 #[derive(Clone, Debug)]

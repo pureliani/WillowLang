@@ -2,16 +2,11 @@ use std::{cell::RefCell, rc::Rc};
 
 use crate::ast::{
     base::{
-        base_declaration::{
-            GenericParam, Param, StructDecl as BaseStructDecl, TypeAliasDecl, VarDecl,
-        },
+        base_declaration::{GenericParam, Param, StructDecl as BaseStructDecl, TypeAliasDecl, VarDecl},
         base_statement::{Stmt, StmtKind},
     },
     checked::{
-        checked_declaration::{
-            CheckedGenericParam, CheckedParam, CheckedStructDecl, CheckedTypeAliasDecl,
-            CheckedVarDecl,
-        },
+        checked_declaration::{CheckedGenericParam, CheckedParam, CheckedStructDecl, CheckedTypeAliasDecl, CheckedVarDecl},
         checked_expression::{CheckedBlockContents, CheckedExprKind},
         checked_statement::{CheckedStmt, CheckedStmtKind},
         checked_type::CheckedType,
@@ -44,10 +39,9 @@ pub fn check_generic_params(
                 identifier: gp.identifier,
             };
 
-            scope.borrow_mut().insert(
-                gp.identifier.name,
-                SymbolEntry::GenericParam(checked_gp.clone()),
-            );
+            scope
+                .borrow_mut()
+                .insert(gp.identifier.name, SymbolEntry::GenericParam(checked_gp.clone()));
             checked_gp
         })
         .collect()
@@ -67,11 +61,7 @@ pub fn check_struct_properties(
         .collect()
 }
 
-pub fn check_stmt(
-    stmt: Stmt,
-    errors: &mut Vec<SemanticError>,
-    scope: Rc<RefCell<Scope>>,
-) -> CheckedStmt {
+pub fn check_stmt(stmt: Stmt, errors: &mut Vec<SemanticError>, scope: Rc<RefCell<Scope>>) -> CheckedStmt {
     match stmt.kind {
         StmtKind::Expression(expr) => CheckedStmt {
             kind: CheckedStmtKind::Expression(check_expr(expr, errors, scope)),
@@ -92,11 +82,9 @@ pub fn check_stmt(
 
             let struct_scope = scope.borrow().child(ScopeKind::Struct);
 
-            let generic_params =
-                check_generic_params(&generic_params, errors, struct_scope.clone());
+            let generic_params = check_generic_params(&generic_params, errors, struct_scope.clone());
 
-            let checked_properties =
-                check_struct_properties(&properties, errors, struct_scope.clone());
+            let checked_properties = check_struct_properties(&properties, errors, struct_scope.clone());
 
             let decl = CheckedStructDecl {
                 identifier,
@@ -167,10 +155,9 @@ pub fn check_stmt(
                 value: checked_value,
             };
 
-            scope.borrow_mut().insert(
-                identifier.name,
-                SymbolEntry::VarDecl(checked_declaration.clone()),
-            );
+            scope
+                .borrow_mut()
+                .insert(identifier.name, SymbolEntry::VarDecl(checked_declaration.clone()));
 
             CheckedStmt {
                 kind: CheckedStmtKind::VarDecl(checked_declaration),
@@ -209,10 +196,7 @@ pub fn check_stmt(
 
             let kind = CheckedStmtKind::TypeAliasDecl(decl);
 
-            CheckedStmt {
-                kind,
-                span: stmt.span,
-            }
+            CheckedStmt { kind, span: stmt.span }
         }
         StmtKind::Break => {
             if !scope.borrow().is_loop_scope() {
@@ -263,8 +247,7 @@ pub fn check_stmt(
                     let identifier_expr_type = scope.borrow().lookup(id.name);
 
                     if let Some(SymbolEntry::VarDecl(decl)) = identifier_expr_type {
-                        let is_assignable =
-                            check_is_assignable(&checked_value.ty, &decl.constraint);
+                        let is_assignable = check_is_assignable(&checked_value.ty, &decl.constraint);
 
                         if !is_assignable {
                             errors.push(SemanticError {
@@ -290,9 +273,7 @@ pub fn check_stmt(
                             .map(|p| p.constraint.clone())
                             .unwrap_or_else(|| {
                                 errors.push(SemanticError {
-                                    kind: SemanticErrorKind::AccessToUndefinedProperty(
-                                        field.clone(),
-                                    ),
+                                    kind: SemanticErrorKind::AccessToUndefinedProperty(field.clone()),
                                     span: field.span,
                                 });
                                 CheckedType::Unknown

@@ -46,8 +46,8 @@ impl<'a> SemanticChecker<'a> {
             .collect()
     }
 
-    pub fn check_struct_properties(&mut self, properties: &Vec<Param>, scope: Rc<RefCell<Scope>>) -> Vec<CheckedParam> {
-        properties
+    pub fn check_struct_fields(&mut self, fields: &Vec<Param>, scope: Rc<RefCell<Scope>>) -> Vec<CheckedParam> {
+        fields
             .into_iter()
             .map(|p| CheckedParam {
                 constraint: self.check_type(&p.constraint, scope.clone()),
@@ -67,7 +67,7 @@ impl<'a> SemanticChecker<'a> {
                 identifier,
                 documentation,
                 generic_params,
-                properties,
+                fields,
             }) => {
                 if !scope.borrow().is_file_scope() {
                     self.errors
@@ -78,12 +78,12 @@ impl<'a> SemanticChecker<'a> {
 
                 let generic_params = self.check_generic_params(&generic_params, struct_scope.clone());
 
-                let checked_properties = self.check_struct_properties(&properties, struct_scope.clone());
+                let checked_fields = self.check_struct_fields(&fields, struct_scope.clone());
 
                 let decl = CheckedStructDecl {
                     identifier,
                     documentation,
-                    properties: checked_properties,
+                    fields: checked_fields,
                     generic_params,
                     span: stmt.span,
                 };
@@ -225,13 +225,13 @@ impl<'a> SemanticChecker<'a> {
                     }
                     CheckedExprKind::Access { left, field } => {
                         let field_type = match &left.ty.kind {
-                            CheckedTypeKind::StructDecl(CheckedStructDecl { properties, .. }) => properties
+                            CheckedTypeKind::StructDecl(CheckedStructDecl { fields, .. }) => fields
                                 .into_iter()
                                 .find(|p| p.identifier == *field)
                                 .map(|p| p.constraint.clone())
                                 .unwrap_or_else(|| {
                                     self.errors
-                                        .push(SemanticError::AccessToUndefinedProperty { property: field.clone() });
+                                        .push(SemanticError::AccessToUndefinedField { field: field.clone() });
 
                                     CheckedType {
                                         kind: CheckedTypeKind::Unknown,

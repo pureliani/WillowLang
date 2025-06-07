@@ -207,11 +207,10 @@ pub fn compile_file<'a, 'b>(
                     )))
             }
             SemanticError::CannotAccess { target } => {
-                err.with_message("Cannot access property")
-                    .with_label(label.with_message(format!(
-                        "Cannot use the access operator on the type \"{}\"",
-                        type_to_string(&target.kind, string_interner)
-                    )))
+                err.with_message("Cannot access field").with_label(label.with_message(format!(
+                    "Cannot use the access operator on the type \"{}\"",
+                    type_to_string(&target.kind, string_interner)
+                )))
             }
             SemanticError::CannotCall { target } => err.with_message("Cannot call").with_label(label.with_message(format!(
                 "Cannot use the call operator on the type \"{}\"",
@@ -237,10 +236,10 @@ pub fn compile_file<'a, 'b>(
             SemanticError::CannotUseVariableDeclarationAsType { .. } => err
                 .with_message("Cannot use variable declaration as a type")
                 .with_label(label.with_message("Cannot use variable declaration as a type")),
-            SemanticError::AccessToUndefinedProperty { property } => {
-                let name = string_interner.resolve(property.name).unwrap();
-                err.with_message("Access to an undefined property")
-                    .with_label(label.with_message(format!("Property {} is not defined", name)))
+            SemanticError::AccessToUndefinedField { field } => {
+                let name = string_interner.resolve(field.name).unwrap();
+                err.with_message("Access to an undefined field")
+                    .with_label(label.with_message(format!("Field {} is not defined", name)))
             }
             SemanticError::UnresolvedGenericParam { param } => {
                 let name = string_interner.resolve(param.name).unwrap();
@@ -278,18 +277,18 @@ pub fn compile_file<'a, 'b>(
                         type_to_string(&to.kind, string_interner)
                     )))
             }
-            SemanticError::DuplicateStructPropertyInitializer { id } => {
+            SemanticError::DuplicateStructFieldInitializer { id } => {
                 let name = string_interner.resolve(id.name).unwrap();
-                err.with_message("Duplicate initializer for a struct property")
-                    .with_label(label.with_message(format!("Struct property \"{}\" cannot be initialized multiple times", name)))
+                err.with_message("Duplicate initializer for a struct field")
+                    .with_label(label.with_message(format!("Struct field \"{}\" cannot be initialized multiple times", name)))
             }
-            SemanticError::UnknownStructPropertyInitializer { id } => {
+            SemanticError::UnknownStructFieldInitializer { id } => {
                 let name = string_interner.resolve(id.name).unwrap();
-                err.with_message("Unknown property in the struct initializer")
-                    .with_label(label.with_message(format!("Unknown struct property \"{}\"", name)))
+                err.with_message("Unknown field in the struct initializer")
+                    .with_label(label.with_message(format!("Unknown struct field \"{}\"", name)))
             }
-            SemanticError::MissingStructPropertyInitializer { missing_props, .. } => {
-                let field_names: Vec<&'a str> = missing_props
+            SemanticError::MissingStructFieldInitializer { missing_fields, .. } => {
+                let field_names: Vec<&'a str> = missing_fields
                     .into_iter()
                     .map(|f| string_interner.resolve(*f).unwrap())
                     .collect();
@@ -298,9 +297,8 @@ pub fn compile_file<'a, 'b>(
                     .map(|n| format!("\"{}\"", n))
                     .collect::<Vec<String>>()
                     .join(", ");
-                err.with_message("Missing property initializers").with_label(
-                    label.with_message(format!("Missing initializers for the following struct properties {}", joined)),
-                )
+                err.with_message("Missing field initializers")
+                    .with_label(label.with_message(format!("Missing initializers for the following struct fields {}", joined)))
             }
             SemanticError::CannotApplyStructInitializer { .. } => err
                 .with_message("Cannot apply struct initializer")
@@ -323,12 +321,17 @@ pub fn compile_file<'a, 'b>(
                     }
                 };
 
-                err.with_message("Could not substitute generic param")
-                    .with_label(label.with_message(format!(
+                let gp_span = generic_param.identifier.span.start.byte_offset..generic_param.identifier.span.end.byte_offset;
+                let argument_span = with_type.span.start.byte_offset..with_type.span.end.byte_offset;
+
+                err.with_message("Could not substitute generic param").with_labels(vec![
+                    Label::primary(interned_fp, gp_span).with_message(format!(
                         "Could not substitute generic param \"{}\" with type \"{}\"",
                         gp_string,
                         type_to_string(&with_type.kind, string_interner)
-                    )))
+                    )),
+                    Label::primary(interned_fp, argument_span).with_message("type argument provided here"),
+                ])
             }
             SemanticError::AmbiguousGenericInferenceForUnion { received, expected } => err
                 .with_message("Ambiguous generic inference for union")

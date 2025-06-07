@@ -10,7 +10,10 @@ use crate::{
         },
         IdentifierNode, Span,
     },
-    check::{scope::Scope, utils::substitute_generics::GenericSubstitutionMap, SemanticChecker, SemanticError},
+    check::{
+        expressions::check_generic_apply_expr::GenericArgumentSource, scope::Scope,
+        utils::substitute_generics::GenericSubstitutionMap, SemanticChecker, SemanticError,
+    },
     compile::string_interner::InternerId,
 };
 
@@ -29,95 +32,114 @@ impl<'a> SemanticChecker<'a> {
             .map(|(ident, expr)| (ident, self.check_expr(expr, scope.clone())))
             .collect();
 
-        // TODO: make sure that checked_left.kind is actually an identifier or genericapply wrapper around an identifier
+        let mut result_struct_type = CheckedType {
+            kind: CheckedTypeKind::Unknown,
+            span,
+        };
 
         match &checked_left.ty.kind {
             CheckedTypeKind::StructDecl(decl) => {
-                let mut substitutions = GenericSubstitutionMap::new();
-                let mut uninitialized_props: HashSet<InternerId> = decl.properties.iter().map(|p| p.identifier.name).collect();
+                let mut uninitialized_field_tracker: HashSet<InternerId> =
+                    decl.fields.iter().map(|p| p.identifier.name).collect();
+                let mut has_field_name_errors = false;
 
-                for (arg_ident, arg_expr) in checked_args.iter() {
-                    let prop = decl.properties.iter().find(|p| p.identifier.name == arg_ident.name);
-
-                    match prop {
-                        None => {
+                for (arg_ident, _arg_expr) in checked_args.iter() {
+                    if decl.fields.iter().any(|p| p.identifier.name == arg_ident.name) {
+                        if !uninitialized_field_tracker.remove(&arg_ident.name) {
                             self.errors
-                                .push(SemanticError::UnknownStructPropertyInitializer { id: arg_ident.clone() });
+                                .push(SemanticError::DuplicateStructFieldInitializer { id: arg_ident.clone() });
+
+                            has_field_name_errors = true;
                         }
-                        Some(prop) => {
-                            let already_initialized = !uninitialized_props.remove(&arg_ident.name);
-                            if already_initialized {
-                                self.errors
-                                    .push(SemanticError::DuplicateStructPropertyInitializer { id: arg_ident.clone() });
-                            } else {
-                                self.infer_generics(&prop.constraint, &arg_expr.ty, &mut substitutions);
+                    } else {
+                        self.errors
+                            .push(SemanticError::UnknownStructFieldInitializer { id: arg_ident.clone() });
+
+                        has_field_name_errors = true;
+                    }
+                }
+
+                if !uninitialized_field_tracker.is_empty() {
+                    self.errors.push(SemanticError::MissingStructFieldInitializer {
+                        missing_fields: uninitialized_field_tracker,
+                        span,
+                    });
+
+                    has_field_name_errors = true;
+                };
+
+                if !has_field_name_errors {
+                    let mut inferred_substitutions_map = GenericSubstitutionMap::new();
+                    if !decl.generic_params.is_empty() {
+                        for (arg_ident, arg_expr) in checked_args.iter() {
+                            if let Some(field_decl) = decl.fields.iter().find(|p| p.identifier.name == arg_ident.name) {
+                                self.infer_generics(&field_decl.constraint, &arg_expr.ty, &mut inferred_substitutions_map);
                             }
                         }
                     }
-                }
 
-                let final_properties: Vec<CheckedParam> = decl
-                    .properties
-                    .iter()
-                    .map(|p| CheckedParam {
-                        identifier: p.identifier, // Keep original identifier node from declaration
-                        constraint: self.substitute_generics(&p.constraint, &substitutions),
-                    })
-                    .collect();
+                    let final_substitutions_opt = self.build_substitution_map(
+                        &decl.generic_params,
+                        GenericArgumentSource::Inferred {
+                            substitutions: &inferred_substitutions_map,
+                        },
+                        span,
+                    );
 
-                for (arg_ident, arg_expr) in &checked_args {
-                    if let Some(final_prop) = final_properties.iter().find(|p| p.identifier.name == arg_ident.name) {
-                        if !self.check_is_assignable(&arg_expr.ty, &final_prop.constraint) {
-                            self.errors.push(SemanticError::TypeMismatch {
-                                expected: final_prop.constraint.clone(),
-                                received: arg_expr.ty.clone(),
-                            });
+                    if let Some(final_substitutions) = final_substitutions_opt {
+                        let substituted_fields: Vec<CheckedParam> = decl
+                            .fields
+                            .iter()
+                            .map(|p_decl| CheckedParam {
+                                identifier: p_decl.identifier,
+                                constraint: self.substitute_generics(&p_decl.constraint, &final_substitutions),
+                            })
+                            .collect();
+
+                        let mut type_mismatch_in_fields = false;
+                        for (arg_ident, arg_expr) in &checked_args {
+                            if let Some(substituted_field) =
+                                substituted_fields.iter().find(|p| p.identifier.name == arg_ident.name)
+                            {
+                                if !self.check_is_assignable(&arg_expr.ty, &substituted_field.constraint) {
+                                    self.errors.push(SemanticError::TypeMismatch {
+                                        expected: substituted_field.constraint.clone(),
+                                        received: arg_expr.ty.clone(),
+                                    });
+
+                                    type_mismatch_in_fields = true;
+                                }
+                            }
+                        }
+
+                        if !type_mismatch_in_fields {
+                            result_struct_type = CheckedType {
+                                kind: CheckedTypeKind::StructDecl(CheckedStructDecl {
+                                    identifier: decl.identifier,
+                                    documentation: decl.documentation.clone(),
+                                    fields: substituted_fields,
+                                    generic_params: vec![],
+                                    span: decl.span,
+                                }),
+                                span,
+                            }
                         }
                     }
-                }
-
-                if !uninitialized_props.is_empty() {
-                    self.errors.push(SemanticError::MissingStructPropertyInitializer {
-                        missing_props: uninitialized_props,
-                        span,
-                    });
-                }
-
-                let final_struct_type = CheckedType {
-                    kind: CheckedTypeKind::StructDecl(CheckedStructDecl {
-                        identifier: decl.identifier,
-                        documentation: decl.documentation.clone(),
-                        properties: final_properties,
-                        generic_params: vec![],
-                        span: decl.span,
-                    }),
-                    span,
-                };
-
-                CheckedExpr {
-                    ty: final_struct_type,
-                    kind: CheckedExprKind::StructInit {
-                        left: Box::new(checked_left),
-                        fields: checked_args,
-                    },
                 }
             }
             _ => {
                 self.errors.push(SemanticError::CannotApplyStructInitializer {
                     span: checked_left.ty.span,
                 });
-
-                CheckedExpr {
-                    ty: CheckedType {
-                        kind: CheckedTypeKind::Unknown,
-                        span,
-                    },
-                    kind: CheckedExprKind::StructInit {
-                        left: Box::new(checked_left),
-                        fields: checked_args,
-                    },
-                }
             }
+        };
+
+        CheckedExpr {
+            ty: result_struct_type,
+            kind: CheckedExprKind::StructInit {
+                left: Box::new(checked_left), // The (checked) expression for the struct type
+                fields: checked_args,         // The (checked) field initializers
+            },
         }
     }
 }

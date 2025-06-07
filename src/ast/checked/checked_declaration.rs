@@ -50,21 +50,21 @@ pub struct CheckedStructDecl {
     pub identifier: IdentifierNode,
     pub documentation: Option<DocAnnotation>,
     pub generic_params: Vec<CheckedGenericParam>,
-    pub properties: Vec<CheckedParam>,
+    pub fields: Vec<CheckedParam>,
     pub span: Span,
 }
 
 impl Eq for CheckedStructDecl {}
 impl PartialEq for CheckedStructDecl {
     fn eq(&self, other: &Self) -> bool {
-        self.identifier == other.identifier && self.generic_params == other.generic_params && self.properties == other.properties
+        self.identifier == other.identifier && self.generic_params == other.generic_params && self.fields == other.fields
     }
 }
 impl Hash for CheckedStructDecl {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.identifier.hash(state);
         self.generic_params.hash(state);
-        self.properties.hash(state);
+        self.fields.hash(state);
     }
 }
 

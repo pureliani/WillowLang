@@ -48,20 +48,20 @@ impl<'a> SemanticChecker<'a> {
                 (_, Some(right_constraint)) => self.check_is_assignable(source_type, right_constraint),
             },
             (StructDecl(source), StructDecl(target)) => {
-                if source.properties.len() != target.properties.len() {
+                if source.fields.len() != target.fields.len() {
                     return false;
                 }
 
                 let same_name = source.identifier.name == target.identifier.name;
 
-                let assignable_props = source.properties.iter().zip(target.properties.iter()).all(|(sp, tp)| {
+                let assignable_fields = source.fields.iter().zip(target.fields.iter()).all(|(sp, tp)| {
                     let same_name = sp.identifier.name == tp.identifier.name;
                     let assignable = self.check_is_assignable(&sp.constraint, &tp.constraint);
 
                     same_name && assignable
                 });
 
-                same_name && assignable_props
+                same_name && assignable_fields
             }
             (EnumDecl(source), EnumDecl(target)) => source == target,
             (

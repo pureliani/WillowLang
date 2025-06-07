@@ -25,12 +25,12 @@ impl<'a> SemanticChecker<'a> {
 
         let expr_type = match &checked_left.ty.kind {
             // TODO: Add enum declaration handler
-            CheckedTypeKind::StructDecl(CheckedStructDecl { properties, .. }) => properties
+            CheckedTypeKind::StructDecl(CheckedStructDecl { fields, .. }) => fields
                 .into_iter()
                 .find(|p| p.identifier == field)
                 .map(|p| p.constraint.clone())
                 .unwrap_or_else(|| {
-                    self.errors.push(SemanticError::AccessToUndefinedProperty { property: field });
+                    self.errors.push(SemanticError::AccessToUndefinedField { field });
 
                     CheckedType {
                         kind: CheckedTypeKind::Unknown,
