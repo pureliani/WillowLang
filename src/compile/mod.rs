@@ -359,10 +359,9 @@ pub fn compile_file<'a, 'b>(
     let config = codespan_reporting::term::Config::default();
 
     if !errors.is_empty() {
+        println!();
         for (index, diagnostic) in errors.into_iter().enumerate() {
-            println!("\n=============== {} ===============\n", index + 1);
             let _ = term::emit(&mut writer.lock(), &config, files, &diagnostic);
-            println!();
         }
     } else {
         println!("Compilation successful for {} (no errors found).", file_path);

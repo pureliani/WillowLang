@@ -1,6 +1,7 @@
-let foo = <T: i32>(arg1: T) => {
-    arg1
+struct User<T> {
+    foo: T
+}
+
+let u: User<i32> = User {
+    foo: 1
 };
-
-
-foo(1);
