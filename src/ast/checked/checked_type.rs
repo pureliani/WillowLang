@@ -1,6 +1,8 @@
 use std::{
+    cell::RefCell,
     collections::HashSet,
     hash::{Hash, Hasher},
+    rc::Rc,
 };
 
 use crate::ast::{
@@ -30,10 +32,10 @@ pub enum CheckedTypeKind {
     F64,
     Char,
     Array { item_type: Box<CheckedType>, size: usize },
-    StructDecl(CheckedStructDecl),
+    StructDecl(Rc<RefCell<CheckedStructDecl>>),
     GenericParam(CheckedGenericParam),
-    EnumDecl(EnumDecl),
-    TypeAliasDecl(CheckedTypeAliasDecl),
+    EnumDecl(Rc<RefCell<EnumDecl>>),
+    TypeAliasDecl(Rc<RefCell<CheckedTypeAliasDecl>>),
     FnType(CheckedFnType),
     Union(HashSet<CheckedType>),
     Unknown,
@@ -112,9 +114,9 @@ impl Hash for CheckedTypeKind {
             CheckedTypeKind::Char => {}
             CheckedTypeKind::Unknown => {}
             CheckedTypeKind::GenericParam(decl) => decl.hash(state),
-            CheckedTypeKind::TypeAliasDecl(decl) => decl.hash(state),
-            CheckedTypeKind::EnumDecl(decl) => decl.hash(state),
-            CheckedTypeKind::StructDecl(decl) => decl.hash(state),
+            CheckedTypeKind::TypeAliasDecl(decl) => decl.borrow().hash(state),
+            CheckedTypeKind::EnumDecl(decl) => decl.borrow().hash(state),
+            CheckedTypeKind::StructDecl(decl) => decl.borrow().hash(state),
             CheckedTypeKind::FnType(decl) => decl.hash(state),
             CheckedTypeKind::Union(items) => {
                 state.write_usize(items.len());

@@ -4,6 +4,7 @@ use crate::{
     ast::{
         base::{
             base_declaration::{GenericParam, Param, StructDecl, TypeAliasDecl, VarDecl},
+            base_expression::{Expr, ExprKind},
             base_statement::{Stmt, StmtKind},
         },
         checked::{
@@ -56,7 +57,65 @@ impl<'a> SemanticChecker<'a> {
             .collect()
     }
 
+    pub fn placeholder_declarations(&mut self, statements: &Vec<Stmt>, scope: Rc<RefCell<Scope>>) {
+        for stmt in statements {
+            match &stmt.kind {
+                StmtKind::StructDecl(decl) => {
+                    let placeholder = SymbolEntry::StructDecl(Rc::new(RefCell::new(CheckedStructDecl {
+                        identifier: decl.identifier,
+                        documentation: decl.documentation.clone(),
+                        fields: vec![],
+                        generic_params: vec![],
+                        span: decl.identifier.span,
+                    })));
+
+                    scope.borrow_mut().insert(decl.identifier, placeholder, self.errors);
+                }
+                StmtKind::EnumDecl(decl) => {
+                    let actual = SymbolEntry::EnumDecl(Rc::new(RefCell::new(decl.clone())));
+
+                    scope.borrow_mut().insert(decl.identifier, actual, self.errors);
+                }
+                StmtKind::TypeAliasDecl(decl) => {
+                    let placeholder = SymbolEntry::TypeAliasDecl(Rc::new(RefCell::new(CheckedTypeAliasDecl {
+                        identifier: decl.identifier,
+                        documentation: decl.documentation.clone(),
+                        value: Box::new(CheckedType {
+                            kind: CheckedTypeKind::Unknown,
+                            span: decl.identifier.span,
+                        }),
+                        generic_params: vec![],
+                        span: decl.identifier.span,
+                    })));
+
+                    scope.borrow_mut().insert(decl.identifier, placeholder, self.errors);
+                }
+                StmtKind::VarDecl(decl) => {
+                    if let Some(Expr {
+                        kind: ExprKind::Fn { .. },
+                        ..
+                    }) = &decl.value
+                    {
+                        let placeholder = SymbolEntry::VarDecl(Rc::new(RefCell::new(CheckedVarDecl {
+                            identifier: decl.identifier,
+                            documentation: decl.documentation.clone(),
+                            value: None,
+                            constraint: CheckedType {
+                                kind: CheckedTypeKind::Unknown,
+                                span: decl.identifier.span,
+                            },
+                        })));
+
+                        scope.borrow_mut().insert(decl.identifier, placeholder, self.errors);
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+
     pub fn check_stmts(&mut self, statements: Vec<Stmt>, scope: Rc<RefCell<Scope>>) -> Vec<CheckedStmt> {
+        self.placeholder_declarations(&statements, scope.clone());
         statements.into_iter().map(|s| self.check_stmt(s, scope.clone())).collect()
     }
 
@@ -65,9 +124,9 @@ impl<'a> SemanticChecker<'a> {
             StmtKind::Expression(expr) => CheckedStmt::Expression(self.check_expr(expr, scope)),
             StmtKind::StructDecl(StructDecl {
                 identifier,
-                documentation,
                 generic_params,
                 fields,
+                documentation: _,
             }) => {
                 if !scope.borrow().is_file_scope() {
                     self.errors
@@ -76,36 +135,47 @@ impl<'a> SemanticChecker<'a> {
 
                 let struct_scope = scope.borrow().child(ScopeKind::Struct);
 
-                let generic_params = self.check_generic_params(&generic_params, struct_scope.clone());
+                let checked_generic_params = self.check_generic_params(&generic_params, struct_scope.clone());
 
                 let checked_fields = self.check_struct_fields(&fields, struct_scope.clone());
 
-                let decl = CheckedStructDecl {
-                    identifier,
-                    documentation,
-                    fields: checked_fields,
-                    generic_params,
-                    span: stmt.span,
+                let decl = match scope.borrow_mut().lookup(identifier.name) {
+                    Some(SymbolEntry::StructDecl(decl)) => {
+                        let mut mut_decl = decl.borrow_mut();
+                        mut_decl.fields = checked_fields;
+                        mut_decl.generic_params = checked_generic_params;
+                        mut_decl.span = stmt.span;
+                        decl.clone()
+                    }
+                    _ => {
+                        panic!("Expected struct declaration placeholder")
+                    }
                 };
-                scope
-                    .borrow_mut()
-                    .insert(identifier, SymbolEntry::StructDecl(decl.clone()), self.errors);
 
                 CheckedStmt::StructDecl(decl)
             }
             StmtKind::EnumDecl(decl) => {
-                scope
-                    .borrow_mut()
-                    .insert(decl.identifier, SymbolEntry::EnumDecl(decl.clone()), self.errors);
+                let decl = match scope.borrow().lookup(decl.identifier.name) {
+                    Some(SymbolEntry::EnumDecl(enum_decl)) => enum_decl,
+                    _ => panic!("Expected enum declaration"),
+                };
 
                 CheckedStmt::EnumDecl(decl)
             }
             StmtKind::VarDecl(VarDecl {
                 identifier,
-                documentation,
                 constraint,
                 value,
+                documentation,
             }) => {
+                let is_fn = matches!(
+                    value,
+                    Some(Expr {
+                        kind: ExprKind::Fn { .. },
+                        ..
+                    })
+                );
+
                 let checked_value = value.map(|v| self.check_expr(v, scope.clone()));
 
                 let checked_constraint = constraint.map(|c| self.check_type(&c, scope.clone()));
@@ -135,24 +205,40 @@ impl<'a> SemanticChecker<'a> {
                     }
                 };
 
-                let checked_declaration = CheckedVarDecl {
-                    documentation,
-                    identifier: identifier,
-                    constraint: final_constraint,
-                    value: checked_value,
+                let decl = if is_fn {
+                    match scope.borrow_mut().lookup(identifier.name) {
+                        Some(SymbolEntry::VarDecl(decl)) => {
+                            let mut mut_decl = decl.borrow_mut();
+                            mut_decl.value = checked_value;
+                            mut_decl.constraint = final_constraint;
+                            decl.clone()
+                        }
+                        _ => {
+                            panic!("Expected function declaration placeholder")
+                        }
+                    }
+                } else {
+                    let decl = Rc::new(RefCell::new(CheckedVarDecl {
+                        identifier,
+                        documentation,
+                        value: checked_value,
+                        constraint: final_constraint,
+                    }));
+
+                    scope
+                        .borrow_mut()
+                        .insert(identifier, SymbolEntry::VarDecl(decl.clone()), self.errors);
+
+                    decl
                 };
 
-                scope
-                    .borrow_mut()
-                    .insert(identifier, SymbolEntry::VarDecl(checked_declaration.clone()), self.errors);
-
-                CheckedStmt::VarDecl(checked_declaration)
+                CheckedStmt::VarDecl(decl)
             }
             StmtKind::TypeAliasDecl(TypeAliasDecl {
                 identifier,
-                documentation,
                 generic_params,
                 value,
+                documentation: _,
             }) => {
                 if !scope.borrow().is_file_scope() {
                     self.errors
@@ -161,21 +247,22 @@ impl<'a> SemanticChecker<'a> {
 
                 let alias_scope = scope.borrow().child(ScopeKind::TypeAlias);
 
-                let generic_params = self.check_generic_params(&generic_params, alias_scope.clone());
+                let checked_generic_params = self.check_generic_params(&generic_params, alias_scope.clone());
 
                 let checked_value = self.check_type(&value, alias_scope);
 
-                let decl = CheckedTypeAliasDecl {
-                    documentation,
-                    identifier,
-                    value: Box::new(checked_value),
-                    generic_params,
-                    span: stmt.span,
+                let decl = match scope.borrow_mut().lookup(identifier.name) {
+                    Some(SymbolEntry::TypeAliasDecl(decl)) => {
+                        let mut mut_decl = decl.borrow_mut();
+                        mut_decl.value = Box::new(checked_value);
+                        mut_decl.generic_params = checked_generic_params;
+                        mut_decl.span = stmt.span;
+                        decl.clone()
+                    }
+                    _ => {
+                        panic!("Expected type-alias declaration placeholder")
+                    }
                 };
-
-                scope
-                    .borrow_mut()
-                    .insert(identifier, SymbolEntry::TypeAliasDecl(decl.clone()), self.errors);
 
                 CheckedStmt::TypeAliasDecl(decl)
             }
@@ -211,6 +298,8 @@ impl<'a> SemanticChecker<'a> {
                         let identifier_expr_type = scope.borrow().lookup(id.name);
 
                         if let Some(SymbolEntry::VarDecl(decl)) = identifier_expr_type {
+                            let decl = decl.borrow();
+
                             let is_assignable = self.check_is_assignable(&checked_value.ty, &decl.constraint);
 
                             if !is_assignable {
@@ -225,8 +314,10 @@ impl<'a> SemanticChecker<'a> {
                     }
                     CheckedExprKind::Access { left, field } => {
                         let field_type = match &left.ty.kind {
-                            CheckedTypeKind::StructDecl(CheckedStructDecl { fields, .. }) => fields
-                                .into_iter()
+                            CheckedTypeKind::StructDecl(decl) => decl
+                                .borrow()
+                                .fields
+                                .iter()
                                 .find(|p| p.identifier == *field)
                                 .map(|p| p.constraint.clone())
                                 .unwrap_or_else(|| {

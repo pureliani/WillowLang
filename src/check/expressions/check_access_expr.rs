@@ -4,7 +4,6 @@ use crate::{
     ast::{
         base::base_expression::Expr,
         checked::{
-            checked_declaration::CheckedStructDecl,
             checked_expression::{CheckedExpr, CheckedExprKind},
             checked_type::{CheckedType, CheckedTypeKind},
         },
@@ -25,8 +24,10 @@ impl<'a> SemanticChecker<'a> {
 
         let expr_type = match &checked_left.ty.kind {
             // TODO: Add enum declaration handler
-            CheckedTypeKind::StructDecl(CheckedStructDecl { fields, .. }) => fields
-                .into_iter()
+            CheckedTypeKind::StructDecl(decl) => decl
+                .borrow()
+                .fields
+                .iter()
                 .find(|p| p.identifier == field)
                 .map(|p| p.constraint.clone())
                 .unwrap_or_else(|| {

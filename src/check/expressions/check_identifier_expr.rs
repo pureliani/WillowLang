@@ -23,7 +23,7 @@ impl<'a> SemanticChecker<'a> {
                 SymbolEntry::StructDecl(decl) => CheckedTypeKind::StructDecl(decl),
                 SymbolEntry::TypeAliasDecl(decl) => CheckedTypeKind::TypeAliasDecl(decl),
                 SymbolEntry::EnumDecl(decl) => CheckedTypeKind::EnumDecl(decl),
-                SymbolEntry::VarDecl(decl) => decl.constraint.kind,
+                SymbolEntry::VarDecl(decl) => decl.borrow().constraint.kind.clone(),
                 SymbolEntry::GenericParam(_) => {
                     self.errors.push(SemanticError::CannotUseGenericParameterAsValue { span });
 

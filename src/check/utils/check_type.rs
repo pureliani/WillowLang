@@ -4,7 +4,7 @@ use crate::{
     ast::{
         base::base_type::{TypeAnnotation, TypeAnnotationKind},
         checked::{
-            checked_declaration::{CheckedFnType, CheckedParam, CheckedStructDecl, CheckedTypeAliasDecl},
+            checked_declaration::{CheckedFnType, CheckedGenericParam, CheckedParam},
             checked_type::{CheckedType, CheckedTypeKind},
         },
     },
@@ -39,24 +39,26 @@ impl<'a> SemanticChecker<'a> {
                 let checked_left = self.check_type(&left, scope.clone());
                 let checked_args: Vec<CheckedType> = args.into_iter().map(|arg| self.check_type(&arg, scope.clone())).collect();
 
-                match &checked_left.kind {
-                    CheckedTypeKind::FnType(CheckedFnType { generic_params, .. })
-                    | CheckedTypeKind::StructDecl(CheckedStructDecl { generic_params, .. })
-                    | CheckedTypeKind::TypeAliasDecl(CheckedTypeAliasDecl { generic_params, .. }) => {
-                        let substitutions_opt = self.build_substitution_map(
-                            generic_params,
-                            GenericArgumentSource::Explicit(checked_args),
-                            annotation.span,
-                        );
+                let mut substitute = |generic_params: &Vec<CheckedGenericParam>, checked_args: Vec<CheckedType>| {
+                    let substitutions_opt = self.build_substitution_map(
+                        generic_params,
+                        GenericArgumentSource::Explicit(checked_args),
+                        annotation.span,
+                    );
 
-                        if let Some(substitutions) = substitutions_opt {
-                            let substituted = self.substitute_generics(&checked_left, &substitutions);
+                    if let Some(substitutions) = substitutions_opt {
+                        let substituted = self.substitute_generics(&checked_left, &substitutions);
 
-                            substituted.kind
-                        } else {
-                            CheckedTypeKind::Unknown
-                        }
+                        substituted.kind
+                    } else {
+                        CheckedTypeKind::Unknown
                     }
+                };
+
+                match &checked_left.kind {
+                    CheckedTypeKind::FnType(decl) => substitute(&decl.generic_params, checked_args),
+                    CheckedTypeKind::StructDecl(decl) => substitute(&decl.borrow().generic_params, checked_args),
+                    CheckedTypeKind::TypeAliasDecl(decl) => substitute(&decl.borrow().generic_params, checked_args),
                     _ => {
                         self.errors.push(SemanticError::CannotApplyTypeArguments {
                             to: checked_left.clone(),

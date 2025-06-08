@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::{
     ast::checked::{
@@ -55,6 +55,8 @@ impl<'a> SemanticChecker<'a> {
                 }
             }
             CheckedTypeKind::StructDecl(decl) => {
+                let decl = decl.borrow();
+
                 // Similar to FnType, a struct definition's generic params are local.
                 // We substitute types *within* its fields if those types refer
                 // to generics from the *outer* substitution context.
@@ -68,27 +70,29 @@ impl<'a> SemanticChecker<'a> {
                     .collect();
 
                 CheckedType {
-                    kind: CheckedTypeKind::StructDecl(CheckedStructDecl {
+                    kind: CheckedTypeKind::StructDecl(Rc::new(RefCell::new(CheckedStructDecl {
                         fields: substituted_fields,
                         documentation: decl.documentation.clone(),
                         identifier: decl.identifier, // maybe we should rename this?
                         generic_params: vec![],
                         span: decl.span,
-                    }),
+                    }))),
                     span: ty.span,
                 }
             }
             CheckedTypeKind::TypeAliasDecl(decl) => {
+                let decl = decl.borrow();
+
                 let substituted_value = self.substitute_generics(&decl.value, substitutions);
 
                 CheckedType {
-                    kind: CheckedTypeKind::TypeAliasDecl(CheckedTypeAliasDecl {
+                    kind: CheckedTypeKind::TypeAliasDecl(Rc::new(RefCell::new(CheckedTypeAliasDecl {
                         value: Box::new(substituted_value),
                         documentation: decl.documentation.clone(),
                         identifier: decl.identifier, // maybe we should rename this?
                         generic_params: vec![],
                         span: decl.span,
-                    }),
+                    }))),
                     span: ty.span,
                 }
             }

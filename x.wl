@@ -1,2 +1,4 @@
-let foo = 1;
-let foo = 2;
+let y = x;
+let x = () => {
+    
+};

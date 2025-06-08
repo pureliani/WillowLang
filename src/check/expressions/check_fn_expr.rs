@@ -42,12 +42,12 @@ impl<'a> SemanticChecker<'a> {
 
                 fn_scope.borrow_mut().insert(
                     param.identifier,
-                    SymbolEntry::VarDecl(CheckedVarDecl {
+                    SymbolEntry::VarDecl(Rc::new(RefCell::new(CheckedVarDecl {
                         documentation: None,
                         identifier: param.identifier,
                         constraint: checked_constraint.clone(),
                         value: None,
-                    }),
+                    }))),
                     self.errors,
                 );
 

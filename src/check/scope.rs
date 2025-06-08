@@ -23,10 +23,10 @@ pub enum ScopeKind {
 
 #[derive(Debug, Clone)]
 pub enum SymbolEntry {
-    StructDecl(CheckedStructDecl),
-    EnumDecl(EnumDecl),
-    VarDecl(CheckedVarDecl),
-    TypeAliasDecl(CheckedTypeAliasDecl),
+    StructDecl(Rc<RefCell<CheckedStructDecl>>),
+    EnumDecl(Rc<RefCell<EnumDecl>>),
+    VarDecl(Rc<RefCell<CheckedVarDecl>>),
+    TypeAliasDecl(Rc<RefCell<CheckedTypeAliasDecl>>),
     GenericParam(CheckedGenericParam),
 }
 

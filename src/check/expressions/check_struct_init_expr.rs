@@ -39,6 +39,8 @@ impl<'a> SemanticChecker<'a> {
 
         match &checked_left.ty.kind {
             CheckedTypeKind::StructDecl(decl) => {
+                let decl = decl.borrow();
+
                 let mut uninitialized_field_tracker: HashSet<InternerId> =
                     decl.fields.iter().map(|p| p.identifier.name).collect();
                 let mut has_field_name_errors = false;
@@ -114,13 +116,13 @@ impl<'a> SemanticChecker<'a> {
 
                         if !type_mismatch_in_fields {
                             result_struct_type = CheckedType {
-                                kind: CheckedTypeKind::StructDecl(CheckedStructDecl {
+                                kind: CheckedTypeKind::StructDecl(Rc::new(RefCell::new(CheckedStructDecl {
                                     identifier: decl.identifier,
                                     documentation: decl.documentation.clone(),
                                     fields: substituted_fields,
                                     generic_params: vec![],
                                     span: decl.span,
-                                }),
+                                }))),
                                 span,
                             }
                         }

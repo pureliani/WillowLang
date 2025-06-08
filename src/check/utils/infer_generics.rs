@@ -38,6 +38,9 @@ impl<'a> SemanticChecker<'a> {
                 self.infer_generics(&expected_item_type, &received_item_type, substitution);
             }
             (CheckedTypeKind::StructDecl(expected), CheckedTypeKind::StructDecl(received)) => {
+                let expected = expected.borrow();
+                let received = received.borrow();
+
                 for (expected_field, received_field) in expected.fields.iter().zip(received.fields.iter()) {
                     self.infer_generics(&expected_field.constraint, &received_field.constraint, substitution);
                 }

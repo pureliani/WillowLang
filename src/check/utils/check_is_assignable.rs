@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use crate::{
     ast::checked::{
         checked_declaration::CheckedFnType,
@@ -9,6 +11,7 @@ use crate::{
 impl<'a> SemanticChecker<'a> {
     pub fn check_is_assignable(&mut self, source_type: &CheckedType, target_type: &CheckedType) -> bool {
         use CheckedTypeKind::*;
+        // TODO: add recursion detection and handling
 
         match (&source_type.kind, &target_type.kind) {
             (I8, I8)
@@ -48,6 +51,13 @@ impl<'a> SemanticChecker<'a> {
                 (_, Some(right_constraint)) => self.check_is_assignable(source_type, right_constraint),
             },
             (StructDecl(source), StructDecl(target)) => {
+                if Rc::ptr_eq(source, target) {
+                    return true;
+                }
+
+                let source = source.borrow();
+                let target = target.borrow();
+
                 if source.fields.len() != target.fields.len() {
                     return false;
                 }
@@ -106,8 +116,8 @@ impl<'a> SemanticChecker<'a> {
 
                 compatible_params && compatible_returns
             }
-            (TypeAliasDecl(source), _) => self.check_is_assignable(&source.value, target_type),
-            (_, TypeAliasDecl(target)) => self.check_is_assignable(source_type, &target.value),
+            (TypeAliasDecl(source), _) => self.check_is_assignable(&source.borrow().value, target_type),
+            (_, TypeAliasDecl(target)) => self.check_is_assignable(source_type, &target.borrow().value),
             _ => false,
         }
     }

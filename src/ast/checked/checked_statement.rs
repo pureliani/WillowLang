@@ -1,3 +1,5 @@
+use std::{cell::RefCell, rc::Rc};
+
 use crate::ast::{base::base_declaration::EnumDecl, IdentifierNode, Span, StringNode};
 
 use super::{
@@ -8,10 +10,10 @@ use super::{
 #[derive(Clone, Debug)]
 pub enum CheckedStmt {
     Expression(CheckedExpr),
-    StructDecl(CheckedStructDecl),
-    EnumDecl(EnumDecl),
-    TypeAliasDecl(CheckedTypeAliasDecl),
-    VarDecl(CheckedVarDecl),
+    StructDecl(Rc<RefCell<CheckedStructDecl>>),
+    EnumDecl(Rc<RefCell<EnumDecl>>),
+    TypeAliasDecl(Rc<RefCell<CheckedTypeAliasDecl>>),
+    VarDecl(Rc<RefCell<CheckedVarDecl>>),
     Break {
         span: Span,
     },

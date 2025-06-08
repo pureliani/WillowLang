@@ -1,10 +1,7 @@
 use crate::{
-    ast::{
-        base::base_declaration::EnumDecl,
-        checked::{
-            checked_declaration::{CheckedFnType, CheckedGenericParam, CheckedParam, CheckedStructDecl, CheckedTypeAliasDecl},
-            checked_type::CheckedTypeKind,
-        },
+    ast::checked::{
+        checked_declaration::{CheckedFnType, CheckedGenericParam, CheckedParam},
+        checked_type::CheckedTypeKind,
     },
     compile::string_interner::{InternerId, StringInterner},
 };
@@ -48,6 +45,8 @@ fn generic_params_to_string(generic_params: &Vec<CheckedGenericParam>, string_in
 }
 
 pub fn type_to_string(ty: &CheckedTypeKind, string_interner: &StringInterner) -> String {
+    // TODO: add recursion detection and handling
+
     match ty {
         CheckedTypeKind::Void => String::from("void"),
         CheckedTypeKind::Null => String::from("null"),
@@ -66,15 +65,13 @@ pub fn type_to_string(ty: &CheckedTypeKind, string_interner: &StringInterner) ->
         CheckedTypeKind::F64 => String::from("f64"),
         CheckedTypeKind::Char => String::from("char"),
         CheckedTypeKind::Unknown => String::from("unknown"),
-        CheckedTypeKind::StructDecl(CheckedStructDecl {
-            generic_params,
-            identifier,
-            fields,
-            ..
-        }) => {
-            let name = identifier_to_string(identifier.name, string_interner);
-            let generic_params_str = generic_params_to_string(generic_params, string_interner);
-            let joined = fields
+        CheckedTypeKind::StructDecl(decl) => {
+            let decl = decl.borrow();
+
+            let name = identifier_to_string(decl.identifier.name, string_interner);
+            let generic_params_str = generic_params_to_string(&decl.generic_params, string_interner);
+            let joined = decl
+                .fields
                 .iter()
                 .map(|f| param_to_string(f, string_interner))
                 .collect::<Vec<String>>()
@@ -82,8 +79,10 @@ pub fn type_to_string(ty: &CheckedTypeKind, string_interner: &StringInterner) ->
 
             format!("{}{} {{ {} }}", name, generic_params_str, joined)
         }
-        CheckedTypeKind::EnumDecl(EnumDecl { identifier, .. }) => {
-            let name = identifier_to_string(identifier.name, string_interner);
+        CheckedTypeKind::EnumDecl(decl) => {
+            let decl = decl.borrow();
+
+            let name = identifier_to_string(decl.identifier.name, string_interner);
 
             name
         }
@@ -112,13 +111,11 @@ pub fn type_to_string(ty: &CheckedTypeKind, string_interner: &StringInterner) ->
 
             format!("({}{} => {})", generic_params_str, params_str, return_type_str)
         }
-        CheckedTypeKind::TypeAliasDecl(CheckedTypeAliasDecl {
-            generic_params,
-            identifier,
-            ..
-        }) => {
-            let name = identifier_to_string(identifier.name, string_interner);
-            let generic_params_str = generic_params_to_string(generic_params, string_interner);
+        CheckedTypeKind::TypeAliasDecl(decl) => {
+            let decl = decl.borrow();
+
+            let name = identifier_to_string(decl.identifier.name, string_interner);
+            let generic_params_str = generic_params_to_string(&decl.generic_params, string_interner);
 
             format!("{}{}", name, generic_params_str)
         }
