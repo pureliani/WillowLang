@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::{collections::HashSet, rc::Rc};
 
 use crate::{
     ast::checked::{
@@ -10,10 +10,33 @@ use crate::{
 
 impl<'a> SemanticChecker<'a> {
     pub fn check_is_assignable(&mut self, source_type: &CheckedType, target_type: &CheckedType) -> bool {
+        let mut currently_checking: HashSet<(usize, usize)> = HashSet::new();
+        self.check_is_assignable_recursive(source_type, target_type, &mut currently_checking)
+    }
+
+    pub fn check_is_assignable_recursive(
+        &mut self,
+        source_type: &CheckedType,
+        target_type: &CheckedType,
+        currently_checking: &mut HashSet<(usize, usize)>,
+    ) -> bool {
         use CheckedTypeKind::*;
         // TODO: add recursion detection and handling
 
-        match (&source_type.kind, &target_type.kind) {
+        let key_opt: Option<(usize, usize)> = match (&source_type.kind, &target_type.kind) {
+            (StructDecl(s_rc), StructDecl(t_rc)) => Some((Rc::as_ptr(s_rc) as usize, Rc::as_ptr(t_rc) as usize)),
+            (TypeAliasDecl(s_rc), TypeAliasDecl(t_rc)) => Some((Rc::as_ptr(s_rc) as usize, Rc::as_ptr(t_rc) as usize)),
+            _ => None,
+        };
+
+        if let Some(key) = key_opt {
+            if currently_checking.contains(&key) {
+                return true;
+            }
+            currently_checking.insert(key);
+        }
+
+        let result = match (&source_type.kind, &target_type.kind) {
             (I8, I8)
             | (I16, I16)
             | (I32, I32)
@@ -34,21 +57,28 @@ impl<'a> SemanticChecker<'a> {
             (Union(source), Union(target)) => source.iter().all(|source_item| {
                 target
                     .iter()
-                    .any(|target_item| self.check_is_assignable(source_item, target_item))
+                    .any(|target_item| self.check_is_assignable_recursive(source_item, target_item, currently_checking))
             }),
             (_, Union(target)) => target
                 .iter()
-                .any(|target_item| self.check_is_assignable(source_type, target_item)),
+                .any(|target_item| self.check_is_assignable_recursive(source_type, target_item, currently_checking)),
+            (Union(source), _) => source
+                .iter()
+                .all(|source_item| self.check_is_assignable_recursive(source_item, target_type, currently_checking)),
 
             (GenericParam(source), GenericParam(target)) => match (&source.constraint, &target.constraint) {
                 (None, None) => true,
                 (Some(_), None) => true,
                 (None, Some(_)) => false,
-                (Some(left_constraint), Some(right_constraint)) => self.check_is_assignable(left_constraint, right_constraint),
+                (Some(left_constraint), Some(right_constraint)) => {
+                    self.check_is_assignable_recursive(left_constraint, right_constraint, currently_checking)
+                }
             },
             (source, GenericParam(target)) => match (&source, &target.constraint) {
                 (_, None) => true,
-                (_, Some(right_constraint)) => self.check_is_assignable(source_type, right_constraint),
+                (_, Some(right_constraint)) => {
+                    self.check_is_assignable_recursive(source_type, right_constraint, currently_checking)
+                }
             },
             (StructDecl(source), StructDecl(target)) => {
                 if Rc::ptr_eq(source, target) {
@@ -66,14 +96,14 @@ impl<'a> SemanticChecker<'a> {
 
                 let assignable_fields = source.fields.iter().zip(target.fields.iter()).all(|(sp, tp)| {
                     let same_name = sp.identifier.name == tp.identifier.name;
-                    let assignable = self.check_is_assignable(&sp.constraint, &tp.constraint);
+                    let assignable = self.check_is_assignable_recursive(&sp.constraint, &tp.constraint, currently_checking);
 
                     same_name && assignable
                 });
 
                 same_name && assignable_fields
             }
-            (EnumDecl(source), EnumDecl(target)) => source == target,
+            (EnumDecl(source), EnumDecl(target)) => Rc::ptr_eq(source, target),
             (
                 Array {
                     item_type: source_type,
@@ -87,7 +117,7 @@ impl<'a> SemanticChecker<'a> {
                 },
             ) => {
                 let same_size = source_size == target_size;
-                let assignable_types = self.check_is_assignable(&source_type, &target_type);
+                let assignable_types = self.check_is_assignable_recursive(&source_type, &target_type, currently_checking);
 
                 same_size && assignable_types
             }
@@ -110,15 +140,26 @@ impl<'a> SemanticChecker<'a> {
                 let compatible_params = source_params
                     .iter()
                     .zip(target_params.iter())
-                    .all(|(sp, tp)| self.check_is_assignable(&tp.constraint, &sp.constraint));
+                    .all(|(sp, tp)| self.check_is_assignable_recursive(&tp.constraint, &sp.constraint, currently_checking));
 
-                let compatible_returns = self.check_is_assignable(source_return_type, target_return_type);
+                let compatible_returns =
+                    self.check_is_assignable_recursive(source_return_type, target_return_type, currently_checking);
 
                 compatible_params && compatible_returns
             }
-            (TypeAliasDecl(source), _) => self.check_is_assignable(&source.borrow().value, target_type),
-            (_, TypeAliasDecl(target)) => self.check_is_assignable(source_type, &target.borrow().value),
+            (TypeAliasDecl(source), _) => {
+                self.check_is_assignable_recursive(&source.borrow().value, target_type, currently_checking)
+            }
+            (_, TypeAliasDecl(target)) => {
+                self.check_is_assignable_recursive(source_type, &target.borrow().value, currently_checking)
+            }
             _ => false,
+        };
+
+        if let Some(key) = key_opt {
+            currently_checking.remove(&key);
         }
+
+        result
     }
 }

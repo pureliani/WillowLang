@@ -69,15 +69,17 @@ pub fn type_to_string(ty: &CheckedTypeKind, string_interner: &StringInterner) ->
             let decl = decl.borrow();
 
             let name = identifier_to_string(decl.identifier.name, string_interner);
-            let generic_params_str = generic_params_to_string(&decl.generic_params, string_interner);
-            let joined = decl
-                .fields
-                .iter()
-                .map(|f| param_to_string(f, string_interner))
-                .collect::<Vec<String>>()
-                .join(", ");
+            // let generic_params_str = generic_params_to_string(&decl.generic_params, string_interner);
+            // let joined = decl
+            //     .fields
+            //     .iter()
+            //     .map(|f| param_to_string(f, string_interner))
+            //     .collect::<Vec<String>>()
+            //     .join(", ");
 
-            format!("{}{} {{ {} }}", name, generic_params_str, joined)
+            // format!("{}{} {{ {} }}", name, generic_params_str, joined)
+
+            name
         }
         CheckedTypeKind::EnumDecl(decl) => {
             let decl = decl.borrow();

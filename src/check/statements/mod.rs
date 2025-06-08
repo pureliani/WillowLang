@@ -176,11 +176,22 @@ impl<'a> SemanticChecker<'a> {
                     })
                 );
 
+                let constraint = constraint.map(|c| {
+                    let checked_constraint = self.check_type(&c, scope.clone());
+                    if is_fn {
+                        let placeholder_ref = match scope.borrow().lookup(identifier.name) {
+                            Some(SymbolEntry::VarDecl(d)) => d,
+                            _ => panic!("Expected function declaration placeholder for"),
+                        };
+                        placeholder_ref.borrow_mut().constraint = checked_constraint.clone();
+                    };
+
+                    checked_constraint
+                });
+
                 let checked_value = value.map(|v| self.check_expr(v, scope.clone()));
 
-                let checked_constraint = constraint.map(|c| self.check_type(&c, scope.clone()));
-
-                let final_constraint = match (&checked_value, checked_constraint) {
+                let final_constraint = match (&checked_value, constraint) {
                     (Some(value), Some(constraint)) => {
                         let is_assignable = self.check_is_assignable(&value.ty, &constraint);
 
