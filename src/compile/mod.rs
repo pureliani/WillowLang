@@ -222,7 +222,7 @@ pub fn compile_file<'a, 'b>(
             SemanticError::CannotCall { target } => {
                 err.with_message("Cannot use the function call operator")
                     .with_label(label.with_message(format!(
-                        "Cannot use the function calling operator on the type \"{}\"",
+                        "Cannot use the function-call operator on type \"{}\"",
                         type_to_string(&target.kind, string_interner)
                     )))
             }

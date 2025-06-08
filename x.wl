@@ -1,5 +1,8 @@
-let foo = <T: i32>(arg: T): bool => {
-    true
+let foo = () => {
+    bar()
 };
 
-foo<i64>("hello");
+let bar = () => {
+};
+
+foo();
