@@ -42,6 +42,7 @@ pub fn check_generic_params(
             scope
                 .borrow_mut()
                 .insert(gp.identifier.name, SymbolEntry::GenericParam(checked_gp.clone()));
+
             checked_gp
         })
         .collect()

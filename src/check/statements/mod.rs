@@ -40,7 +40,7 @@ impl<'a> SemanticChecker<'a> {
 
                 scope
                     .borrow_mut()
-                    .insert(gp.identifier.name, SymbolEntry::GenericParam(checked_gp.clone()));
+                    .insert(gp.identifier, SymbolEntry::GenericParam(checked_gp.clone()), self.errors);
                 checked_gp
             })
             .collect()
@@ -89,14 +89,14 @@ impl<'a> SemanticChecker<'a> {
                 };
                 scope
                     .borrow_mut()
-                    .insert(identifier.name, SymbolEntry::StructDecl(decl.clone()));
+                    .insert(identifier, SymbolEntry::StructDecl(decl.clone()), self.errors);
 
                 CheckedStmt::StructDecl(decl)
             }
             StmtKind::EnumDecl(decl) => {
                 scope
                     .borrow_mut()
-                    .insert(decl.identifier.name, SymbolEntry::EnumDecl(decl.clone()));
+                    .insert(decl.identifier, SymbolEntry::EnumDecl(decl.clone()), self.errors);
 
                 CheckedStmt::EnumDecl(decl)
             }
@@ -144,7 +144,7 @@ impl<'a> SemanticChecker<'a> {
 
                 scope
                     .borrow_mut()
-                    .insert(identifier.name, SymbolEntry::VarDecl(checked_declaration.clone()));
+                    .insert(identifier, SymbolEntry::VarDecl(checked_declaration.clone()), self.errors);
 
                 CheckedStmt::VarDecl(checked_declaration)
             }
@@ -175,7 +175,7 @@ impl<'a> SemanticChecker<'a> {
 
                 scope
                     .borrow_mut()
-                    .insert(identifier.name, SymbolEntry::TypeAliasDecl(decl.clone()));
+                    .insert(identifier, SymbolEntry::TypeAliasDecl(decl.clone()), self.errors);
 
                 CheckedStmt::TypeAliasDecl(decl)
             }

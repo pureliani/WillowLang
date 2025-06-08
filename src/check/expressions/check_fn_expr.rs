@@ -41,13 +41,14 @@ impl<'a> SemanticChecker<'a> {
                 let checked_constraint = self.check_type(&param.constraint, fn_scope.clone());
 
                 fn_scope.borrow_mut().insert(
-                    param.identifier.name,
+                    param.identifier,
                     SymbolEntry::VarDecl(CheckedVarDecl {
                         documentation: None,
                         identifier: param.identifier,
                         constraint: checked_constraint.clone(),
                         value: None,
                     }),
+                    self.errors,
                 );
 
                 CheckedParam {

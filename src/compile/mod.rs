@@ -145,11 +145,9 @@ pub fn compile_file<'a, 'b>(
             SemanticError::ExpectedANumericOperand { .. } => err
                 .with_message("Expected a numeric operand")
                 .with_label(label.with_message("Expected this value to have a numeric type")),
-
             SemanticError::MixedSignedAndUnsigned { .. } => err
                 .with_message("Mixed signed and unsigned operands")
                 .with_label(label.with_message("Mixing signed and unsigned operands in an arithmetic operation is not allowed")),
-
             SemanticError::MixedFloatAndInteger { .. } => err.with_message("Mixed float and integer operands").with_label(
                 label.with_message("Mixing integer and floating-point numbers in an arithmetic operation is not allowed"),
             ),
@@ -372,6 +370,11 @@ pub fn compile_file<'a, 'b>(
                     type_to_string(&CheckedTypeKind::Union(expected_union.clone()), string_interner),
                     type_to_string(&received.kind, string_interner)
                 ))),
+            SemanticError::DuplicateIdentifier { id } => {
+                let identifier_name = string_interner.resolve(id.name).unwrap();
+                err.with_message("Duplicate identifier")
+                    .with_label(label.with_message(format!("Duplicate identifier declaration \"{}\"", identifier_name)))
+            }
         };
 
         errors.push(diagnostic);

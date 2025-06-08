@@ -18,6 +18,9 @@ pub mod utils;
 
 #[derive(Debug, Clone)]
 pub enum SemanticError {
+    DuplicateIdentifier {
+        id: IdentifierNode,
+    },
     AmbiguousGenericInferenceForUnion {
         expected: HashSet<CheckedType>,
         received: CheckedType,
@@ -178,6 +181,7 @@ impl SemanticError {
             SemanticError::TypeAliasMustBeDeclaredAtTopLevel { span } => *span,
             SemanticError::StructMustBeDeclaredAtTopLevel { span } => *span,
             SemanticError::CannotApplyTypeArguments { to } => to.span,
+            SemanticError::DuplicateIdentifier { id } => id.span,
         }
     }
 
@@ -218,6 +222,7 @@ impl SemanticError {
             SemanticError::IncompatibleGenericParamSubstitution { .. } => 33,
             SemanticError::AmbiguousGenericInferenceForUnion { .. } => 34,
             SemanticError::FailedToInferGenericsInUnion { .. } => 35,
+            SemanticError::DuplicateIdentifier { .. } => 36,
         }
     }
 }

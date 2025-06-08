@@ -1,8 +1,2 @@
-let foo = () => {
-    bar()
-};
-
-let bar = () => {
-};
-
-foo();
+let foo = 1;
+let foo = 2;

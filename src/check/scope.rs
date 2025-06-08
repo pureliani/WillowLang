@@ -4,7 +4,9 @@ use crate::{
     ast::{
         base::base_declaration::EnumDecl,
         checked::checked_declaration::{CheckedGenericParam, CheckedStructDecl, CheckedTypeAliasDecl, CheckedVarDecl},
+        IdentifierNode,
     },
+    check::SemanticError,
     compile::string_interner::InternerId,
 };
 
@@ -52,8 +54,10 @@ impl Scope {
         }
     }
 
-    pub fn insert(&mut self, key: InternerId, value: SymbolEntry) {
-        self.symbols.insert(key, value);
+    pub fn insert(&mut self, key: IdentifierNode, value: SymbolEntry, errors: &mut Vec<SemanticError>) {
+        if let Some(_) = self.symbols.insert(key.name, value) {
+            errors.push(SemanticError::DuplicateIdentifier { id: key });
+        }
     }
 
     pub fn lookup(&self, key: InternerId) -> Option<SymbolEntry> {
