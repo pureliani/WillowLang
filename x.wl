@@ -1,17 +1,7 @@
-struct Foo {
-    b: Bar
-}
+type CB = <X>(arg2: X) => X;
 
-struct Bar {
-    f: Foo | null
-}
-
-let v: Foo = Foo {
-    b: Bar {
-        f: Foo {
-            b: Bar {
-                f: null
-            }
-        }
-    }
+let foo = (arg1: CB, val: i32) => {
+    arg1(val)
 };
+
+let xyz: i32 = foo((woo: i32) => {}, 25i32);

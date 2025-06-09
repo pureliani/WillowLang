@@ -140,8 +140,8 @@ impl<'a> SemanticChecker<'a> {
         CheckedExpr {
             ty: result_struct_type,
             kind: CheckedExprKind::StructInit {
-                left: Box::new(checked_left), // The (checked) expression for the struct type
-                fields: checked_args,         // The (checked) field initializers
+                left: Box::new(checked_left),
+                fields: checked_args,
             },
         }
     }

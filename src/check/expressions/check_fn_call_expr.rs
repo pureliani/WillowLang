@@ -32,7 +32,7 @@ impl<'a> SemanticChecker<'a> {
                     self.errors.push(SemanticError::FnArgumentCountMismatch {
                         expected: params.len(),
                         received: checked_args.len(),
-                        span,
+                        span: checked_left.ty.span,
                     });
 
                     CheckedType {

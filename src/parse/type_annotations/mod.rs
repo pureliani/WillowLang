@@ -216,7 +216,7 @@ impl<'a, 'b> Parser<'a, 'b> {
 
                 type_annotation
             }
-
+            TokenKind::Punctuation(PunctuationKind::Lt) => self.parse_fn_type_annotation()?,
             TokenKind::Punctuation(PunctuationKind::LBracket) => {
                 let start_offset = self.offset;
 
