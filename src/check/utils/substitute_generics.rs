@@ -17,8 +17,10 @@ impl<'a> SemanticChecker<'a> {
     pub fn substitute_generics(&mut self, ty: &CheckedType, substitutions: &GenericSubstitutionMap) -> CheckedType {
         match &ty.kind {
             CheckedTypeKind::GenericParam(gp) => substitutions.get(&gp.identifier.name).cloned().unwrap_or_else(|| {
-                self.errors
-                    .push(SemanticError::UnresolvedGenericParam { param: gp.identifier });
+                self.errors.push(SemanticError::UnresolvedGenericParam {
+                    param: gp.identifier,
+                    span: ty.span,
+                });
 
                 CheckedType {
                     kind: CheckedTypeKind::Unknown,

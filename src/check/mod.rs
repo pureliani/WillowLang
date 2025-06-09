@@ -123,6 +123,7 @@ pub enum SemanticError {
     },
     UnresolvedGenericParam {
         param: IdentifierNode,
+        span: Span,
     },
     CannotUseIsTypeOnNonUnion {
         target: CheckedType,
@@ -175,7 +176,7 @@ impl SemanticError {
             SemanticError::CannotUseGenericParameterAsValue { span, .. } => *span,
             SemanticError::CannotUseVariableDeclarationAsType { span, .. } => *span,
             SemanticError::AccessToUndefinedField { field } => field.span,
-            SemanticError::UnresolvedGenericParam { param } => param.span,
+            SemanticError::UnresolvedGenericParam { span, .. } => *span,
             SemanticError::CannotUseIsTypeOnNonUnion { target } => target.span,
             SemanticError::ConflictingGenericBinding { new, .. } => new.span,
             SemanticError::TypeAliasMustBeDeclaredAtTopLevel { span } => *span,

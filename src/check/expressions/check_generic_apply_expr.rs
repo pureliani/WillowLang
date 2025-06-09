@@ -72,6 +72,7 @@ impl<'a> SemanticChecker<'a> {
             } else {
                 self.errors.push(SemanticError::UnresolvedGenericParam {
                     param: gp_decl.identifier,
+                    span: gp_decl.identifier.span,
                 });
 
                 all_constraints_ok = false;

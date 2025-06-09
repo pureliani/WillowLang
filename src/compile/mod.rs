@@ -252,7 +252,7 @@ pub fn compile_file<'a, 'b>(
                 err.with_message("Access to an undefined field")
                     .with_label(label.with_message(format!("Field {} is not defined", name)))
             }
-            SemanticError::UnresolvedGenericParam { param } => {
+            SemanticError::UnresolvedGenericParam { param, .. } => {
                 let name = string_interner.resolve(param.name).unwrap();
                 err.with_message("Unresolved generic parameter")
                     .with_label(label.with_message(format!("Could not resolve generic parameter with name \"{}\"", name)))

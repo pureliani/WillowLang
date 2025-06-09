@@ -4,7 +4,7 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug x.wl",
+            "name": "Debug code.wl",
             "cargo": {
                 "args": [
                     "build",
@@ -13,7 +13,7 @@
                 ]
             },
             "args": [
-                "./x.wl"
+                "./code.wl"
             ],
             "cwd": "${workspaceFolder}"
         }
