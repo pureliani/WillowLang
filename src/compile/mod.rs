@@ -127,7 +127,7 @@ pub fn compile_file<'a, 'b>(
             ParsingErrorKind::UnexpectedTokenAfterFinalExpression { found } => err
                 .with_message("Unexpected token after final expression")
                 .with_label(label.with_message(format!(
-                    "Unexpected token after final expression \"{}\"",
+                    "Unexpected token \"{}\" after final expression",
                     token_kind_to_string(found)
                 ))),
         };
