@@ -1,6 +1,6 @@
 
 
-type CB = <X>(arg: X) => X;
+type CB = <X: i64>(arg: X) => X;
 
 let foo = (cb: CB) => {
     cb(5)

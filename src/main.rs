@@ -24,4 +24,8 @@ fn main() {
     let mut files = SimpleFiles::new();
 
     compile_file(&file_path, &source_code, &mut string_interner, &mut files);
+
+    // let mut coll = string_interner.forward.into_iter().collect::<Vec<_>>();
+    // coll.sort_by(|a, b| a.1.cmp(&b.1));
+    // coll.iter().for_each(|(name, id)| println!("{}: {}", id, name));
 }

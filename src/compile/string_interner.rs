@@ -5,7 +5,7 @@ pub struct InternerId(pub usize);
 
 #[derive(Debug, Clone)]
 pub struct StringInterner<'a> {
-    forward: HashMap<&'a str, usize>,
+    pub forward: HashMap<&'a str, usize>,
     backward: Vec<&'a str>,
     next_id: usize,
 }
