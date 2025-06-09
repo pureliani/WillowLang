@@ -29,10 +29,10 @@ impl<'a, 'b> Parser<'a, 'b> {
                     })
                 },
                 |p| p.match_token(0, TokenKind::Punctuation(PunctuationKind::Gt)),
-            );
+            )?;
             self.consume_punctuation(PunctuationKind::Gt)?;
 
-            return result;
+            return Ok(result);
         }
 
         Ok(vec![])

@@ -36,14 +36,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                     });
                 }
 
-                let stmt = match self.parse_stmt() {
-                    Ok(s) => s,
-                    Err(e) => {
-                        self.synchronize_stmt();
-                        return Err(e);
-                    }
-                };
-                statements.push(stmt);
+                statements.push(self.parse_stmt()?);
                 final_expr = None;
             } else if is_start_of_expr(&current_token.kind) {
                 if final_expr.is_some() {
@@ -55,10 +48,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                     });
                 }
 
-                let expr = self.parse_expr(0, true).map_err(|e| {
-                    self.synchronize_expr();
-                    e
-                })?;
+                let expr = self.parse_expr(0, true)?;
 
                 if self.match_token(0, TokenKind::Punctuation(PunctuationKind::SemiCol)) {
                     let semi_offset = self.offset;
@@ -86,15 +76,15 @@ impl<'a, 'b> Parser<'a, 'b> {
                 });
             }
 
-            if final_expr.is_some() && !self.match_token(0, TokenKind::Punctuation(PunctuationKind::RBrace)) {
-                let unexpected_token = self.current().cloned().ok_or_else(|| self.unexpected_end_of_input())?;
-                return Err(ParsingError {
-                    kind: ParsingErrorKind::UnexpectedTokenAfterFinalExpression {
-                        found: unexpected_token.kind,
-                    },
-                    span: unexpected_token.span,
-                });
-            }
+            // if final_expr.is_some() && !self.match_token(0, TokenKind::Punctuation(PunctuationKind::RBrace)) {
+            //     let unexpected_token = self.current().cloned().ok_or_else(|| self.unexpected_end_of_input())?;
+            //     return Err(ParsingError {
+            //         kind: ParsingErrorKind::UnexpectedTokenAfterFinalExpression {
+            //             found: unexpected_token.kind,
+            //         },
+            //         span: unexpected_token.span,
+            //     });
+            // }
         }
 
         self.consume_punctuation(PunctuationKind::RBrace)?;

@@ -10,9 +10,9 @@ impl<'a, 'b> Parser<'a, 'b> {
         let args = self.comma_separated(
             |p| p.parse_expr(0, true),
             |p| p.match_token(0, TokenKind::Punctuation(PunctuationKind::RParen)),
-        );
+        )?;
         self.consume_punctuation(PunctuationKind::RParen)?;
-        args
+        Ok(args)
     }
 
     pub fn parse_fn_call_expr(&mut self, left: Expr) -> Result<Expr, ParsingError<'a>> {
