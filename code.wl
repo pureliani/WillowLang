@@ -2,11 +2,8 @@ struct Foo<T> {
     f: T
 }
 
+let x: Foo = Foo { f: 15 };
+let y: Foo<i64> = x;
+let z = y;
 
-let func = (): Foo => {
-    Foo {
-        f: 15
-    }
-};
-
-let x: Foo<i32> = func();
+let t: Foo<i64> = z;

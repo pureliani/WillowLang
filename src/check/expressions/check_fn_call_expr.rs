@@ -10,10 +10,7 @@ use crate::{
         },
         Span,
     },
-    check::{
-        expressions::check_generic_apply_expr::GenericArgumentSource, scope::Scope,
-        utils::substitute_generics::GenericSubstitutionMap, SemanticChecker, SemanticError,
-    },
+    check::{scope::Scope, utils::substitute_generics::GenericSubstitutionMap, SemanticChecker, SemanticError},
 };
 
 impl<'a> SemanticChecker<'a> {
@@ -25,7 +22,7 @@ impl<'a> SemanticChecker<'a> {
             CheckedTypeKind::FnType(CheckedFnType {
                 params,
                 return_type,
-                generic_params,
+                generic_params: _,
                 ..
             }) => {
                 if checked_args.len() != params.len() {
@@ -40,50 +37,33 @@ impl<'a> SemanticChecker<'a> {
                         span,
                     }
                 } else {
-                    let mut inferred_substitutions = GenericSubstitutionMap::new();
-                    if !generic_params.is_empty() {
-                        for (fn_param, call_arg_expr) in params.iter().zip(checked_args.iter()) {
-                            self.infer_generics(&fn_param.constraint, &call_arg_expr.ty, &mut inferred_substitutions);
+                    let mut substitutions = GenericSubstitutionMap::new();
+                    for (fn_param, call_arg_expr) in params.iter().zip(checked_args.iter()) {
+                        self.infer_generics(&fn_param.constraint, &call_arg_expr.ty, &mut substitutions);
+                    }
+
+                    let substituted_fn_params: Vec<CheckedParam> = params
+                        .iter()
+                        .map(|p| CheckedParam {
+                            identifier: p.identifier,
+                            constraint: self.substitute_generics(&p.constraint, &substitutions),
+                        })
+                        .collect();
+
+                    let mut substituted_return = self.substitute_generics(&return_type, &substitutions);
+
+                    for (call_arg_expr, substituted_param) in checked_args.iter().zip(substituted_fn_params.iter()) {
+                        if !self.check_is_assignable(&call_arg_expr.ty, &substituted_param.constraint) {
+                            self.errors.push(SemanticError::TypeMismatch {
+                                expected: substituted_param.constraint.clone(),
+                                received: call_arg_expr.ty.clone(),
+                            });
+
+                            substituted_return.kind = CheckedTypeKind::Unknown;
                         }
                     }
 
-                    let substitutions_opt = self.build_substitution_map(
-                        generic_params,
-                        GenericArgumentSource::Inferred {
-                            substitutions: &inferred_substitutions,
-                        },
-                        span,
-                    );
-
-                    if let Some(substitutions) = substitutions_opt {
-                        let mut substituted_return = self.substitute_generics(&return_type, &substitutions);
-
-                        let substituted_fn_params: Vec<CheckedParam> = params
-                            .iter()
-                            .map(|p| CheckedParam {
-                                identifier: p.identifier,
-                                constraint: self.substitute_generics(&p.constraint, &substitutions),
-                            })
-                            .collect();
-
-                        for (call_arg_expr, substituted_param) in checked_args.iter().zip(substituted_fn_params.iter()) {
-                            if !self.check_is_assignable(&call_arg_expr.ty, &substituted_param.constraint) {
-                                self.errors.push(SemanticError::TypeMismatch {
-                                    expected: substituted_param.constraint.clone(),
-                                    received: call_arg_expr.ty.clone(),
-                                });
-
-                                substituted_return.kind = CheckedTypeKind::Unknown;
-                            }
-                        }
-
-                        substituted_return
-                    } else {
-                        CheckedType {
-                            kind: CheckedTypeKind::Unknown,
-                            span,
-                        }
-                    }
+                    substituted_return
                 }
             }
             _ => {

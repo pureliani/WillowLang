@@ -16,17 +16,36 @@ pub type GenericSubstitutionMap = HashMap<InternerId, CheckedType>;
 impl<'a> SemanticChecker<'a> {
     pub fn substitute_generics(&mut self, ty: &CheckedType, substitutions: &GenericSubstitutionMap) -> CheckedType {
         match &ty.kind {
-            CheckedTypeKind::GenericParam(gp) => substitutions.get(&gp.identifier.name).cloned().unwrap_or_else(|| {
-                self.errors.push(SemanticError::UnresolvedGenericParam {
-                    param: gp.identifier,
-                    span: ty.span,
+            CheckedTypeKind::GenericParam(gp) => {
+                let to_substitute = substitutions.get(&gp.identifier.name).cloned().unwrap_or_else(|| {
+                    self.errors.push(SemanticError::UnresolvedGenericParam {
+                        param: gp.identifier,
+                        span: ty.span,
+                    });
+
+                    CheckedType {
+                        kind: CheckedTypeKind::Unknown,
+                        span: ty.span,
+                    }
                 });
 
-                CheckedType {
-                    kind: CheckedTypeKind::Unknown,
-                    span: ty.span,
+                if let Some(c) = &gp.constraint {
+                    if !self.check_is_assignable(&to_substitute, c) {
+                        self.errors.push(SemanticError::IncompatibleGenericParamSubstitution {
+                            generic_param: gp.clone(),
+                            arg_type: to_substitute.clone(),
+                            is_inferred: true,
+                        });
+
+                        return CheckedType {
+                            kind: CheckedTypeKind::Unknown,
+                            span: ty.span,
+                        };
+                    }
                 }
-            }),
+
+                to_substitute
+            }
             CheckedTypeKind::FnType(CheckedFnType {
                 params,
                 return_type,

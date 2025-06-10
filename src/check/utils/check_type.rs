@@ -9,8 +9,8 @@ use crate::{
         },
     },
     check::{
-        expressions::check_generic_apply_expr::GenericArgumentSource,
         scope::{Scope, ScopeKind, SymbolEntry},
+        utils::substitute_generics::GenericSubstitutionMap,
         SemanticChecker, SemanticError,
     },
     tokenize::NumberKind,
@@ -39,19 +39,22 @@ impl<'a> SemanticChecker<'a> {
                 let checked_left = self.check_type(&left, scope.clone());
                 let checked_args: Vec<CheckedType> = args.into_iter().map(|arg| self.check_type(&arg, scope.clone())).collect();
 
-                let mut substitute = |generic_params: &Vec<CheckedGenericParam>, checked_args: Vec<CheckedType>| {
-                    let substitutions_opt = self.build_substitution_map(
-                        generic_params,
-                        GenericArgumentSource::Explicit(checked_args),
-                        annotation.span,
-                    );
+                let mut substitute = |generic_params: &Vec<CheckedGenericParam>, type_args: Vec<CheckedType>| {
+                    if generic_params.len() != type_args.len() {
+                        self.errors.push(SemanticError::GenericArgumentCountMismatch {
+                            expected: generic_params.len(),
+                            received: type_args.len(),
+                            span: annotation.span,
+                        });
 
-                    if let Some(substitutions) = substitutions_opt {
-                        let substituted = self.substitute_generics(&checked_left, &substitutions);
-
-                        substituted.kind
-                    } else {
                         CheckedTypeKind::Unknown
+                    } else {
+                        let mut substitutions = GenericSubstitutionMap::new();
+                        for (gp_decl, type_arg) in generic_params.iter().zip(type_args.into_iter()) {
+                            substitutions.insert(gp_decl.identifier.name, type_arg);
+                        }
+
+                        self.substitute_generics(&checked_left, &substitutions).kind
                     }
                 };
 

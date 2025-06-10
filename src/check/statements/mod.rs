@@ -16,6 +16,7 @@ use crate::{
     },
     check::{
         scope::{Scope, ScopeKind, SymbolEntry},
+        utils::substitute_generics::GenericSubstitutionMap,
         SemanticChecker, SemanticError,
     },
 };
@@ -193,6 +194,11 @@ impl<'a> SemanticChecker<'a> {
 
                 let final_constraint = match (&checked_value, constraint) {
                     (Some(value), Some(constraint)) => {
+                        let mut tmp_substitutions = GenericSubstitutionMap::new();
+                        self.infer_generics(&constraint, &value.ty, &mut tmp_substitutions);
+
+                        let inferred_constraint = self.substitute_generics(&constraint, &tmp_substitutions);
+
                         let is_assignable = self.check_is_assignable(&value.ty, &constraint);
 
                         if !is_assignable {
@@ -202,7 +208,7 @@ impl<'a> SemanticChecker<'a> {
                             });
                         }
 
-                        constraint
+                        inferred_constraint
                     }
                     (Some(value), None) => value.ty.clone(),
 

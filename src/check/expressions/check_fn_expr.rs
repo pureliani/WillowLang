@@ -15,7 +15,6 @@ use crate::{
         Span,
     },
     check::{
-        expressions::check_generic_apply_expr::GenericArgumentSource,
         scope::{Scope, ScopeKind, SymbolEntry},
         utils::{substitute_generics::GenericSubstitutionMap, union_of::union_of},
         SemanticChecker, SemanticError,
@@ -86,25 +85,9 @@ impl<'a> SemanticChecker<'a> {
         let expected_return_type = return_type.map(|return_t| self.check_type(&return_t, fn_scope.clone()));
 
         let actual_return_type = if let Some(explicit_return_type) = expected_return_type {
-            let mut tmp_substitutions = GenericSubstitutionMap::new();
-            self.infer_generics(&explicit_return_type, &deduced_return_type, &mut tmp_substitutions);
-
-            let substitutions_opt = self.build_substitution_map(
-                &checked_generic_params,
-                GenericArgumentSource::Inferred {
-                    substitutions: &tmp_substitutions,
-                },
-                explicit_return_type.span,
-            );
-
-            let inferred_expected = if let Some(substitutions) = substitutions_opt {
-                self.substitute_generics(&explicit_return_type, &substitutions)
-            } else {
-                CheckedType {
-                    kind: CheckedTypeKind::Unknown,
-                    span: explicit_return_type.span,
-                }
-            };
+            let mut substitutions = GenericSubstitutionMap::new();
+            self.infer_generics(&explicit_return_type, &deduced_return_type, &mut substitutions);
+            let inferred_expected = self.substitute_generics(&explicit_return_type, &substitutions);
 
             if !self.check_is_assignable(&deduced_return_type, &inferred_expected) {
                 self.errors.push(SemanticError::ReturnTypeMismatch {
