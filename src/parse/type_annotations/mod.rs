@@ -266,14 +266,19 @@ impl<'a, 'b> Parser<'a, 'b> {
 
                 lhs = match op.kind {
                     TokenKind::Punctuation(PunctuationKind::Lt) => {
-                        let (generic_args, generic_args_span) = self.parse_optional_generic_args()?;
+                        let start_offset = self.offset;
+                        let generic_args = self.parse_optional_generic_args()?;
+                        let span = Span {
+                            start: lhs.span.start,
+                            end: self.get_span(start_offset, self.offset - 1)?.end,
+                        };
 
                         TypeAnnotation {
                             kind: TypeAnnotationKind::GenericApply {
                                 left: Box::new(lhs.clone()),
                                 args: generic_args,
                             },
-                            span: generic_args_span,
+                            span,
                         }
                     }
                     _ => break,

@@ -51,6 +51,7 @@ impl<'a> SemanticChecker<'a> {
                         .collect();
 
                     let mut substituted_return = self.substitute_generics(&return_type, &substitutions);
+                    substituted_return.span = span;
 
                     for (call_arg_expr, substituted_param) in checked_args.iter().zip(substituted_fn_params.iter()) {
                         if !self.check_is_assignable(&call_arg_expr.ty, &substituted_param.constraint) {

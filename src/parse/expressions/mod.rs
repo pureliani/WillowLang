@@ -255,13 +255,19 @@ impl<'a, 'b> Parser<'a, 'b> {
                     TokenKind::Punctuation(PunctuationKind::Lt) => {
                         self.place_checkpoint();
 
-                        if let Ok((generic_args, generic_args_span)) = self.parse_optional_generic_args() {
+                        let start_offset = self.offset;
+                        if let Ok(generic_args) = self.parse_optional_generic_args() {
+                            let span = Span {
+                                start: lhs.span.start,
+                                end: self.get_span(start_offset, self.offset - 1)?.end,
+                            };
+
                             Some(Expr {
                                 kind: ExprKind::GenericApply {
                                     left: Box::new(lhs_clone),
                                     args: generic_args,
                                 },
-                                span: generic_args_span,
+                                span,
                             })
                         } else {
                             self.goto_checkpoint();

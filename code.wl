@@ -1,9 +1,11 @@
-struct Foo<T> {
-    f: T
+struct Foo<J> {
+    f: J
 }
 
-let x: Foo = Foo { f: 15 };
-let y: Foo<i64> = x;
-let z = y;
+let foo = <T>(arg: T): T => {
+    Foo {
+        f: arg
+    }
+};
 
-let t: Foo<i64> = z;
+let x: Foo<i32> = foo(1);
