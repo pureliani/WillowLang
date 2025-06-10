@@ -1,8 +1,12 @@
+struct Foo<T> {
+    f: T
+}
 
-let foo = (): bool => {};
 
-if foo() {
-
-} else {
-
+let func = (): Foo => {
+    Foo {
+        f: 15
+    }
 };
+
+let x: Foo<i32> = func();
