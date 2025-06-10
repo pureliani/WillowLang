@@ -11,7 +11,11 @@ pub fn union_of(types: impl IntoIterator<Item = CheckedType>, span: Span) -> Che
     for t in types {
         match t.kind {
             CheckedTypeKind::Union(items) => {
-                union_items.extend(items);
+                for item in items {
+                    if !matches!(item.kind, CheckedTypeKind::Void) {
+                        union_items.insert(item);
+                    }
+                }
             }
             _ => {
                 union_items.insert(t);

@@ -1,6 +1,4 @@
 
-
-
 let foo = (cb: (arg: i32) => i32) => {};
 
 let x = foo((arg: i32) => {

@@ -4,6 +4,7 @@ use codespan_reporting::{
     term::{
         self,
         termcolor::{ColorChoice, StandardStream},
+        Chars,
     },
 };
 use string_interner::StringInterner;
@@ -381,7 +382,12 @@ pub fn compile_file<'a, 'b>(
     });
 
     let writer = StandardStream::stderr(ColorChoice::Always);
-    let config = codespan_reporting::term::Config::default();
+    let mut config = codespan_reporting::term::Config::default();
+
+    config.start_context_lines = 8;
+    config.end_context_lines = 8;
+    config.before_label_lines = 8;
+    config.after_label_lines = 8;
 
     if !errors.is_empty() {
         println!();
