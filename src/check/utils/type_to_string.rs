@@ -119,7 +119,7 @@ pub fn type_to_string(ty: &CheckedTypeKind, string_interner: &StringInterner) ->
 
             let return_type_str = type_to_string(&return_type.kind, string_interner);
 
-            format!("({}({}) => {}", type_args_str, params_str, return_type_str)
+            format!("({}({}) => {})", type_args_str, params_str, return_type_str)
         }
         CheckedTypeKind::TypeAliasDecl(decl) => {
             let decl = decl.borrow();
