@@ -2,10 +2,10 @@ struct Foo<J> {
     f: J
 }
 
-let foo = <T>(arg: T): T => {
+let foo = <T>(arg: T): Foo<T> => {
     Foo {
         f: arg
     }
 };
 
-let x: Foo<i32> = foo(1);
+let x = foo<i32>(1);

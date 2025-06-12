@@ -4,7 +4,6 @@ use codespan_reporting::{
     term::{
         self,
         termcolor::{ColorChoice, StandardStream},
-        Chars,
     },
 };
 use string_interner::StringInterner;
@@ -376,6 +375,9 @@ pub fn compile_file<'a, 'b>(
                 err.with_message("Duplicate identifier")
                     .with_label(label.with_message(format!("Duplicate identifier declaration \"{}\"", identifier_name)))
             }
+            SemanticError::ExpectedTypeArguments { .. } => err
+                .with_message("Expected type argument")
+                .with_label(label.with_message("Expected type arguments to be applied to this type")),
         };
 
         errors.push(diagnostic);

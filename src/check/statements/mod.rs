@@ -16,7 +16,6 @@ use crate::{
     },
     check::{
         scope::{Scope, ScopeKind, SymbolEntry},
-        utils::substitute_generics::GenericSubstitutionMap,
         SemanticChecker, SemanticError,
     },
 };
@@ -33,7 +32,7 @@ impl<'a> SemanticChecker<'a> {
                 let checked_constraint = gp
                     .constraint
                     .as_ref()
-                    .map(|constraint| Box::new(self.check_type(constraint, scope.clone())));
+                    .map(|constraint| Box::new(self.check_type_annotation(constraint, scope.clone())));
 
                 let checked_gp = CheckedGenericParam {
                     constraint: checked_constraint,
@@ -52,7 +51,7 @@ impl<'a> SemanticChecker<'a> {
         fields
             .into_iter()
             .map(|p| CheckedParam {
-                constraint: self.check_type(&p.constraint, scope.clone()),
+                constraint: self.check_type_annotation(&p.constraint, scope.clone()),
                 identifier: p.identifier,
             })
             .collect()
@@ -178,7 +177,7 @@ impl<'a> SemanticChecker<'a> {
                 );
 
                 let constraint = constraint.map(|c| {
-                    let checked_constraint = self.check_type(&c, scope.clone());
+                    let checked_constraint = self.check_type_annotation(&c, scope.clone());
                     if is_fn {
                         let placeholder_ref = match scope.borrow().lookup(identifier.name) {
                             Some(SymbolEntry::VarDecl(d)) => d,
@@ -194,11 +193,6 @@ impl<'a> SemanticChecker<'a> {
 
                 let final_constraint = match (&checked_value, constraint) {
                     (Some(value), Some(constraint)) => {
-                        let mut tmp_substitutions = GenericSubstitutionMap::new();
-                        self.infer_generics(&constraint, &value.ty, &mut tmp_substitutions);
-
-                        let inferred_constraint = self.substitute_generics(&constraint, &tmp_substitutions);
-
                         let is_assignable = self.check_is_assignable(&value.ty, &constraint);
 
                         if !is_assignable {
@@ -208,7 +202,7 @@ impl<'a> SemanticChecker<'a> {
                             });
                         }
 
-                        inferred_constraint
+                        constraint
                     }
                     (Some(value), None) => value.ty.clone(),
 
@@ -266,7 +260,7 @@ impl<'a> SemanticChecker<'a> {
 
                 let checked_generic_params = self.check_generic_params(&generic_params, alias_scope.clone());
 
-                let checked_value = self.check_type(&value, alias_scope);
+                let checked_value = self.check_type_annotation(&value, alias_scope);
 
                 let decl = match scope.borrow_mut().lookup(identifier.name) {
                     Some(SymbolEntry::TypeAliasDecl(decl)) => {

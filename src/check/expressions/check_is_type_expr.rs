@@ -21,7 +21,7 @@ impl<'a> SemanticChecker<'a> {
         scope: Rc<RefCell<Scope>>,
     ) -> CheckedExpr {
         let checked_left = self.check_expr(*left, scope.clone());
-        let checked_target = self.check_type(&target, scope);
+        let checked_target = self.check_type_annotation(&target, scope);
         let mut expr_type = CheckedType {
             kind: CheckedTypeKind::Bool,
             span,

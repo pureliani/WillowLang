@@ -16,7 +16,7 @@ use crate::{
     },
     check::{
         scope::{Scope, ScopeKind, SymbolEntry},
-        utils::{substitute_generics::GenericSubstitutionMap, union_of::union_of},
+        utils::union_of::union_of,
         SemanticChecker, SemanticError,
     },
 };
@@ -38,7 +38,7 @@ impl<'a> SemanticChecker<'a> {
         let checked_params: Vec<CheckedParam> = params
             .iter()
             .map(|param| {
-                let checked_constraint = self.check_type(&param.constraint, fn_scope.clone());
+                let checked_constraint = self.check_type_annotation(&param.constraint, fn_scope.clone());
 
                 fn_scope.borrow_mut().insert(
                     param.identifier,
@@ -71,7 +71,7 @@ impl<'a> SemanticChecker<'a> {
             return_exprs.push(*final_expr);
         }
 
-        let deduced_return_type = if return_exprs.len() > 1 {
+        let actual_return_type = if return_exprs.len() > 1 {
             union_of(return_exprs.iter().map(|e| e.ty.clone()), span)
         } else if return_exprs.len() == 1 {
             return_exprs.get(0).map(|e| e.ty.clone()).unwrap()
@@ -82,23 +82,19 @@ impl<'a> SemanticChecker<'a> {
             }
         };
 
-        let expected_return_type = return_type.map(|return_t| self.check_type(&return_t, fn_scope.clone()));
+        let expected_return_type = return_type.map(|return_t| self.check_type_annotation(&return_t, fn_scope.clone()));
 
         let actual_return_type = if let Some(explicit_return_type) = expected_return_type {
-            let mut substitutions = GenericSubstitutionMap::new();
-            self.infer_generics(&explicit_return_type, &deduced_return_type, &mut substitutions);
-            let inferred_expected = self.substitute_generics(&explicit_return_type, &substitutions);
-
-            if !self.check_is_assignable(&deduced_return_type, &inferred_expected) {
+            if !self.check_is_assignable(&actual_return_type, &explicit_return_type) {
                 self.errors.push(SemanticError::ReturnTypeMismatch {
                     expected: explicit_return_type.clone(),
-                    received: deduced_return_type.clone(),
+                    received: actual_return_type.clone(),
                 });
             }
 
-            inferred_expected
+            explicit_return_type
         } else {
-            deduced_return_type
+            actual_return_type
         };
 
         let expr_type = CheckedType {
