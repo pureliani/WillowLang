@@ -31,6 +31,7 @@ impl<'a> SemanticChecker<'a> {
                         fields: vec![],
                         generic_params: vec![],
                         span: decl.identifier.span,
+                        applied_type_args: vec![],
                     })));
 
                     scope.borrow_mut().insert(decl.identifier, placeholder, self.errors);
@@ -49,6 +50,7 @@ impl<'a> SemanticChecker<'a> {
                             span: decl.identifier.span,
                         }),
                         generic_params: vec![],
+                        applied_type_args: vec![],
                         span: decl.identifier.span,
                     })));
 

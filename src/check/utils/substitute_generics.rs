@@ -1,9 +1,12 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::{
-    ast::checked::{
-        checked_declaration::{CheckedFnType, CheckedParam, CheckedStructDecl, CheckedTypeAliasDecl},
-        checked_type::{CheckedType, CheckedTypeKind},
+    ast::{
+        checked::{
+            checked_declaration::{CheckedFnType, CheckedGenericParam, CheckedParam, CheckedStructDecl, CheckedTypeAliasDecl},
+            checked_type::{CheckedType, CheckedTypeKind},
+        },
+        Span,
     },
     check::{SemanticChecker, SemanticError},
     compile::string_interner::InternerId,
@@ -14,6 +17,29 @@ use super::union_of::union_of;
 pub type GenericSubstitutionMap = HashMap<InternerId, CheckedType>;
 
 impl<'a> SemanticChecker<'a> {
+    pub fn resolve_applied_type_args(
+        &mut self,
+        generic_params: &[CheckedGenericParam],
+        substitutions: &GenericSubstitutionMap,
+        span: Span,
+    ) -> Vec<CheckedType> {
+        generic_params
+            .iter()
+            .map(|gp| {
+                substitutions.get(&gp.identifier.name).cloned().unwrap_or_else(|| {
+                    self.errors.push(SemanticError::UnresolvedGenericParam {
+                        param: gp.identifier,
+                        span,
+                    });
+                    CheckedType {
+                        kind: CheckedTypeKind::Unknown,
+                        span,
+                    }
+                })
+            })
+            .collect()
+    }
+
     pub fn substitute_generics(&mut self, ty: &CheckedType, substitutions: &GenericSubstitutionMap) -> CheckedType {
         match &ty.kind {
             CheckedTypeKind::GenericParam(gp) => {
@@ -49,9 +75,12 @@ impl<'a> SemanticChecker<'a> {
             CheckedTypeKind::FnType(CheckedFnType {
                 params,
                 return_type,
-                generic_params: _,
+                generic_params,
                 span,
+                applied_type_args: _,
             }) => {
+                let applied_type_args: Vec<CheckedType> = self.resolve_applied_type_args(&generic_params, substitutions, ty.span);
+
                 // IMPORTANT: When substituting within a function type, we DON'T
                 // substitute its *own* generic parameters.
                 // We only substitute types that came from an outer scope's substitution.
@@ -70,6 +99,7 @@ impl<'a> SemanticChecker<'a> {
                         params: substituted_params,
                         return_type: Box::new(substituted_return_type),
                         generic_params: vec![],
+                        applied_type_args,
                         span: *span,
                     }),
                     span: ty.span,
@@ -77,10 +107,9 @@ impl<'a> SemanticChecker<'a> {
             }
             CheckedTypeKind::StructDecl(decl) => {
                 let decl = decl.borrow();
+                let applied_type_args: Vec<CheckedType> =
+                    self.resolve_applied_type_args(&decl.generic_params, substitutions, ty.span);
 
-                // Similar to FnType, a struct definition's generic params are local.
-                // We substitute types *within* its fields if those types refer
-                // to generics from the *outer* substitution context.
                 let substituted_fields = decl
                     .fields
                     .iter()
@@ -97,12 +126,15 @@ impl<'a> SemanticChecker<'a> {
                         identifier: decl.identifier, // maybe we should rename this?
                         generic_params: vec![],
                         span: decl.span,
+                        applied_type_args,
                     }))),
                     span: ty.span,
                 }
             }
             CheckedTypeKind::TypeAliasDecl(decl) => {
                 let decl = decl.borrow();
+                let applied_type_args: Vec<CheckedType> =
+                    self.resolve_applied_type_args(&decl.generic_params, substitutions, ty.span);
 
                 let substituted_value = self.substitute_generics(&decl.value, substitutions);
 
@@ -113,6 +145,7 @@ impl<'a> SemanticChecker<'a> {
                         identifier: decl.identifier, // maybe we should rename this?
                         generic_params: vec![],
                         span: decl.span,
+                        applied_type_args,
                     }))),
                     span: ty.span,
                 }

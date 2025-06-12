@@ -178,6 +178,7 @@ impl<'a> SemanticChecker<'a> {
                     return_type: Box::new(checked_return_type),
                     generic_params: checked_generic_params,
                     span: annotation.span,
+                    applied_type_args: vec![],
                 })
             }
             TypeAnnotationKind::Union(items) => CheckedTypeKind::Union(

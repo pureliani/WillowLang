@@ -98,6 +98,8 @@ impl<'a> SemanticChecker<'a> {
                         }
                     }
 
+                    let applied_type_args = self.resolve_applied_type_args(&decl.generic_params, &substitutions, span);
+
                     if !type_mismatch_in_fields {
                         result_struct_type = CheckedType {
                             kind: CheckedTypeKind::StructDecl(Rc::new(RefCell::new(CheckedStructDecl {
@@ -105,6 +107,7 @@ impl<'a> SemanticChecker<'a> {
                                 documentation: decl.documentation.clone(),
                                 fields: substituted_fields,
                                 generic_params: vec![],
+                                applied_type_args,
                                 span: decl.span,
                             }))),
                             span,

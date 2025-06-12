@@ -1,10 +1,22 @@
 use crate::{
     ast::checked::{
         checked_declaration::{CheckedFnType, CheckedGenericParam, CheckedParam},
-        checked_type::CheckedTypeKind,
+        checked_type::{CheckedType, CheckedTypeKind},
     },
     compile::string_interner::{InternerId, StringInterner},
 };
+
+fn applied_type_args_to_string(type_args: &Vec<CheckedType>, string_interner: &StringInterner) -> String {
+    if type_args.is_empty() {
+        return "".to_string();
+    }
+    let joined_args = type_args
+        .iter()
+        .map(|arg_ty| type_to_string(&arg_ty.kind, string_interner))
+        .collect::<Vec<String>>()
+        .join(", ");
+    format!("<{}>", joined_args)
+}
 
 fn identifier_to_string(id: InternerId, string_interner: &StringInterner) -> String {
     let identifier_name = string_interner.resolve(id).unwrap();
@@ -69,17 +81,17 @@ pub fn type_to_string(ty: &CheckedTypeKind, string_interner: &StringInterner) ->
             let decl = decl.borrow();
 
             let name = identifier_to_string(decl.identifier.name, string_interner);
-            // let generic_params_str = generic_params_to_string(&decl.generic_params, string_interner);
-            // let joined = decl
-            //     .fields
-            //     .iter()
-            //     .map(|f| param_to_string(f, string_interner))
-            //     .collect::<Vec<String>>()
-            //     .join(", ");
 
-            // format!("{}{} {{ {} }}", name, generic_params_str, joined)
-
-            name
+            if decl.applied_type_args.len() > 0 {
+                format!(
+                    "{}{}",
+                    name,
+                    applied_type_args_to_string(&decl.applied_type_args, string_interner)
+                )
+            } else {
+                let generics_str = generic_params_to_string(&decl.generic_params, string_interner);
+                format!("{}{}", name, generics_str)
+            }
         }
         CheckedTypeKind::EnumDecl(decl) => {
             let decl = decl.borrow();
@@ -97,29 +109,39 @@ pub fn type_to_string(ty: &CheckedTypeKind, string_interner: &StringInterner) ->
             params,
             return_type,
             generic_params,
+            applied_type_args,
             span: _,
         }) => {
-            let generic_params_str = generic_params_to_string(generic_params, string_interner);
-            let params_str = {
-                let joined = params
-                    .iter()
-                    .map(|p| param_to_string(p, string_interner))
-                    .collect::<Vec<String>>()
-                    .join(", ");
-
-                format!("({})", joined)
+            let type_args_str = if applied_type_args.len() > 0 {
+                applied_type_args_to_string(&applied_type_args, string_interner)
+            } else {
+                generic_params_to_string(&generic_params, string_interner)
             };
+
+            let params_str = params
+                .iter()
+                .map(|p| type_to_string(&p.constraint.kind, string_interner))
+                .collect::<Vec<String>>()
+                .join(", ");
+
             let return_type_str = type_to_string(&return_type.kind, string_interner);
 
-            format!("({}{} => {})", generic_params_str, params_str, return_type_str)
+            format!("({}({}) => {}", type_args_str, params_str, return_type_str)
         }
         CheckedTypeKind::TypeAliasDecl(decl) => {
             let decl = decl.borrow();
-
             let name = identifier_to_string(decl.identifier.name, string_interner);
-            let generic_params_str = generic_params_to_string(&decl.generic_params, string_interner);
 
-            format!("{}{}", name, generic_params_str)
+            if decl.applied_type_args.len() > 0 {
+                format!(
+                    "{}{}",
+                    name,
+                    applied_type_args_to_string(&decl.applied_type_args, string_interner)
+                )
+            } else {
+                let generics_str = generic_params_to_string(&decl.generic_params, string_interner);
+                format!("{}{}", name, generics_str)
+            }
         }
         CheckedTypeKind::Union(hash_set) => hash_set
             .iter()

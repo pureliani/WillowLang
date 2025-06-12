@@ -7,4 +7,4 @@ struct Bar<T> {
 }
 
 
-let x: Foo<Bar> = null;
+let x: Foo<Bar<i32>> = null;

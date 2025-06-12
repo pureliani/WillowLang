@@ -1,4 +1,4 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, rc::Rc, vec};
 
 use crate::{
     ast::{
@@ -102,6 +102,7 @@ impl<'a> SemanticChecker<'a> {
                 params: checked_params.clone(),
                 return_type: Box::new(actual_return_type.clone()),
                 generic_params: checked_generic_params.clone(),
+                applied_type_args: vec![],
                 span,
             }),
             span,
