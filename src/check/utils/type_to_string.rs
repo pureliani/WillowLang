@@ -1,6 +1,6 @@
 use crate::{
     ast::checked::{
-        checked_declaration::{CheckedFnType, CheckedGenericParam, CheckedParam},
+        checked_declaration::{CheckedFnType, CheckedGenericParam},
         checked_type::{CheckedType, CheckedTypeKind},
     },
     compile::string_interner::{InternerId, StringInterner},
@@ -12,7 +12,7 @@ fn applied_type_args_to_string(type_args: &Vec<CheckedType>, string_interner: &S
     }
     let joined_args = type_args
         .iter()
-        .map(|arg_ty| type_to_string(&arg_ty.kind, string_interner))
+        .map(|arg_ty| type_to_string_recursive(&arg_ty.kind, string_interner, false))
         .collect::<Vec<String>>()
         .join(", ");
     format!("<{}>", joined_args)
@@ -33,7 +33,7 @@ fn generic_params_to_string(generic_params: &Vec<CheckedGenericParam>, string_in
 
                 match &gp.constraint {
                     Some(c) => {
-                        format!("{}: {}", name, type_to_string(&c.kind, string_interner))
+                        format!("{}: {}", name, type_to_string_recursive(&c.kind, string_interner, false))
                     }
                     None => {
                         format!("{}", name)
@@ -50,6 +50,10 @@ fn generic_params_to_string(generic_params: &Vec<CheckedGenericParam>, string_in
 }
 
 pub fn type_to_string(ty: &CheckedTypeKind, string_interner: &StringInterner) -> String {
+    type_to_string_recursive(ty, string_interner, false)
+}
+
+pub fn type_to_string_recursive(ty: &CheckedTypeKind, string_interner: &StringInterner, is_union_context: bool) -> String {
     // TODO: add recursion detection and handling
 
     match ty {
@@ -113,13 +117,24 @@ pub fn type_to_string(ty: &CheckedTypeKind, string_interner: &StringInterner) ->
 
             let params_str = params
                 .iter()
-                .map(|p| type_to_string(&p.constraint.kind, string_interner))
+                .map(|p| {
+                    format!(
+                        "{}: {}",
+                        identifier_to_string(p.identifier.name, string_interner),
+                        type_to_string_recursive(&p.constraint.kind, string_interner, false)
+                    )
+                })
                 .collect::<Vec<String>>()
                 .join(", ");
 
-            let return_type_str = type_to_string(&return_type.kind, string_interner);
+            let return_type_str = type_to_string_recursive(&return_type.kind, string_interner, false);
+            let fn_str = format!("{}({}) => {}", type_args_str, params_str, return_type_str);
 
-            format!("({}({}) => {})", type_args_str, params_str, return_type_str)
+            if is_union_context {
+                format!("({})", fn_str)
+            } else {
+                fn_str
+            }
         }
         CheckedTypeKind::TypeAliasDecl(decl) => {
             let decl = decl.borrow();
@@ -138,12 +153,16 @@ pub fn type_to_string(ty: &CheckedTypeKind, string_interner: &StringInterner) ->
         }
         CheckedTypeKind::Union(hash_set) => hash_set
             .iter()
-            .map(|t| type_to_string(&t.kind, string_interner))
+            .map(|t| type_to_string_recursive(&t.kind, string_interner, true))
             .collect::<Vec<String>>()
             .join(" | "),
 
         CheckedTypeKind::Array { item_type, size } => {
-            format!("[{}; {}]", type_to_string(&item_type.kind, string_interner), size)
+            format!(
+                "[{}; {}]",
+                type_to_string_recursive(&item_type.kind, string_interner, false),
+                size
+            )
         }
     }
 }

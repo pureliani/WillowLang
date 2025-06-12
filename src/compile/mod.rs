@@ -189,7 +189,7 @@ pub fn compile_file<'a, 'b>(
 
                 err.with_message("Type mismatch").with_labels(vec![
                     label.with_message(format!(
-                        "Type mismatch, expected {} but instead found {}",
+                        "Type mismatch, expected `{}`, instead found `{}`",
                         constraint_str,
                         type_to_string(&received.kind, string_interner)
                     )),
