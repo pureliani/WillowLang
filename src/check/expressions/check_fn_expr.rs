@@ -38,7 +38,7 @@ impl<'a> SemanticChecker<'a> {
         let checked_params: Vec<CheckedParam> = params
             .iter()
             .map(|param| {
-                let checked_constraint = self.check_type_annotation(&param.constraint, fn_scope.clone());
+                let checked_constraint = self.check_type_annotation_recursive(&param.constraint, fn_scope.clone());
 
                 fn_scope.borrow_mut().insert(
                     param.identifier,
@@ -82,7 +82,7 @@ impl<'a> SemanticChecker<'a> {
             }
         };
 
-        let expected_return_type = return_type.map(|return_t| self.check_type_annotation(&return_t, fn_scope.clone()));
+        let expected_return_type = return_type.map(|return_t| self.check_type_annotation_recursive(&return_t, fn_scope.clone()));
 
         let actual_return_type = if let Some(explicit_return_type) = expected_return_type {
             if !self.check_is_assignable(&actual_return_type, &explicit_return_type) {

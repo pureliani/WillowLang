@@ -19,7 +19,7 @@ pub mod utils;
 #[derive(Debug, Clone)]
 pub enum SemanticError {
     ExpectedTypeArguments {
-        target: CheckedType,
+        span: Span,
     },
     DuplicateIdentifier {
         id: IdentifierNode,
@@ -186,7 +186,7 @@ impl SemanticError {
             SemanticError::StructMustBeDeclaredAtTopLevel { span } => *span,
             SemanticError::CannotApplyTypeArguments { to } => to.span,
             SemanticError::DuplicateIdentifier { id } => id.span,
-            SemanticError::ExpectedTypeArguments { target } => target.span,
+            SemanticError::ExpectedTypeArguments { span } => *span,
         }
     }
 

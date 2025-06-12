@@ -3,12 +3,12 @@ use std::{cell::RefCell, rc::Rc};
 use crate::{
     ast::{
         base::{
-            base_declaration::{GenericParam, Param, StructDecl, TypeAliasDecl, VarDecl},
+            base_declaration::{StructDecl, TypeAliasDecl, VarDecl},
             base_expression::{Expr, ExprKind},
             base_statement::{Stmt, StmtKind},
         },
         checked::{
-            checked_declaration::{CheckedGenericParam, CheckedParam, CheckedStructDecl, CheckedTypeAliasDecl, CheckedVarDecl},
+            checked_declaration::{CheckedStructDecl, CheckedTypeAliasDecl, CheckedVarDecl},
             checked_expression::{CheckedBlockContents, CheckedExprKind},
             checked_statement::CheckedStmt,
             checked_type::{CheckedType, CheckedTypeKind},
@@ -21,42 +21,6 @@ use crate::{
 };
 
 impl<'a> SemanticChecker<'a> {
-    pub fn check_generic_params(
-        &mut self,
-        generic_params: &[GenericParam],
-        scope: Rc<RefCell<Scope>>,
-    ) -> Vec<CheckedGenericParam> {
-        generic_params
-            .into_iter()
-            .map(|gp| {
-                let checked_constraint = gp
-                    .constraint
-                    .as_ref()
-                    .map(|constraint| Box::new(self.check_type_annotation(constraint, scope.clone())));
-
-                let checked_gp = CheckedGenericParam {
-                    constraint: checked_constraint,
-                    identifier: gp.identifier,
-                };
-
-                scope
-                    .borrow_mut()
-                    .insert(gp.identifier, SymbolEntry::GenericParam(checked_gp.clone()), self.errors);
-                checked_gp
-            })
-            .collect()
-    }
-
-    pub fn check_struct_fields(&mut self, fields: &Vec<Param>, scope: Rc<RefCell<Scope>>) -> Vec<CheckedParam> {
-        fields
-            .into_iter()
-            .map(|p| CheckedParam {
-                constraint: self.check_type_annotation(&p.constraint, scope.clone()),
-                identifier: p.identifier,
-            })
-            .collect()
-    }
-
     pub fn placeholder_declarations(&mut self, statements: &Vec<Stmt>, scope: Rc<RefCell<Scope>>) {
         for stmt in statements {
             match &stmt.kind {
@@ -136,8 +100,7 @@ impl<'a> SemanticChecker<'a> {
                 let struct_scope = scope.borrow().child(ScopeKind::Struct);
 
                 let checked_generic_params = self.check_generic_params(&generic_params, struct_scope.clone());
-
-                let checked_fields = self.check_struct_fields(&fields, struct_scope.clone());
+                let checked_fields = self.check_params(&fields, struct_scope.clone());
 
                 let decl = match scope.borrow_mut().lookup(identifier.name) {
                     Some(SymbolEntry::StructDecl(decl)) => {
@@ -177,7 +140,7 @@ impl<'a> SemanticChecker<'a> {
                 );
 
                 let constraint = constraint.map(|c| {
-                    let checked_constraint = self.check_type_annotation(&c, scope.clone());
+                    let checked_constraint = self.check_type_annotation_recursive(&c, scope.clone());
                     if is_fn {
                         let placeholder_ref = match scope.borrow().lookup(identifier.name) {
                             Some(SymbolEntry::VarDecl(d)) => d,
@@ -260,7 +223,7 @@ impl<'a> SemanticChecker<'a> {
 
                 let checked_generic_params = self.check_generic_params(&generic_params, alias_scope.clone());
 
-                let checked_value = self.check_type_annotation(&value, alias_scope);
+                let checked_value = self.check_type_annotation_recursive(&value, alias_scope);
 
                 let decl = match scope.borrow_mut().lookup(identifier.name) {
                     Some(SymbolEntry::TypeAliasDecl(decl)) => {
