@@ -74,10 +74,16 @@ impl<'a> SemanticChecker<'a> {
                     self.check_is_assignable_recursive(left_constraint, right_constraint, currently_checking)
                 }
             },
-            (source, GenericParam(target)) => match (&source, &target.constraint) {
+            (GenericParam(source), target) => match (&source.constraint, target) {
+                (None, _) => false,
+                (Some(generic_constraint), _) => {
+                    self.check_is_assignable_recursive(generic_constraint, target_type, currently_checking)
+                }
+            },
+            (source, GenericParam(target)) => match (source, &target.constraint) {
                 (_, None) => true,
-                (_, Some(right_constraint)) => {
-                    self.check_is_assignable_recursive(source_type, right_constraint, currently_checking)
+                (_, Some(generic_constraint)) => {
+                    self.check_is_assignable_recursive(source_type, generic_constraint, currently_checking)
                 }
             },
             (StructDecl(source), StructDecl(target)) => {

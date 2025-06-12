@@ -1,4 +1,4 @@
 
-let x: <T>(arg: T) => T = <Y: i32>(arg: Y) => {
+let x: <T: i32>(arg: T) => i32 = <Y: i32>(arg: Y): i32 => {
     arg
 };
