@@ -69,9 +69,11 @@ impl<'a> SemanticChecker<'a> {
 
                 if !has_field_name_errors {
                     let mut substitutions = GenericSubstitutionMap::new();
-                    for (arg_ident, arg_expr) in checked_args.iter() {
-                        if let Some(field_decl) = decl.fields.iter().find(|p| p.identifier.name == arg_ident.name) {
-                            self.infer_generics(&field_decl.constraint, &arg_expr.ty, &mut substitutions);
+                    if decl.generic_params.len() > 0 {
+                        for (arg_ident, arg_expr) in checked_args.iter() {
+                            if let Some(field_decl) = decl.fields.iter().find(|p| p.identifier.name == arg_ident.name) {
+                                self.infer_generics(&field_decl.constraint, &arg_expr.ty, &mut substitutions);
+                            }
                         }
                     }
 
