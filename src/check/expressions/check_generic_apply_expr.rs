@@ -24,7 +24,7 @@ impl<'a> SemanticChecker<'a> {
         let checked_left = self.check_expr(*left, scope.clone());
         let type_args: Vec<_> = args
             .into_iter()
-            .map(|type_arg| self.check_type_annotation_recursive(&type_arg, scope.clone()))
+            .map(|type_arg| self.check_type_annotation(&type_arg, scope.clone()))
             .collect();
 
         let mut substitute = |generic_params: &Vec<CheckedGenericParam>, type_args: Vec<CheckedType>| {

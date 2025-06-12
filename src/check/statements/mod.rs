@@ -140,7 +140,7 @@ impl<'a> SemanticChecker<'a> {
                 );
 
                 let constraint = constraint.map(|c| {
-                    let checked_constraint = self.check_type_annotation_recursive(&c, scope.clone());
+                    let checked_constraint = self.check_type_annotation(&c, scope.clone());
                     if is_fn {
                         let placeholder_ref = match scope.borrow().lookup(identifier.name) {
                             Some(SymbolEntry::VarDecl(d)) => d,
@@ -223,7 +223,7 @@ impl<'a> SemanticChecker<'a> {
 
                 let checked_generic_params = self.check_generic_params(&generic_params, alias_scope.clone());
 
-                let checked_value = self.check_type_annotation_recursive(&value, alias_scope);
+                let checked_value = self.check_type_annotation(&value, alias_scope);
 
                 let decl = match scope.borrow_mut().lookup(identifier.name) {
                     Some(SymbolEntry::TypeAliasDecl(decl)) => {
