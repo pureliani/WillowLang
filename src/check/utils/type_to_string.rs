@@ -24,13 +24,6 @@ fn identifier_to_string(id: InternerId, string_interner: &StringInterner) -> Str
     identifier_name.to_owned()
 }
 
-fn param_to_string(param: &CheckedParam, string_interner: &StringInterner) -> String {
-    let name = identifier_to_string(param.identifier.name, string_interner);
-    let constraint = type_to_string(&param.constraint.kind, string_interner);
-
-    format!("{}: {}", name, constraint)
-}
-
 fn generic_params_to_string(generic_params: &Vec<CheckedGenericParam>, string_interner: &StringInterner) -> String {
     if !generic_params.is_empty() {
         let joined = generic_params

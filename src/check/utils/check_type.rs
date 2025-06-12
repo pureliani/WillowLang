@@ -24,7 +24,7 @@ impl<'a> SemanticChecker<'a> {
         let has_type_args = match &target.kind {
             CheckedTypeKind::StructDecl(decl) => decl.borrow().generic_params.is_empty(),
             CheckedTypeKind::TypeAliasDecl(decl) => decl.borrow().generic_params.is_empty(),
-            CheckedTypeKind::FnType(f) => f.generic_params.is_empty(),
+            CheckedTypeKind::FnType(_) => true,
             _ => true,
         };
 
@@ -169,7 +169,7 @@ impl<'a> SemanticChecker<'a> {
                 let fn_type_scope = scope.borrow().child(ScopeKind::FnType);
 
                 let checked_generic_params = self.check_generic_params(&generic_params, fn_type_scope.clone());
-                let checked_params = self.check_params(&params, scope);
+                let checked_params = self.check_params(&params, fn_type_scope.clone());
                 let partially_checked_return_type = self.check_type_annotation_recursive(return_type, fn_type_scope.clone());
                 let checked_return_type = self.check_has_type_arguments(partially_checked_return_type);
 
