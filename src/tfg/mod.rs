@@ -209,34 +209,32 @@ fn analyze_atomic_condition(condition: &CheckedExpr) -> Option<(NarrowingInfo, N
             }
         }
 
-        // TODO: Extract the following logic into a separate function to reuse for NotEqual
-        CheckedExprKind::Equal { left, right } => {
-            let ident_expr = if matches!(left.kind, CheckedExprKind::Identifier(..)) {
-                Some((left, right.ty.clone()))
-            } else if matches!(right.kind, CheckedExprKind::Identifier(..)) {
-                Some((right, left.ty.clone()))
-            } else {
-                None
-            };
+        CheckedExprKind::Equal { left, right } | CheckedExprKind::NotEqual { left, right } => {
+            let is_not_equal = matches!(condition.kind, CheckedExprKind::NotEqual { .. });
 
-            if let Some((ident_expr, narrow_to)) = ident_expr {
+            if let Some((ident_expr, other_expr)) = get_identifier_and_other(&left, &right) {
                 if let CheckedExprKind::Identifier(id) = &ident_expr.kind {
                     if let CheckedTypeKind::Union(ident_expr_ty) = &ident_expr.ty.kind {
                         let var_id = VariableId(id.name.0);
+                        let narrow_to_type = &other_expr.ty;
 
-                        let subtracted = CheckedTypeKind::Union(union_subtract(ident_expr_ty, &narrow_to));
+                        let subtracted = CheckedTypeKind::Union(union_subtract(ident_expr_ty, narrow_to_type));
 
-                        let narrowing_true = NarrowingInfo {
+                        let narrowing_to_specific = NarrowingInfo {
                             variable: var_id.clone(),
-                            narrowed_type: narrow_to.kind.clone(),
+                            narrowed_type: narrow_to_type.kind.clone(),
                         };
 
-                        let narrowing_false = NarrowingInfo {
+                        let narrowing_to_subtracted = NarrowingInfo {
                             variable: var_id,
                             narrowed_type: subtracted,
                         };
 
-                        return Some((narrowing_true, narrowing_false));
+                        if is_not_equal {
+                            return Some((narrowing_to_subtracted, narrowing_to_specific));
+                        } else {
+                            return Some((narrowing_to_specific, narrowing_to_subtracted));
+                        }
                     };
                 }
             }
@@ -247,6 +245,16 @@ fn analyze_atomic_condition(condition: &CheckedExpr) -> Option<(NarrowingInfo, N
     None
 }
 
+fn get_identifier_and_other<'a>(left: &'a CheckedExpr, right: &'a CheckedExpr) -> Option<(&'a CheckedExpr, &'a CheckedExpr)> {
+    if matches!(left.kind, CheckedExprKind::Identifier(..)) {
+        Some((left, right))
+    } else if matches!(right.kind, CheckedExprKind::Identifier(..)) {
+        Some((right, left))
+    } else {
+        None
+    }
+}
+
 fn build_condition_tfg(
     tfg: &mut TypeFlowGraph,
     condition: &CheckedExpr,
@@ -255,6 +263,9 @@ fn build_condition_tfg(
     next_node_if_false: TFGNodeId,
 ) {
     match &condition.kind {
+        CheckedExprKind::Not { right } => {
+            build_condition_tfg(tfg, right, prev_node, next_node_if_false, next_node_if_true);
+        }
         CheckedExprKind::And { left, right } => {
             let intermediate_node_id = tfg.create_node(TFGNodeKind::NoOp { next_node: None });
 
@@ -272,12 +283,10 @@ fn build_condition_tfg(
         CheckedExprKind::BoolLiteral { value } => {
             let target = if *value { next_node_if_true } else { next_node_if_false };
 
-            // Need to handle linking from different prev_node types
-            // For simplicity, assume prev_node is always linkable sequentially here,
-            // but a robust implementation might need checks or different linking.
+            // Might need to handle linking from different prev_node types,
+            // for now assume prev_node is always linkable sequentially here
             tfg.link_sequential(prev_node, target);
         }
-
         _ => {
             let branch_node_id = tfg.create_node(TFGNodeKind::Branch {
                 narrowing_if_true: None,
@@ -286,11 +295,6 @@ fn build_condition_tfg(
                 next_node_if_false: None,
             });
 
-            // Link the previous node to this new branch
-            // Assume prev_node is suitable for link_sequential. If prev_node could be
-            // a Branch itself, this linking needs adjustment. In the current recursive
-            // structure, prev_node will be Entry, NoOp, or another Branch's target.
-            // Let's assume link_sequential works for Entry/NoOp.
             tfg.link_sequential(prev_node, branch_node_id);
 
             if let Some((narrowing_true, narrowing_false)) = analyze_atomic_condition(condition) {
