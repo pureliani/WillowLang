@@ -4,16 +4,16 @@ use std::{
     usize,
 };
 
-use crate::ast::checked::{
-    checked_expression::{CheckedExpr, CheckedExprKind},
-    checked_type::{CheckedType, CheckedTypeKind},
+use crate::ast::{
+    checked::{
+        checked_expression::{CheckedExpr, CheckedExprKind},
+        checked_type::{CheckedType, CheckedTypeKind},
+    },
+    VariableId,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct TFGNodeId(usize);
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct VariableId(usize);
 
 /// Represents the type a specific variable is narrowed to on a given path.
 /// This is calculated and stored by the TFG builder.
@@ -60,7 +60,7 @@ pub enum TFGNodeKind {
     },
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TFGNode {
     pub id: TFGNodeId,
     pub kind: TFGNodeKind,
@@ -68,7 +68,7 @@ pub struct TFGNode {
     pub variable_types: HashMap<VariableId, Rc<CheckedTypeKind>>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TypeFlowGraph {
     pub entry_node_id: TFGNodeId,
     nodes: HashMap<TFGNodeId, TFGNode>,

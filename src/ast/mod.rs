@@ -54,3 +54,6 @@ pub struct Span {
     pub start: Position,
     pub end: Position,
 }
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct VariableId(pub usize);

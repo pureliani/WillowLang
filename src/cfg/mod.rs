@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::{
     ast::{
         checked::{checked_declaration::CheckedParam, checked_type::CheckedTypeKind},
-        IdentifierNode, Span,
+        IdentifierNode, Span, VariableId,
     },
     compile::string_interner::InternerId,
     tokenize::NumberKind,
@@ -11,9 +11,6 @@ use crate::{
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct BasicBlockId(usize);
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub struct VariableId(usize);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct AllocationSiteId(usize);
