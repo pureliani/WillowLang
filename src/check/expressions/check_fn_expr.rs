@@ -1,4 +1,4 @@
-use std::{cell::RefCell, rc::Rc, vec};
+use std::{cell::RefCell, collections::HashSet, rc::Rc, vec};
 
 use crate::{
     ast::{
@@ -17,8 +17,9 @@ use crate::{
     check::{
         scope::{Scope, ScopeKind, SymbolEntry},
         utils::union_of::union_of,
-        SemanticChecker, SemanticError,
+        SemanticChecker, SemanticError, TFGContext,
     },
+    tfg::TypeFlowGraph,
 };
 
 impl<'a> SemanticChecker<'a> {
@@ -34,6 +35,14 @@ impl<'a> SemanticChecker<'a> {
         let fn_scope = scope.borrow().child(ScopeKind::Function);
 
         let checked_generic_params = self.check_generic_params(&generic_params, fn_scope.clone());
+
+        let new_tfg = TypeFlowGraph::new();
+        let entry_node = new_tfg.entry_node_id;
+        self.tfg_contexts.push(TFGContext {
+            graph: new_tfg,
+            current_node: entry_node,
+            captured_variables: HashSet::new(),
+        });
 
         let checked_params: Vec<CheckedParam> = params
             .iter()
@@ -97,6 +106,8 @@ impl<'a> SemanticChecker<'a> {
             actual_return_type
         };
 
+        let mut completed_context = self.tfg_contexts.pop().expect("TFG context stack should not be empty");
+
         let expr_type = CheckedType {
             kind: CheckedTypeKind::FnType(CheckedFnType {
                 params: checked_params.clone(),
@@ -115,6 +126,7 @@ impl<'a> SemanticChecker<'a> {
                 body: checked_body,
                 return_type: actual_return_type,
                 generic_params: checked_generic_params,
+                tfg: None,
             },
         }
     }

@@ -1,6 +1,7 @@
 use crate::{
     ast::{checked::checked_type::CheckedType, IdentifierNode, StringNode},
     check::utils::substitute_generics::GenericSubstitutionMap,
+    tfg::TypeFlowGraph,
     tokenize::NumberKind,
 };
 
@@ -118,6 +119,7 @@ pub enum CheckedExprKind {
         body: CheckedBlockContents,
         return_type: CheckedType,
         generic_params: Vec<CheckedGenericParam>,
+        tfg: Option<TypeFlowGraph>,
     },
     If {
         condition: Box<CheckedExpr>,

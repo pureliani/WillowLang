@@ -163,6 +163,10 @@ impl TypeFlowGraph {
         self.nodes.get(&id)
     }
 
+    pub fn get_node_mut(&mut self, id: TFGNodeId) -> Option<&mut TFGNode> {
+        self.nodes.get_mut(&id)
+    }
+
     pub fn iter_nodes(&self) -> impl Iterator<Item = &TFGNode> {
         self.nodes.values()
     }
