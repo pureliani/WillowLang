@@ -6,7 +6,7 @@ use std::{
 
 use crate::ast::{
     checked::{
-        checked_expression::{CheckedExpr, CheckedExprKind},
+        checked_expression::{CheckedExpr, CheckedExprKind, FunctionSummary},
         checked_type::{CheckedType, CheckedTypeKind},
     },
     DefinitionId,
@@ -75,6 +75,25 @@ pub struct TypeFlowGraph {
     pub entry_node_id: TFGNodeId,
     nodes: HashMap<TFGNodeId, TFGNode>,
     node_counter: usize,
+}
+
+impl TypeFlowGraph {
+    pub fn generate_summary(&self) -> FunctionSummary {
+        let exit_states = self.analyze_exit_states();
+        let guaranteed_calls = self.analyze_guaranteed_calls();
+
+        FunctionSummary {
+            exit_states,
+            guaranteed_calls,
+        }
+    }
+
+    fn analyze_exit_states(&self) -> HashSet<TFGNodeVariableTypes> {
+        todo!()
+    }
+    fn analyze_guaranteed_calls(&self) -> HashSet<DefinitionId> {
+        todo!()
+    }
 }
 
 impl TypeFlowGraph {
@@ -159,6 +178,66 @@ impl TypeFlowGraph {
             .expect("target_if_false node must exist")
             .predecessors
             .insert(branch_id);
+    }
+
+    pub fn build_condition_tfg(
+        &mut self,
+        condition: &CheckedExpr,
+        prev_node: TFGNodeId,
+        next_node_if_true: TFGNodeId,
+        next_node_if_false: TFGNodeId,
+    ) {
+        match &condition.kind {
+            CheckedExprKind::Not { right } => {
+                self.build_condition_tfg(right, prev_node, next_node_if_false, next_node_if_true);
+            }
+            CheckedExprKind::And { left, right } => {
+                let intermediate_node_id = self.create_node(TFGNodeKind::NoOp { next_node: None });
+
+                self.build_condition_tfg(&left, prev_node, intermediate_node_id, next_node_if_false);
+
+                self.build_condition_tfg(&right, intermediate_node_id, next_node_if_true, next_node_if_false);
+            }
+            CheckedExprKind::Or { left, right } => {
+                let intermediate_node_id = self.create_node(TFGNodeKind::NoOp { next_node: None });
+
+                self.build_condition_tfg(&left, prev_node, next_node_if_true, intermediate_node_id);
+
+                self.build_condition_tfg(&right, intermediate_node_id, next_node_if_true, next_node_if_false);
+            }
+            CheckedExprKind::BoolLiteral { value } => {
+                let target = if *value { next_node_if_true } else { next_node_if_false };
+
+                // Might need to handle linking from different prev_node types,
+                // for now assume prev_node is always linkable sequentially here
+                self.link_sequential(prev_node, target);
+            }
+            _ => {
+                let branch_node_id = self.create_node(TFGNodeKind::Branch {
+                    narrowing_if_true: None,
+                    next_node_if_true: None,
+                    narrowing_if_false: None,
+                    next_node_if_false: None,
+                });
+
+                self.link_sequential(prev_node, branch_node_id);
+
+                if let Some((narrowing_true, narrowing_false)) = analyze_atomic_condition(condition) {
+                    let branch_node = self.nodes.get_mut(&branch_node_id).unwrap();
+                    if let TFGNodeKind::Branch {
+                        narrowing_if_true: nit,
+                        narrowing_if_false: nif,
+                        ..
+                    } = &mut branch_node.kind
+                    {
+                        *nit = Some(narrowing_true);
+                        *nif = Some(narrowing_false);
+                    }
+                }
+
+                self.link_branch(branch_node_id, next_node_if_true, next_node_if_false);
+            }
+        }
     }
 
     pub fn get_node(&self, id: TFGNodeId) -> Option<&TFGNode> {
@@ -258,65 +337,5 @@ fn get_identifier_and_other<'a>(left: &'a CheckedExpr, right: &'a CheckedExpr) -
         Some((right, left))
     } else {
         None
-    }
-}
-
-fn build_condition_tfg(
-    tfg: &mut TypeFlowGraph,
-    condition: &CheckedExpr,
-    prev_node: TFGNodeId,
-    next_node_if_true: TFGNodeId,
-    next_node_if_false: TFGNodeId,
-) {
-    match &condition.kind {
-        CheckedExprKind::Not { right } => {
-            build_condition_tfg(tfg, right, prev_node, next_node_if_false, next_node_if_true);
-        }
-        CheckedExprKind::And { left, right } => {
-            let intermediate_node_id = tfg.create_node(TFGNodeKind::NoOp { next_node: None });
-
-            build_condition_tfg(tfg, &left, prev_node, intermediate_node_id, next_node_if_false);
-
-            build_condition_tfg(tfg, &right, intermediate_node_id, next_node_if_true, next_node_if_false);
-        }
-        CheckedExprKind::Or { left, right } => {
-            let intermediate_node_id = tfg.create_node(TFGNodeKind::NoOp { next_node: None });
-
-            build_condition_tfg(tfg, &left, prev_node, next_node_if_true, intermediate_node_id);
-
-            build_condition_tfg(tfg, &right, intermediate_node_id, next_node_if_true, next_node_if_false);
-        }
-        CheckedExprKind::BoolLiteral { value } => {
-            let target = if *value { next_node_if_true } else { next_node_if_false };
-
-            // Might need to handle linking from different prev_node types,
-            // for now assume prev_node is always linkable sequentially here
-            tfg.link_sequential(prev_node, target);
-        }
-        _ => {
-            let branch_node_id = tfg.create_node(TFGNodeKind::Branch {
-                narrowing_if_true: None,
-                next_node_if_true: None,
-                narrowing_if_false: None,
-                next_node_if_false: None,
-            });
-
-            tfg.link_sequential(prev_node, branch_node_id);
-
-            if let Some((narrowing_true, narrowing_false)) = analyze_atomic_condition(condition) {
-                let branch_node = tfg.nodes.get_mut(&branch_node_id).unwrap();
-                if let TFGNodeKind::Branch {
-                    narrowing_if_true: nit,
-                    narrowing_if_false: nif,
-                    ..
-                } = &mut branch_node.kind
-                {
-                    *nit = Some(narrowing_true);
-                    *nif = Some(narrowing_false);
-                }
-            }
-
-            tfg.link_branch(branch_node_id, next_node_if_true, next_node_if_false);
-        }
     }
 }

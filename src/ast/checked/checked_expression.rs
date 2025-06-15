@@ -129,7 +129,7 @@ pub enum CheckedExprKind {
         return_type: CheckedType,
         generic_params: Vec<CheckedGenericParam>,
         tfg: TypeFlowGraph,
-        summary: Box<FunctionSummary>,
+        summary: FunctionSummary,
     },
     If {
         condition: Box<CheckedExpr>,

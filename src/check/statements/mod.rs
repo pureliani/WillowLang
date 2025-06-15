@@ -18,6 +18,7 @@ use crate::{
         scope::{Scope, ScopeKind, SymbolEntry},
         SemanticChecker, SemanticError,
     },
+    tfg::TFGNodeKind,
 };
 
 impl<'a> SemanticChecker<'a> {
@@ -212,6 +213,18 @@ impl<'a> SemanticChecker<'a> {
                     decl
                 };
 
+                if let Some(context) = self.tfg_contexts.last_mut() {
+                    if let Some(val) = &decl.borrow().value {
+                        let assign_node = context.graph.create_node(TFGNodeKind::Assign {
+                            target: decl.borrow().id,
+                            assigned_type: Rc::new(val.ty.kind.clone()),
+                            next_node: None,
+                        });
+                        context.graph.link_sequential(context.current_node, assign_node);
+                        context.current_node = assign_node;
+                    }
+                }
+
                 CheckedStmt::VarDecl(decl)
             }
             StmtKind::TypeAliasDecl(TypeAliasDecl {
@@ -267,7 +280,15 @@ impl<'a> SemanticChecker<'a> {
                         .push(SemanticError::ReturnKeywordOutsideFunction { span: stmt.span });
                 }
 
-                CheckedStmt::Return(self.check_expr(expr, scope))
+                let value = self.check_expr(expr, scope);
+
+                if let Some(context) = self.tfg_contexts.last_mut() {
+                    let exit_node = context.graph.create_node(TFGNodeKind::Exit);
+                    context.graph.link_sequential(context.current_node, exit_node);
+                    context.current_node = exit_node;
+                }
+
+                CheckedStmt::Return(value)
             }
             StmtKind::Assignment { target, value } => {
                 let checked_target = self.check_expr(target, scope.clone());

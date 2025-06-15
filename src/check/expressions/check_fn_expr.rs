@@ -128,6 +128,8 @@ impl<'a> SemanticChecker<'a> {
                 .link_sequential(completed_context.current_node, exit_node);
         }
 
+        let summary = completed_context.graph.generate_summary();
+
         let expr_type = CheckedType {
             kind: CheckedTypeKind::FnType(CheckedFnType {
                 params: checked_params.clone(),
@@ -148,7 +150,7 @@ impl<'a> SemanticChecker<'a> {
                 return_type: actual_return_type,
                 generic_params: checked_generic_params,
                 tfg: completed_context.graph,
-                summary: todo!(),
+                summary,
             },
         }
     }
