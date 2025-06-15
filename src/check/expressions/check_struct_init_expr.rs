@@ -80,9 +80,10 @@ impl<'a> SemanticChecker<'a> {
                     let substituted_fields: Vec<CheckedParam> = decl
                         .fields
                         .iter()
-                        .map(|p_decl| CheckedParam {
-                            identifier: p_decl.identifier,
-                            constraint: self.substitute_generics(&p_decl.constraint, &substitutions),
+                        .map(|p| CheckedParam {
+                            id: p.id,
+                            identifier: p.identifier,
+                            constraint: self.substitute_generics(&p.constraint, &substitutions),
                         })
                         .collect();
 

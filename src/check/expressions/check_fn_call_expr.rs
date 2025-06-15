@@ -45,6 +45,7 @@ impl<'a> SemanticChecker<'a> {
                     let substituted_fn_params: Vec<CheckedParam> = params
                         .iter()
                         .map(|p| CheckedParam {
+                            id: p.id,
                             identifier: p.identifier,
                             constraint: self.substitute_generics(&p.constraint, &substitutions),
                         })

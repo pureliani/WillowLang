@@ -1,7 +1,7 @@
 use std::hash::{Hash, Hasher};
 
 use crate::{
-    ast::{checked::checked_type::CheckedType, IdentifierNode, Span},
+    ast::{checked::checked_type::CheckedType, DefinitionId, IdentifierNode, Span},
     parse::DocAnnotation,
 };
 
@@ -9,6 +9,7 @@ use super::checked_expression::CheckedExpr;
 
 #[derive(Clone, Debug)]
 pub struct CheckedParam {
+    pub id: DefinitionId,
     pub identifier: IdentifierNode,
     pub constraint: CheckedType,
 }
@@ -16,11 +17,12 @@ pub struct CheckedParam {
 impl Eq for CheckedParam {}
 impl PartialEq for CheckedParam {
     fn eq(&self, other: &Self) -> bool {
-        self.identifier == other.identifier && self.constraint == other.constraint
+        self.id == other.id && self.identifier == other.identifier && self.constraint == other.constraint
     }
 }
 impl Hash for CheckedParam {
     fn hash<H: Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
         self.identifier.hash(state);
         self.constraint.hash(state);
     }
@@ -118,6 +120,7 @@ impl Hash for CheckedTypeAliasDecl {
 
 #[derive(Clone, Debug)]
 pub struct CheckedVarDecl {
+    pub id: DefinitionId,
     pub identifier: IdentifierNode,
     pub documentation: Option<DocAnnotation>,
     pub constraint: CheckedType,

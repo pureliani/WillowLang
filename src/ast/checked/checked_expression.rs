@@ -1,7 +1,9 @@
+use std::collections::HashSet;
+
 use crate::{
-    ast::{checked::checked_type::CheckedType, IdentifierNode, StringNode},
+    ast::{checked::checked_type::CheckedType, DefinitionId, IdentifierNode, StringNode},
     check::utils::substitute_generics::GenericSubstitutionMap,
-    tfg::TypeFlowGraph,
+    tfg::{TFGNodeVariableTypes, TypeFlowGraph},
     tokenize::NumberKind,
 };
 
@@ -9,6 +11,12 @@ use super::{
     checked_declaration::{CheckedGenericParam, CheckedParam},
     checked_statement::CheckedStmt,
 };
+
+#[derive(Debug, Clone)]
+pub struct FunctionSummary {
+    pub exit_states: HashSet<TFGNodeVariableTypes>,
+    pub guaranteed_calls: HashSet<DefinitionId>,
+}
 
 #[derive(Clone, Debug)]
 pub struct CheckedBlockContents {
@@ -115,11 +123,13 @@ pub enum CheckedExprKind {
     Identifier(IdentifierNode),
     // Complex expressions
     Fn {
+        id: DefinitionId,
         params: Vec<CheckedParam>,
         body: CheckedBlockContents,
         return_type: CheckedType,
         generic_params: Vec<CheckedGenericParam>,
         tfg: Option<TypeFlowGraph>,
+        summary: Option<Box<FunctionSummary>>,
     },
     If {
         condition: Box<CheckedExpr>,

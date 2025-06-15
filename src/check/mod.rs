@@ -4,7 +4,7 @@ use crate::{
     ast::{
         base::base_statement::Stmt,
         checked::{checked_declaration::CheckedGenericParam, checked_statement::CheckedStmt, checked_type::CheckedType},
-        IdentifierNode, Span, VariableId,
+        DefinitionId, IdentifierNode, Span,
     },
     check::scope::{Scope, ScopeKind},
     compile::string_interner::InternerId,
@@ -238,13 +238,14 @@ impl SemanticError {
 pub struct TFGContext {
     pub graph: TypeFlowGraph,
     pub current_node: TFGNodeId,
-    pub captured_variables: HashSet<VariableId>,
+    pub captured_variables: HashSet<DefinitionId>,
 }
 
 #[derive(Debug)]
 pub struct SemanticChecker<'a> {
     errors: &'a mut Vec<SemanticError>,
     tfg_contexts: Vec<TFGContext>,
+    definition_counter: usize,
 }
 
 impl<'a> SemanticChecker<'a> {
@@ -255,6 +256,7 @@ impl<'a> SemanticChecker<'a> {
         let mut checker = SemanticChecker {
             errors: &mut errors,
             tfg_contexts: vec![],
+            definition_counter: 0,
         };
 
         let stmts = checker.check_stmts(statements, scope);

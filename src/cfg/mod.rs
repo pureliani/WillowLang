@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::{
     ast::{
         checked::{checked_declaration::CheckedParam, checked_type::CheckedTypeKind},
-        IdentifierNode, Span, VariableId,
+        DefinitionId, IdentifierNode, Span,
     },
     compile::string_interner::InternerId,
     tokenize::NumberKind,
@@ -44,7 +44,7 @@ pub enum RValue {
         ty: CheckedTypeKind,
     },
     Var {
-        id: VariableId,
+        id: DefinitionId,
         ty: CheckedTypeKind,
         span: Span,
     },
@@ -53,7 +53,7 @@ pub enum RValue {
 #[derive(Clone, Debug)]
 pub enum LValue {
     Var {
-        id: VariableId,
+        id: DefinitionId,
         ty: CheckedTypeKind,
         span: Span,
     },
@@ -182,7 +182,7 @@ pub struct BasicBlock {
 #[derive(Clone, Debug)]
 pub struct GenericControlFlowGraph {
     pub function_name: IdentifierNode,
-    pub parameters: Vec<(VariableId, CheckedParam)>,
+    pub parameters: Vec<CheckedParam>,
     pub return_type: CheckedTypeKind,
 
     pub entry_block: BasicBlockId,
@@ -192,5 +192,5 @@ pub struct GenericControlFlowGraph {
     next_block_id: usize,
     next_var_id: usize,
 
-    var_map: HashMap<IdentifierNode, VariableId>,
+    var_map: HashMap<IdentifierNode, DefinitionId>,
 }

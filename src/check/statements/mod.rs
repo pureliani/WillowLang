@@ -62,7 +62,9 @@ impl<'a> SemanticChecker<'a> {
                         ..
                     }) = &decl.value
                     {
+                        let definition_id = self.get_definition_id();
                         let placeholder = SymbolEntry::VarDecl(Rc::new(RefCell::new(CheckedVarDecl {
+                            id: definition_id,
                             identifier: decl.identifier,
                             documentation: decl.documentation.clone(),
                             value: None,
@@ -194,7 +196,9 @@ impl<'a> SemanticChecker<'a> {
                         }
                     }
                 } else {
+                    let definition_id = self.get_definition_id();
                     let decl = Rc::new(RefCell::new(CheckedVarDecl {
+                        id: definition_id,
                         identifier,
                         documentation,
                         value: checked_value,

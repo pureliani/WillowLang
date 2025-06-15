@@ -9,7 +9,7 @@ use crate::ast::{
         checked_expression::{CheckedExpr, CheckedExprKind},
         checked_type::{CheckedType, CheckedTypeKind},
     },
-    VariableId,
+    DefinitionId,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -19,7 +19,7 @@ pub struct TFGNodeId(usize);
 /// This is calculated and stored by the TFG builder.
 #[derive(Debug, Clone)]
 pub struct NarrowingInfo {
-    pub variable: VariableId,
+    pub variable: DefinitionId,
     pub narrowed_type: CheckedTypeKind,
 }
 
@@ -50,7 +50,7 @@ pub enum TFGNodeKind {
 
     /// Represents an assignment `target = <expr>`.
     Assign {
-        target: VariableId,
+        target: DefinitionId,
         assigned_type: Rc<CheckedTypeKind>,
         next_node: Option<TFGNodeId>,
     },
@@ -60,12 +60,14 @@ pub enum TFGNodeKind {
     },
 }
 
+pub type TFGNodeVariableTypes = HashMap<DefinitionId, Rc<CheckedTypeKind>>;
+
 #[derive(Debug, Clone)]
 pub struct TFGNode {
     pub id: TFGNodeId,
     pub kind: TFGNodeKind,
     pub predecessors: HashSet<TFGNodeId>,
-    pub variable_types: HashMap<VariableId, Rc<CheckedTypeKind>>,
+    pub variable_types: TFGNodeVariableTypes,
 }
 
 #[derive(Debug, Clone)]
@@ -194,7 +196,7 @@ fn analyze_atomic_condition(condition: &CheckedExpr) -> Option<(NarrowingInfo, N
         CheckedExprKind::IsType { left, target } => {
             if let CheckedExprKind::Identifier(id) = &left.kind {
                 if let CheckedTypeKind::Union(types) = &left.ty.kind {
-                    let var_id = VariableId(id.name.0);
+                    let var_id = DefinitionId(id.name.0);
 
                     let subtracted = CheckedTypeKind::Union(union_subtract(types, target));
 
@@ -219,7 +221,7 @@ fn analyze_atomic_condition(condition: &CheckedExpr) -> Option<(NarrowingInfo, N
             if let Some((ident_expr, other_expr)) = get_identifier_and_other(&left, &right) {
                 if let CheckedExprKind::Identifier(id) = &ident_expr.kind {
                     if let CheckedTypeKind::Union(ident_expr_ty) = &ident_expr.ty.kind {
-                        let var_id = VariableId(id.name.0);
+                        let var_id = DefinitionId(id.name.0);
                         let narrow_to_type = &other_expr.ty;
 
                         let subtracted = CheckedTypeKind::Union(union_subtract(ident_expr_ty, narrow_to_type));

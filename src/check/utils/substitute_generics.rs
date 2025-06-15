@@ -87,6 +87,7 @@ impl<'a> SemanticChecker<'a> {
                 let substituted_params = params
                     .iter()
                     .map(|p| CheckedParam {
+                        id: p.id,
                         identifier: p.identifier,
                         constraint: self.substitute_generics(&p.constraint, substitutions),
                     })
@@ -114,6 +115,7 @@ impl<'a> SemanticChecker<'a> {
                     .fields
                     .iter()
                     .map(|p| CheckedParam {
+                        id: p.id,
                         identifier: p.identifier,
                         constraint: self.substitute_generics(&p.constraint, substitutions),
                     })

@@ -48,10 +48,12 @@ impl<'a> SemanticChecker<'a> {
             .iter()
             .map(|param| {
                 let checked_constraint = self.check_type_annotation(&param.constraint, fn_scope.clone());
+                let definition_id = self.get_definition_id();
 
                 fn_scope.borrow_mut().insert(
                     param.identifier,
                     SymbolEntry::VarDecl(Rc::new(RefCell::new(CheckedVarDecl {
+                        id: definition_id,
                         documentation: None,
                         identifier: param.identifier,
                         constraint: checked_constraint.clone(),
@@ -61,6 +63,7 @@ impl<'a> SemanticChecker<'a> {
                 );
 
                 CheckedParam {
+                    id: definition_id,
                     constraint: checked_constraint,
                     identifier: param.identifier,
                 }
@@ -119,9 +122,12 @@ impl<'a> SemanticChecker<'a> {
             span,
         };
 
+        let definition_id = self.get_definition_id();
+
         CheckedExpr {
             ty: expr_type,
             kind: CheckedExprKind::Fn {
+                id: definition_id,
                 params: checked_params,
                 body: checked_body,
                 return_type: actual_return_type,

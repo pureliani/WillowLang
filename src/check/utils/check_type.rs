@@ -70,9 +70,11 @@ impl<'a> SemanticChecker<'a> {
         params
             .into_iter()
             .map(|p| {
+                let definition_id = self.get_definition_id();
                 let checked_constraint = self.check_type_annotation_recursive(&p.constraint, scope.clone());
                 let result = self.check_has_type_arguments(checked_constraint);
                 CheckedParam {
+                    id: definition_id,
                     constraint: result,
                     identifier: p.identifier,
                 }
