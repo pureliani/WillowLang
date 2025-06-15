@@ -128,8 +128,8 @@ pub enum CheckedExprKind {
         body: CheckedBlockContents,
         return_type: CheckedType,
         generic_params: Vec<CheckedGenericParam>,
-        tfg: Option<TypeFlowGraph>,
-        summary: Option<Box<FunctionSummary>>,
+        tfg: TypeFlowGraph,
+        summary: Box<FunctionSummary>,
     },
     If {
         condition: Box<CheckedExpr>,

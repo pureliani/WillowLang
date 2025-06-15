@@ -4,7 +4,7 @@ use crate::{
     ast::{
         base::base_statement::Stmt,
         checked::{checked_declaration::CheckedGenericParam, checked_statement::CheckedStmt, checked_type::CheckedType},
-        DefinitionId, IdentifierNode, Span,
+        IdentifierNode, Span,
     },
     check::scope::{Scope, ScopeKind},
     compile::string_interner::InternerId,
@@ -238,7 +238,6 @@ impl SemanticError {
 pub struct TFGContext {
     pub graph: TypeFlowGraph,
     pub current_node: TFGNodeId,
-    pub captured_variables: HashSet<DefinitionId>,
 }
 
 #[derive(Debug)]

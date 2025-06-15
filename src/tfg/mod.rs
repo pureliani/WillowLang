@@ -113,7 +113,7 @@ impl TypeFlowGraph {
         id
     }
 
-    fn link_sequential(&mut self, from_id: TFGNodeId, to_id: TFGNodeId) {
+    pub fn link_sequential(&mut self, from_id: TFGNodeId, to_id: TFGNodeId) {
         let from_node = self.nodes.get_mut(&from_id).expect("Expected node with 'from_id' to exist");
 
         let next_field = match &mut from_node.kind {
@@ -133,7 +133,7 @@ impl TypeFlowGraph {
         to_node.predecessors.insert(from_id);
     }
 
-    fn link_branch(&mut self, branch_id: TFGNodeId, target_if_true: TFGNodeId, target_if_false: TFGNodeId) {
+    pub fn link_branch(&mut self, branch_id: TFGNodeId, target_if_true: TFGNodeId, target_if_false: TFGNodeId) {
         let branch_node = self.nodes.get_mut(&branch_id).expect("Branch node doesn't exist");
 
         match &mut branch_node.kind {

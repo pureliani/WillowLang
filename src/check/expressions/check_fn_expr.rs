@@ -1,4 +1,4 @@
-use std::{cell::RefCell, collections::HashSet, rc::Rc, vec};
+use std::{cell::RefCell, rc::Rc, vec};
 
 use crate::{
     ast::{
@@ -19,7 +19,7 @@ use crate::{
         utils::union_of::union_of,
         SemanticChecker, SemanticError, TFGContext,
     },
-    tfg::TypeFlowGraph,
+    tfg::{TFGNodeKind, TypeFlowGraph},
 };
 
 impl<'a> SemanticChecker<'a> {
@@ -32,6 +32,7 @@ impl<'a> SemanticChecker<'a> {
         span: Span,
         scope: Rc<RefCell<Scope>>,
     ) -> CheckedExpr {
+        let fn_definition_id = self.get_definition_id();
         let fn_scope = scope.borrow().child(ScopeKind::Function);
 
         let checked_generic_params = self.check_generic_params(&generic_params, fn_scope.clone());
@@ -41,19 +42,18 @@ impl<'a> SemanticChecker<'a> {
         self.tfg_contexts.push(TFGContext {
             graph: new_tfg,
             current_node: entry_node,
-            captured_variables: HashSet::new(),
         });
 
         let checked_params: Vec<CheckedParam> = params
             .iter()
             .map(|param| {
+                let id = self.get_definition_id();
                 let checked_constraint = self.check_type_annotation(&param.constraint, fn_scope.clone());
-                let definition_id = self.get_definition_id();
 
                 fn_scope.borrow_mut().insert(
                     param.identifier,
                     SymbolEntry::VarDecl(Rc::new(RefCell::new(CheckedVarDecl {
-                        id: definition_id,
+                        id,
                         documentation: None,
                         identifier: param.identifier,
                         constraint: checked_constraint.clone(),
@@ -62,8 +62,13 @@ impl<'a> SemanticChecker<'a> {
                     self.errors,
                 );
 
+                if let Some(context) = self.tfg_contexts.last_mut() {
+                    let entry_node = context.graph.get_node_mut(context.graph.entry_node_id).unwrap();
+                    entry_node.variable_types.insert(id, Rc::new(checked_constraint.kind.clone()));
+                }
+
                 CheckedParam {
-                    id: definition_id,
+                    id,
                     constraint: checked_constraint,
                     identifier: param.identifier,
                 }
@@ -111,6 +116,18 @@ impl<'a> SemanticChecker<'a> {
 
         let mut completed_context = self.tfg_contexts.pop().expect("TFG context stack should not be empty");
 
+        let current_node_kind = completed_context
+            .graph
+            .get_node(completed_context.current_node)
+            .map(|n| &n.kind);
+
+        if !matches!(current_node_kind, Some(TFGNodeKind::Exit)) {
+            let exit_node = completed_context.graph.create_node(TFGNodeKind::Exit);
+            completed_context
+                .graph
+                .link_sequential(completed_context.current_node, exit_node);
+        }
+
         let expr_type = CheckedType {
             kind: CheckedTypeKind::FnType(CheckedFnType {
                 params: checked_params.clone(),
@@ -122,17 +139,16 @@ impl<'a> SemanticChecker<'a> {
             span,
         };
 
-        let definition_id = self.get_definition_id();
-
         CheckedExpr {
             ty: expr_type,
             kind: CheckedExprKind::Fn {
-                id: definition_id,
+                id: fn_definition_id,
                 params: checked_params,
                 body: checked_body,
                 return_type: actual_return_type,
                 generic_params: checked_generic_params,
-                tfg: None,
+                tfg: completed_context.graph,
+                summary: todo!(),
             },
         }
     }
