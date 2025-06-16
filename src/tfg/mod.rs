@@ -6,7 +6,7 @@ use std::{
 
 use crate::ast::{
     checked::{
-        checked_expression::{CheckedExpr, CheckedExprKind, FunctionSummary},
+        checked_expression::{CheckedExpr, CheckedExprKind, FunctionSummary, RefinementKey},
         checked_type::{CheckedType, CheckedTypeKind},
     },
     DefinitionId,
@@ -88,9 +88,10 @@ impl TypeFlowGraph {
         }
     }
 
-    fn analyze_exit_states(&self) -> HashSet<TFGNodeVariableTypes> {
+    fn analyze_exit_states(&self) -> HashMap<RefinementKey, TFGNodeVariableTypes> {
         todo!()
     }
+
     fn analyze_guaranteed_calls(&self) -> HashSet<DefinitionId> {
         todo!()
     }

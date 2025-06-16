@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use crate::{
     ast::{checked::checked_type::CheckedType, DefinitionId, IdentifierNode, StringNode},
@@ -12,9 +12,29 @@ use super::{
     checked_statement::CheckedStmt,
 };
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum LiteralValue {
+    Bool(bool),
+    Null,
+    // String(InternerId),
+    // EnumVariant(DefinitionId, VariantId),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum RefinementKey {
+    /// The refinement applies when the function returns a specific literal value.
+    /// e.g., `true`, `null`.
+    Literal(LiteralValue),
+
+    /// The refinement applies when the function's return value is of a certain type.
+    /// This handles the non-literal return case.
+    Type(CheckedType),
+}
+
 #[derive(Debug, Clone)]
 pub struct FunctionSummary {
-    pub exit_states: HashSet<TFGNodeVariableTypes>,
+    pub exit_states: HashMap<RefinementKey, TFGNodeVariableTypes>,
+
     pub guaranteed_calls: HashSet<DefinitionId>,
 }
 
