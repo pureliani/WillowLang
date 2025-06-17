@@ -109,7 +109,13 @@ impl<'a> SemanticChecker<'a> {
                 else_branch,
             } => self.check_if_expr(condition, then_branch, else_if_branches, else_branch, expr.span, scope),
             ExprKind::ArrayLiteral { items } => self.check_array_literal_expr(items, expr.span, scope),
-            ExprKind::Block(block_contents) => self.check_codeblock_expr(block_contents, expr.span, scope),
+            ExprKind::Block(codeblock) => {
+                let (ty, checked_codeblock) = self.check_codeblock(codeblock, scope);
+                CheckedExpr {
+                    ty,
+                    kind: CheckedExprKind::Block(checked_codeblock),
+                }
+            }
         }
     }
 }

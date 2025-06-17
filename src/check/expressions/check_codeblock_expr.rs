@@ -4,10 +4,9 @@ use crate::{
     ast::{
         base::base_expression::BlockContents,
         checked::{
-            checked_expression::{CheckedBlockContents, CheckedExpr, CheckedExprKind},
+            checked_expression::CheckedBlockContents,
             checked_type::{CheckedType, CheckedTypeKind},
         },
-        Span,
     },
     check::{
         scope::{Scope, ScopeKind},
@@ -16,7 +15,11 @@ use crate::{
 };
 
 impl<'a> SemanticChecker<'a> {
-    pub fn check_codeblock_expr(&mut self, block_contents: BlockContents, span: Span, scope: Rc<RefCell<Scope>>) -> CheckedExpr {
+    pub fn check_codeblock(
+        &mut self,
+        block_contents: BlockContents,
+        scope: Rc<RefCell<Scope>>,
+    ) -> (CheckedType, CheckedBlockContents) {
         let block_scope = scope.borrow().child(ScopeKind::CodeBlock);
 
         let checked_codeblock_statements = self.check_stmts(block_contents.statements, block_scope.clone());
@@ -28,15 +31,15 @@ impl<'a> SemanticChecker<'a> {
 
         let ty = checked_codeblock_final_expr.clone().map(|fe| fe.ty).unwrap_or(CheckedType {
             kind: CheckedTypeKind::Void,
-            span,
+            span: block_contents.span,
         });
 
-        CheckedExpr {
-            kind: CheckedExprKind::Block(CheckedBlockContents {
+        (
+            ty,
+            CheckedBlockContents {
                 final_expr: checked_codeblock_final_expr,
                 statements: checked_codeblock_statements,
-            }),
-            ty,
-        }
+            },
+        )
     }
 }

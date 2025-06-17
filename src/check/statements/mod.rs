@@ -9,7 +9,7 @@ use crate::{
         },
         checked::{
             checked_declaration::{CheckedStructDecl, CheckedTypeAliasDecl, CheckedVarDecl},
-            checked_expression::{CheckedBlockContents, CheckedExprKind},
+            checked_expression::CheckedExprKind,
             checked_statement::CheckedStmt,
             checked_type::{CheckedType, CheckedTypeKind},
         },
@@ -382,18 +382,13 @@ impl<'a> SemanticChecker<'a> {
                     });
                 }
 
-                let checked_final_expr = body
-                    .final_expr
-                    .map(|expr| Box::new(self.check_expr(*expr, while_scope.clone())));
+                let (_, checked_body) = self.check_codeblock(body, while_scope);
 
-                let checked_body_statements = self.check_stmts(body.statements, while_scope);
+                if let Some(context) = self.tfg_contexts.last_mut() {}
 
                 CheckedStmt::While {
                     condition: Box::new(checked_condition),
-                    body: CheckedBlockContents {
-                        final_expr: checked_final_expr,
-                        statements: checked_body_statements,
-                    },
+                    body: checked_body,
                     span: stmt.span,
                 }
             }
