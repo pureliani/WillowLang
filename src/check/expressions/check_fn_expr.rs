@@ -40,6 +40,7 @@ impl<'a> SemanticChecker<'a> {
         let new_tfg = TypeFlowGraph::new();
         let entry_node = new_tfg.entry_node_id;
         self.tfg_contexts.push(TFGContext {
+            loop_exit_nodes: vec![],
             graph: new_tfg,
             current_node: entry_node,
         });

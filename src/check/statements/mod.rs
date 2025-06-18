@@ -9,7 +9,7 @@ use crate::{
         },
         checked::{
             checked_declaration::{CheckedStructDecl, CheckedTypeAliasDecl, CheckedVarDecl},
-            checked_expression::CheckedExprKind,
+            checked_expression::{CheckedBlockContents, CheckedExprKind},
             checked_statement::CheckedStmt,
             checked_type::{CheckedType, CheckedTypeKind},
         },
@@ -367,28 +367,71 @@ impl<'a> SemanticChecker<'a> {
                 span: stmt.span,
             },
             StmtKind::While { condition, body } => {
-                let while_scope = scope.borrow().child(ScopeKind::While);
+                let mut condition_node = None;
+                let mut after_loop_node = None;
+
+                if let Some(context) = self.tfg_contexts.last_mut() {
+                    let before_loop_node = context.current_node;
+
+                    let cond_node = context.graph.create_node(TFGNodeKind::NoOp { next_node: None });
+                    let after_node = context.graph.create_node(TFGNodeKind::NoOp { next_node: None });
+
+                    condition_node = Some(cond_node);
+                    after_loop_node = Some(after_node);
+
+                    context.graph.link_sequential(before_loop_node, cond_node);
+                    context.current_node = cond_node;
+                }
 
                 let checked_condition = self.check_expr(*condition, scope.clone());
-                let expected_condition = CheckedType {
+
+                let expected_condition_type = CheckedType {
                     kind: CheckedTypeKind::Bool,
                     span: checked_condition.ty.span,
                 };
-
-                if !self.check_is_assignable(&checked_condition.ty, &expected_condition) {
+                if !self.check_is_assignable(&checked_condition.ty, &expected_condition_type) {
                     self.errors.push(SemanticError::TypeMismatch {
-                        expected: expected_condition,
+                        expected: expected_condition_type,
                         received: checked_condition.ty.clone(),
                     });
                 }
 
-                let (_, checked_body) = self.check_codeblock(body, while_scope);
+                let while_scope = scope.borrow().child(ScopeKind::While);
 
-                if let Some(context) = self.tfg_contexts.last_mut() {}
+                if let Some(context) = self.tfg_contexts.last_mut() {
+                    let body_node = context.graph.create_node(TFGNodeKind::NoOp { next_node: None });
+
+                    context.graph.build_condition_tfg(
+                        &checked_condition,
+                        context.current_node,
+                        body_node,
+                        after_loop_node.unwrap(),
+                    );
+
+                    context.current_node = body_node;
+                    context.loop_exit_nodes.push(after_loop_node.unwrap());
+                }
+
+                let checked_body_statements = self.check_stmts(body.statements, while_scope.clone());
+                let checked_final_expr = body.final_expr.map(|expr| Box::new(self.check_expr(*expr, while_scope)));
+
+                if after_loop_node.is_some() {
+                    if let Some(context) = self.tfg_contexts.last_mut() {
+                        context.loop_exit_nodes.pop();
+                    }
+                }
+
+                if let Some(context) = self.tfg_contexts.last_mut() {
+                    context.graph.link_sequential(context.current_node, condition_node.unwrap());
+                    context.current_node = after_loop_node.unwrap();
+                }
 
                 CheckedStmt::While {
                     condition: Box::new(checked_condition),
-                    body: checked_body,
+                    body: CheckedBlockContents {
+                        final_expr: checked_final_expr,
+                        statements: checked_body_statements,
+                    },
                     span: stmt.span,
                 }
             }
