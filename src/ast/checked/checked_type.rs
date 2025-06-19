@@ -8,10 +8,16 @@ use std::{
 use crate::ast::{
     base::base_declaration::EnumDecl,
     checked::checked_declaration::{CheckedFnType, CheckedStructDecl, CheckedTypeAliasDecl},
-    Span,
+    DefinitionId, Span,
 };
 
 use super::checked_declaration::CheckedGenericParam;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TypeAssertion {
+    pub target: DefinitionId,
+    pub asserted_type: CheckedType,
+}
 
 #[derive(Clone, Debug)]
 pub enum CheckedTypeKind {
@@ -31,6 +37,7 @@ pub enum CheckedTypeKind {
     F32,
     F64,
     Char,
+    TypeAssertion(Box<TypeAssertion>),
     Array { item_type: Box<CheckedType>, size: usize },
     StructDecl(Rc<RefCell<CheckedStructDecl>>),
     GenericParam(CheckedGenericParam),
@@ -138,6 +145,10 @@ impl Hash for CheckedTypeKind {
             CheckedTypeKind::Array { item_type, size, .. } => {
                 item_type.hash(state);
                 size.hash(state);
+            }
+            CheckedTypeKind::TypeAssertion(assertion) => {
+                assertion.target.hash(state);
+                assertion.asserted_type.kind.hash(state);
             }
         }
     }

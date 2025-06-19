@@ -156,7 +156,6 @@ pub fn type_to_string_recursive(ty: &CheckedTypeKind, string_interner: &StringIn
             .map(|t| type_to_string_recursive(&t.kind, string_interner, true))
             .collect::<Vec<String>>()
             .join(" | "),
-
         CheckedTypeKind::Array { item_type, size } => {
             format!(
                 "[{}; {}]",
@@ -164,5 +163,6 @@ pub fn type_to_string_recursive(ty: &CheckedTypeKind, string_interner: &StringIn
                 size
             )
         }
+        CheckedTypeKind::TypeAssertion(type_assertion) => todo!(),
     }
 }
