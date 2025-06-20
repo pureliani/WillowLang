@@ -1,15 +1,13 @@
-use std::{cell::RefCell, rc::Rc};
-
 use crate::{
     ast::checked::{
         checked_expression::{CheckedExpr, CheckedExprKind},
         checked_statement::CheckedStmt,
     },
-    check::{scope::Scope, SemanticChecker, SemanticError},
+    check::{SemanticChecker, SemanticError},
 };
 
 impl<'a> SemanticChecker<'a> {
-    pub fn check_returns(&mut self, statements: &[CheckedStmt], scope: Rc<RefCell<Scope>>) -> Vec<CheckedExpr> {
+    pub fn check_returns(&mut self, statements: &[CheckedStmt]) -> Vec<CheckedExpr> {
         let mut returns: Vec<CheckedExpr> = vec![];
 
         let stmt_count = statements.len();
@@ -23,7 +21,7 @@ impl<'a> SemanticChecker<'a> {
                     returns.push(expr.clone());
                 }
                 CheckedStmt::While { body, .. } => {
-                    returns.extend(self.check_returns(&body.statements, scope.clone()));
+                    returns.extend(self.check_returns(&body.statements));
                 }
                 CheckedStmt::Expression(expr) => {
                     if let CheckedExprKind::If {
@@ -33,16 +31,16 @@ impl<'a> SemanticChecker<'a> {
                         ..
                     } = &expr.kind
                     {
-                        returns.extend(self.check_returns(&then_branch.statements, scope.clone()));
+                        returns.extend(self.check_returns(&then_branch.statements));
 
                         for (_, block) in else_if_branches {
-                            returns.extend(self.check_returns(&block.statements, scope.clone()));
+                            returns.extend(self.check_returns(&block.statements));
                         }
                         if let Some(else_block) = else_branch {
-                            returns.extend(self.check_returns(&else_block.statements, scope.clone()));
+                            returns.extend(self.check_returns(&else_block.statements));
                         }
                     } else if let CheckedExprKind::Block(block) = &expr.kind {
-                        returns.extend(self.check_returns(&block.statements, scope.clone()));
+                        returns.extend(self.check_returns(&block.statements));
                         if let Some(final_expr) = &block.final_expr {
                             returns.push(*final_expr.clone());
                         }

@@ -15,14 +15,14 @@ use crate::{
         },
     },
     check::{
-        scope::{Scope, ScopeKind, SymbolEntry},
+        utils::scope::{ScopeKind, SymbolEntry},
         SemanticChecker, SemanticError,
     },
     tfg::TFGNodeKind,
 };
 
 impl<'a> SemanticChecker<'a> {
-    pub fn placeholder_declarations(&mut self, statements: &Vec<Stmt>, scope: Rc<RefCell<Scope>>) {
+    pub fn placeholder_declarations(&mut self, statements: &Vec<Stmt>) {
         for stmt in statements {
             match &stmt.kind {
                 StmtKind::StructDecl(decl) => {
@@ -35,12 +35,12 @@ impl<'a> SemanticChecker<'a> {
                         applied_type_args: vec![],
                     })));
 
-                    scope.borrow_mut().insert(decl.identifier, placeholder, self.errors);
+                    self.scope_insert(decl.identifier, placeholder);
                 }
                 StmtKind::EnumDecl(decl) => {
-                    let actual = SymbolEntry::EnumDecl(Rc::new(RefCell::new(decl.clone())));
+                    let actual = SymbolEntry::EnumDecl(decl.clone());
 
-                    scope.borrow_mut().insert(decl.identifier, actual, self.errors);
+                    self.scope_insert(decl.identifier, actual);
                 }
                 StmtKind::TypeAliasDecl(decl) => {
                     let placeholder = SymbolEntry::TypeAliasDecl(Rc::new(RefCell::new(CheckedTypeAliasDecl {
@@ -55,7 +55,7 @@ impl<'a> SemanticChecker<'a> {
                         span: decl.identifier.span,
                     })));
 
-                    scope.borrow_mut().insert(decl.identifier, placeholder, self.errors);
+                    self.scope_insert(decl.identifier, placeholder);
                 }
                 StmtKind::VarDecl(decl) => {
                     if let Some(Expr {
@@ -75,7 +75,7 @@ impl<'a> SemanticChecker<'a> {
                             },
                         })));
 
-                        scope.borrow_mut().insert(decl.identifier, placeholder, self.errors);
+                        self.scope_insert(decl.identifier, placeholder);
                     }
                 }
                 _ => {}
@@ -83,31 +83,37 @@ impl<'a> SemanticChecker<'a> {
         }
     }
 
-    pub fn check_stmts(&mut self, statements: Vec<Stmt>, scope: Rc<RefCell<Scope>>) -> Vec<CheckedStmt> {
-        self.placeholder_declarations(&statements, scope.clone());
-        statements.into_iter().map(|s| self.check_stmt(s, scope.clone())).collect()
+    pub fn check_stmts(&mut self, statements: Vec<Stmt>) -> Vec<CheckedStmt> {
+        self.placeholder_declarations(&statements);
+        statements
+            .into_iter()
+            .map(|s| {
+                let checked = self.check_stmt(s);
+                checked
+            })
+            .collect()
     }
 
-    pub fn check_stmt(&mut self, stmt: Stmt, scope: Rc<RefCell<Scope>>) -> CheckedStmt {
+    pub fn check_stmt(&mut self, stmt: Stmt) -> CheckedStmt {
         match stmt.kind {
-            StmtKind::Expression(expr) => CheckedStmt::Expression(self.check_expr(expr, scope)),
+            StmtKind::Expression(expr) => CheckedStmt::Expression(self.check_expr(expr)),
             StmtKind::StructDecl(StructDecl {
                 identifier,
                 generic_params,
                 fields,
                 documentation: _,
             }) => {
-                if !scope.borrow().is_file_scope() {
+                if !self.is_file_scope() {
                     self.errors
                         .push(SemanticError::StructMustBeDeclaredAtTopLevel { span: stmt.span });
                 }
 
-                let struct_scope = scope.borrow().child(ScopeKind::Struct);
+                self.enter_scope(ScopeKind::Struct);
+                let checked_generic_params = self.check_generic_params(&generic_params);
+                let checked_fields = self.check_params(&fields);
+                self.exit_scope();
 
-                let checked_generic_params = self.check_generic_params(&generic_params, struct_scope.clone());
-                let checked_fields = self.check_params(&fields, struct_scope.clone());
-
-                let decl = match scope.borrow_mut().lookup(identifier.name) {
+                let decl = match self.scope_lookup(identifier.name) {
                     Some(SymbolEntry::StructDecl(decl)) => {
                         let mut mut_decl = decl.borrow_mut();
                         mut_decl.fields = checked_fields;
@@ -122,14 +128,7 @@ impl<'a> SemanticChecker<'a> {
 
                 CheckedStmt::StructDecl(decl)
             }
-            StmtKind::EnumDecl(decl) => {
-                let decl = match scope.borrow().lookup(decl.identifier.name) {
-                    Some(SymbolEntry::EnumDecl(enum_decl)) => enum_decl,
-                    _ => panic!("Expected enum declaration"),
-                };
-
-                CheckedStmt::EnumDecl(decl)
-            }
+            StmtKind::EnumDecl(decl) => CheckedStmt::EnumDecl(decl.clone()),
             StmtKind::VarDecl(VarDecl {
                 identifier,
                 constraint,
@@ -145,19 +144,19 @@ impl<'a> SemanticChecker<'a> {
                 );
 
                 let constraint = constraint.map(|c| {
-                    let checked_constraint = self.check_type_annotation(&c, scope.clone());
+                    let checked_constraint = self.check_type_annotation(&c);
                     if is_fn {
-                        let placeholder_ref = match scope.borrow().lookup(identifier.name) {
+                        let placeholder = match self.scope_lookup(identifier.name) {
                             Some(SymbolEntry::VarDecl(d)) => d,
                             _ => panic!("Expected function declaration placeholder for"),
                         };
-                        placeholder_ref.borrow_mut().constraint = checked_constraint.clone();
+                        placeholder.borrow_mut().constraint = checked_constraint.clone();
                     };
 
                     checked_constraint
                 });
 
-                let checked_value = value.map(|v| self.check_expr(v, scope.clone()));
+                let checked_value = value.map(|v| self.check_expr(v));
 
                 let final_constraint = match (&checked_value, constraint) {
                     (Some(value), Some(constraint)) => {
@@ -185,7 +184,7 @@ impl<'a> SemanticChecker<'a> {
                 };
 
                 let decl = if is_fn {
-                    match scope.borrow_mut().lookup(identifier.name) {
+                    match self.scope_lookup(identifier.name) {
                         Some(SymbolEntry::VarDecl(decl)) => {
                             let mut mut_decl = decl.borrow_mut();
                             mut_decl.value = checked_value;
@@ -206,9 +205,7 @@ impl<'a> SemanticChecker<'a> {
                         constraint: final_constraint,
                     }));
 
-                    scope
-                        .borrow_mut()
-                        .insert(identifier, SymbolEntry::VarDecl(decl.clone()), self.errors);
+                    self.scope_insert(identifier, SymbolEntry::VarDecl(decl.clone()));
 
                     decl
                 };
@@ -233,18 +230,17 @@ impl<'a> SemanticChecker<'a> {
                 value,
                 documentation: _,
             }) => {
-                if !scope.borrow().is_file_scope() {
+                if !self.is_file_scope() {
                     self.errors
                         .push(SemanticError::TypeAliasMustBeDeclaredAtTopLevel { span: stmt.span });
                 }
 
-                let alias_scope = scope.borrow().child(ScopeKind::TypeAlias);
+                self.enter_scope(ScopeKind::TypeAlias);
+                let checked_generic_params = self.check_generic_params(&generic_params);
+                let checked_value = self.check_type_annotation(&value);
+                self.exit_scope();
 
-                let checked_generic_params = self.check_generic_params(&generic_params, alias_scope.clone());
-
-                let checked_value = self.check_type_annotation(&value, alias_scope);
-
-                let decl = match scope.borrow_mut().lookup(identifier.name) {
+                let decl = match self.scope_lookup(identifier.name) {
                     Some(SymbolEntry::TypeAliasDecl(decl)) => {
                         let mut mut_decl = decl.borrow_mut();
                         mut_decl.value = Box::new(checked_value);
@@ -260,14 +256,14 @@ impl<'a> SemanticChecker<'a> {
                 CheckedStmt::TypeAliasDecl(decl)
             }
             StmtKind::Break => {
-                if !scope.borrow().is_loop_scope() {
+                if !self.within_loop_scope() {
                     self.errors.push(SemanticError::BreakKeywordOutsideLoop { span: stmt.span });
                 }
 
                 CheckedStmt::Break { span: stmt.span }
             }
             StmtKind::Continue => {
-                if !scope.borrow().is_loop_scope() {
+                if !self.within_loop_scope() {
                     self.errors
                         .push(SemanticError::ContinueKeywordOutsideLoop { span: stmt.span });
                 }
@@ -275,12 +271,12 @@ impl<'a> SemanticChecker<'a> {
                 CheckedStmt::Continue { span: stmt.span }
             }
             StmtKind::Return(expr) => {
-                if !scope.borrow().is_function_scope() {
+                if !self.within_function_scope() {
                     self.errors
                         .push(SemanticError::ReturnKeywordOutsideFunction { span: stmt.span });
                 }
 
-                let value = self.check_expr(expr, scope);
+                let value = self.check_expr(expr);
 
                 if let Some(context) = self.tfg_contexts.last_mut() {
                     let exit_node = context.graph.create_node(TFGNodeKind::Exit);
@@ -291,14 +287,14 @@ impl<'a> SemanticChecker<'a> {
                 CheckedStmt::Return(value)
             }
             StmtKind::Assignment { target, value } => {
-                let checked_target = self.check_expr(target, scope.clone());
-                let checked_value = self.check_expr(value, scope.clone());
+                let checked_target = self.check_expr(target);
+                let checked_value = self.check_expr(value);
 
                 match &checked_target.kind {
                     CheckedExprKind::Identifier(id) => {
-                        let identifier_expr_type = scope.borrow().lookup(id.name);
+                        let symbol = self.scope_lookup(id.name);
 
-                        if let Some(SymbolEntry::VarDecl(decl)) = identifier_expr_type {
+                        if let Some(SymbolEntry::VarDecl(decl)) = symbol {
                             let decl = decl.borrow();
 
                             let is_assignable = self.check_is_assignable(&checked_value.ty, &decl.constraint);
@@ -383,7 +379,7 @@ impl<'a> SemanticChecker<'a> {
                     context.current_node = cond_node;
                 }
 
-                let checked_condition = self.check_expr(*condition, scope.clone());
+                let checked_condition = self.check_expr(*condition);
 
                 let expected_condition_type = CheckedType {
                     kind: CheckedTypeKind::Bool,
@@ -396,8 +392,7 @@ impl<'a> SemanticChecker<'a> {
                     });
                 }
 
-                let while_scope = scope.borrow().child(ScopeKind::While);
-
+                self.enter_scope(ScopeKind::While);
                 if let Some(context) = self.tfg_contexts.last_mut() {
                     let body_node = context.graph.create_node(TFGNodeKind::NoOp { next_node: None });
 
@@ -412,8 +407,9 @@ impl<'a> SemanticChecker<'a> {
                     context.loop_exit_nodes.push(after_loop_node.unwrap());
                 }
 
-                let checked_body_statements = self.check_stmts(body.statements, while_scope.clone());
-                let checked_final_expr = body.final_expr.map(|expr| Box::new(self.check_expr(*expr, while_scope)));
+                let checked_body_statements = self.check_stmts(body.statements);
+                let checked_final_expr = body.final_expr.map(|expr| Box::new(self.check_expr(*expr)));
+                self.exit_scope();
 
                 if after_loop_node.is_some() {
                     if let Some(context) = self.tfg_contexts.last_mut() {

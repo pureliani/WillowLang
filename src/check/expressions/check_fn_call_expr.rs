@@ -1,5 +1,3 @@
-use std::{cell::RefCell, rc::Rc};
-
 use crate::{
     ast::{
         base::base_expression::Expr,
@@ -10,13 +8,13 @@ use crate::{
         },
         Span,
     },
-    check::{scope::Scope, utils::substitute_generics::GenericSubstitutionMap, SemanticChecker, SemanticError},
+    check::{utils::substitute_generics::GenericSubstitutionMap, SemanticChecker, SemanticError},
 };
 
 impl<'a> SemanticChecker<'a> {
-    pub fn check_fn_call_expr(&mut self, left: Box<Expr>, args: Vec<Expr>, span: Span, scope: Rc<RefCell<Scope>>) -> CheckedExpr {
-        let checked_left = self.check_expr(*left, scope.clone());
-        let checked_args: Vec<_> = args.into_iter().map(|arg| self.check_expr(arg, scope.clone())).collect();
+    pub fn check_fn_call_expr(&mut self, left: Box<Expr>, args: Vec<Expr>, span: Span) -> CheckedExpr {
+        let checked_left = self.check_expr(*left);
+        let checked_args: Vec<_> = args.into_iter().map(|arg| self.check_expr(arg)).collect();
 
         let return_type = match &checked_left.ty.kind {
             CheckedTypeKind::FnType(CheckedFnType {

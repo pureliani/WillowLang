@@ -11,8 +11,8 @@ use super::{
 pub enum CheckedStmt {
     Expression(CheckedExpr),
     StructDecl(Rc<RefCell<CheckedStructDecl>>),
-    EnumDecl(Rc<RefCell<EnumDecl>>),
     TypeAliasDecl(Rc<RefCell<CheckedTypeAliasDecl>>),
+    EnumDecl(EnumDecl),
     VarDecl(Rc<RefCell<CheckedVarDecl>>),
     Break {
         span: Span,

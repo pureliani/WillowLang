@@ -1,5 +1,3 @@
-use std::{cell::RefCell, rc::Rc};
-
 use crate::{
     ast::{
         base::base_expression::Expr,
@@ -9,12 +7,12 @@ use crate::{
         },
         Span,
     },
-    check::{scope::Scope, SemanticChecker, SemanticError},
+    check::{SemanticChecker, SemanticError},
 };
 
 impl<'a> SemanticChecker<'a> {
-    pub fn check_logical_negation_expr(&mut self, right: Box<Expr>, span: Span, scope: Rc<RefCell<Scope>>) -> CheckedExpr {
-        let checked_right = self.check_expr(*right, scope);
+    pub fn check_logical_negation_expr(&mut self, right: Box<Expr>, span: Span) -> CheckedExpr {
+        let checked_right = self.check_expr(*right);
 
         let expected_right = CheckedType {
             kind: CheckedTypeKind::Bool,

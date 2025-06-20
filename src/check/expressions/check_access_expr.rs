@@ -1,5 +1,3 @@
-use std::{cell::RefCell, rc::Rc};
-
 use crate::{
     ast::{
         base::base_expression::Expr,
@@ -9,18 +7,12 @@ use crate::{
         },
         IdentifierNode, Span,
     },
-    check::{scope::Scope, SemanticChecker, SemanticError},
+    check::{SemanticChecker, SemanticError},
 };
 
 impl<'a> SemanticChecker<'a> {
-    pub fn check_access_expr(
-        &mut self,
-        left: Box<Expr>,
-        field: IdentifierNode,
-        span: Span,
-        scope: Rc<RefCell<Scope>>,
-    ) -> CheckedExpr {
-        let checked_left = self.check_expr(*left, scope);
+    pub fn check_access_expr(&mut self, left: Box<Expr>, field: IdentifierNode, span: Span) -> CheckedExpr {
+        let checked_left = self.check_expr(*left);
 
         let expr_type = match &checked_left.ty.kind {
             // TODO: Add enum declaration handler

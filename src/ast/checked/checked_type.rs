@@ -40,9 +40,9 @@ pub enum CheckedTypeKind {
     TypeAssertion(Box<TypeAssertion>),
     Array { item_type: Box<CheckedType>, size: usize },
     StructDecl(Rc<RefCell<CheckedStructDecl>>),
-    GenericParam(CheckedGenericParam),
-    EnumDecl(Rc<RefCell<EnumDecl>>),
     TypeAliasDecl(Rc<RefCell<CheckedTypeAliasDecl>>),
+    EnumDecl(EnumDecl),
+    GenericParam(CheckedGenericParam),
     FnType(CheckedFnType),
     Union(HashSet<CheckedType>),
     Unknown,
@@ -120,10 +120,10 @@ impl Hash for CheckedTypeKind {
             CheckedTypeKind::F64 => {}
             CheckedTypeKind::Char => {}
             CheckedTypeKind::Unknown => {}
-            CheckedTypeKind::GenericParam(decl) => decl.hash(state),
-            CheckedTypeKind::TypeAliasDecl(decl) => decl.borrow().hash(state),
-            CheckedTypeKind::EnumDecl(decl) => decl.borrow().hash(state),
             CheckedTypeKind::StructDecl(decl) => decl.borrow().hash(state),
+            CheckedTypeKind::TypeAliasDecl(decl) => decl.borrow().hash(state),
+            CheckedTypeKind::EnumDecl(decl) => decl.hash(state),
+            CheckedTypeKind::GenericParam(decl) => decl.hash(state),
             CheckedTypeKind::FnType(decl) => decl.hash(state),
             CheckedTypeKind::Union(items) => {
                 state.write_usize(items.len());

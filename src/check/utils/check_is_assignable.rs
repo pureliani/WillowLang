@@ -96,7 +96,7 @@ impl<'a> SemanticChecker<'a> {
 
                 same_name && assignable_fields
             }
-            (EnumDecl(source), EnumDecl(target)) => Rc::ptr_eq(source, target),
+            (EnumDecl(source), EnumDecl(target)) => source.identifier == target.identifier, // TODO: come up with a way to uniquely identify each declaration
             (
                 Array {
                     item_type: source_item_type,

@@ -1,5 +1,3 @@
-use std::{cell::RefCell, rc::Rc};
-
 use crate::{
     ast::{
         base::base_expression::BlockContents,
@@ -8,26 +6,19 @@ use crate::{
             checked_type::{CheckedType, CheckedTypeKind},
         },
     },
-    check::{
-        scope::{Scope, ScopeKind},
-        SemanticChecker,
-    },
+    check::{utils::scope::ScopeKind, SemanticChecker},
 };
 
 impl<'a> SemanticChecker<'a> {
-    pub fn check_codeblock(
-        &mut self,
-        block_contents: BlockContents,
-        scope: Rc<RefCell<Scope>>,
-    ) -> (CheckedType, CheckedBlockContents) {
-        let block_scope = scope.borrow().child(ScopeKind::CodeBlock);
-
-        let checked_codeblock_statements = self.check_stmts(block_contents.statements, block_scope.clone());
+    pub fn check_codeblock(&mut self, block_contents: BlockContents) -> (CheckedType, CheckedBlockContents) {
+        self.enter_scope(ScopeKind::CodeBlock);
+        let checked_codeblock_statements = self.check_stmts(block_contents.statements);
         let checked_codeblock_final_expr = block_contents.final_expr.map(|fe| {
-            let checked_final_expr = self.check_expr(*fe, block_scope.clone());
+            let checked_final_expr = self.check_expr(*fe);
 
             Box::new(checked_final_expr)
         });
+        self.exit_scope();
 
         let ty = checked_codeblock_final_expr.clone().map(|fe| fe.ty).unwrap_or(CheckedType {
             kind: CheckedTypeKind::Void,

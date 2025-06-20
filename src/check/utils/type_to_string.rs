@@ -91,8 +91,6 @@ pub fn type_to_string_recursive(ty: &CheckedTypeKind, string_interner: &StringIn
             }
         }
         CheckedTypeKind::EnumDecl(decl) => {
-            let decl = decl.borrow();
-
             let name = identifier_to_string(decl.identifier.name, string_interner);
 
             name
@@ -163,6 +161,12 @@ pub fn type_to_string_recursive(ty: &CheckedTypeKind, string_interner: &StringIn
                 size
             )
         }
-        CheckedTypeKind::TypeAssertion(type_assertion) => todo!(),
+        CheckedTypeKind::TypeAssertion(type_assertion) => {
+            format!(
+                "{}::is({})",
+                type_assertion.target.0, // TODO: replace with name
+                type_to_string_recursive(&type_assertion.asserted_type.kind, string_interner, false),
+            )
+        }
     }
 }

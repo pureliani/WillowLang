@@ -1,5 +1,3 @@
-use std::{cell::RefCell, rc::Rc};
-
 use crate::{
     ast::{
         base::base_expression::Expr,
@@ -9,24 +7,18 @@ use crate::{
         },
         Span,
     },
-    check::{scope::Scope, utils::check_is_equatable::check_is_equatable, SemanticChecker, SemanticError},
+    check::{utils::check_is_equatable::check_is_equatable, SemanticChecker, SemanticError},
 };
 
 impl<'a> SemanticChecker<'a> {
-    pub fn check_inequality_expr(
-        &mut self,
-        left: Box<Expr>,
-        right: Box<Expr>,
-        span: Span,
-        scope: Rc<RefCell<Scope>>,
-    ) -> CheckedExpr {
+    pub fn check_inequality_expr(&mut self, left: Box<Expr>, right: Box<Expr>, span: Span) -> CheckedExpr {
         let mut expr_type = CheckedType {
             kind: CheckedTypeKind::Bool,
             span,
         };
 
-        let checked_left = self.check_expr(*left, scope.clone());
-        let checked_right = self.check_expr(*right, scope);
+        let checked_left = self.check_expr(*left);
+        let checked_right = self.check_expr(*right);
 
         if !check_is_equatable(&checked_left.ty.kind, &checked_right.ty.kind) {
             self.errors.push(SemanticError::CannotCompareType {

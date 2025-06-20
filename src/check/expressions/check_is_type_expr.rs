@@ -1,5 +1,3 @@
-use std::{cell::RefCell, rc::Rc};
-
 use crate::{
     ast::{
         base::{base_expression::Expr, base_type::TypeAnnotation},
@@ -9,19 +7,13 @@ use crate::{
         },
         Span,
     },
-    check::{scope::Scope, SemanticChecker, SemanticError},
+    check::{SemanticChecker, SemanticError},
 };
 
 impl<'a> SemanticChecker<'a> {
-    pub fn check_is_type_expr(
-        &mut self,
-        left: Box<Expr>,
-        target: TypeAnnotation,
-        span: Span,
-        scope: Rc<RefCell<Scope>>,
-    ) -> CheckedExpr {
-        let checked_left = self.check_expr(*left, scope.clone());
-        let checked_target = self.check_type_annotation(&target, scope);
+    pub fn check_is_type_expr(&mut self, left: Box<Expr>, target: TypeAnnotation, span: Span) -> CheckedExpr {
+        let checked_left = self.check_expr(*left);
+        let checked_target = self.check_type_annotation(&target);
         let mut expr_type = CheckedType {
             kind: CheckedTypeKind::Bool,
             span,

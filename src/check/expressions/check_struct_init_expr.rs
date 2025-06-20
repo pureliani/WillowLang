@@ -10,7 +10,7 @@ use crate::{
         },
         IdentifierNode, Span,
     },
-    check::{scope::Scope, utils::substitute_generics::GenericSubstitutionMap, SemanticChecker, SemanticError},
+    check::{utils::substitute_generics::GenericSubstitutionMap, SemanticChecker, SemanticError},
     compile::string_interner::InternerId,
 };
 
@@ -20,13 +20,12 @@ impl<'a> SemanticChecker<'a> {
         left_expr: Box<Expr>,
         fields: Vec<(IdentifierNode, Expr)>,
         span: Span,
-        scope: Rc<RefCell<Scope>>,
     ) -> CheckedExpr {
-        let checked_left = self.check_expr(*left_expr, scope.clone());
+        let checked_left = self.check_expr(*left_expr);
 
         let checked_args: Vec<(IdentifierNode, CheckedExpr)> = fields
             .into_iter()
-            .map(|(ident, expr)| (ident, self.check_expr(expr, scope.clone())))
+            .map(|(ident, expr)| (ident, self.check_expr(expr)))
             .collect();
 
         let mut result_struct_type = CheckedType {

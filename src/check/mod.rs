@@ -1,4 +1,4 @@
-use std::{cell::RefCell, collections::HashSet, rc::Rc};
+use std::collections::HashSet;
 
 use crate::{
     ast::{
@@ -6,14 +6,13 @@ use crate::{
         checked::{checked_declaration::CheckedGenericParam, checked_statement::CheckedStmt, checked_type::CheckedType},
         IdentifierNode, Span,
     },
-    check::scope::{Scope, ScopeKind},
+    check::utils::scope::{Scope, ScopeKind},
     compile::string_interner::InternerId,
     tfg::{TFGNodeId, TypeFlowGraph},
     tokenize::NumberKind,
 };
 
 pub mod expressions;
-pub mod scope;
 pub mod statements;
 pub mod utils;
 
@@ -244,6 +243,7 @@ pub struct TFGContext {
 #[derive(Debug)]
 pub struct SemanticChecker<'a> {
     errors: &'a mut Vec<SemanticError>,
+    scopes: Vec<Scope>,
     tfg_contexts: Vec<TFGContext>,
     definition_counter: usize,
 }
@@ -251,15 +251,15 @@ pub struct SemanticChecker<'a> {
 impl<'a> SemanticChecker<'a> {
     pub fn check(statements: Vec<Stmt>) -> (Vec<CheckedStmt>, Vec<SemanticError>) {
         let mut errors: Vec<SemanticError> = vec![];
-        let scope = Rc::new(RefCell::new(Scope::new(ScopeKind::File)));
 
         let mut checker = SemanticChecker {
             errors: &mut errors,
             tfg_contexts: vec![],
             definition_counter: 0,
+            scopes: vec![Scope::new(ScopeKind::File)],
         };
 
-        let stmts = checker.check_stmts(statements, scope);
+        let stmts = checker.check_stmts(statements);
 
         (stmts, errors)
     }

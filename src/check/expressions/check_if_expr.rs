@@ -1,5 +1,3 @@
-use std::{cell::RefCell, rc::Rc};
-
 use crate::{
     ast::{
         base::base_expression::{BlockContents, Expr},
@@ -10,8 +8,7 @@ use crate::{
         Span,
     },
     check::{
-        scope::{Scope, ScopeKind},
-        utils::union_of::union_of,
+        utils::{scope::ScopeKind, union_of::union_of},
         SemanticChecker, SemanticError,
     },
 };
@@ -24,14 +21,13 @@ impl<'a> SemanticChecker<'a> {
         else_if_branches: Vec<(Box<Expr>, BlockContents)>,
         else_branch: Option<BlockContents>,
         span: Span,
-        scope: Rc<RefCell<Scope>>,
     ) -> CheckedExpr {
         let mut expr_type = CheckedType {
             kind: CheckedTypeKind::Void,
             span,
         };
 
-        let checked_condition = self.check_expr(*condition, scope.clone());
+        let checked_condition = self.check_expr(*condition);
         let expected = CheckedType {
             kind: CheckedTypeKind::Bool,
             span: checked_condition.ty.span,
@@ -46,15 +42,16 @@ impl<'a> SemanticChecker<'a> {
             expr_type.kind = CheckedTypeKind::Unknown;
         }
 
-        let then_branch_scope = scope.borrow().child(ScopeKind::CodeBlock);
-        let checked_then_branch_statements = self.check_stmts(then_branch.statements, then_branch_scope.clone());
+        self.enter_scope(ScopeKind::CodeBlock);
+        let checked_then_branch_statements = self.check_stmts(then_branch.statements);
         let checked_then_branch_final_expr = then_branch.final_expr.map(|fe| {
-            let checked_final_expr = self.check_expr(*fe, then_branch_scope.clone());
+            let checked_final_expr = self.check_expr(*fe);
 
             expr_type = union_of([expr_type.clone(), checked_final_expr.ty.clone()], checked_final_expr.ty.span);
 
             Box::new(checked_final_expr)
         });
+        self.exit_scope();
 
         let checked_then_branch = CheckedBlockContents {
             final_expr: checked_then_branch_final_expr,
@@ -63,8 +60,8 @@ impl<'a> SemanticChecker<'a> {
 
         let checked_else_if_branches: Vec<(Box<CheckedExpr>, CheckedBlockContents)> = else_if_branches
             .into_iter()
-            .map(|ei| {
-                let checked_condition = self.check_expr(*ei.0, scope.clone());
+            .map(|(condition, codeblock)| {
+                let checked_condition = self.check_expr(*condition);
                 let expected = CheckedType {
                     kind: CheckedTypeKind::Bool,
                     span: checked_condition.ty.span,
@@ -78,15 +75,16 @@ impl<'a> SemanticChecker<'a> {
                     expr_type.kind = CheckedTypeKind::Unknown;
                 }
 
-                let else_if_scope = scope.borrow().child(ScopeKind::CodeBlock);
-                let checked_codeblock_statements = self.check_stmts(ei.1.statements, else_if_scope.clone());
-                let checked_codeblock_final_expr = ei.1.final_expr.map(|fe| {
-                    let checked_final_expr = self.check_expr(*fe, else_if_scope.clone());
+                self.enter_scope(ScopeKind::CodeBlock);
+                let checked_codeblock_statements = self.check_stmts(codeblock.statements);
+                let checked_codeblock_final_expr = codeblock.final_expr.map(|fe| {
+                    let checked_final_expr = self.check_expr(*fe);
 
                     expr_type = union_of([expr_type.clone(), checked_final_expr.ty.clone()], checked_final_expr.ty.span);
 
                     Box::new(checked_final_expr)
                 });
+                self.exit_scope();
 
                 (
                     Box::new(checked_condition),
@@ -99,15 +97,16 @@ impl<'a> SemanticChecker<'a> {
             .collect();
 
         let checked_else_branch = else_branch.map(|br| {
-            let else_scope = scope.borrow().child(ScopeKind::CodeBlock);
-            let checked_statements = self.check_stmts(br.statements, else_scope.clone());
+            self.enter_scope(ScopeKind::CodeBlock);
+            let checked_statements = self.check_stmts(br.statements);
             let checked_final_expr = br.final_expr.map(|fe| {
-                let checked_final_expr = self.check_expr(*fe, else_scope);
+                let checked_final_expr = self.check_expr(*fe);
 
                 expr_type = union_of([expr_type.clone(), checked_final_expr.ty.clone()], checked_final_expr.ty.span);
 
                 Box::new(checked_final_expr)
             });
+            self.exit_scope();
 
             CheckedBlockContents {
                 statements: checked_statements,

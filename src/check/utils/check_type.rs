@@ -1,5 +1,3 @@
-use std::{cell::RefCell, rc::Rc};
-
 use crate::{
     ast::{
         base::{
@@ -12,8 +10,10 @@ use crate::{
         },
     },
     check::{
-        scope::{Scope, ScopeKind, SymbolEntry},
-        utils::substitute_generics::GenericSubstitutionMap,
+        utils::{
+            scope::{ScopeKind, SymbolEntry},
+            substitute_generics::GenericSubstitutionMap,
+        },
         SemanticChecker, SemanticError,
     },
     tokenize::NumberKind,
@@ -39,16 +39,12 @@ impl<'a> SemanticChecker<'a> {
         }
     }
 
-    pub fn check_generic_params(
-        &mut self,
-        generic_params: &[GenericParam],
-        scope: Rc<RefCell<Scope>>,
-    ) -> Vec<CheckedGenericParam> {
+    pub fn check_generic_params(&mut self, generic_params: &[GenericParam]) -> Vec<CheckedGenericParam> {
         generic_params
             .into_iter()
             .map(|gp| {
                 let checked_constraint = gp.constraint.as_ref().map(|constraint| {
-                    let checked_constraint = self.check_type_annotation_recursive(constraint, scope.clone());
+                    let checked_constraint = self.check_type_annotation_recursive(constraint);
                     let result = self.check_has_type_arguments(checked_constraint);
                     Box::new(result)
                 });
@@ -58,20 +54,19 @@ impl<'a> SemanticChecker<'a> {
                     identifier: gp.identifier,
                 };
 
-                scope
-                    .borrow_mut()
-                    .insert(gp.identifier, SymbolEntry::GenericParam(checked_gp.clone()), self.errors);
+                self.scope_insert(gp.identifier, SymbolEntry::GenericParam(checked_gp.clone()));
+
                 checked_gp
             })
             .collect()
     }
 
-    pub fn check_params(&mut self, params: &Vec<Param>, scope: Rc<RefCell<Scope>>) -> Vec<CheckedParam> {
+    pub fn check_params(&mut self, params: &Vec<Param>) -> Vec<CheckedParam> {
         params
             .into_iter()
             .map(|p| {
                 let definition_id = self.get_definition_id();
-                let checked_constraint = self.check_type_annotation_recursive(&p.constraint, scope.clone());
+                let checked_constraint = self.check_type_annotation_recursive(&p.constraint);
                 let result = self.check_has_type_arguments(checked_constraint);
                 CheckedParam {
                     id: definition_id,
@@ -82,7 +77,7 @@ impl<'a> SemanticChecker<'a> {
             .collect()
     }
 
-    pub fn check_type_annotation_recursive(&mut self, annotation: &TypeAnnotation, scope: Rc<RefCell<Scope>>) -> CheckedType {
+    pub fn check_type_annotation_recursive(&mut self, annotation: &TypeAnnotation) -> CheckedType {
         let kind = match &annotation.kind {
             TypeAnnotationKind::Void => CheckedTypeKind::Void,
             TypeAnnotationKind::Null => CheckedTypeKind::Null,
@@ -101,11 +96,11 @@ impl<'a> SemanticChecker<'a> {
             TypeAnnotationKind::F64 => CheckedTypeKind::F64,
             TypeAnnotationKind::Char => CheckedTypeKind::Char,
             TypeAnnotationKind::GenericApply { left, args } => {
-                let checked_left = self.check_type_annotation_recursive(&left, scope.clone());
+                let checked_left = self.check_type_annotation_recursive(&left);
                 let checked_args: Vec<CheckedType> = args
                     .into_iter()
                     .map(|arg_annotation| {
-                        let checked_arg = self.check_type_annotation_recursive(&arg_annotation, scope.clone());
+                        let checked_arg = self.check_type_annotation_recursive(&arg_annotation);
                         let result = self.check_has_type_arguments(checked_arg);
                         result
                     })
@@ -143,9 +138,8 @@ impl<'a> SemanticChecker<'a> {
                     }
                 }
             }
-            TypeAnnotationKind::Identifier(id) => scope
-                .borrow()
-                .lookup(id.name)
+            TypeAnnotationKind::Identifier(id) => self
+                .scope_lookup(id.name)
                 .map(|entry| match entry {
                     SymbolEntry::StructDecl(decl) => CheckedTypeKind::StructDecl(decl),
                     SymbolEntry::EnumDecl(decl) => CheckedTypeKind::EnumDecl(decl),
@@ -168,12 +162,12 @@ impl<'a> SemanticChecker<'a> {
                 return_type,
                 generic_params,
             } => {
-                let fn_type_scope = scope.borrow().child(ScopeKind::FnType);
-
-                let checked_generic_params = self.check_generic_params(&generic_params, fn_type_scope.clone());
-                let checked_params = self.check_params(&params, fn_type_scope.clone());
-                let partially_checked_return_type = self.check_type_annotation_recursive(return_type, fn_type_scope.clone());
+                self.enter_scope(ScopeKind::FnType);
+                let checked_generic_params = self.check_generic_params(&generic_params);
+                let checked_params = self.check_params(&params);
+                let partially_checked_return_type = self.check_type_annotation_recursive(return_type);
                 let checked_return_type = self.check_has_type_arguments(partially_checked_return_type);
+                self.exit_scope();
 
                 CheckedTypeKind::FnType(CheckedFnType {
                     params: checked_params,
@@ -187,7 +181,7 @@ impl<'a> SemanticChecker<'a> {
                 items
                     .iter()
                     .map(|i| {
-                        let checked_item_type = self.check_type_annotation_recursive(&i, scope.clone());
+                        let checked_item_type = self.check_type_annotation_recursive(&i);
                         let result_item_type = self.check_has_type_arguments(checked_item_type);
                         result_item_type
                     })
@@ -212,7 +206,7 @@ impl<'a> SemanticChecker<'a> {
 
                 match maybe_size {
                     Some(valid_size) => {
-                        let item_type = self.check_type_annotation_recursive(&left, scope.clone());
+                        let item_type = self.check_type_annotation_recursive(&left);
                         let result_item_type = self.check_has_type_arguments(item_type);
                         CheckedTypeKind::Array {
                             item_type: Box::new(result_item_type),
@@ -226,7 +220,7 @@ impl<'a> SemanticChecker<'a> {
                         });
 
                         // Process for errors, ignore result
-                        let result = self.check_type_annotation_recursive(&left, scope.clone());
+                        let result = self.check_type_annotation_recursive(&left);
                         let _ = self.check_has_type_arguments(result);
                         CheckedTypeKind::Unknown
                     }
@@ -240,8 +234,8 @@ impl<'a> SemanticChecker<'a> {
         }
     }
 
-    pub fn check_type_annotation(&mut self, annotation: &TypeAnnotation, scope: Rc<RefCell<Scope>>) -> CheckedType {
-        let checked_type = self.check_type_annotation_recursive(annotation, scope);
+    pub fn check_type_annotation(&mut self, annotation: &TypeAnnotation) -> CheckedType {
+        let checked_type = self.check_type_annotation_recursive(annotation);
         let result = self.check_has_type_arguments(checked_type);
         result
     }

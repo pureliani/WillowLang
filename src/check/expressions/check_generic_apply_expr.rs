@@ -1,5 +1,3 @@
-use std::{cell::RefCell, rc::Rc};
-
 use crate::{
     ast::{
         base::{base_expression::Expr, base_type::TypeAnnotation},
@@ -10,24 +8,18 @@ use crate::{
         },
         Span,
     },
-    check::{scope::Scope, utils::substitute_generics::GenericSubstitutionMap, SemanticChecker, SemanticError},
+    check::{utils::substitute_generics::GenericSubstitutionMap, SemanticChecker, SemanticError},
 };
 
 impl<'a> SemanticChecker<'a> {
-    pub fn check_generic_apply_expr(
-        &mut self,
-        left: Box<Expr>,
-        args: Vec<TypeAnnotation>,
-        span: Span,
-        scope: Rc<RefCell<Scope>>,
-    ) -> CheckedExpr {
-        let checked_left = self.check_expr(*left, scope.clone());
+    pub fn check_generic_apply_expr(&mut self, left: Box<Expr>, args: Vec<TypeAnnotation>, span: Span) -> CheckedExpr {
+        let checked_left = self.check_expr(*left);
         let type_args: Vec<_> = args
             .into_iter()
-            .map(|type_arg| self.check_type_annotation(&type_arg, scope.clone()))
+            .map(|type_arg| self.check_type_annotation(&type_arg))
             .collect();
 
-        let mut substitute = |generic_params: &Vec<CheckedGenericParam>, type_args: Vec<CheckedType>| {
+        let mut substitute = |generic_params: &[CheckedGenericParam], type_args: Vec<CheckedType>| {
             if generic_params.len() != type_args.len() {
                 self.errors.push(SemanticError::GenericArgumentCountMismatch {
                     expected: generic_params.len(),

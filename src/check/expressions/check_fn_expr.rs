@@ -15,8 +15,10 @@ use crate::{
         Span,
     },
     check::{
-        scope::{Scope, ScopeKind, SymbolEntry},
-        utils::union_of::union_of,
+        utils::{
+            scope::{ScopeKind, SymbolEntry},
+            union_of::union_of,
+        },
         SemanticChecker, SemanticError, TFGContext,
     },
     tfg::{TFGNodeKind, TypeFlowGraph},
@@ -30,12 +32,11 @@ impl<'a> SemanticChecker<'a> {
         return_type: Option<TypeAnnotation>,
         generic_params: Vec<GenericParam>,
         span: Span,
-        scope: Rc<RefCell<Scope>>,
     ) -> CheckedExpr {
         let fn_definition_id = self.get_definition_id();
-        let fn_scope = scope.borrow().child(ScopeKind::Function);
+        self.enter_scope(ScopeKind::Function);
 
-        let checked_generic_params = self.check_generic_params(&generic_params, fn_scope.clone());
+        let checked_generic_params = self.check_generic_params(&generic_params);
 
         let new_tfg = TypeFlowGraph::new();
         let entry_node = new_tfg.entry_node_id;
@@ -49,9 +50,9 @@ impl<'a> SemanticChecker<'a> {
             .iter()
             .map(|param| {
                 let id = self.get_definition_id();
-                let checked_constraint = self.check_type_annotation(&param.constraint, fn_scope.clone());
+                let checked_constraint = self.check_type_annotation(&param.constraint);
 
-                fn_scope.borrow_mut().insert(
+                self.scope_insert(
                     param.identifier,
                     SymbolEntry::VarDecl(Rc::new(RefCell::new(CheckedVarDecl {
                         id,
@@ -60,7 +61,6 @@ impl<'a> SemanticChecker<'a> {
                         constraint: checked_constraint.clone(),
                         value: None,
                     }))),
-                    self.errors,
                 );
 
                 if let Some(context) = self.tfg_contexts.last_mut() {
@@ -76,15 +76,15 @@ impl<'a> SemanticChecker<'a> {
             })
             .collect();
 
-        let checked_statements = self.check_stmts(body.statements, fn_scope.clone());
-        let checked_final_expr = body.final_expr.map(|fe| Box::new(self.check_expr(*fe, fn_scope.clone())));
+        let checked_statements = self.check_stmts(body.statements);
+        let checked_final_expr = body.final_expr.map(|fe| Box::new(self.check_expr(*fe)));
 
         let checked_body = CheckedBlockContents {
             statements: checked_statements.clone(),
             final_expr: checked_final_expr.clone(),
         };
 
-        let mut return_exprs = self.check_returns(&checked_statements, fn_scope.clone());
+        let mut return_exprs = self.check_returns(&checked_statements);
         if let Some(final_expr) = checked_final_expr {
             return_exprs.push(*final_expr);
         }
@@ -100,7 +100,7 @@ impl<'a> SemanticChecker<'a> {
             }
         };
 
-        let expected_return_type = return_type.map(|return_t| self.check_type_annotation(&return_t, fn_scope.clone()));
+        let expected_return_type = return_type.map(|return_t| self.check_type_annotation(&return_t));
 
         let actual_return_type = if let Some(explicit_return_type) = expected_return_type {
             if !self.check_is_assignable(&actual_return_type, &explicit_return_type) {
@@ -141,6 +141,8 @@ impl<'a> SemanticChecker<'a> {
             }),
             span,
         };
+
+        self.exit_scope();
 
         CheckedExpr {
             ty: expr_type,
