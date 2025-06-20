@@ -1,30 +1,22 @@
 pub mod check_access_expr;
-pub mod check_addition_expr;
 pub mod check_and_expr;
 pub mod check_arithmetic_negation_expr;
 pub mod check_array_literal_expr;
+pub mod check_binary_numeric_op;
 pub mod check_codeblock_expr;
-pub mod check_division_expr;
 pub mod check_equality_expr;
 pub mod check_fn_call_expr;
 pub mod check_fn_expr;
 pub mod check_generic_apply_expr;
-pub mod check_greater_than_expr;
-pub mod check_greater_than_or_equal_expr;
 pub mod check_identifier_expr;
 pub mod check_if_expr;
 pub mod check_inequality_expr;
 pub mod check_is_type_expr;
-pub mod check_less_than_expr;
-pub mod check_less_than_or_equal_expr;
 pub mod check_logical_negation_expr;
-pub mod check_modulo_expr;
-pub mod check_multiplication_expr;
 pub mod check_numeric_expr;
 pub mod check_or_expr;
 pub mod check_static_access_expr;
 pub mod check_struct_init_expr;
-pub mod check_subtraction_expr;
 pub mod check_type_cast_expr;
 
 use crate::{
@@ -43,15 +35,36 @@ impl<'a> SemanticChecker<'a> {
         match expr.kind {
             ExprKind::Not { right } => self.check_logical_negation_expr(right, expr.span),
             ExprKind::Neg { right } => self.check_arithmetic_negation_expr(right, expr.span),
-            ExprKind::Add { left, right } => self.check_addition_expr(left, right, expr.span),
-            ExprKind::Subtract { left, right } => self.check_subtraction_expr(left, right, expr.span),
-            ExprKind::Multiply { left, right } => self.check_multiplication_expr(left, right, expr.span),
-            ExprKind::Divide { left, right } => self.check_division_expr(left, right, expr.span),
-            ExprKind::Modulo { left, right } => self.check_modulo_expr(left, right, expr.span),
-            ExprKind::LessThan { left, right } => self.check_less_than_expr(left, right, expr.span),
-            ExprKind::LessThanOrEqual { left, right } => self.check_less_than_or_equal_expr(left, right, expr.span),
-            ExprKind::GreaterThan { left, right } => self.check_greater_than_expr(left, right, expr.span),
-            ExprKind::GreaterThanOrEqual { left, right } => self.check_greater_than_or_equal_expr(left, right, expr.span),
+            ExprKind::Add { left, right } => {
+                self.check_arithmetic_operation(left, right, expr.span, |left, right| CheckedExprKind::Add { left, right })
+            }
+            ExprKind::Subtract { left, right } => self.check_arithmetic_operation(left, right, expr.span, |left, right| {
+                CheckedExprKind::Subtract { left, right }
+            }),
+            ExprKind::Multiply { left, right } => self.check_arithmetic_operation(left, right, expr.span, |left, right| {
+                CheckedExprKind::Multiply { left, right }
+            }),
+            ExprKind::Divide { left, right } => {
+                self.check_arithmetic_operation(left, right, expr.span, |left, right| CheckedExprKind::Divide { left, right })
+            }
+            ExprKind::Modulo { left, right } => {
+                self.check_arithmetic_operation(left, right, expr.span, |left, right| CheckedExprKind::Modulo { left, right })
+            }
+            ExprKind::LessThan { left, right } => self.check_numeric_comparison(left, right, expr.span, |left, right| {
+                CheckedExprKind::LessThan { left, right }
+            }),
+            ExprKind::LessThanOrEqual { left, right } => self.check_numeric_comparison(left, right, expr.span, |left, right| {
+                CheckedExprKind::LessThanOrEqual { left, right }
+            }),
+            ExprKind::GreaterThan { left, right } => self.check_numeric_comparison(left, right, expr.span, |left, right| {
+                CheckedExprKind::GreaterThan { left, right }
+            }),
+            ExprKind::GreaterThanOrEqual { left, right } => {
+                self.check_numeric_comparison(left, right, expr.span, |left, right| CheckedExprKind::GreaterThanOrEqual {
+                    left,
+                    right,
+                })
+            }
             ExprKind::Equal { left, right } => self.check_equality_expr(left, right, expr.span),
             ExprKind::NotEqual { left, right } => self.check_inequality_expr(left, right, expr.span),
             ExprKind::And { left, right } => self.check_and_expr(left, right, expr.span),

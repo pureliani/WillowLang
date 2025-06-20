@@ -1,15 +1,19 @@
 use crate::{
     ast::{
-        checked::{
-            checked_expression::CheckedExpr,
-            checked_type::{CheckedType, CheckedTypeKind},
-        },
+        base::base_expression::Expr,
+        checked::checked_expression::{CheckedExpr, CheckedExprKind},
         Span,
     },
-    check::{SemanticChecker, SemanticError},
+    check::{
+        utils::{get_numeric_type_rank::get_numeric_type_rank, is_float::is_float, is_integer::is_integer, is_signed::is_signed},
+        SemanticChecker,
+    },
 };
 
-use super::{get_numeric_type_rank::get_numeric_type_rank, is_float::is_float, is_integer::is_integer, is_signed::is_signed};
+use crate::{
+    ast::checked::checked_type::{CheckedType, CheckedTypeKind},
+    check::SemanticError,
+};
 
 impl<'a> SemanticChecker<'a> {
     pub fn check_binary_numeric_operation(&mut self, left: &CheckedExpr, right: &CheckedExpr, span: Span) -> CheckedType {
@@ -74,6 +78,49 @@ impl<'a> SemanticChecker<'a> {
                 kind: right_type.kind.clone(),
                 span,
             }
+        }
+    }
+
+    pub fn check_arithmetic_operation(
+        &mut self,
+        left: Box<Expr>,
+        right: Box<Expr>,
+        span: Span,
+        constructor: fn(Box<CheckedExpr>, Box<CheckedExpr>) -> CheckedExprKind,
+    ) -> CheckedExpr {
+        let checked_left = self.check_expr(*left);
+        let checked_right = self.check_expr(*right);
+        let expr_type = self.check_binary_numeric_operation(&checked_left, &checked_right, span);
+
+        CheckedExpr {
+            ty: expr_type,
+            kind: constructor(Box::new(checked_left), Box::new(checked_right)),
+        }
+    }
+
+    pub fn check_numeric_comparison(
+        &mut self,
+        left: Box<Expr>,
+        right: Box<Expr>,
+        span: Span,
+        constructor: fn(Box<CheckedExpr>, Box<CheckedExpr>) -> CheckedExprKind,
+    ) -> CheckedExpr {
+        let checked_left = self.check_expr(*left);
+        let checked_right = self.check_expr(*right);
+        let checked_op = self.check_binary_numeric_operation(&checked_left, &checked_right, span);
+
+        let expr_type = if matches!(checked_op.kind, CheckedTypeKind::Unknown) {
+            checked_op
+        } else {
+            CheckedType {
+                kind: CheckedTypeKind::Bool,
+                span,
+            }
+        };
+
+        CheckedExpr {
+            ty: expr_type,
+            kind: constructor(Box::new(checked_left), Box::new(checked_right)),
         }
     }
 }

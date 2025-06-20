@@ -4,7 +4,7 @@ use crate::{
     ast::{
         checked::{
             checked_declaration::{CheckedFnType, CheckedGenericParam, CheckedParam, CheckedStructDecl, CheckedTypeAliasDecl},
-            checked_type::{CheckedType, CheckedTypeKind, TypeAssertion},
+            checked_type::{CheckedType, CheckedTypeKind},
         },
         Span,
     },
@@ -164,16 +164,6 @@ impl<'a> SemanticChecker<'a> {
 
                 // Re-apply union_of logic to simplify the result
                 union_of(substituted_items, ty.span)
-            }
-            CheckedTypeKind::TypeAssertion(assertion) => {
-                let substituted_asserted_type = self.substitute_generics(&assertion.asserted_type, substitutions);
-                CheckedType {
-                    kind: CheckedTypeKind::TypeAssertion(Box::new(TypeAssertion {
-                        asserted_type: substituted_asserted_type,
-                        target: assertion.target,
-                    })),
-                    span: ty.span,
-                }
             }
             CheckedTypeKind::I8
             | CheckedTypeKind::I16

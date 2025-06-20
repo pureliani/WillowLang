@@ -161,12 +161,5 @@ pub fn type_to_string_recursive(ty: &CheckedTypeKind, string_interner: &StringIn
                 size
             )
         }
-        CheckedTypeKind::TypeAssertion(type_assertion) => {
-            format!(
-                "{}::is({})",
-                type_assertion.target.0, // TODO: replace with name
-                type_to_string_recursive(&type_assertion.asserted_type.kind, string_interner, false),
-            )
-        }
     }
 }
