@@ -6,8 +6,8 @@ use std::{
 
 use crate::ast::{
     checked::{
-        checked_expression::{CheckedExpr, CheckedExprKind, FunctionSummary, RefinementKey},
-        checked_type::{CheckedType, CheckedTypeKind},
+        checked_expression::{FunctionSummary, RefinementKey},
+        checked_type::CheckedTypeKind,
     },
     DefinitionId,
 };
@@ -89,11 +89,15 @@ impl TypeFlowGraph {
     }
 
     fn analyze_exit_states(&self) -> HashMap<RefinementKey, TFGNodeVariableTypes> {
-        todo!()
+        // TODO: Implement this function
+        let dummy_exit_states = HashMap::new();
+        dummy_exit_states
     }
 
     fn analyze_guaranteed_calls(&self) -> HashSet<DefinitionId> {
-        todo!()
+        // TODO: Implement this function
+        let dummy_guaranteed_calls = HashSet::new();
+        dummy_guaranteed_calls
     }
 }
 
@@ -181,62 +185,58 @@ impl TypeFlowGraph {
             .insert(branch_id);
     }
 
-    pub fn build_condition_tfg(
-        &mut self,
-        condition: &CheckedExpr,
-        prev_node: TFGNodeId,
-        next_node_if_true: TFGNodeId,
-        next_node_if_false: TFGNodeId,
-    ) {
-        match &condition.kind {
-            CheckedExprKind::Not { right } => {
-                self.build_condition_tfg(right, prev_node, next_node_if_false, next_node_if_true);
-            }
-            CheckedExprKind::And { left, right } => {
-                let intermediate_node_id = self.create_node(TFGNodeKind::NoOp { next_node: None });
+    pub fn link_successor(&mut self, from_id: TFGNodeId, to_id: TFGNodeId) {
+        let from_node = self.nodes.get_mut(&from_id).expect("from_id must exist in link_successor");
 
-                self.build_condition_tfg(&left, prev_node, intermediate_node_id, next_node_if_false);
-
-                self.build_condition_tfg(&right, intermediate_node_id, next_node_if_true, next_node_if_false);
-            }
-            CheckedExprKind::Or { left, right } => {
-                let intermediate_node_id = self.create_node(TFGNodeKind::NoOp { next_node: None });
-
-                self.build_condition_tfg(&left, prev_node, next_node_if_true, intermediate_node_id);
-
-                self.build_condition_tfg(&right, intermediate_node_id, next_node_if_true, next_node_if_false);
-            }
-            CheckedExprKind::BoolLiteral { value } => {
-                let target = if *value { next_node_if_true } else { next_node_if_false };
-
-                // Might need to handle linking from different prev_node types,
-                // for now assume prev_node is always linkable sequentially here
-                self.link_sequential(prev_node, target);
-            }
-            _ => {
-                let branch_node_id = self.create_node(TFGNodeKind::Branch {
-                    narrowing_if_true: None,
-                    next_node_if_true: None,
-                    narrowing_if_false: None,
-                    next_node_if_false: None,
-                });
-
-                self.link_sequential(prev_node, branch_node_id);
-
-                if let Some((narrowing_true, narrowing_false)) = analyze_atomic_condition(condition) {
-                    let branch_node = self.nodes.get_mut(&branch_node_id).unwrap();
-                    if let TFGNodeKind::Branch {
-                        narrowing_if_true: nit,
-                        narrowing_if_false: nif,
-                        ..
-                    } = &mut branch_node.kind
-                    {
-                        *nit = Some(narrowing_true);
-                        *nif = Some(narrowing_false);
-                    }
+        match &mut from_node.kind {
+            TFGNodeKind::Entry { next_node } => *next_node = Some(to_id),
+            TFGNodeKind::Assign { next_node, .. } => *next_node = Some(to_id),
+            TFGNodeKind::NoOp { next_node } => *next_node = Some(to_id),
+            TFGNodeKind::Branch {
+                next_node_if_true,
+                next_node_if_false,
+                ..
+            } => {
+                if next_node_if_false.is_none() {
+                    *next_node_if_false = Some(to_id);
+                } else if next_node_if_true.is_none() {
+                    *next_node_if_true = Some(to_id);
+                } else {
+                    // If both paths are already linked, trying to link this node again
+                    // might be a logic error in the semantic checker.
                 }
+            }
+            TFGNodeKind::Exit => {}
+        }
 
-                self.link_branch(branch_node_id, next_node_if_true, next_node_if_false);
+        if !matches!(self.nodes.get(&from_id).unwrap().kind, TFGNodeKind::Exit) {
+            let to_node = self.nodes.get_mut(&to_id).expect("to_id must exist in link_successor");
+            to_node.predecessors.insert(from_id);
+        }
+    }
+
+    pub fn apply_narrowing(&mut self, branch_id: TFGNodeId, target_id: TFGNodeId, is_true_path: bool) {
+        let branch_node = self.nodes.get(&branch_id).unwrap().clone();
+
+        let parent_types = self
+            .nodes
+            .get(&branch_node.predecessors.iter().next().unwrap())
+            .unwrap()
+            .variable_types
+            .clone();
+
+        let target_node = self.nodes.get_mut(&target_id).unwrap();
+        target_node.variable_types = parent_types;
+
+        if let TFGNodeKind::Branch {
+            narrowing_if_true,
+            narrowing_if_false,
+            ..
+        } = branch_node.kind
+        {
+            let narrowing_info = if is_true_path { narrowing_if_true } else { narrowing_if_false };
+            if let Some(info) = narrowing_info {
+                target_node.variable_types.insert(info.variable, Rc::new(info.narrowed_type));
             }
         }
     }
@@ -251,92 +251,5 @@ impl TypeFlowGraph {
 
     pub fn iter_nodes(&self) -> impl Iterator<Item = &TFGNode> {
         self.nodes.values()
-    }
-}
-
-pub fn union_subtract(from_union: &HashSet<CheckedType>, type_to_remove: &CheckedType) -> HashSet<CheckedType> {
-    let mut result = from_union.clone();
-
-    match &type_to_remove.kind {
-        CheckedTypeKind::Union(types_to_remove) => {
-            for t in types_to_remove {
-                result.remove(t);
-            }
-        }
-        _ => {
-            result.remove(type_to_remove);
-        }
-    };
-
-    result
-}
-
-fn analyze_atomic_condition(condition: &CheckedExpr) -> Option<(NarrowingInfo, NarrowingInfo)> {
-    match &condition.kind {
-        CheckedExprKind::IsType { left, target } => {
-            if let CheckedExprKind::Identifier(id) = &left.kind {
-                if let CheckedTypeKind::Union(types) = &left.ty.kind {
-                    let var_id = DefinitionId(id.name.0);
-
-                    let subtracted = CheckedTypeKind::Union(union_subtract(types, target));
-
-                    let narrowing_true = NarrowingInfo {
-                        variable: var_id.clone(),
-                        narrowed_type: target.kind.clone(),
-                    };
-
-                    let narrowing_false = NarrowingInfo {
-                        variable: var_id,
-                        narrowed_type: subtracted,
-                    };
-
-                    return Some((narrowing_true, narrowing_false));
-                };
-            }
-        }
-
-        CheckedExprKind::Equal { left, right } | CheckedExprKind::NotEqual { left, right } => {
-            let is_not_equal = matches!(condition.kind, CheckedExprKind::NotEqual { .. });
-
-            if let Some((ident_expr, other_expr)) = get_identifier_and_other(&left, &right) {
-                if let CheckedExprKind::Identifier(id) = &ident_expr.kind {
-                    if let CheckedTypeKind::Union(ident_expr_ty) = &ident_expr.ty.kind {
-                        let var_id = DefinitionId(id.name.0);
-                        let narrow_to_type = &other_expr.ty;
-
-                        let subtracted = CheckedTypeKind::Union(union_subtract(ident_expr_ty, narrow_to_type));
-
-                        let narrowing_to_specific = NarrowingInfo {
-                            variable: var_id.clone(),
-                            narrowed_type: narrow_to_type.kind.clone(),
-                        };
-
-                        let narrowing_to_subtracted = NarrowingInfo {
-                            variable: var_id,
-                            narrowed_type: subtracted,
-                        };
-
-                        if is_not_equal {
-                            return Some((narrowing_to_subtracted, narrowing_to_specific));
-                        } else {
-                            return Some((narrowing_to_specific, narrowing_to_subtracted));
-                        }
-                    };
-                }
-            }
-        }
-        _ => {}
-    }
-
-    None
-}
-
-fn get_identifier_and_other<'a>(left: &'a CheckedExpr, right: &'a CheckedExpr) -> Option<(&'a CheckedExpr, &'a CheckedExpr)> {
-    if matches!(left.kind, CheckedExprKind::Identifier(..)) {
-        Some((left, right))
-    } else if matches!(right.kind, CheckedExprKind::Identifier(..)) {
-        Some((right, left))
-    } else {
-        None
     }
 }

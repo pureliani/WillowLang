@@ -21,6 +21,7 @@ use crate::{
         },
         SemanticChecker, SemanticError, TFGContext,
     },
+    // Make sure TFGNodeKind and TypeFlowGraph are imported
     tfg::{TFGNodeKind, TypeFlowGraph},
 };
 
@@ -39,11 +40,11 @@ impl<'a> SemanticChecker<'a> {
         let checked_generic_params = self.check_generic_params(&generic_params);
 
         let new_tfg = TypeFlowGraph::new();
-        let entry_node = new_tfg.entry_node_id;
+        let entry_node_id = new_tfg.entry_node_id;
         self.tfg_contexts.push(TFGContext {
             loop_exit_nodes: vec![],
             graph: new_tfg,
-            current_node: entry_node,
+            current_node: entry_node_id,
         });
 
         let checked_params: Vec<CheckedParam> = params
@@ -63,11 +64,6 @@ impl<'a> SemanticChecker<'a> {
                     }))),
                 );
 
-                if let Some(context) = self.tfg_contexts.last_mut() {
-                    let entry_node = context.graph.get_node_mut(context.graph.entry_node_id).unwrap();
-                    entry_node.variable_types.insert(id, Rc::new(checked_constraint.kind.clone()));
-                }
-
                 CheckedParam {
                     id,
                     constraint: checked_constraint,
@@ -75,6 +71,15 @@ impl<'a> SemanticChecker<'a> {
                 }
             })
             .collect();
+
+        if let Some(context) = self.tfg_contexts.last_mut() {
+            let entry_node = context.graph.get_node_mut(context.graph.entry_node_id).unwrap();
+            for param in &checked_params {
+                entry_node
+                    .variable_types
+                    .insert(param.id, Rc::new(param.constraint.kind.clone()));
+            }
+        }
 
         let checked_statements = self.check_stmts(body.statements);
         let checked_final_expr = body.final_expr.map(|fe| Box::new(self.check_expr(*fe)));
@@ -102,14 +107,13 @@ impl<'a> SemanticChecker<'a> {
 
         let expected_return_type = return_type.map(|return_t| self.check_type_annotation(&return_t));
 
-        let actual_return_type = if let Some(explicit_return_type) = expected_return_type {
+        let final_return_type = if let Some(explicit_return_type) = expected_return_type {
             if !self.check_is_assignable(&actual_return_type, &explicit_return_type) {
                 self.errors.push(SemanticError::ReturnTypeMismatch {
                     expected: explicit_return_type.clone(),
                     received: actual_return_type.clone(),
                 });
             }
-
             explicit_return_type
         } else {
             actual_return_type
@@ -117,16 +121,16 @@ impl<'a> SemanticChecker<'a> {
 
         let mut completed_context = self.tfg_contexts.pop().expect("TFG context stack should not be empty");
 
-        let current_node_kind = completed_context
-            .graph
-            .get_node(completed_context.current_node)
-            .map(|n| &n.kind);
+        let current_node_id = completed_context.current_node;
+        let needs_exit_node = if let Some(node) = completed_context.graph.get_node(current_node_id) {
+            !matches!(node.kind, TFGNodeKind::Exit)
+        } else {
+            false
+        };
 
-        if !matches!(current_node_kind, Some(TFGNodeKind::Exit)) {
+        if needs_exit_node {
             let exit_node = completed_context.graph.create_node(TFGNodeKind::Exit);
-            completed_context
-                .graph
-                .link_sequential(completed_context.current_node, exit_node);
+            completed_context.graph.link_successor(current_node_id, exit_node);
         }
 
         let summary = completed_context.graph.generate_summary();
@@ -134,14 +138,13 @@ impl<'a> SemanticChecker<'a> {
         let expr_type = CheckedType {
             kind: CheckedTypeKind::FnType(CheckedFnType {
                 params: checked_params.clone(),
-                return_type: Box::new(actual_return_type.clone()),
+                return_type: Box::new(final_return_type.clone()),
                 generic_params: checked_generic_params.clone(),
                 applied_type_args: vec![],
                 span,
             }),
             span,
         };
-
         self.exit_scope();
 
         CheckedExpr {
@@ -150,7 +153,7 @@ impl<'a> SemanticChecker<'a> {
                 id: fn_definition_id,
                 params: checked_params,
                 body: checked_body,
-                return_type: actual_return_type,
+                return_type: final_return_type,
                 generic_params: checked_generic_params,
                 tfg: completed_context.graph,
                 summary,

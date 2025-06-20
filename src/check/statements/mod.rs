@@ -210,16 +210,23 @@ impl<'a> SemanticChecker<'a> {
                     decl
                 };
 
-                if let Some(context) = self.tfg_contexts.last_mut() {
-                    if let Some(val) = &decl.borrow().value {
-                        let assign_node = context.graph.create_node(TFGNodeKind::Assign {
-                            target: decl.borrow().id,
-                            assigned_type: Rc::new(val.ty.kind.clone()),
-                            next_node: None,
-                        });
-                        context.graph.link_sequential(context.current_node, assign_node);
-                        context.current_node = assign_node;
-                    }
+                if let Some(ctx) = self.tfg_contexts.last_mut() {
+                    let decl_id = decl.borrow().id;
+                    let assigned_type = Rc::new(decl.borrow().constraint.kind.clone());
+
+                    let assign_node_id = ctx.graph.create_node(TFGNodeKind::Assign {
+                        target: decl_id,
+                        assigned_type: assigned_type.clone(),
+                        next_node: None,
+                    });
+
+                    let parent_types = ctx.graph.get_node(ctx.current_node).unwrap().variable_types.clone();
+                    let assign_node = ctx.graph.get_node_mut(assign_node_id).unwrap();
+                    assign_node.variable_types = parent_types;
+                    assign_node.variable_types.insert(decl_id, assigned_type);
+
+                    ctx.graph.link_sequential(ctx.current_node, assign_node_id);
+                    ctx.current_node = assign_node_id;
                 }
 
                 CheckedStmt::VarDecl(decl)
@@ -309,47 +316,36 @@ impl<'a> SemanticChecker<'a> {
                             self.errors.push(SemanticError::UndeclaredIdentifier { id: *id });
                         }
                     }
-                    CheckedExprKind::Access { left, field } => {
-                        let field_type = match &left.ty.kind {
-                            CheckedTypeKind::StructDecl(decl) => decl
-                                .borrow()
-                                .fields
-                                .iter()
-                                .find(|p| p.identifier == *field)
-                                .map(|p| p.constraint.clone())
-                                .unwrap_or_else(|| {
-                                    self.errors
-                                        .push(SemanticError::AccessToUndefinedField { field: field.clone() });
-
-                                    CheckedType {
-                                        kind: CheckedTypeKind::Unknown,
-                                        span: field.span,
-                                    }
-                                }),
-                            _ => {
-                                self.errors.push(SemanticError::CannotAccess { target: left.ty.clone() });
-
-                                CheckedType {
-                                    kind: CheckedTypeKind::Unknown,
-                                    span: field.span,
-                                }
-                            }
-                        };
-
-                        let is_assignable = self.check_is_assignable(&checked_value.ty, &field_type);
-
-                        if !is_assignable {
-                            self.errors.push(SemanticError::TypeMismatch {
-                                expected: field_type,
-                                received: checked_value.ty.clone(),
-                            });
-                        }
-                    }
+                    // TODO: handle struct field assignments
                     _ => {
                         self.errors.push(SemanticError::InvalidAssignmentTarget {
                             target: checked_target.ty.clone(),
                         });
                     }
+                }
+
+                if let CheckedExprKind::Identifier(id) = &checked_target.kind {
+                    if let Some(SymbolEntry::VarDecl(decl_ref)) = self.scope_lookup(id.name) {
+                        if let Some(ctx) = self.tfg_contexts.last_mut() {
+                            let decl_id = decl_ref.borrow().id;
+                            let assigned_type = Rc::new(checked_value.ty.kind.clone());
+
+                            let assign_node_id = ctx.graph.create_node(TFGNodeKind::Assign {
+                                target: decl_id,
+                                assigned_type: assigned_type.clone(),
+                                next_node: None,
+                            });
+
+                            let parent_types = ctx.graph.get_node(ctx.current_node).unwrap().variable_types.clone();
+                            let assign_node = ctx.graph.get_node_mut(assign_node_id).unwrap();
+                            assign_node.variable_types = parent_types;
+                            assign_node.variable_types.insert(decl_id, assigned_type);
+
+                            ctx.graph.link_sequential(ctx.current_node, assign_node_id);
+                            ctx.current_node = assign_node_id;
+                        }
+                    }
+                    // TODO: handle struct field assignments
                 }
 
                 CheckedStmt::Assignment {
@@ -363,28 +359,14 @@ impl<'a> SemanticChecker<'a> {
                 span: stmt.span,
             },
             StmtKind::While { condition, body } => {
-                let mut condition_node = None;
-                let mut after_loop_node = None;
-
-                if let Some(context) = self.tfg_contexts.last_mut() {
-                    let before_loop_node = context.current_node;
-
-                    let cond_node = context.graph.create_node(TFGNodeKind::NoOp { next_node: None });
-                    let after_node = context.graph.create_node(TFGNodeKind::NoOp { next_node: None });
-
-                    condition_node = Some(cond_node);
-                    after_loop_node = Some(after_node);
-
-                    context.graph.link_sequential(before_loop_node, cond_node);
-                    context.current_node = cond_node;
-                }
-
                 let checked_condition = self.check_expr(*condition);
 
+                self.enter_scope(ScopeKind::While);
                 let expected_condition_type = CheckedType {
                     kind: CheckedTypeKind::Bool,
                     span: checked_condition.ty.span,
                 };
+
                 if !self.check_is_assignable(&checked_condition.ty, &expected_condition_type) {
                     self.errors.push(SemanticError::TypeMismatch {
                         expected: expected_condition_type,
@@ -392,35 +374,8 @@ impl<'a> SemanticChecker<'a> {
                     });
                 }
 
-                self.enter_scope(ScopeKind::While);
-                if let Some(context) = self.tfg_contexts.last_mut() {
-                    let body_node = context.graph.create_node(TFGNodeKind::NoOp { next_node: None });
-
-                    context.graph.build_condition_tfg(
-                        &checked_condition,
-                        context.current_node,
-                        body_node,
-                        after_loop_node.unwrap(),
-                    );
-
-                    context.current_node = body_node;
-                    context.loop_exit_nodes.push(after_loop_node.unwrap());
-                }
-
-                let checked_body_statements = self.check_stmts(body.statements);
                 let checked_final_expr = body.final_expr.map(|expr| Box::new(self.check_expr(*expr)));
-                self.exit_scope();
-
-                if after_loop_node.is_some() {
-                    if let Some(context) = self.tfg_contexts.last_mut() {
-                        context.loop_exit_nodes.pop();
-                    }
-                }
-
-                if let Some(context) = self.tfg_contexts.last_mut() {
-                    context.graph.link_sequential(context.current_node, condition_node.unwrap());
-                    context.current_node = after_loop_node.unwrap();
-                }
+                let checked_body_statements = self.check_stmts(body.statements);
 
                 CheckedStmt::While {
                     condition: Box::new(checked_condition),

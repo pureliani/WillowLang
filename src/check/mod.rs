@@ -1,9 +1,13 @@
-use std::collections::HashSet;
+use std::{cell::RefCell, collections::HashSet, rc::Rc};
 
 use crate::{
     ast::{
         base::base_statement::Stmt,
-        checked::{checked_declaration::CheckedGenericParam, checked_statement::CheckedStmt, checked_type::CheckedType},
+        checked::{
+            checked_declaration::{CheckedGenericParam, CheckedVarDecl},
+            checked_statement::CheckedStmt,
+            checked_type::{CheckedType, CheckedTypeKind},
+        },
         IdentifierNode, Span,
     },
     check::utils::scope::{Scope, ScopeKind},
@@ -249,6 +253,19 @@ pub struct SemanticChecker<'a> {
 }
 
 impl<'a> SemanticChecker<'a> {
+    fn get_current_type_of_var(&self, var_decl: &Rc<RefCell<CheckedVarDecl>>) -> CheckedTypeKind {
+        let decl = var_decl.borrow();
+        if let Some(context) = self.tfg_contexts.last() {
+            if let Some(node) = context.graph.get_node(context.current_node) {
+                if let Some(narrowed_type_kind) = node.variable_types.get(&decl.id) {
+                    return (**narrowed_type_kind).clone();
+                }
+            }
+        }
+
+        decl.constraint.kind.clone()
+    }
+
     pub fn check(statements: Vec<Stmt>) -> (Vec<CheckedStmt>, Vec<SemanticError>) {
         let mut errors: Vec<SemanticError> = vec![];
 

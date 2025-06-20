@@ -1,8 +1,12 @@
-struct Foo {
-    bar: i32 | null
-}
+let foo = () => {
+    let x: i32 | bool = true;
 
+    x = 5;
 
-let x: Foo = Foo {
-    bar: 15
+    if x < 3 {
+        true
+    } else {
+        15
+    }
+
 };
