@@ -22,18 +22,20 @@ use crate::{
 use super::ParsingError;
 
 pub fn is_start_of_stmt(token_kind: &TokenKind) -> bool {
-    match token_kind {
-        TokenKind::Keyword(KeywordKind::From)
-        | TokenKind::Keyword(KeywordKind::While)
-        | TokenKind::Keyword(KeywordKind::Return)
-        | TokenKind::Keyword(KeywordKind::Break)
-        | TokenKind::Keyword(KeywordKind::Continue)
-        | TokenKind::Keyword(KeywordKind::Struct)
-        | TokenKind::Keyword(KeywordKind::Type)
-        | TokenKind::Keyword(KeywordKind::Let)
-        | TokenKind::Doc(_) => true,
-        _ => false,
-    }
+    matches!(
+        token_kind,
+        TokenKind::Keyword(
+            KeywordKind::From
+                | KeywordKind::While
+                | KeywordKind::Return
+                | KeywordKind::Break
+                | KeywordKind::Continue
+                | KeywordKind::Struct
+                | KeywordKind::Enum
+                | KeywordKind::Type
+                | KeywordKind::Let
+        ) | TokenKind::Doc(_)
+    )
 }
 
 impl<'a, 'b> Parser<'a, 'b> {
@@ -72,21 +74,19 @@ impl<'a, 'b> Parser<'a, 'b> {
                         if self.match_token(0, TokenKind::Punctuation(PunctuationKind::Eq))
                             && !self.match_token(1, TokenKind::Punctuation(PunctuationKind::Eq))
                         {
-                            // it's an assignment statement
+                            // It's an assignment statement
                             self.parse_assignment_stmt(lhs)
                         } else {
                             // It's a standalone expression statement
-                            let start_span = lhs.span;
-
+                            let mut end_span = lhs.span;
                             if self.match_token(0, TokenKind::Punctuation(PunctuationKind::SemiCol)) {
+                                end_span = self.current().unwrap().span;
                                 self.advance();
                             }
 
-                            let end_span = self.tokens.get(self.offset - 1).map(|t| t.span).unwrap_or(start_span);
-
                             Ok(Stmt {
                                 span: Span {
-                                    start: start_span.start,
+                                    start: lhs.span.start,
                                     end: end_span.end,
                                 },
                                 kind: StmtKind::Expression(lhs),
