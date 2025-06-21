@@ -21,7 +21,6 @@ use crate::{
         },
         SemanticChecker, SemanticError, TFGContext,
     },
-    // Make sure TFGNodeKind and TypeFlowGraph are imported
     tfg::{TFGNodeKind, TypeFlowGraph},
 };
 
@@ -71,15 +70,6 @@ impl<'a> SemanticChecker<'a> {
                 }
             })
             .collect();
-
-        if let Some(context) = self.tfg_contexts.last_mut() {
-            let entry_node = context.graph.get_node_mut(context.graph.entry_node_id).unwrap();
-            for param in &checked_params {
-                entry_node
-                    .variable_types
-                    .insert(param.id, Rc::new(param.constraint.kind.clone()));
-            }
-        }
 
         let checked_statements = self.check_stmts(body.statements);
         let checked_final_expr = body.final_expr.map(|fe| Box::new(self.check_expr(*fe)));

@@ -89,10 +89,6 @@ impl<'a> SemanticChecker<'a> {
             });
         }
 
-        let ctx = self.tfg_contexts.last_mut().unwrap();
-        let merge_node = ctx.graph.create_merge_node(&final_path_nodes);
-        ctx.current_node = merge_node;
-
         let expr_type = union_of(final_branch_types, span);
 
         CheckedExpr {

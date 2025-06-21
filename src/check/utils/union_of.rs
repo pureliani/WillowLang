@@ -1,4 +1,4 @@
-use std::{collections::HashSet, rc::Rc};
+use std::collections::HashSet;
 
 use crate::ast::{
     checked::checked_type::{CheckedType, CheckedTypeKind},
@@ -40,11 +40,11 @@ pub fn union_of(types: impl IntoIterator<Item = CheckedType>, span: Span) -> Che
     }
 }
 
-pub fn union_of_kinds(types: impl IntoIterator<Item = Rc<CheckedTypeKind>>) -> Rc<CheckedTypeKind> {
+pub fn union_of_kinds(types: impl IntoIterator<Item = CheckedTypeKind>) -> CheckedTypeKind {
     let mut union_items: HashSet<CheckedType> = HashSet::new();
 
     for t_rc in types {
-        match &*t_rc {
+        match &t_rc {
             CheckedTypeKind::Union(items) => {
                 for item in items {
                     if !matches!(item.kind, CheckedTypeKind::Void) {
@@ -53,13 +53,13 @@ pub fn union_of_kinds(types: impl IntoIterator<Item = Rc<CheckedTypeKind>>) -> R
                 }
             }
             CheckedTypeKind::Unknown => {
-                return Rc::new(CheckedTypeKind::Unknown);
+                return CheckedTypeKind::Unknown;
             }
             CheckedTypeKind::Void => {}
             _ => {
                 // A placeholder span is acceptable for internal calculations.
                 union_items.insert(CheckedType {
-                    kind: (*t_rc).clone(),
+                    kind: t_rc.clone(),
                     span: crate::ast::Span {
                         // Using a dummy span
                         start: crate::ast::Position {
@@ -79,12 +79,12 @@ pub fn union_of_kinds(types: impl IntoIterator<Item = Rc<CheckedTypeKind>>) -> R
     }
 
     if union_items.is_empty() {
-        return Rc::new(CheckedTypeKind::Void);
+        return CheckedTypeKind::Void;
     }
 
     if union_items.len() == 1 {
-        return Rc::new(union_items.into_iter().next().unwrap().kind);
+        return union_items.into_iter().next().unwrap().kind;
     }
 
-    Rc::new(CheckedTypeKind::Union(union_items))
+    CheckedTypeKind::Union(union_items)
 }

@@ -50,12 +50,12 @@ impl<'a> SemanticChecker<'a> {
                             let subtracted = CheckedTypeKind::Union(union_subtract(types, target));
 
                             let narrowing_true = NarrowingInfo {
-                                variable: var_id.clone(),
+                                target: var_id.clone(),
                                 narrowed_type: target.kind.clone(),
                             };
 
                             let narrowing_false = NarrowingInfo {
-                                variable: var_id,
+                                target: var_id,
                                 narrowed_type: subtracted,
                             };
 
@@ -78,12 +78,12 @@ impl<'a> SemanticChecker<'a> {
                                 let subtracted = CheckedTypeKind::Union(union_subtract(ident_expr_ty, narrow_to_type));
 
                                 let narrowing_to_specific = NarrowingInfo {
-                                    variable: var_id.clone(),
+                                    target: var_id.clone(),
                                     narrowed_type: narrow_to_type.kind.clone(),
                                 };
 
                                 let narrowing_to_subtracted = NarrowingInfo {
-                                    variable: var_id,
+                                    target: var_id,
                                     narrowed_type: subtracted,
                                 };
 
@@ -200,7 +200,7 @@ impl<'a> SemanticChecker<'a> {
 
                 let ctx = self.tfg_contexts.last_mut().unwrap();
 
-                let branch_node_id = ctx.graph.create_node(TFGNodeKind::Branch {
+                let branch_node_id = ctx.graph.create_node(TFGNodeKind::BranchNarrowing {
                     narrowing_if_true,
                     next_node_if_true: None,
                     narrowing_if_false,
@@ -209,7 +209,6 @@ impl<'a> SemanticChecker<'a> {
 
                 ctx.graph.link_successor(prev_node, branch_node_id);
                 ctx.graph.link_branch(branch_node_id, true_target, false_target);
-                ctx.graph.apply_branch_narrowing(branch_node_id, true_target, false_target);
 
                 checked_expr
             }

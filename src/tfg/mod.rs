@@ -1,76 +1,53 @@
 use std::{
     collections::{HashMap, HashSet},
-    rc::Rc,
     usize,
 };
 
-use crate::{
-    ast::{
-        checked::{
-            checked_expression::{FunctionSummary, RefinementKey},
-            checked_type::CheckedTypeKind,
-        },
-        DefinitionId,
+use crate::ast::{
+    checked::{
+        checked_expression::{FunctionSummary, RefinementKey},
+        checked_type::CheckedTypeKind,
     },
-    check::utils::union_of::union_of_kinds,
+    DefinitionId,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct TFGNodeId(usize);
 
-/// Represents the type a specific variable is narrowed to on a given path.
-/// This is calculated and stored by the TFG builder.
 #[derive(Debug, Clone)]
 pub struct NarrowingInfo {
-    pub variable: DefinitionId,
+    pub target: DefinitionId,
     pub narrowed_type: CheckedTypeKind,
 }
 
-/// Represents the different kinds of nodes in the Type Flow Graph.
-/// Edges are implicitly defined by the `next_node` fields.
 #[derive(Debug, Clone)]
 pub enum TFGNodeKind {
-    /// Start of the analyzed scope.
     Entry {
         next_node: Option<TFGNodeId>,
     },
-    /// End of the analyzed scope (e.g., return, end of block). Terminal node.
-    Exit,
-
-    /// Represents a conditional branch point.
-    /// The builder determines the immediate type implications for relevant variables.
-    Branch {
-        /// Info about the primary variable being narrowed if the condition is false.
-        /// If the condition itself doesn't narrow (like `x > 0`), the builder stores
-        /// None
+    Narrowing {
+        info: NarrowingInfo,
+        next_node: Option<TFGNodeId>,
+    },
+    BranchNarrowing {
         narrowing_if_true: Option<NarrowingInfo>,
         next_node_if_true: Option<TFGNodeId>,
-
-        /// Info about the primary variable being narrowed if the condition is false.
         narrowing_if_false: Option<NarrowingInfo>,
         next_node_if_false: Option<TFGNodeId>,
     },
-
-    /// Represents an assignment `target = <expr>`.
-    Assign {
-        target: DefinitionId,
-        assigned_type: Rc<CheckedTypeKind>,
-        next_node: Option<TFGNodeId>,
-    },
-
     NoOp {
         next_node: Option<TFGNodeId>,
     },
+    Exit,
 }
 
-pub type TFGNodeVariableTypes = HashMap<DefinitionId, Rc<CheckedTypeKind>>;
+pub type TFGNodeVariableTypes = HashMap<DefinitionId, CheckedTypeKind>;
 
 #[derive(Debug, Clone)]
 pub struct TFGNode {
     pub id: TFGNodeId,
     pub kind: TFGNodeKind,
     pub predecessors: HashSet<TFGNodeId>,
-    pub variable_types: TFGNodeVariableTypes,
 }
 
 #[derive(Debug, Clone)]
@@ -112,7 +89,6 @@ impl TypeFlowGraph {
             nodes: HashMap::from([(
                 entry_node_id,
                 TFGNode {
-                    variable_types: HashMap::new(),
                     id: entry_node_id,
                     kind: TFGNodeKind::Entry { next_node: None },
                     predecessors: HashSet::new(),
@@ -130,7 +106,6 @@ impl TypeFlowGraph {
         self.nodes.insert(
             id,
             TFGNode {
-                variable_types: HashMap::new(),
                 id,
                 kind,
                 predecessors: HashSet::new(),
@@ -140,59 +115,14 @@ impl TypeFlowGraph {
         id
     }
 
-    pub fn create_merge_node(&mut self, parent_ids: &[TFGNodeId]) -> TFGNodeId {
-        if parent_ids.is_empty() {
-            panic!("create_merge_node expected parent_ids to not be empty")
-        }
-
-        if parent_ids.len() == 1 {
-            return parent_ids[0];
-        }
-
-        let merge_node_id = self.create_node(TFGNodeKind::NoOp { next_node: None });
-
-        let mut all_vars: HashSet<DefinitionId> = HashSet::new();
-        let mut parent_type_maps: Vec<&TFGNodeVariableTypes> = Vec::new();
-
-        for parent_id in parent_ids {
-            if let Some(parent_node) = self.nodes.get(parent_id) {
-                all_vars.extend(parent_node.variable_types.keys());
-                parent_type_maps.push(&parent_node.variable_types);
-            }
-        }
-
-        let mut merged_variable_types: TFGNodeVariableTypes = HashMap::new();
-
-        for var_id in all_vars {
-            let types_for_var: Vec<Rc<CheckedTypeKind>> = parent_type_maps
-                .iter()
-                .filter_map(|type_map| type_map.get(&var_id).cloned())
-                .collect();
-
-            if !types_for_var.is_empty() {
-                let unioned_type = union_of_kinds(types_for_var);
-                merged_variable_types.insert(var_id, unioned_type);
-            }
-        }
-
-        let merge_node = self.nodes.get_mut(&merge_node_id).unwrap();
-        merge_node.variable_types = merged_variable_types;
-
-        for parent_id in parent_ids {
-            self.link_successor(*parent_id, merge_node_id);
-        }
-
-        merge_node_id
-    }
-
     pub fn link_sequential(&mut self, from_id: TFGNodeId, to_id: TFGNodeId) {
         let from_node = self.nodes.get_mut(&from_id).expect("Expected node with 'from_id' to exist");
 
         let next_field = match &mut from_node.kind {
             TFGNodeKind::Entry { next_node } => next_node,
-            TFGNodeKind::Assign { next_node, .. } => next_node,
+            TFGNodeKind::Narrowing { next_node, .. } => next_node,
             TFGNodeKind::NoOp { next_node } => next_node,
-            TFGNodeKind::Branch { .. } => {
+            TFGNodeKind::BranchNarrowing { .. } => {
                 panic!("Cannot link_sequential from a Branch node")
             }
             TFGNodeKind::Exit => panic!("Cannot link_sequential from an Exit node"),
@@ -209,7 +139,7 @@ impl TypeFlowGraph {
         let branch_node = self.nodes.get_mut(&branch_id).expect("Branch node doesn't exist");
 
         match &mut branch_node.kind {
-            TFGNodeKind::Branch {
+            TFGNodeKind::BranchNarrowing {
                 next_node_if_true,
                 next_node_if_false,
                 ..
@@ -238,9 +168,9 @@ impl TypeFlowGraph {
 
         match &mut from_node.kind {
             TFGNodeKind::Entry { next_node } => *next_node = Some(to_id),
-            TFGNodeKind::Assign { next_node, .. } => *next_node = Some(to_id),
+            TFGNodeKind::Narrowing { next_node, .. } => *next_node = Some(to_id),
             TFGNodeKind::NoOp { next_node } => *next_node = Some(to_id),
-            TFGNodeKind::Branch {
+            TFGNodeKind::BranchNarrowing {
                 next_node_if_true,
                 next_node_if_false,
                 ..
@@ -260,46 +190,6 @@ impl TypeFlowGraph {
         if !matches!(self.nodes.get(&from_id).unwrap().kind, TFGNodeKind::Exit) {
             let to_node = self.nodes.get_mut(&to_id).expect("to_id must exist in link_successor");
             to_node.predecessors.insert(from_id);
-        }
-    }
-
-    pub fn apply_branch_narrowing(&mut self, branch_id: TFGNodeId, true_target_id: TFGNodeId, false_target_id: TFGNodeId) {
-        let branch_node = self.nodes.get(&branch_id).unwrap().clone();
-
-        let parent_id = *branch_node
-            .predecessors
-            .iter()
-            .next()
-            .expect("Branch node must have a predecessor");
-
-        let parent_types = self.nodes.get(&parent_id).unwrap().variable_types.clone();
-
-        if let Some(true_target_node) = self.nodes.get_mut(&true_target_id) {
-            true_target_node.variable_types = parent_types.clone();
-
-            if let TFGNodeKind::Branch {
-                narrowing_if_true: Some(info),
-                ..
-            } = &branch_node.kind
-            {
-                true_target_node
-                    .variable_types
-                    .insert(info.variable, Rc::new(info.narrowed_type.clone()));
-            }
-        }
-
-        if let Some(false_target_node) = self.nodes.get_mut(&false_target_id) {
-            false_target_node.variable_types = parent_types;
-
-            if let TFGNodeKind::Branch {
-                narrowing_if_false: Some(info),
-                ..
-            } = &branch_node.kind
-            {
-                false_target_node
-                    .variable_types
-                    .insert(info.variable, Rc::new(info.narrowed_type.clone()));
-            }
         }
     }
 
