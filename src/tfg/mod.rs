@@ -263,28 +263,42 @@ impl TypeFlowGraph {
         }
     }
 
-    pub fn apply_narrowing(&mut self, branch_id: TFGNodeId, target_id: TFGNodeId, is_true_path: bool) {
+    pub fn apply_branch_narrowing(&mut self, branch_id: TFGNodeId, true_target_id: TFGNodeId, false_target_id: TFGNodeId) {
         let branch_node = self.nodes.get(&branch_id).unwrap().clone();
 
-        let parent_types = self
-            .nodes
-            .get(&branch_node.predecessors.iter().next().unwrap())
-            .unwrap()
-            .variable_types
-            .clone();
+        let parent_id = *branch_node
+            .predecessors
+            .iter()
+            .next()
+            .expect("Branch node must have a predecessor");
 
-        let target_node = self.nodes.get_mut(&target_id).unwrap();
-        target_node.variable_types = parent_types;
+        let parent_types = self.nodes.get(&parent_id).unwrap().variable_types.clone();
 
-        if let TFGNodeKind::Branch {
-            narrowing_if_true,
-            narrowing_if_false,
-            ..
-        } = branch_node.kind
-        {
-            let narrowing_info = if is_true_path { narrowing_if_true } else { narrowing_if_false };
-            if let Some(info) = narrowing_info {
-                target_node.variable_types.insert(info.variable, Rc::new(info.narrowed_type));
+        if let Some(true_target_node) = self.nodes.get_mut(&true_target_id) {
+            true_target_node.variable_types = parent_types.clone();
+
+            if let TFGNodeKind::Branch {
+                narrowing_if_true: Some(info),
+                ..
+            } = &branch_node.kind
+            {
+                true_target_node
+                    .variable_types
+                    .insert(info.variable, Rc::new(info.narrowed_type.clone()));
+            }
+        }
+
+        if let Some(false_target_node) = self.nodes.get_mut(&false_target_id) {
+            false_target_node.variable_types = parent_types;
+
+            if let TFGNodeKind::Branch {
+                narrowing_if_false: Some(info),
+                ..
+            } = &branch_node.kind
+            {
+                false_target_node
+                    .variable_types
+                    .insert(info.variable, Rc::new(info.narrowed_type.clone()));
             }
         }
     }

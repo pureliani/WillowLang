@@ -209,8 +209,7 @@ impl<'a> SemanticChecker<'a> {
 
                 ctx.graph.link_successor(prev_node, branch_node_id);
                 ctx.graph.link_branch(branch_node_id, true_target, false_target);
-                ctx.graph.apply_narrowing(branch_node_id, true_target, true);
-                ctx.graph.apply_narrowing(branch_node_id, false_target, false);
+                ctx.graph.apply_branch_narrowing(branch_node_id, true_target, false_target);
 
                 checked_expr
             }
