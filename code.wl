@@ -4,9 +4,9 @@ let foo = () => {
     if x::is(i32) && x > 15i32 {
         x = true;
     } else {
-        x = 1;
+        x = 2;
     }
-
+    
     x
 };
 
