@@ -2,15 +2,13 @@ use crate::{
     ast::{
         base::base_expression::{BlockContents, Expr},
         checked::{
-            checked_expression::{CheckedBlockContents, CheckedExpr, CheckedExprKind},
+            checked_expression::{CheckedExpr, CheckedExprKind},
             checked_type::{CheckedType, CheckedTypeKind},
         },
         Span,
     },
-    check::{
-        utils::{scope::ScopeKind, union_of::union_of},
-        SemanticChecker, SemanticError,
-    },
+    check::{utils::union_of::union_of, SemanticChecker},
+    tfg::{TFGNodeId, TFGNodeKind},
 };
 
 impl<'a> SemanticChecker<'a> {
@@ -22,97 +20,80 @@ impl<'a> SemanticChecker<'a> {
         else_branch: Option<BlockContents>,
         span: Span,
     ) -> CheckedExpr {
-        let mut expr_type = CheckedType {
-            kind: CheckedTypeKind::Void,
-            span,
-        };
-
-        let checked_condition = self.check_expr(*condition);
-        let expected = CheckedType {
-            kind: CheckedTypeKind::Bool,
-            span: checked_condition.ty.span,
-        };
-
-        if !self.check_is_assignable(&checked_condition.ty, &expected) {
-            self.errors.push(SemanticError::TypeMismatch {
-                expected,
-                received: checked_condition.ty.clone(),
-            });
-
-            expr_type.kind = CheckedTypeKind::Unknown;
+        if self.tfg_contexts.is_empty() {
+            panic!("'if' expression checked outside of a function context.");
         }
 
-        self.enter_scope(ScopeKind::CodeBlock);
-        let checked_then_branch_statements = self.check_stmts(then_branch.statements);
-        let checked_then_branch_final_expr = then_branch.final_expr.map(|fe| {
-            let checked_final_expr = self.check_expr(*fe);
+        let ctx = self.tfg_contexts.last_mut().unwrap();
+        let then_entry_node = ctx.graph.create_node(TFGNodeKind::NoOp { next_node: None });
+        let mut false_path_node = ctx.graph.create_node(TFGNodeKind::NoOp { next_node: None });
 
-            expr_type = union_of([expr_type.clone(), checked_final_expr.ty.clone()], checked_final_expr.ty.span);
+        let checked_condition = self.check_condition_expr(*condition, then_entry_node, false_path_node);
 
-            Box::new(checked_final_expr)
-        });
-        self.exit_scope();
+        let ctx = self.tfg_contexts.last_mut().unwrap();
+        ctx.current_node = then_entry_node;
+        let (then_type, checked_then_branch) = self.check_codeblock(then_branch);
 
-        let checked_then_branch = CheckedBlockContents {
-            final_expr: checked_then_branch_final_expr,
-            statements: checked_then_branch_statements,
-        };
+        let ctx = self.tfg_contexts.last_mut().unwrap();
+        let then_final_node = ctx.current_node;
 
-        let checked_else_if_branches: Vec<(Box<CheckedExpr>, CheckedBlockContents)> = else_if_branches
-            .into_iter()
-            .map(|(condition, codeblock)| {
-                let checked_condition = self.check_expr(*condition);
-                let expected = CheckedType {
-                    kind: CheckedTypeKind::Bool,
-                    span: checked_condition.ty.span,
-                };
-                if !self.check_is_assignable(&checked_condition.ty, &expected) {
-                    self.errors.push(SemanticError::TypeMismatch {
-                        expected,
-                        received: checked_condition.ty.clone(),
-                    });
+        let mut checked_else_if_branches = Vec::new();
+        let mut else_if_final_nodes: Vec<(TFGNodeId, CheckedType)> = Vec::new();
 
-                    expr_type.kind = CheckedTypeKind::Unknown;
-                }
+        for (elseif_cond_expr, elseif_block) in else_if_branches {
+            let ctx = self.tfg_contexts.last_mut().unwrap();
+            ctx.current_node = false_path_node;
 
-                self.enter_scope(ScopeKind::CodeBlock);
-                let checked_codeblock_statements = self.check_stmts(codeblock.statements);
-                let checked_codeblock_final_expr = codeblock.final_expr.map(|fe| {
-                    let checked_final_expr = self.check_expr(*fe);
+            let then_entry = ctx.graph.create_node(TFGNodeKind::NoOp { next_node: None });
+            let false_path = ctx.graph.create_node(TFGNodeKind::NoOp { next_node: None });
 
-                    expr_type = union_of([expr_type.clone(), checked_final_expr.ty.clone()], checked_final_expr.ty.span);
+            let checked_condition = self.check_condition_expr(*elseif_cond_expr, then_entry, false_path);
 
-                    Box::new(checked_final_expr)
-                });
-                self.exit_scope();
+            let ctx = self.tfg_contexts.last_mut().unwrap();
+            ctx.current_node = then_entry;
 
-                (
-                    Box::new(checked_condition),
-                    CheckedBlockContents {
-                        final_expr: checked_codeblock_final_expr,
-                        statements: checked_codeblock_statements,
-                    },
-                )
-            })
-            .collect();
+            let (codeblock_type, checked_codeblock) = self.check_codeblock(elseif_block);
+            let final_node = self.tfg_contexts.last().unwrap().current_node;
 
+            checked_else_if_branches.push((Box::new(checked_condition), checked_codeblock));
+            else_if_final_nodes.push((final_node, codeblock_type));
+
+            false_path_node = false_path;
+        }
+
+        let mut else_final_node: Option<(TFGNodeId, CheckedType)> = None;
         let checked_else_branch = else_branch.map(|br| {
-            self.enter_scope(ScopeKind::CodeBlock);
-            let checked_statements = self.check_stmts(br.statements);
-            let checked_final_expr = br.final_expr.map(|fe| {
-                let checked_final_expr = self.check_expr(*fe);
-
-                expr_type = union_of([expr_type.clone(), checked_final_expr.ty.clone()], checked_final_expr.ty.span);
-
-                Box::new(checked_final_expr)
-            });
-            self.exit_scope();
-
-            CheckedBlockContents {
-                statements: checked_statements,
-                final_expr: checked_final_expr,
-            }
+            self.tfg_contexts.last_mut().unwrap().current_node = false_path_node;
+            let (else_type, checked_block) = self.check_codeblock(br);
+            let final_node = self.tfg_contexts.last().unwrap().current_node;
+            else_final_node = Some((final_node, else_type));
+            checked_block
         });
+
+        let mut final_path_nodes: Vec<TFGNodeId> = vec![then_final_node];
+        let mut final_branch_types: Vec<CheckedType> = vec![then_type];
+
+        for (node, ty) in else_if_final_nodes {
+            final_path_nodes.push(node);
+            final_branch_types.push(ty);
+        }
+
+        if let Some((node, ty)) = else_final_node {
+            final_path_nodes.push(node);
+            final_branch_types.push(ty);
+        } else {
+            final_path_nodes.push(false_path_node);
+            final_branch_types.push(CheckedType {
+                kind: CheckedTypeKind::Void,
+                span,
+            });
+        }
+
+        let ctx = self.tfg_contexts.last_mut().unwrap();
+        let merge_node = ctx.graph.create_merge_node(&final_path_nodes);
+        ctx.current_node = merge_node;
+
+        let expr_type = union_of(final_branch_types, span);
 
         CheckedExpr {
             ty: expr_type,

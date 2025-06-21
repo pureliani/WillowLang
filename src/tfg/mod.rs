@@ -4,12 +4,15 @@ use std::{
     usize,
 };
 
-use crate::ast::{
-    checked::{
-        checked_expression::{FunctionSummary, RefinementKey},
-        checked_type::CheckedTypeKind,
+use crate::{
+    ast::{
+        checked::{
+            checked_expression::{FunctionSummary, RefinementKey},
+            checked_type::CheckedTypeKind,
+        },
+        DefinitionId,
     },
-    DefinitionId,
+    check::utils::union_of::union_of_kinds,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -135,6 +138,51 @@ impl TypeFlowGraph {
         );
 
         id
+    }
+
+    pub fn create_merge_node(&mut self, parent_ids: &[TFGNodeId]) -> TFGNodeId {
+        if parent_ids.is_empty() {
+            panic!("create_merge_node expected parent_ids to not be empty")
+        }
+
+        if parent_ids.len() == 1 {
+            return parent_ids[0];
+        }
+
+        let merge_node_id = self.create_node(TFGNodeKind::NoOp { next_node: None });
+
+        let mut all_vars: HashSet<DefinitionId> = HashSet::new();
+        let mut parent_type_maps: Vec<&TFGNodeVariableTypes> = Vec::new();
+
+        for parent_id in parent_ids {
+            if let Some(parent_node) = self.nodes.get(parent_id) {
+                all_vars.extend(parent_node.variable_types.keys());
+                parent_type_maps.push(&parent_node.variable_types);
+            }
+        }
+
+        let mut merged_variable_types: TFGNodeVariableTypes = HashMap::new();
+
+        for var_id in all_vars {
+            let types_for_var: Vec<Rc<CheckedTypeKind>> = parent_type_maps
+                .iter()
+                .filter_map(|type_map| type_map.get(&var_id).cloned())
+                .collect();
+
+            if !types_for_var.is_empty() {
+                let unioned_type = union_of_kinds(types_for_var);
+                merged_variable_types.insert(var_id, unioned_type);
+            }
+        }
+
+        let merge_node = self.nodes.get_mut(&merge_node_id).unwrap();
+        merge_node.variable_types = merged_variable_types;
+
+        for parent_id in parent_ids {
+            self.link_successor(*parent_id, merge_node_id);
+        }
+
+        merge_node_id
     }
 
     pub fn link_sequential(&mut self, from_id: TFGNodeId, to_id: TFGNodeId) {

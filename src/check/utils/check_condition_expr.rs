@@ -1,11 +1,14 @@
 use std::collections::HashSet;
 
 use crate::{
-    ast::checked::{
-        checked_expression::{CheckedExpr, CheckedExprKind},
-        checked_type::{CheckedType, CheckedTypeKind},
+    ast::{
+        base::base_expression::{Expr, ExprKind},
+        checked::{
+            checked_expression::{CheckedExpr, CheckedExprKind},
+            checked_type::{CheckedType, CheckedTypeKind},
+        },
     },
-    check::{utils::scope::SymbolEntry, SemanticChecker},
+    check::{utils::scope::SymbolEntry, SemanticChecker, SemanticError},
     tfg::{NarrowingInfo, TFGNodeId, TFGNodeKind},
 };
 
@@ -100,46 +103,98 @@ impl<'a> SemanticChecker<'a> {
         None
     }
 
-    pub fn build_condition_tfg(
-        &mut self,
-        condition: &CheckedExpr,
-        prev_node: TFGNodeId,
-        next_node_if_true: TFGNodeId,
-        next_node_if_false: TFGNodeId,
-    ) {
-        match &condition.kind {
-            CheckedExprKind::Not { right } => {
-                self.build_condition_tfg(right, prev_node, next_node_if_false, next_node_if_true);
+    pub fn check_condition_expr(&mut self, condition: Expr, true_target: TFGNodeId, false_target: TFGNodeId) -> CheckedExpr {
+        let prev_node = self.tfg_contexts.last().unwrap().current_node;
+        let condition_span = condition.span;
+
+        match condition.kind {
+            ExprKind::Not { right } => {
+                let checked_right = self.check_condition_expr(*right, false_target, true_target);
+                CheckedExpr {
+                    ty: CheckedType {
+                        kind: CheckedTypeKind::Bool,
+                        span: condition_span,
+                    },
+                    kind: CheckedExprKind::Not {
+                        right: Box::new(checked_right),
+                    },
+                }
             }
-            CheckedExprKind::And { left, right } => {
-                let intermediate_node_id = self
+            ExprKind::And { left, right } => {
+                let intermediate_node = self
+                    .tfg_contexts
+                    .last_mut()
+                    .unwrap()
+                    .graph
+                    .create_node(TFGNodeKind::NoOp { next_node: None });
+                let checked_left = self.check_condition_expr(*left, intermediate_node, false_target);
+
+                self.tfg_contexts.last_mut().unwrap().current_node = intermediate_node;
+                let checked_right = self.check_condition_expr(*right, true_target, false_target);
+
+                CheckedExpr {
+                    ty: CheckedType {
+                        kind: CheckedTypeKind::Bool,
+                        span: condition_span,
+                    },
+                    kind: CheckedExprKind::And {
+                        left: Box::new(checked_left),
+                        right: Box::new(checked_right),
+                    },
+                }
+            }
+            ExprKind::Or { left, right } => {
+                let intermediate_node = self
                     .tfg_contexts
                     .last_mut()
                     .unwrap()
                     .graph
                     .create_node(TFGNodeKind::NoOp { next_node: None });
 
-                self.build_condition_tfg(left, prev_node, intermediate_node_id, next_node_if_false);
-                self.build_condition_tfg(right, intermediate_node_id, next_node_if_true, next_node_if_false);
-            }
-            CheckedExprKind::Or { left, right } => {
-                let intermediate_node_id = self
-                    .tfg_contexts
-                    .last_mut()
-                    .unwrap()
-                    .graph
-                    .create_node(TFGNodeKind::NoOp { next_node: None });
+                let checked_left = self.check_condition_expr(*left, true_target, intermediate_node);
 
-                self.build_condition_tfg(left, prev_node, next_node_if_true, intermediate_node_id);
-                self.build_condition_tfg(right, intermediate_node_id, next_node_if_true, next_node_if_false);
+                self.tfg_contexts.last_mut().unwrap().current_node = intermediate_node;
+                let checked_right = self.check_condition_expr(*right, true_target, false_target);
+
+                CheckedExpr {
+                    ty: CheckedType {
+                        kind: CheckedTypeKind::Bool,
+                        span: condition_span,
+                    },
+                    kind: CheckedExprKind::Or {
+                        left: Box::new(checked_left),
+                        right: Box::new(checked_right),
+                    },
+                }
             }
-            CheckedExprKind::BoolLiteral { value } => {
-                let target = if *value { next_node_if_true } else { next_node_if_false };
+            ExprKind::BoolLiteral { value } => {
+                let target = if value { true_target } else { false_target };
                 self.tfg_contexts.last_mut().unwrap().graph.link_successor(prev_node, target);
+
+                CheckedExpr {
+                    kind: CheckedExprKind::BoolLiteral { value },
+                    ty: CheckedType {
+                        kind: CheckedTypeKind::Bool,
+                        span: condition_span,
+                    },
+                }
             }
             _ => {
+                let checked_expr = self.check_expr(condition);
+
+                let expected_bool = CheckedType {
+                    kind: CheckedTypeKind::Bool,
+                    span: checked_expr.ty.span,
+                };
+                if !self.check_is_assignable(&checked_expr.ty, &expected_bool) {
+                    self.errors.push(SemanticError::TypeMismatch {
+                        expected: expected_bool,
+                        received: checked_expr.ty.clone(),
+                    });
+                }
+
                 let (narrowing_if_true, narrowing_if_false) = self
-                    .analyze_atomic_condition(condition)
+                    .analyze_atomic_condition(&checked_expr)
                     .map(|(t, f)| (Some(t), Some(f)))
                     .unwrap_or((None, None));
 
@@ -153,11 +208,11 @@ impl<'a> SemanticChecker<'a> {
                 });
 
                 ctx.graph.link_successor(prev_node, branch_node_id);
+                ctx.graph.link_branch(branch_node_id, true_target, false_target);
+                ctx.graph.apply_narrowing(branch_node_id, true_target, true);
+                ctx.graph.apply_narrowing(branch_node_id, false_target, false);
 
-                ctx.graph.link_branch(branch_node_id, next_node_if_true, next_node_if_false);
-
-                ctx.graph.apply_narrowing(branch_node_id, next_node_if_true, true);
-                ctx.graph.apply_narrowing(branch_node_id, next_node_if_false, false);
+                checked_expr
             }
         }
     }
