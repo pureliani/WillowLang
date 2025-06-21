@@ -215,7 +215,7 @@ impl<'a> SemanticChecker<'a> {
                     let assigned_type = decl.borrow().constraint.kind.clone();
 
                     let narrowing_node_id = ctx.graph.create_node(TFGNodeKind::Narrowing {
-                        info: NarrowingInfo {
+                        narrowing: NarrowingInfo {
                             target,
                             narrowed_type: assigned_type,
                         },
@@ -328,7 +328,7 @@ impl<'a> SemanticChecker<'a> {
                             let assigned_type = checked_value.ty.kind.clone();
 
                             let narrowing_node_id = ctx.graph.create_node(TFGNodeKind::Narrowing {
-                                info: NarrowingInfo {
+                                narrowing: NarrowingInfo {
                                     target,
                                     narrowed_type: assigned_type,
                                 },

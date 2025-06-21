@@ -26,7 +26,7 @@ pub enum TFGNodeKind {
         next_node: Option<TFGNodeId>,
     },
     Narrowing {
-        info: NarrowingInfo,
+        narrowing: NarrowingInfo,
         next_node: Option<TFGNodeId>,
     },
     BranchNarrowing {

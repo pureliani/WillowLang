@@ -46,14 +46,12 @@ pub struct CheckedBlockContents {
 
 #[derive(Clone, Debug)]
 pub enum CheckedExprKind {
-    // Prefix expressions
     Not {
         right: Box<CheckedExpr>,
     },
     Neg {
         right: Box<CheckedExpr>,
     },
-    // Infix expressions
     Add {
         left: Box<CheckedExpr>,
         right: Box<CheckedExpr>,
@@ -106,7 +104,6 @@ pub enum CheckedExprKind {
         left: Box<CheckedExpr>,
         right: Box<CheckedExpr>,
     },
-    // Suffix expressions
     Access {
         left: Box<CheckedExpr>,
         field: IdentifierNode,
@@ -131,7 +128,6 @@ pub enum CheckedExprKind {
         left: Box<CheckedExpr>,
         fields: Vec<(IdentifierNode, CheckedExpr)>,
     },
-    // Basic/literal expressions
     Null,
     BoolLiteral {
         value: bool,
@@ -141,7 +137,6 @@ pub enum CheckedExprKind {
     },
     String(StringNode),
     Identifier(IdentifierNode),
-    // Complex expressions
     Fn {
         id: DefinitionId,
         params: Vec<CheckedParam>,

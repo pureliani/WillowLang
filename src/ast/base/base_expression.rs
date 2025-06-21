@@ -18,14 +18,12 @@ pub struct BlockContents {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum ExprKind {
-    // Prefix expressions
     Not {
         right: Box<Expr>,
     },
     Neg {
         right: Box<Expr>,
     },
-    // Infix expressions
     Add {
         left: Box<Expr>,
         right: Box<Expr>,
@@ -78,7 +76,6 @@ pub enum ExprKind {
         left: Box<Expr>,
         right: Box<Expr>,
     },
-    // Suffix expressions
     Access {
         left: Box<Expr>,
         field: IdentifierNode,
@@ -107,7 +104,6 @@ pub enum ExprKind {
         left: Box<Expr>,
         fields: Vec<(IdentifierNode, Expr)>,
     },
-    // Basic/literal expressions
     Null,
     BoolLiteral {
         value: bool,
@@ -117,7 +113,6 @@ pub enum ExprKind {
     },
     String(StringNode),
     Identifier(IdentifierNode),
-    // Complex expressions
     Fn {
         params: Vec<Param>,
         body: BlockContents,
