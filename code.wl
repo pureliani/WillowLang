@@ -1,13 +1,13 @@
 let foo = () => {
-    let x: bool | i32 | i64 = 5i32;
+    let x: bool | i32 = 5i32;
 
-    if x::is(i32) && x > 15i32 {
-        x = true;
+    let xIsI32 = x::is(i32);
+
+    if xIsI32 && x < 5i32 {
+        true
     } else {
-        x = 2;
+        false
     }
-    
-    x
 };
 
 let res: bool = foo();

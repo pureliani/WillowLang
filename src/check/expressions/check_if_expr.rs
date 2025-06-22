@@ -83,19 +83,19 @@ impl<'a> SemanticChecker<'a> {
             checked_block
         });
 
-        let mut all_branch_exit_nodes: Vec<TFGNodeId> = vec![then_final_node];
+        let mut all_branch_final_nodes: Vec<TFGNodeId> = vec![then_final_node];
         let mut all_branch_types: Vec<CheckedType> = vec![then_type];
 
         for (node, ty) in else_if_final_nodes_and_types {
-            all_branch_exit_nodes.push(node);
+            all_branch_final_nodes.push(node);
             all_branch_types.push(ty);
         }
 
         if let Some((node, ty)) = else_final_node_and_type {
-            all_branch_exit_nodes.push(node);
+            all_branch_final_nodes.push(node);
             all_branch_types.push(ty);
         } else {
-            all_branch_exit_nodes.push(false_path_entry_node);
+            all_branch_final_nodes.push(false_path_entry_node);
             all_branch_types.push(CheckedType {
                 kind: CheckedTypeKind::Void,
                 span,
@@ -105,10 +105,10 @@ impl<'a> SemanticChecker<'a> {
         let ctx = self.tfg_contexts.last_mut().unwrap();
         let merge_node_id = ctx.graph.create_node(TFGNodeKind::NoOp { next_node: None });
 
-        for exit_node_id in all_branch_exit_nodes {
-            if let Some(exit_node_data) = ctx.graph.get_node(exit_node_id) {
+        for final_node_id in all_branch_final_nodes {
+            if let Some(exit_node_data) = ctx.graph.get_node(final_node_id) {
                 if !matches!(exit_node_data.kind, TFGNodeKind::Exit) {
-                    ctx.graph.link_successor(exit_node_id, merge_node_id);
+                    ctx.graph.link_successor(final_node_id, merge_node_id);
                 }
             }
         }
