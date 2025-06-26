@@ -22,26 +22,11 @@ pub struct NarrowingInfo {
 
 #[derive(Debug, Clone)]
 pub enum TFGNodeKind {
-    Entry {
-        next_node: Option<TFGNodeId>,
-    },
-    Narrowing {
-        narrowing: NarrowingInfo,
-        next_node: Option<TFGNodeId>,
-    },
-    BranchNarrowing {
-        narrowing_if_true: Option<NarrowingInfo>,
-        next_node_if_true: Option<TFGNodeId>,
-        narrowing_if_false: Option<NarrowingInfo>,
-        next_node_if_false: Option<TFGNodeId>,
-    },
-    NoOp {
-        next_node: Option<TFGNodeId>,
-    },
+    Entry,
+    Narrowing(NarrowingInfo),
+    NoOp,
     Exit,
 }
-
-pub type TFGNodeVariableTypes = HashMap<DefinitionId, CheckedTypeKind>;
 
 #[derive(Debug, Clone)]
 pub struct TFGNode {
@@ -56,6 +41,8 @@ pub struct TypeFlowGraph {
     nodes: HashMap<TFGNodeId, TFGNode>,
     node_counter: usize,
 }
+
+pub type TFGNodeVariableTypes = HashMap<DefinitionId, CheckedTypeKind>;
 
 impl TypeFlowGraph {
     pub fn generate_summary(&self) -> FunctionSummary {
@@ -90,7 +77,7 @@ impl TypeFlowGraph {
                 entry_node_id,
                 TFGNode {
                     id: entry_node_id,
-                    kind: TFGNodeKind::Entry { next_node: None },
+                    kind: TFGNodeKind::Entry,
                     predecessors: HashSet::new(),
                 },
             )]),
@@ -115,82 +102,16 @@ impl TypeFlowGraph {
         id
     }
 
-    pub fn link_sequential(&mut self, from_id: TFGNodeId, to_id: TFGNodeId) {
-        let from_node = self.nodes.get_mut(&from_id).expect("Expected node with 'from_id' to exist");
+    pub fn link(&mut self, from_id: TFGNodeId, to_id: TFGNodeId) {
+        let from_node = self.nodes.get(&from_id).expect("Expected node with 'from_id' to exist");
 
-        let next_field = match &mut from_node.kind {
-            TFGNodeKind::Entry { next_node } => next_node,
-            TFGNodeKind::Narrowing { next_node, .. } => next_node,
-            TFGNodeKind::NoOp { next_node } => next_node,
-            TFGNodeKind::BranchNarrowing { .. } => {
-                panic!("Cannot link_sequential from a Branch node")
-            }
-            TFGNodeKind::Exit => panic!("Cannot link_sequential from an Exit node"),
+        if let TFGNodeKind::Exit = from_node.kind {
+            panic!("Cannot link from an Exit node")
         };
-
-        *next_field = Some(to_id);
 
         let to_node = self.nodes.get_mut(&to_id).expect("Expected node with 'to_id' to exist");
 
         to_node.predecessors.insert(from_id);
-    }
-
-    pub fn link_branch(&mut self, branch_id: TFGNodeId, target_if_true: TFGNodeId, target_if_false: TFGNodeId) {
-        let branch_node = self.nodes.get_mut(&branch_id).expect("Branch node doesn't exist");
-
-        match &mut branch_node.kind {
-            TFGNodeKind::BranchNarrowing {
-                next_node_if_true,
-                next_node_if_false,
-                ..
-            } => {
-                *next_node_if_true = Some(target_if_true);
-                *next_node_if_false = Some(target_if_false);
-            }
-            _ => panic!("link_branch called on non-branch node"),
-        }
-
-        self.nodes
-            .get_mut(&target_if_true)
-            .expect("target_if_true node must exist")
-            .predecessors
-            .insert(branch_id);
-
-        self.nodes
-            .get_mut(&target_if_false)
-            .expect("target_if_false node must exist")
-            .predecessors
-            .insert(branch_id);
-    }
-
-    pub fn link_successor(&mut self, from_id: TFGNodeId, to_id: TFGNodeId) {
-        let from_node = self.nodes.get_mut(&from_id).expect("from_id must exist in link_successor");
-
-        match &mut from_node.kind {
-            TFGNodeKind::Entry { next_node } => *next_node = Some(to_id),
-            TFGNodeKind::Narrowing { next_node, .. } => *next_node = Some(to_id),
-            TFGNodeKind::NoOp { next_node } => *next_node = Some(to_id),
-            TFGNodeKind::BranchNarrowing {
-                next_node_if_true,
-                next_node_if_false,
-                ..
-            } => {
-                if next_node_if_false.is_none() {
-                    *next_node_if_false = Some(to_id);
-                } else if next_node_if_true.is_none() {
-                    *next_node_if_true = Some(to_id);
-                } else {
-                    // If both paths are already linked, trying to link this node again
-                    // might be a logic error in the semantic checker.
-                }
-            }
-            TFGNodeKind::Exit => {}
-        }
-
-        if !matches!(self.nodes.get(&from_id).unwrap().kind, TFGNodeKind::Exit) {
-            let to_node = self.nodes.get_mut(&to_id).expect("to_id must exist in link_successor");
-            to_node.predecessors.insert(from_id);
-        }
     }
 
     pub fn get_node(&self, id: TFGNodeId) -> Option<&TFGNode> {
