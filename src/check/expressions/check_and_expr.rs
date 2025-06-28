@@ -17,7 +17,7 @@ impl<'a> SemanticChecker<'a> {
         left: Box<Expr>,
         right: Box<Expr>,
         span: Span,
-        current_node: TFGNodeId,
+        entry_node: TFGNodeId,
         next_node_if_true: TFGNodeId,
         next_node_if_false: TFGNodeId,
     ) -> CheckedExpr {
@@ -28,7 +28,7 @@ impl<'a> SemanticChecker<'a> {
 
         let intermediate_node = self.tfg().graph.create_node(TFGNodeKind::NoOp);
 
-        let checked_left = self.check_expr(*left, current_node, intermediate_node, next_node_if_false);
+        let checked_left = self.check_expr(*left, entry_node, intermediate_node, next_node_if_false);
         let checked_right = self.check_expr(*right, intermediate_node, next_node_if_true, next_node_if_false);
 
         let expected_left = CheckedType {

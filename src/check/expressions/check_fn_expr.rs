@@ -32,7 +32,7 @@ impl<'a> SemanticChecker<'a> {
         return_type: Option<TypeAnnotation>,
         generic_params: Vec<GenericParam>,
         span: Span,
-        current_node: TFGNodeId,
+        entry_node: TFGNodeId,
         next_node_if_true: TFGNodeId,
         next_node_if_false: TFGNodeId,
     ) -> CheckedExpr {

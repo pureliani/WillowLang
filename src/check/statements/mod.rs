@@ -83,15 +83,32 @@ impl<'a> SemanticChecker<'a> {
         }
     }
 
-    pub fn check_stmts(&mut self, statements: Vec<Stmt>) -> Vec<CheckedStmt> {
+    pub fn check_stmts(&mut self, statements: Vec<Stmt>, entry_node: TFGNodeId, final_node: TFGNodeId) -> Vec<CheckedStmt> {
         self.placeholder_declarations(&statements);
-        statements
-            .into_iter()
-            .map(|s| {
-                let checked = self.check_stmt(s);
-                checked
-            })
-            .collect()
+
+        let mut checked_statements = Vec::new();
+
+        let num_statements = statements.len();
+        let mut current_entry = entry_node;
+
+        if num_statements == 0 {
+            self.tfg().graph.link(current_entry, final_node);
+        }
+
+        for (i, stmt) in statements.into_iter().enumerate() {
+            let next_node = if i == num_statements - 1 {
+                final_node
+            } else {
+                self.tfg().graph.create_node(TFGNodeKind::NoOp)
+            };
+
+            let checked_stmt = self.check_stmt(stmt, current_entry, next_node);
+            checked_statements.push(checked_stmt);
+
+            current_entry = next_node;
+        }
+
+        checked_statements
     }
 
     pub fn check_stmt(&mut self, stmt: Stmt, entry_node: TFGNodeId, next_node: TFGNodeId) -> CheckedStmt {

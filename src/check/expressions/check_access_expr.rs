@@ -17,7 +17,7 @@ impl<'a> SemanticChecker<'a> {
         left: Box<Expr>,
         field: IdentifierNode,
         span: Span,
-        current_node: TFGNodeId,
+        entry_node: TFGNodeId,
         next_node_if_true: TFGNodeId,
         next_node_if_false: TFGNodeId,
     ) -> CheckedExpr {
@@ -27,7 +27,7 @@ impl<'a> SemanticChecker<'a> {
         tfg.graph.link(access_node, next_node_if_true);
         tfg.graph.link(access_node, next_node_if_false);
 
-        let checked_left = self.check_expr(*left, current_node, access_node, access_node);
+        let checked_left = self.check_expr(*left, entry_node, access_node, access_node);
 
         let expr_type = match &checked_left.ty.kind {
             // TODO: Add enum declaration handler

@@ -16,11 +16,11 @@ impl<'a> SemanticChecker<'a> {
         &mut self,
         right: Box<Expr>,
         span: Span,
-        current_node: TFGNodeId,
+        entry_node: TFGNodeId,
         next_node_if_true: TFGNodeId,
         next_node_if_false: TFGNodeId,
     ) -> CheckedExpr {
-        let checked_right = self.check_expr(*right, current_node, next_node_if_false, next_node_if_true);
+        let checked_right = self.check_expr(*right, entry_node, next_node_if_false, next_node_if_true);
 
         let expected_right = CheckedType {
             kind: CheckedTypeKind::Bool,

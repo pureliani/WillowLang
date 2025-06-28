@@ -16,36 +16,36 @@ impl<'a> SemanticChecker<'a> {
         block_contents: BlockContents,
         span: crate::ast::Span,
         entry_node: TFGNodeId,
-        true_continuation: TFGNodeId,
-        false_continuation: TFGNodeId,
+        next_node_if_true: TFGNodeId,
+        next_node_if_false: TFGNodeId,
     ) -> CheckedExpr {
         self.enter_scope(ScopeKind::CodeBlock);
-        self.placeholder_declarations(&block_contents.statements);
 
-        let mut current_node = entry_node;
+        let (block_type, checked_final_expr, checked_statements) = if let Some(final_expr) = block_contents.final_expr {
+            let final_expr_entry_node = self.tfg().graph.create_node(TFGNodeKind::NoOp);
 
-        let mut checked_statements = Vec::new();
-        for stmt in block_contents.statements {
-            let next_node = self.tfg().graph.create_node(TFGNodeKind::NoOp);
-            let checked_stmt = self.check_stmt(stmt, current_node, next_node);
-            checked_statements.push(checked_stmt);
-            current_node = next_node;
-        }
+            let checked_stmts = self.check_stmts(block_contents.statements, entry_node, final_expr_entry_node);
 
-        let (block_type, checked_final_expr) = if let Some(final_expr) = block_contents.final_expr {
-            let checked_expr = self.check_expr(*final_expr, current_node, true_continuation, false_continuation);
-            (checked_expr.ty.clone(), Some(Box::new(checked_expr)))
+            let checked_expr = self.check_expr(*final_expr, final_expr_entry_node, next_node_if_true, next_node_if_false);
+
+            (checked_expr.ty.clone(), Some(Box::new(checked_expr)), checked_stmts)
         } else {
-            self.tfg().graph.link(current_node, true_continuation);
-            self.tfg().graph.link(current_node, false_continuation);
+            let merge_node = self.tfg().graph.create_node(TFGNodeKind::NoOp);
+            self.tfg().graph.link(merge_node, next_node_if_true);
+            self.tfg().graph.link(merge_node, next_node_if_false);
+
+            let checked_stmts = self.check_stmts(block_contents.statements, entry_node, merge_node);
+
             (
                 CheckedType {
                     kind: CheckedTypeKind::Void,
                     span,
                 },
                 None,
+                checked_stmts,
             )
         };
+
         self.exit_scope();
 
         CheckedExpr {

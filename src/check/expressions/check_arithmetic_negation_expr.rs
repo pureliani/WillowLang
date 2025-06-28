@@ -18,17 +18,17 @@ impl<'a> SemanticChecker<'a> {
         &mut self,
         right: Box<Expr>,
         span: Span,
-        current_node: TFGNodeId,
+        entry_node: TFGNodeId,
         next_node_if_true: TFGNodeId,
         next_node_if_false: TFGNodeId,
     ) -> CheckedExpr {
         let tfg = self.tfg();
-        let op_node = tfg.graph.create_node(TFGNodeKind::NoOp);
+        let noop = tfg.graph.create_node(TFGNodeKind::NoOp);
 
-        tfg.graph.link(op_node, next_node_if_true);
-        tfg.graph.link(op_node, next_node_if_false);
+        tfg.graph.link(noop, next_node_if_true);
+        tfg.graph.link(noop, next_node_if_false);
 
-        let checked_right = self.check_expr(*right, current_node, op_node, op_node);
+        let checked_right = self.check_expr(*right, entry_node, noop, noop);
 
         let expr_type = match &checked_right.ty.kind {
             t if is_signed(&t) => CheckedType { kind: t.clone(), span },

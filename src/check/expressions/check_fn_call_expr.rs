@@ -18,7 +18,7 @@ impl<'a> SemanticChecker<'a> {
         left: Box<Expr>,
         args: Vec<Expr>,
         span: Span,
-        current_node: TFGNodeId,
+        entry_node: TFGNodeId,
         next_node_if_true: TFGNodeId,
         next_node_if_false: TFGNodeId,
     ) -> CheckedExpr {

@@ -88,15 +88,15 @@ impl<'a> SemanticChecker<'a> {
         right: Box<Expr>,
         span: Span,
         entry_node: TFGNodeId,
-        true_continuation: TFGNodeId,
-        false_continuation: TFGNodeId,
+        next_node_if_true: TFGNodeId,
+        next_node_if_false: TFGNodeId,
         constructor: fn(Box<CheckedExpr>, Box<CheckedExpr>) -> CheckedExprKind,
     ) -> CheckedExpr {
         let rhs_entry_node = self.tfg().graph.create_node(TFGNodeKind::NoOp);
 
         let checked_left = self.check_expr(*left, entry_node, rhs_entry_node, rhs_entry_node);
 
-        let checked_right = self.check_expr(*right, rhs_entry_node, true_continuation, false_continuation);
+        let checked_right = self.check_expr(*right, rhs_entry_node, next_node_if_true, next_node_if_false);
 
         let expr_type = self.check_binary_numeric_operation(&checked_left, &checked_right, span);
 
@@ -112,16 +112,16 @@ impl<'a> SemanticChecker<'a> {
         right: Box<Expr>,
         span: Span,
         entry_node: TFGNodeId,
-        true_continuation: TFGNodeId,
-        false_continuation: TFGNodeId,
+        next_node_if_true: TFGNodeId,
+        next_node_if_false: TFGNodeId,
         constructor: fn(Box<CheckedExpr>, Box<CheckedExpr>) -> CheckedExprKind,
     ) -> CheckedExpr {
         let tfg = self.tfg();
         let rhs_entry_node = tfg.graph.create_node(TFGNodeKind::NoOp);
         let comparison_node = tfg.graph.create_node(TFGNodeKind::NoOp);
 
-        tfg.graph.link(comparison_node, true_continuation);
-        tfg.graph.link(comparison_node, false_continuation);
+        tfg.graph.link(comparison_node, next_node_if_true);
+        tfg.graph.link(comparison_node, next_node_if_false);
 
         let checked_left = self.check_expr(*left, entry_node, rhs_entry_node, rhs_entry_node);
         let checked_right = self.check_expr(*right, rhs_entry_node, comparison_node, comparison_node);
