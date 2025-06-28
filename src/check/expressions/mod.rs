@@ -35,37 +35,67 @@ impl<'a> SemanticChecker<'a> {
     pub fn check_expr(
         &mut self,
         expr: Expr,
-        current_node: TFGNodeId,
+        entry_node: TFGNodeId,
         next_node_if_true: TFGNodeId,
         next_node_if_false: TFGNodeId,
     ) -> CheckedExpr {
         match expr.kind {
             ExprKind::Not { right } => {
-                self.check_logical_negation_expr(right, expr.span, current_node, next_node_if_true, next_node_if_false)
+                self.check_logical_negation_expr(right, expr.span, entry_node, next_node_if_true, next_node_if_false)
             }
             ExprKind::Neg { right } => {
-                self.check_arithmetic_negation_expr(right, expr.span, current_node, next_node_if_true, next_node_if_false)
+                self.check_arithmetic_negation_expr(right, expr.span, entry_node, next_node_if_true, next_node_if_false)
             }
-            ExprKind::Add { left, right } => {
-                self.check_arithmetic_operation(left, right, expr.span, |left, right| CheckedExprKind::Add { left, right })
-            }
-            ExprKind::Subtract { left, right } => self.check_arithmetic_operation(left, right, expr.span, |left, right| {
-                CheckedExprKind::Subtract { left, right }
-            }),
-            ExprKind::Multiply { left, right } => self.check_arithmetic_operation(left, right, expr.span, |left, right| {
-                CheckedExprKind::Multiply { left, right }
-            }),
-            ExprKind::Divide { left, right } => {
-                self.check_arithmetic_operation(left, right, expr.span, |left, right| CheckedExprKind::Divide { left, right })
-            }
-            ExprKind::Modulo { left, right } => {
-                self.check_arithmetic_operation(left, right, expr.span, |left, right| CheckedExprKind::Modulo { left, right })
-            }
+            ExprKind::Add { left, right } => self.check_arithmetic_operation(
+                left,
+                right,
+                expr.span,
+                entry_node,
+                next_node_if_true,
+                next_node_if_false,
+                |left, right| CheckedExprKind::Add { left, right },
+            ),
+            ExprKind::Subtract { left, right } => self.check_arithmetic_operation(
+                left,
+                right,
+                expr.span,
+                entry_node,
+                next_node_if_true,
+                next_node_if_false,
+                |left, right| CheckedExprKind::Subtract { left, right },
+            ),
+            ExprKind::Multiply { left, right } => self.check_arithmetic_operation(
+                left,
+                right,
+                expr.span,
+                entry_node,
+                next_node_if_true,
+                next_node_if_false,
+                |left, right| CheckedExprKind::Multiply { left, right },
+            ),
+            ExprKind::Divide { left, right } => self.check_arithmetic_operation(
+                left,
+                right,
+                expr.span,
+                entry_node,
+                next_node_if_true,
+                next_node_if_false,
+                |left, right| CheckedExprKind::Divide { left, right },
+            ),
+            ExprKind::Modulo { left, right } => self.check_arithmetic_operation(
+                left,
+                right,
+                expr.span,
+                entry_node,
+                next_node_if_true,
+                next_node_if_false,
+                |left, right| CheckedExprKind::Modulo { left, right },
+            ),
             ExprKind::LessThan { left, right } => self.check_numeric_comparison(
                 left,
                 right,
                 expr.span,
-                current_node,
+                entry_node,
                 next_node_if_true,
                 next_node_if_false,
                 |left, right| CheckedExprKind::LessThan { left, right },
@@ -74,7 +104,7 @@ impl<'a> SemanticChecker<'a> {
                 left,
                 right,
                 expr.span,
-                current_node,
+                entry_node,
                 next_node_if_true,
                 next_node_if_false,
                 |left, right| CheckedExprKind::LessThanOrEqual { left, right },
@@ -83,7 +113,7 @@ impl<'a> SemanticChecker<'a> {
                 left,
                 right,
                 expr.span,
-                current_node,
+                entry_node,
                 next_node_if_true,
                 next_node_if_false,
                 |left, right| CheckedExprKind::GreaterThan { left, right },
@@ -92,39 +122,39 @@ impl<'a> SemanticChecker<'a> {
                 left,
                 right,
                 expr.span,
-                current_node,
+                entry_node,
                 next_node_if_true,
                 next_node_if_false,
                 |left, right| CheckedExprKind::GreaterThanOrEqual { left, right },
             ),
             ExprKind::Equal { left, right } => {
-                self.check_equality_expr(left, right, expr.span, current_node, next_node_if_true, next_node_if_false)
+                self.check_equality_expr(left, right, expr.span, entry_node, next_node_if_true, next_node_if_false)
             }
             ExprKind::NotEqual { left, right } => {
-                self.check_inequality_expr(left, right, expr.span, current_node, next_node_if_true, next_node_if_false)
+                self.check_inequality_expr(left, right, expr.span, entry_node, next_node_if_true, next_node_if_false)
             }
             ExprKind::And { left, right } => {
-                self.check_and_expr(left, right, expr.span, current_node, next_node_if_true, next_node_if_false)
+                self.check_and_expr(left, right, expr.span, entry_node, next_node_if_true, next_node_if_false)
             }
             ExprKind::Or { left, right } => {
-                self.check_or_expr(left, right, expr.span, current_node, next_node_if_true, next_node_if_false)
+                self.check_or_expr(left, right, expr.span, entry_node, next_node_if_true, next_node_if_false)
             }
             ExprKind::Access { left, field } => {
-                self.check_access_expr(left, field, expr.span, current_node, next_node_if_true, next_node_if_false)
+                self.check_access_expr(left, field, expr.span, entry_node, next_node_if_true, next_node_if_false)
             }
             ExprKind::StaticAccess { left, field } => self.check_static_access_expr(left, field, expr.span),
             ExprKind::TypeCast { left, target } => self.check_type_cast_expr(left, target, expr.span),
             ExprKind::IsType { left, target } => {
-                self.check_is_type_expr(left, target, expr.span, current_node, next_node_if_true, next_node_if_false)
+                self.check_is_type_expr(left, target, expr.span, entry_node, next_node_if_true, next_node_if_false)
             }
             ExprKind::GenericApply { left, args } => {
-                self.check_generic_apply_expr(left, args, expr.span, current_node, next_node_if_true, next_node_if_false)
+                self.check_generic_apply_expr(left, args, expr.span, entry_node, next_node_if_true, next_node_if_false)
             }
             ExprKind::FnCall { left, args } => {
-                self.check_fn_call_expr(left, args, expr.span, current_node, next_node_if_true, next_node_if_false)
+                self.check_fn_call_expr(left, args, expr.span, entry_node, next_node_if_true, next_node_if_false)
             }
             ExprKind::StructInit { left, fields } => {
-                self.check_struct_init_expr(left, fields, expr.span, current_node, next_node_if_true, next_node_if_false)
+                self.check_struct_init_expr(left, fields, expr.span, entry_node, next_node_if_true, next_node_if_false)
             }
             ExprKind::Null => CheckedExpr {
                 kind: CheckedExprKind::Null,
@@ -154,9 +184,7 @@ impl<'a> SemanticChecker<'a> {
                 },
             },
             ExprKind::Number { value } => self.check_numeric_expr(value, expr.span),
-            ExprKind::Identifier(id) => {
-                self.check_identifier_expr(id, expr.span, current_node, next_node_if_true, next_node_if_false)
-            }
+            ExprKind::Identifier(id) => self.check_identifier_expr(id, expr.span, entry_node),
             ExprKind::Fn {
                 params,
                 body,
@@ -168,7 +196,7 @@ impl<'a> SemanticChecker<'a> {
                 return_type,
                 generic_params,
                 expr.span,
-                current_node,
+                entry_node,
                 next_node_if_true,
                 next_node_if_false,
             ),
@@ -183,20 +211,15 @@ impl<'a> SemanticChecker<'a> {
                 else_if_branches,
                 else_branch,
                 expr.span,
-                current_node,
+                entry_node,
                 next_node_if_true,
                 next_node_if_false,
             ),
             ExprKind::ArrayLiteral { items } => {
-                self.check_array_literal_expr(items, expr.span, current_node, next_node_if_true, next_node_if_false)
+                self.check_array_literal_expr(items, expr.span, entry_node, next_node_if_true, next_node_if_false)
             }
             ExprKind::Block(codeblock) => {
-                let (ty, checked_codeblock) =
-                    self.check_codeblock(codeblock, current_node, next_node_if_true, next_node_if_false);
-                CheckedExpr {
-                    ty,
-                    kind: CheckedExprKind::Block(checked_codeblock),
-                }
+                self.check_block_expr(codeblock, expr.span, entry_node, next_node_if_true, next_node_if_false)
             }
         }
     }

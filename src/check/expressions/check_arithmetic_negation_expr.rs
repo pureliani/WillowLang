@@ -22,7 +22,7 @@ impl<'a> SemanticChecker<'a> {
         next_node_if_true: TFGNodeId,
         next_node_if_false: TFGNodeId,
     ) -> CheckedExpr {
-        let tfg = self.tfg_contexts.last_mut().unwrap();
+        let tfg = self.tfg();
         let op_node = tfg.graph.create_node(TFGNodeKind::NoOp);
 
         tfg.graph.link(op_node, next_node_if_true);

@@ -18,7 +18,7 @@ use crate::{
         utils::scope::{ScopeKind, SymbolEntry},
         SemanticChecker, SemanticError,
     },
-    tfg::{NarrowingInfo, TFGNodeKind},
+    tfg::{NarrowingInfo, TFGNodeId, TFGNodeKind},
 };
 
 impl<'a> SemanticChecker<'a> {
@@ -94,9 +94,9 @@ impl<'a> SemanticChecker<'a> {
             .collect()
     }
 
-    pub fn check_stmt(&mut self, stmt: Stmt) -> CheckedStmt {
+    pub fn check_stmt(&mut self, stmt: Stmt, entry_node: TFGNodeId, next_node: TFGNodeId) -> CheckedStmt {
         match stmt.kind {
-            StmtKind::Expression(expr) => CheckedStmt::Expression(self.check_expr(expr)),
+            StmtKind::Expression(expr) => CheckedStmt::Expression(self.check_expr(expr, entry_node, next_node, next_node)),
             StmtKind::StructDecl(StructDecl {
                 identifier,
                 generic_params,
@@ -156,7 +156,15 @@ impl<'a> SemanticChecker<'a> {
                     checked_constraint
                 });
 
-                let checked_value = value.map(|v| self.check_expr(v));
+                let checked_value = value.map(|v| {
+                    let next_node_if_true = self.tfg().graph.create_node(TFGNodeKind::NoOp);
+                    let next_node_if_false = self.tfg().graph.create_node(TFGNodeKind::NoOp);
+
+                    let result = self.check_expr(v, entry_node, next_node_if_true, next_node_if_false);
+                    // TODO: Create an "alias" node in tfg
+
+                    result
+                });
 
                 let final_constraint = match (&checked_value, constraint) {
                     (Some(value), Some(constraint)) => {
@@ -210,21 +218,14 @@ impl<'a> SemanticChecker<'a> {
                     decl
                 };
 
-                if let Some(ctx) = self.tfg_contexts.last_mut() {
-                    let target = decl.borrow().id;
-                    let assigned_type = decl.borrow().constraint.kind.clone();
+                let tfg = self.tfg();
+                let narrowing_node_id = tfg.graph.create_node(TFGNodeKind::Narrowing(NarrowingInfo {
+                    target: decl.borrow().id,
+                    narrowed_type: decl.borrow().constraint.kind.clone(),
+                }));
 
-                    let narrowing_node_id = ctx.graph.create_node(TFGNodeKind::Narrowing {
-                        narrowing: NarrowingInfo {
-                            target,
-                            narrowed_type: assigned_type,
-                        },
-                        next_node: None,
-                    });
-
-                    ctx.graph.link_sequential(ctx.current_node, narrowing_node_id);
-                    ctx.current_node = narrowing_node_id;
-                }
+                tfg.graph.link(entry_node, narrowing_node_id);
+                tfg.graph.link(narrowing_node_id, next_node);
 
                 CheckedStmt::VarDecl(decl)
             }
@@ -234,6 +235,8 @@ impl<'a> SemanticChecker<'a> {
                 value,
                 documentation: _,
             }) => {
+                self.tfg().graph.link(entry_node, next_node);
+
                 if !self.is_file_scope() {
                     self.errors
                         .push(SemanticError::TypeAliasMustBeDeclaredAtTopLevel { span: stmt.span });
@@ -263,7 +266,7 @@ impl<'a> SemanticChecker<'a> {
                 if !self.within_loop_scope() {
                     self.errors.push(SemanticError::BreakKeywordOutsideLoop { span: stmt.span });
                 }
-
+                // TODO: handle tfg
                 CheckedStmt::Break { span: stmt.span }
             }
             StmtKind::Continue => {
@@ -271,7 +274,7 @@ impl<'a> SemanticChecker<'a> {
                     self.errors
                         .push(SemanticError::ContinueKeywordOutsideLoop { span: stmt.span });
                 }
-
+                // TODO: handle tfg
                 CheckedStmt::Continue { span: stmt.span }
             }
             StmtKind::Return(expr) => {
@@ -280,13 +283,8 @@ impl<'a> SemanticChecker<'a> {
                         .push(SemanticError::ReturnKeywordOutsideFunction { span: stmt.span });
                 }
 
-                let value = self.check_expr(expr);
-
-                if let Some(context) = self.tfg_contexts.last_mut() {
-                    let exit_node = context.graph.create_node(TFGNodeKind::Exit);
-                    context.graph.link_sequential(context.current_node, exit_node);
-                    context.current_node = exit_node;
-                }
+                let exit_node = self.tfg().graph.create_node(TFGNodeKind::Exit);
+                let value = self.check_expr(expr, entry_node, exit_node, exit_node);
 
                 CheckedStmt::Return(value)
             }

@@ -15,7 +15,7 @@ impl<'a> SemanticChecker<'a> {
         todo!()
     }
 
-    pub fn check_identifier_expr(&mut self, id: IdentifierNode, span: Span) -> CheckedExpr {
+    pub fn check_identifier_expr(&mut self, id: IdentifierNode, span: Span, current_node: TFGNodeId) -> CheckedExpr {
         let entry = self.scope_lookup(id.name);
 
         let kind = match entry {
@@ -27,11 +27,9 @@ impl<'a> SemanticChecker<'a> {
                     let target = decl.borrow();
                     let mut constraint_kind: CheckedTypeKind = decl.borrow().constraint.kind.clone();
 
-                    if let Some(ctx) = self.tfg_contexts.last() {
-                        if let Some(current_node) = ctx.graph.get_node(ctx.current_node) {
-                            if let Some(kind) = self.get_definition_id_type(current_node.id, target.id) {
-                                constraint_kind = kind
-                            }
+                    if let Some(current_node) = self.tfg_contexts.last().unwrap().graph.get_node(current_node) {
+                        if let Some(kind) = self.get_definition_id_type(current_node.id, target.id) {
+                            constraint_kind = kind
                         }
                     }
 

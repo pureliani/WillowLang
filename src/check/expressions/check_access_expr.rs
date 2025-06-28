@@ -21,7 +21,7 @@ impl<'a> SemanticChecker<'a> {
         next_node_if_true: TFGNodeId,
         next_node_if_false: TFGNodeId,
     ) -> CheckedExpr {
-        let tfg = &mut self.tfg_contexts.last_mut().unwrap();
+        let tfg = self.tfg();
         let access_node = tfg.graph.create_node(TFGNodeKind::NoOp);
 
         tfg.graph.link(access_node, next_node_if_true);

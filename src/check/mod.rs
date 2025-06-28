@@ -248,6 +248,10 @@ pub struct SemanticChecker<'a> {
 }
 
 impl<'a> SemanticChecker<'a> {
+    pub fn tfg(&mut self) -> &mut TFGContext {
+        self.tfg_contexts.last_mut().expect("Expected tfg context")
+    }
+
     pub fn check(statements: Vec<Stmt>) -> (Vec<CheckedStmt>, Vec<SemanticError>) {
         let mut errors: Vec<SemanticError> = vec![];
 
