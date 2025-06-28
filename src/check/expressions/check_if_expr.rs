@@ -19,6 +19,9 @@ impl<'a> SemanticChecker<'a> {
         else_if_branches: Vec<(Box<Expr>, BlockContents)>,
         else_branch: Option<BlockContents>,
         span: Span,
+        current_node: TFGNodeId,
+        next_node_if_true: TFGNodeId,
+        next_node_if_false: TFGNodeId,
     ) -> CheckedExpr {
         if self.tfg_contexts.is_empty() {
             panic!("'if' expression checked outside of a function context.");
@@ -37,7 +40,7 @@ impl<'a> SemanticChecker<'a> {
             .graph
             .create_node(TFGNodeKind::NoOp { next_node: None });
 
-        let checked_condition = self.check_condition_expr(*condition, then_entry_node, false_path_entry_node);
+        let checked_condition = self.buld_expr_tfg(*condition, then_entry_node, false_path_entry_node);
 
         self.tfg_contexts.last_mut().unwrap().current_node = then_entry_node;
         let (then_type, checked_then_branch) = self.check_codeblock(then_branch);
@@ -62,7 +65,7 @@ impl<'a> SemanticChecker<'a> {
                 .graph
                 .create_node(TFGNodeKind::NoOp { next_node: None });
 
-            let checked_elseif_condition = self.check_condition_expr(*elseif_cond_expr, elseif_then_entry, next_false_path_entry);
+            let checked_elseif_condition = self.buld_expr_tfg(*elseif_cond_expr, elseif_then_entry, next_false_path_entry);
 
             self.tfg_contexts.last_mut().unwrap().current_node = elseif_then_entry;
             let (codeblock_type, checked_codeblock) = self.check_codeblock(elseif_block);

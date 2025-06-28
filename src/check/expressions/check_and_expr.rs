@@ -8,17 +8,29 @@ use crate::{
         Span,
     },
     check::{SemanticChecker, SemanticError},
+    tfg::{TFGNodeId, TFGNodeKind},
 };
 
 impl<'a> SemanticChecker<'a> {
-    pub fn check_and_expr(&mut self, left: Box<Expr>, right: Box<Expr>, span: Span) -> CheckedExpr {
+    pub fn check_and_expr(
+        &mut self,
+        left: Box<Expr>,
+        right: Box<Expr>,
+        span: Span,
+        current_node: TFGNodeId,
+        next_node_if_true: TFGNodeId,
+        next_node_if_false: TFGNodeId,
+    ) -> CheckedExpr {
         let mut expr_type = CheckedType {
             kind: CheckedTypeKind::Bool,
             span,
         };
 
-        let checked_left = self.check_expr(*left);
-        let checked_right = self.check_expr(*right);
+        let tfg = self.tfg_contexts.last_mut().unwrap();
+        let intermediate_node = tfg.graph.create_node(TFGNodeKind::NoOp);
+
+        let checked_left = self.check_expr(*left, current_node, intermediate_node, next_node_if_false);
+        let checked_right = self.check_expr(*right, intermediate_node, next_node_if_true, next_node_if_false);
 
         let expected_left = CheckedType {
             kind: CheckedTypeKind::Bool,

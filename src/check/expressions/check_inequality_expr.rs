@@ -8,10 +8,19 @@ use crate::{
         Span,
     },
     check::{utils::check_is_equatable::check_is_equatable, SemanticChecker, SemanticError},
+    tfg::TFGNodeId,
 };
 
 impl<'a> SemanticChecker<'a> {
-    pub fn check_inequality_expr(&mut self, left: Box<Expr>, right: Box<Expr>, span: Span) -> CheckedExpr {
+    pub fn check_inequality_expr(
+        &mut self,
+        left: Box<Expr>,
+        right: Box<Expr>,
+        span: Span,
+        current_node: TFGNodeId,
+        next_node_if_true: TFGNodeId,
+        next_node_if_false: TFGNodeId,
+    ) -> CheckedExpr {
         let mut expr_type = CheckedType {
             kind: CheckedTypeKind::Bool,
             span,

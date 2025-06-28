@@ -237,7 +237,6 @@ impl SemanticError {
 pub struct TFGContext {
     pub loop_exit_nodes: Vec<TFGNodeId>,
     pub graph: TypeFlowGraph,
-    pub current_node: TFGNodeId,
 }
 
 #[derive(Debug)]

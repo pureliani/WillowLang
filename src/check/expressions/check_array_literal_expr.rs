@@ -8,10 +8,18 @@ use crate::{
         Span,
     },
     check::{utils::union_of::union_of, SemanticChecker},
+    tfg::TFGNodeId,
 };
 
 impl<'a> SemanticChecker<'a> {
-    pub fn check_array_literal_expr(&mut self, items: Vec<Expr>, span: Span) -> CheckedExpr {
+    pub fn check_array_literal_expr(
+        &mut self,
+        items: Vec<Expr>,
+        span: Span,
+        current_node: TFGNodeId,
+        next_node_if_true: TFGNodeId,
+        next_node_if_false: TFGNodeId,
+    ) -> CheckedExpr {
         let size = items.len();
 
         let checked_items: Vec<CheckedExpr> = items.into_iter().map(|item| self.check_expr(item)).collect();

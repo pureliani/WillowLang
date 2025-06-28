@@ -10,11 +10,25 @@ use crate::{
         Span,
     },
     check::{utils::is_signed::is_signed, SemanticChecker, SemanticError},
+    tfg::{TFGNodeId, TFGNodeKind},
 };
 
 impl<'a> SemanticChecker<'a> {
-    pub fn check_arithmetic_negation_expr(&mut self, right: Box<Expr>, span: Span) -> CheckedExpr {
-        let checked_right = self.check_expr(*right);
+    pub fn check_arithmetic_negation_expr(
+        &mut self,
+        right: Box<Expr>,
+        span: Span,
+        current_node: TFGNodeId,
+        next_node_if_true: TFGNodeId,
+        next_node_if_false: TFGNodeId,
+    ) -> CheckedExpr {
+        let tfg = self.tfg_contexts.last_mut().unwrap();
+        let op_node = tfg.graph.create_node(TFGNodeKind::NoOp);
+
+        tfg.graph.link(op_node, next_node_if_true);
+        tfg.graph.link(op_node, next_node_if_false);
+
+        let checked_right = self.check_expr(*right, current_node, op_node, op_node);
 
         let expr_type = match &checked_right.ty.kind {
             t if is_signed(&t) => CheckedType { kind: t.clone(), span },

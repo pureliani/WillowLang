@@ -8,10 +8,19 @@ use crate::{
         Span,
     },
     check::{SemanticChecker, SemanticError},
+    tfg::TFGNodeId,
 };
 
 impl<'a> SemanticChecker<'a> {
-    pub fn check_is_type_expr(&mut self, left: Box<Expr>, target: TypeAnnotation, span: Span) -> CheckedExpr {
+    pub fn check_is_type_expr(
+        &mut self,
+        left: Box<Expr>,
+        target: TypeAnnotation,
+        span: Span,
+        current_node: TFGNodeId,
+        next_node_if_true: TFGNodeId,
+        next_node_if_false: TFGNodeId,
+    ) -> CheckedExpr {
         let checked_left = self.check_expr(*left);
         let checked_target = self.check_type_annotation(&target);
         let mut expr_type = CheckedType {

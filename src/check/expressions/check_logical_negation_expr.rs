@@ -8,11 +8,19 @@ use crate::{
         Span,
     },
     check::{SemanticChecker, SemanticError},
+    tfg::TFGNodeId,
 };
 
 impl<'a> SemanticChecker<'a> {
-    pub fn check_logical_negation_expr(&mut self, right: Box<Expr>, span: Span) -> CheckedExpr {
-        let checked_right = self.check_expr(*right);
+    pub fn check_logical_negation_expr(
+        &mut self,
+        right: Box<Expr>,
+        span: Span,
+        current_node: TFGNodeId,
+        next_node_if_true: TFGNodeId,
+        next_node_if_false: TFGNodeId,
+    ) -> CheckedExpr {
+        let checked_right = self.check_expr(*right, current_node, next_node_if_false, next_node_if_true);
 
         let expected_right = CheckedType {
             kind: CheckedTypeKind::Bool,

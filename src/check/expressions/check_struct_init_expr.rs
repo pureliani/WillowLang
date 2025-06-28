@@ -12,6 +12,7 @@ use crate::{
     },
     check::{utils::substitute_generics::GenericSubstitutionMap, SemanticChecker, SemanticError},
     compile::string_interner::InternerId,
+    tfg::TFGNodeId,
 };
 
 impl<'a> SemanticChecker<'a> {
@@ -20,6 +21,9 @@ impl<'a> SemanticChecker<'a> {
         left_expr: Box<Expr>,
         fields: Vec<(IdentifierNode, Expr)>,
         span: Span,
+        current_node: TFGNodeId,
+        next_node_if_true: TFGNodeId,
+        next_node_if_false: TFGNodeId,
     ) -> CheckedExpr {
         let checked_left = self.check_expr(*left_expr);
 

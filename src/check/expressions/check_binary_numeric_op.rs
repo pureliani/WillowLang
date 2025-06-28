@@ -8,6 +8,7 @@ use crate::{
         utils::{get_numeric_type_rank::get_numeric_type_rank, is_float::is_float, is_integer::is_integer, is_signed::is_signed},
         SemanticChecker,
     },
+    tfg::{TFGNodeId, TFGNodeKind},
 };
 
 use crate::{
@@ -86,10 +87,17 @@ impl<'a> SemanticChecker<'a> {
         left: Box<Expr>,
         right: Box<Expr>,
         span: Span,
+        entry_node: TFGNodeId,
+        true_continuation: TFGNodeId,
+        false_continuation: TFGNodeId,
         constructor: fn(Box<CheckedExpr>, Box<CheckedExpr>) -> CheckedExprKind,
     ) -> CheckedExpr {
-        let checked_left = self.check_expr(*left);
-        let checked_right = self.check_expr(*right);
+        let rhs_entry_node = self.tfg_contexts.last_mut().unwrap().graph.create_node(TFGNodeKind::NoOp);
+
+        let checked_left = self.check_expr(*left, entry_node, rhs_entry_node, rhs_entry_node);
+
+        let checked_right = self.check_expr(*right, rhs_entry_node, true_continuation, false_continuation);
+
         let expr_type = self.check_binary_numeric_operation(&checked_left, &checked_right, span);
 
         CheckedExpr {
@@ -103,12 +111,23 @@ impl<'a> SemanticChecker<'a> {
         left: Box<Expr>,
         right: Box<Expr>,
         span: Span,
+        entry_node: TFGNodeId,
+        true_continuation: TFGNodeId,
+        false_continuation: TFGNodeId,
         constructor: fn(Box<CheckedExpr>, Box<CheckedExpr>) -> CheckedExprKind,
     ) -> CheckedExpr {
-        let checked_left = self.check_expr(*left);
-        let checked_right = self.check_expr(*right);
-        let checked_op = self.check_binary_numeric_operation(&checked_left, &checked_right, span);
+        let rhs_entry_node = self.tfg_contexts.last_mut().unwrap().graph.create_node(TFGNodeKind::NoOp);
+        let comparison_node = self.tfg_contexts.last_mut().unwrap().graph.create_node(TFGNodeKind::NoOp);
 
+        let checked_left = self.check_expr(*left, entry_node, rhs_entry_node, rhs_entry_node);
+
+        let checked_right = self.check_expr(*right, rhs_entry_node, comparison_node, comparison_node);
+
+        let tfg = &mut self.tfg_contexts.last_mut().unwrap().graph;
+        tfg.link(comparison_node, true_continuation);
+        tfg.link(comparison_node, false_continuation);
+
+        let checked_op = self.check_binary_numeric_operation(&checked_left, &checked_right, span);
         let expr_type = if matches!(checked_op.kind, CheckedTypeKind::Unknown) {
             checked_op
         } else {

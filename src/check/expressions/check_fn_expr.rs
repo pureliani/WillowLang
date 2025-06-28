@@ -21,7 +21,7 @@ use crate::{
         },
         SemanticChecker, SemanticError, TFGContext,
     },
-    tfg::{TFGNodeKind, TypeFlowGraph},
+    tfg::{TFGNodeId, TFGNodeKind, TypeFlowGraph},
 };
 
 impl<'a> SemanticChecker<'a> {
@@ -32,6 +32,9 @@ impl<'a> SemanticChecker<'a> {
         return_type: Option<TypeAnnotation>,
         generic_params: Vec<GenericParam>,
         span: Span,
+        current_node: TFGNodeId,
+        next_node_if_true: TFGNodeId,
+        next_node_if_false: TFGNodeId,
     ) -> CheckedExpr {
         let fn_definition_id = self.get_definition_id();
         self.enter_scope(ScopeKind::Function);
@@ -43,7 +46,6 @@ impl<'a> SemanticChecker<'a> {
         self.tfg_contexts.push(TFGContext {
             loop_exit_nodes: vec![],
             graph: new_tfg,
-            current_node: entry_node_id,
         });
 
         let checked_params: Vec<CheckedParam> = params

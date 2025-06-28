@@ -9,10 +9,19 @@ use crate::{
         Span,
     },
     check::{utils::substitute_generics::GenericSubstitutionMap, SemanticChecker, SemanticError},
+    tfg::TFGNodeId,
 };
 
 impl<'a> SemanticChecker<'a> {
-    pub fn check_fn_call_expr(&mut self, left: Box<Expr>, args: Vec<Expr>, span: Span) -> CheckedExpr {
+    pub fn check_fn_call_expr(
+        &mut self,
+        left: Box<Expr>,
+        args: Vec<Expr>,
+        span: Span,
+        current_node: TFGNodeId,
+        next_node_if_true: TFGNodeId,
+        next_node_if_false: TFGNodeId,
+    ) -> CheckedExpr {
         let checked_left = self.check_expr(*left);
         let checked_args: Vec<_> = args.into_iter().map(|arg| self.check_expr(arg)).collect();
 

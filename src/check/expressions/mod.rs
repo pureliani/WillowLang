@@ -28,13 +28,24 @@ use crate::{
         },
     },
     check::SemanticChecker,
+    tfg::TFGNodeId,
 };
 
 impl<'a> SemanticChecker<'a> {
-    pub fn check_expr(&mut self, expr: Expr) -> CheckedExpr {
+    pub fn check_expr(
+        &mut self,
+        expr: Expr,
+        current_node: TFGNodeId,
+        next_node_if_true: TFGNodeId,
+        next_node_if_false: TFGNodeId,
+    ) -> CheckedExpr {
         match expr.kind {
-            ExprKind::Not { right } => self.check_logical_negation_expr(right, expr.span),
-            ExprKind::Neg { right } => self.check_arithmetic_negation_expr(right, expr.span),
+            ExprKind::Not { right } => {
+                self.check_logical_negation_expr(right, expr.span, current_node, next_node_if_true, next_node_if_false)
+            }
+            ExprKind::Neg { right } => {
+                self.check_arithmetic_negation_expr(right, expr.span, current_node, next_node_if_true, next_node_if_false)
+            }
             ExprKind::Add { left, right } => {
                 self.check_arithmetic_operation(left, right, expr.span, |left, right| CheckedExprKind::Add { left, right })
             }
@@ -50,32 +61,71 @@ impl<'a> SemanticChecker<'a> {
             ExprKind::Modulo { left, right } => {
                 self.check_arithmetic_operation(left, right, expr.span, |left, right| CheckedExprKind::Modulo { left, right })
             }
-            ExprKind::LessThan { left, right } => self.check_numeric_comparison(left, right, expr.span, |left, right| {
-                CheckedExprKind::LessThan { left, right }
-            }),
-            ExprKind::LessThanOrEqual { left, right } => self.check_numeric_comparison(left, right, expr.span, |left, right| {
-                CheckedExprKind::LessThanOrEqual { left, right }
-            }),
-            ExprKind::GreaterThan { left, right } => self.check_numeric_comparison(left, right, expr.span, |left, right| {
-                CheckedExprKind::GreaterThan { left, right }
-            }),
-            ExprKind::GreaterThanOrEqual { left, right } => {
-                self.check_numeric_comparison(left, right, expr.span, |left, right| CheckedExprKind::GreaterThanOrEqual {
-                    left,
-                    right,
-                })
+            ExprKind::LessThan { left, right } => self.check_numeric_comparison(
+                left,
+                right,
+                expr.span,
+                current_node,
+                next_node_if_true,
+                next_node_if_false,
+                |left, right| CheckedExprKind::LessThan { left, right },
+            ),
+            ExprKind::LessThanOrEqual { left, right } => self.check_numeric_comparison(
+                left,
+                right,
+                expr.span,
+                current_node,
+                next_node_if_true,
+                next_node_if_false,
+                |left, right| CheckedExprKind::LessThanOrEqual { left, right },
+            ),
+            ExprKind::GreaterThan { left, right } => self.check_numeric_comparison(
+                left,
+                right,
+                expr.span,
+                current_node,
+                next_node_if_true,
+                next_node_if_false,
+                |left, right| CheckedExprKind::GreaterThan { left, right },
+            ),
+            ExprKind::GreaterThanOrEqual { left, right } => self.check_numeric_comparison(
+                left,
+                right,
+                expr.span,
+                current_node,
+                next_node_if_true,
+                next_node_if_false,
+                |left, right| CheckedExprKind::GreaterThanOrEqual { left, right },
+            ),
+            ExprKind::Equal { left, right } => {
+                self.check_equality_expr(left, right, expr.span, current_node, next_node_if_true, next_node_if_false)
             }
-            ExprKind::Equal { left, right } => self.check_equality_expr(left, right, expr.span),
-            ExprKind::NotEqual { left, right } => self.check_inequality_expr(left, right, expr.span),
-            ExprKind::And { left, right } => self.check_and_expr(left, right, expr.span),
-            ExprKind::Or { left, right } => self.check_or_expr(left, right, expr.span),
-            ExprKind::Access { left, field } => self.check_access_expr(left, field, expr.span),
+            ExprKind::NotEqual { left, right } => {
+                self.check_inequality_expr(left, right, expr.span, current_node, next_node_if_true, next_node_if_false)
+            }
+            ExprKind::And { left, right } => {
+                self.check_and_expr(left, right, expr.span, current_node, next_node_if_true, next_node_if_false)
+            }
+            ExprKind::Or { left, right } => {
+                self.check_or_expr(left, right, expr.span, current_node, next_node_if_true, next_node_if_false)
+            }
+            ExprKind::Access { left, field } => {
+                self.check_access_expr(left, field, expr.span, current_node, next_node_if_true, next_node_if_false)
+            }
             ExprKind::StaticAccess { left, field } => self.check_static_access_expr(left, field, expr.span),
             ExprKind::TypeCast { left, target } => self.check_type_cast_expr(left, target, expr.span),
-            ExprKind::IsType { left, target } => self.check_is_type_expr(left, target, expr.span),
-            ExprKind::GenericApply { left, args } => self.check_generic_apply_expr(left, args, expr.span),
-            ExprKind::FnCall { left, args } => self.check_fn_call_expr(left, args, expr.span),
-            ExprKind::StructInit { left, fields } => self.check_struct_init_expr(left, fields, expr.span),
+            ExprKind::IsType { left, target } => {
+                self.check_is_type_expr(left, target, expr.span, current_node, next_node_if_true, next_node_if_false)
+            }
+            ExprKind::GenericApply { left, args } => {
+                self.check_generic_apply_expr(left, args, expr.span, current_node, next_node_if_true, next_node_if_false)
+            }
+            ExprKind::FnCall { left, args } => {
+                self.check_fn_call_expr(left, args, expr.span, current_node, next_node_if_true, next_node_if_false)
+            }
+            ExprKind::StructInit { left, fields } => {
+                self.check_struct_init_expr(left, fields, expr.span, current_node, next_node_if_true, next_node_if_false)
+            }
             ExprKind::Null => CheckedExpr {
                 kind: CheckedExprKind::Null,
                 ty: CheckedType {
@@ -104,22 +154,45 @@ impl<'a> SemanticChecker<'a> {
                 },
             },
             ExprKind::Number { value } => self.check_numeric_expr(value, expr.span),
-            ExprKind::Identifier(id) => self.check_identifier_expr(id, expr.span),
+            ExprKind::Identifier(id) => {
+                self.check_identifier_expr(id, expr.span, current_node, next_node_if_true, next_node_if_false)
+            }
             ExprKind::Fn {
                 params,
                 body,
                 return_type,
                 generic_params,
-            } => self.check_fn_expr(params, body, return_type, generic_params, expr.span),
+            } => self.check_fn_expr(
+                params,
+                body,
+                return_type,
+                generic_params,
+                expr.span,
+                current_node,
+                next_node_if_true,
+                next_node_if_false,
+            ),
             ExprKind::If {
                 condition,
                 then_branch,
                 else_if_branches,
                 else_branch,
-            } => self.check_if_expr(condition, then_branch, else_if_branches, else_branch, expr.span),
-            ExprKind::ArrayLiteral { items } => self.check_array_literal_expr(items, expr.span),
+            } => self.check_if_expr(
+                condition,
+                then_branch,
+                else_if_branches,
+                else_branch,
+                expr.span,
+                current_node,
+                next_node_if_true,
+                next_node_if_false,
+            ),
+            ExprKind::ArrayLiteral { items } => {
+                self.check_array_literal_expr(items, expr.span, current_node, next_node_if_true, next_node_if_false)
+            }
             ExprKind::Block(codeblock) => {
-                let (ty, checked_codeblock) = self.check_codeblock(codeblock);
+                let (ty, checked_codeblock) =
+                    self.check_codeblock(codeblock, current_node, next_node_if_true, next_node_if_false);
                 CheckedExpr {
                     ty,
                     kind: CheckedExprKind::Block(checked_codeblock),

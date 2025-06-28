@@ -7,10 +7,17 @@ use crate::{
         },
     },
     check::{utils::scope::ScopeKind, SemanticChecker},
+    tfg::TFGNodeId,
 };
 
 impl<'a> SemanticChecker<'a> {
-    pub fn check_codeblock(&mut self, block_contents: BlockContents) -> (CheckedType, CheckedBlockContents) {
+    pub fn check_codeblock(
+        &mut self,
+        block_contents: BlockContents,
+        current_node: TFGNodeId,
+        next_node_if_true: TFGNodeId,
+        next_node_if_false: TFGNodeId,
+    ) -> (CheckedType, CheckedBlockContents) {
         self.enter_scope(ScopeKind::CodeBlock);
         let checked_codeblock_statements = self.check_stmts(block_contents.statements);
         let checked_codeblock_final_expr = block_contents.final_expr.map(|fe| {
