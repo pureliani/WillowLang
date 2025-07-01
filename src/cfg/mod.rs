@@ -67,7 +67,7 @@ pub enum LValue {
 }
 
 #[derive(Clone, Debug)]
-pub enum GCFGInstruction {
+pub enum Instruction {
     Assign {
         destination: LValue,
         source: RValue,
@@ -125,6 +125,10 @@ pub enum GCFGInstruction {
         result_type: CheckedTypeKind,
         span: Span,
     },
+    Phi {
+        destination: TemporaryId,
+        sources: Vec<(BasicBlockId, RValue)>,
+    },
     Nop {
         span: Span,
     },
@@ -152,7 +156,7 @@ pub enum BinaryOperationKind {
 }
 
 #[derive(Clone, Debug)]
-pub enum GCFGTerminator {
+pub enum Terminator {
     Jump {
         target: BasicBlockId,
         span: Span,
@@ -175,22 +179,16 @@ pub enum GCFGTerminator {
 #[derive(Clone, Debug)]
 pub struct BasicBlock {
     pub id: BasicBlockId,
-    pub instructions: Vec<GCFGInstruction>,
-    pub terminator: GCFGTerminator,
+    pub instructions: Vec<Instruction>,
+    pub terminator: Terminator,
 }
 
 #[derive(Clone, Debug)]
-pub struct GenericControlFlowGraph {
+pub struct ControlFlowGraph {
     pub function_name: IdentifierNode,
     pub parameters: Vec<CheckedParam>,
     pub return_type: CheckedTypeKind,
-
     pub entry_block: BasicBlockId,
     pub blocks: HashMap<BasicBlockId, BasicBlock>,
-
-    next_temp_id: usize,
-    next_block_id: usize,
-    next_var_id: usize,
-
-    var_map: HashMap<IdentifierNode, DefinitionId>,
+    pub variable_types: HashMap<(BasicBlockId, DefinitionId), CheckedTypeKind>,
 }
