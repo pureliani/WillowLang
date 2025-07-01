@@ -8,7 +8,6 @@ use crate::{
     },
     check::utils::scope::{Scope, ScopeKind},
     compile::string_interner::InternerId,
-    tfg::{TFGNodeId, TypeFlowGraph},
     tokenize::NumberKind,
 };
 
@@ -233,18 +232,10 @@ impl SemanticError {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct TFGContext {
-    pub loop_exit_nodes: Vec<TFGNodeId>,
-    pub graph: TypeFlowGraph,
-    pub current_node: TFGNodeId,
-}
-
 #[derive(Debug)]
 pub struct SemanticChecker<'a> {
     errors: &'a mut Vec<SemanticError>,
     scopes: Vec<Scope>,
-    tfg_contexts: Vec<TFGContext>,
     definition_counter: usize,
 }
 
@@ -254,7 +245,6 @@ impl<'a> SemanticChecker<'a> {
 
         let mut checker = SemanticChecker {
             errors: &mut errors,
-            tfg_contexts: vec![],
             definition_counter: 0,
             scopes: vec![Scope::new(ScopeKind::File)],
         };

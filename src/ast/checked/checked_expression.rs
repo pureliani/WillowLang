@@ -1,9 +1,6 @@
-use std::collections::{HashMap, HashSet};
-
 use crate::{
     ast::{checked::checked_type::CheckedType, DefinitionId, IdentifierNode, StringNode},
     check::utils::substitute_generics::GenericSubstitutionMap,
-    tfg::{TFGNodeVariableTypes, TypeFlowGraph},
     tokenize::NumberKind,
 };
 
@@ -29,13 +26,6 @@ pub enum RefinementKey {
     /// The refinement applies when the function's return value is of a certain type.
     /// This handles the non-literal return case.
     Type(CheckedType),
-}
-
-#[derive(Debug, Clone)]
-pub struct FunctionSummary {
-    pub exit_states: HashMap<RefinementKey, TFGNodeVariableTypes>,
-
-    pub guaranteed_calls: HashSet<DefinitionId>,
 }
 
 #[derive(Clone, Debug)]
@@ -143,8 +133,6 @@ pub enum CheckedExprKind {
         body: CheckedBlockContents,
         return_type: CheckedType,
         generic_params: Vec<CheckedGenericParam>,
-        tfg: TypeFlowGraph,
-        summary: FunctionSummary,
     },
     If {
         condition: Box<CheckedExpr>,

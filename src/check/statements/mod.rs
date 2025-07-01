@@ -18,7 +18,6 @@ use crate::{
         utils::scope::{ScopeKind, SymbolEntry},
         SemanticChecker, SemanticError,
     },
-    tfg::{NarrowingInfo, TFGNodeKind},
 };
 
 impl<'a> SemanticChecker<'a> {
@@ -210,22 +209,6 @@ impl<'a> SemanticChecker<'a> {
                     decl
                 };
 
-                if let Some(ctx) = self.tfg_contexts.last_mut() {
-                    let target = decl.borrow().id;
-                    let assigned_type = decl.borrow().constraint.kind.clone();
-
-                    let narrowing_node_id = ctx.graph.create_node(TFGNodeKind::Narrowing {
-                        narrowing: NarrowingInfo {
-                            target,
-                            narrowed_type: assigned_type,
-                        },
-                        next_node: None,
-                    });
-
-                    ctx.graph.link_sequential(ctx.current_node, narrowing_node_id);
-                    ctx.current_node = narrowing_node_id;
-                }
-
                 CheckedStmt::VarDecl(decl)
             }
             StmtKind::TypeAliasDecl(TypeAliasDecl {
@@ -282,12 +265,6 @@ impl<'a> SemanticChecker<'a> {
 
                 let value = self.check_expr(expr);
 
-                if let Some(context) = self.tfg_contexts.last_mut() {
-                    let exit_node = context.graph.create_node(TFGNodeKind::Exit);
-                    context.graph.link_sequential(context.current_node, exit_node);
-                    context.current_node = exit_node;
-                }
-
                 CheckedStmt::Return(value)
             }
             StmtKind::Assignment { target, value } => {
@@ -319,27 +296,6 @@ impl<'a> SemanticChecker<'a> {
                             target: checked_target.ty.clone(),
                         });
                     }
-                }
-
-                if let CheckedExprKind::Identifier(id) = &checked_target.kind {
-                    if let Some(SymbolEntry::VarDecl(decl)) = self.scope_lookup(id.name) {
-                        if let Some(ctx) = self.tfg_contexts.last_mut() {
-                            let target = decl.borrow().id;
-                            let assigned_type = checked_value.ty.kind.clone();
-
-                            let narrowing_node_id = ctx.graph.create_node(TFGNodeKind::Narrowing {
-                                narrowing: NarrowingInfo {
-                                    target,
-                                    narrowed_type: assigned_type,
-                                },
-                                next_node: None,
-                            });
-
-                            ctx.graph.link_sequential(ctx.current_node, narrowing_node_id);
-                            ctx.current_node = narrowing_node_id;
-                        }
-                    }
-                    // TODO: handle struct field assignments
                 }
 
                 CheckedStmt::Assignment {

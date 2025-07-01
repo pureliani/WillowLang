@@ -19,9 +19,8 @@ use crate::{
             scope::{ScopeKind, SymbolEntry},
             union_of::union_of,
         },
-        SemanticChecker, SemanticError, TFGContext,
+        SemanticChecker, SemanticError,
     },
-    tfg::{TFGNodeKind, TypeFlowGraph},
 };
 
 impl<'a> SemanticChecker<'a> {
@@ -37,14 +36,6 @@ impl<'a> SemanticChecker<'a> {
         self.enter_scope(ScopeKind::Function);
 
         let checked_generic_params = self.check_generic_params(&generic_params);
-
-        let new_tfg = TypeFlowGraph::new();
-        let entry_node_id = new_tfg.entry_node_id;
-        self.tfg_contexts.push(TFGContext {
-            loop_exit_nodes: vec![],
-            graph: new_tfg,
-            current_node: entry_node_id,
-        });
 
         let checked_params: Vec<CheckedParam> = params
             .iter()
@@ -109,22 +100,6 @@ impl<'a> SemanticChecker<'a> {
             actual_return_type
         };
 
-        let mut completed_context = self.tfg_contexts.pop().expect("TFG context stack should not be empty");
-
-        let current_node_id = completed_context.current_node;
-        let needs_exit_node = if let Some(node) = completed_context.graph.get_node(current_node_id) {
-            !matches!(node.kind, TFGNodeKind::Exit)
-        } else {
-            false
-        };
-
-        if needs_exit_node {
-            let exit_node = completed_context.graph.create_node(TFGNodeKind::Exit);
-            completed_context.graph.link_successor(current_node_id, exit_node);
-        }
-
-        let summary = completed_context.graph.generate_summary();
-
         let expr_type = CheckedType {
             kind: CheckedTypeKind::FnType(CheckedFnType {
                 params: checked_params.clone(),
@@ -145,8 +120,6 @@ impl<'a> SemanticChecker<'a> {
                 body: checked_body,
                 return_type: final_return_type,
                 generic_params: checked_generic_params,
-                tfg: completed_context.graph,
-                summary,
             },
         }
     }
