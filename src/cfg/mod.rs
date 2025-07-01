@@ -2,7 +2,10 @@ use std::collections::HashMap;
 
 use crate::{
     ast::{
-        checked::{checked_declaration::CheckedParam, checked_type::CheckedTypeKind},
+        checked::{
+            checked_declaration::{CheckedGenericParam, CheckedParam},
+            checked_type::CheckedTypeKind,
+        },
         DefinitionId, IdentifierNode, Span,
     },
     compile::string_interner::InternerId,
@@ -185,8 +188,8 @@ pub struct BasicBlock {
 
 #[derive(Clone, Debug)]
 pub struct ControlFlowGraph {
-    pub function_name: IdentifierNode,
-    pub parameters: Vec<CheckedParam>,
+    pub generic_params: Vec<CheckedGenericParam>,
+    pub parms: Vec<CheckedParam>,
     pub return_type: CheckedTypeKind,
     pub entry_block: BasicBlockId,
     pub blocks: HashMap<BasicBlockId, BasicBlock>,
