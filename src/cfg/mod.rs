@@ -42,7 +42,7 @@ pub enum RValue {
         ty: CheckedTypeKind,
         span: Span,
     },
-    Temp {
+    Use {
         id: ValueId,
         ty: CheckedTypeKind,
     },
