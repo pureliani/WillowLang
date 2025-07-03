@@ -19,7 +19,7 @@ pub struct BasicBlockId(usize);
 pub struct AllocationSiteId(usize);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub struct TemporaryId(usize);
+pub struct ValueId(usize);
 
 #[derive(Clone, Debug)]
 pub enum RValue {
@@ -43,25 +43,20 @@ pub enum RValue {
         span: Span,
     },
     Temp {
-        id: TemporaryId,
+        id: ValueId,
         ty: CheckedTypeKind,
-    },
-    Var {
-        id: DefinitionId,
-        ty: CheckedTypeKind,
-        span: Span,
     },
 }
 
 #[derive(Clone, Debug)]
-pub enum LValue {
-    Var {
+pub enum Pointer {
+    StackSlot {
         id: DefinitionId,
         ty: CheckedTypeKind,
         span: Span,
     },
     FieldAccess {
-        object_temp: TemporaryId,
+        object_ptr: ValueId,
         object_type: CheckedTypeKind,
         field_name: IdentifierNode,
         field_type: CheckedTypeKind,
@@ -71,65 +66,62 @@ pub enum LValue {
 
 #[derive(Clone, Debug)]
 pub enum Instruction {
-    Assign {
-        destination: LValue,
-        source: RValue,
+    Alloc {
+        destination_ptr: Pointer,
         span: Span,
     },
-
-    // --- Heap Allocation ---
-    // `New` allocates raw memory and returns a pointer (Temp) to it.
-    // This pointer is of a "raw pointer" to the `result_type` type.
+    Store {
+        destination_ptr: Pointer,
+        source_val: RValue,
+        span: Span,
+    },
+    Load {
+        destination_temp: ValueId,
+        source_ptr: Pointer,
+        span: Span,
+    },
     New {
-        destination: TemporaryId,
+        destination_temp: ValueId,
         result_type: CheckedTypeKind,
         allocation_site_id: AllocationSiteId,
         span: Span,
     },
-
-    // --- Operations that produce a new value (into a TemporaryId) ---
-    Load {
-        destination: TemporaryId,
-        source: LValue,
-        span: Span,
-    },
     UnaryOp {
         op_kind: UnaryOperationKind,
-        destination: TemporaryId,
+        destination: ValueId,
         operand: RValue,
         result_type: CheckedTypeKind,
         span: Span,
     },
     BinaryOp {
         op_kind: BinaryOperationKind,
-        destination: TemporaryId,
+        destination: ValueId,
         left: RValue,
         right: RValue,
         result_type: CheckedTypeKind,
         span: Span,
     },
     TypeCast {
-        destination: TemporaryId,
+        destination: ValueId,
         operand: RValue,
         target_type: CheckedTypeKind,
         span: Span,
     },
     IsType {
-        destination: TemporaryId,
+        destination: ValueId,
         operand_to_check: RValue,
         type_to_check_against: CheckedTypeKind,
-        // result_type is implicitly Bool
         span: Span,
     },
     FunctionCall {
-        destination: Option<TemporaryId>, // For non-void functions
-        function_rvalue: RValue, // RValue that evaluates to a function (e.g., Var holding func, or direct func identifier)
+        destination: Option<ValueId>,
+        function_rvalue: RValue,
         args: Vec<RValue>,
         result_type: CheckedTypeKind,
         span: Span,
     },
     Phi {
-        destination: TemporaryId,
+        destination: ValueId,
         sources: Vec<(BasicBlockId, RValue)>,
     },
     Nop {
@@ -193,5 +185,5 @@ pub struct ControlFlowGraph {
     pub return_type: CheckedTypeKind,
     pub entry_block: BasicBlockId,
     pub blocks: HashMap<BasicBlockId, BasicBlock>,
-    pub variable_types: HashMap<(BasicBlockId, DefinitionId), CheckedTypeKind>,
+    pub value_types: HashMap<ValueId, CheckedTypeKind>,
 }
