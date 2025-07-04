@@ -1,8 +1,7 @@
 mod expressions;
-mod parse_generic_args;
-mod parse_generic_params;
 mod statements;
 mod type_annotations;
+mod utils;
 
 pub struct Parser<'a, 'b> {
     pub offset: usize,

@@ -1,9 +1,8 @@
 use crate::{
-    ast::{base::base_declaration::GenericParam, base::base_type::TypeAnnotation},
+    ast::base::{base_declaration::GenericParam, base_type::TypeAnnotation},
+    parse::{Parser, ParsingError},
     tokenize::{PunctuationKind, TokenKind},
 };
-
-use super::{Parser, ParsingError};
 
 impl<'a, 'b> Parser<'a, 'b> {
     pub fn parse_generic_param_constraint(&mut self) -> Result<Option<TypeAnnotation>, ParsingError<'a>> {

@@ -1,9 +1,8 @@
 use crate::{
     ast::base::base_type::TypeAnnotation,
+    parse::{Parser, ParsingError},
     tokenize::{PunctuationKind, TokenKind},
 };
-
-use super::{Parser, ParsingError};
 
 impl<'a, 'b> Parser<'a, 'b> {
     pub fn parse_optional_generic_args(&mut self) -> Result<Vec<TypeAnnotation>, ParsingError<'a>> {
