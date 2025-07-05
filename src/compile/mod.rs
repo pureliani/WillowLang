@@ -257,9 +257,6 @@ pub fn compile_file<'a, 'b>(
                 err.with_message("Unresolved generic parameter")
                     .with_label(label.with_message(format!("Could not resolve generic parameter with name \"{}\"", name)))
             }
-            SemanticError::CannotUseIsTypeOnNonUnion { .. } => err
-                .with_message("Cannot use the \"::is(T)\" method on a non-union type")
-                .with_label(label.with_message("Cannot use the \"::is(T)\" method on a non-union type")),
             SemanticError::ConflictingGenericBinding {
                 generic_param,
                 existing,

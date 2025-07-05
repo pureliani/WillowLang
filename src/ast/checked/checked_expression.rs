@@ -105,10 +105,6 @@ pub enum CheckedExprKind {
         left: Box<CheckedExpr>,
         target: CheckedType,
     },
-    IsType {
-        left: Box<CheckedExpr>,
-        target: CheckedType,
-    },
     FnCall {
         left: Box<CheckedExpr>,
         args: Vec<CheckedExpr>,

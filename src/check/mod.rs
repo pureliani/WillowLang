@@ -127,9 +127,6 @@ pub enum SemanticError {
         param: IdentifierNode,
         span: Span,
     },
-    CannotUseIsTypeOnNonUnion {
-        target: CheckedType,
-    },
     ConflictingGenericBinding {
         generic_param: CheckedGenericParam,
         existing: CheckedType,
@@ -179,7 +176,6 @@ impl SemanticError {
             SemanticError::CannotUseVariableDeclarationAsType { span, .. } => *span,
             SemanticError::AccessToUndefinedField { field } => field.span,
             SemanticError::UnresolvedGenericParam { span, .. } => *span,
-            SemanticError::CannotUseIsTypeOnNonUnion { target } => target.span,
             SemanticError::ConflictingGenericBinding { new, .. } => new.span,
             SemanticError::TypeAliasMustBeDeclaredAtTopLevel { span } => *span,
             SemanticError::StructMustBeDeclaredAtTopLevel { span } => *span,
@@ -210,7 +206,6 @@ impl SemanticError {
             SemanticError::CannotUseVariableDeclarationAsType { .. } => 17,
             SemanticError::VarDeclWithoutInitializer { .. } => 18,
             SemanticError::AccessToUndefinedField { .. } => 19,
-            SemanticError::CannotUseIsTypeOnNonUnion { .. } => 20,
             SemanticError::InvalidArraySizeValue { .. } => 21,
             SemanticError::FnArgumentCountMismatch { .. } => 22,
             SemanticError::GenericArgumentCountMismatch { .. } => 23,

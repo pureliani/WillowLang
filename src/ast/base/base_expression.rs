@@ -88,10 +88,6 @@ pub enum ExprKind {
         left: Box<Expr>,
         target: TypeAnnotation,
     },
-    IsType {
-        left: Box<Expr>,
-        target: TypeAnnotation,
-    },
     GenericApply {
         left: Box<Expr>,
         args: Vec<TypeAnnotation>,

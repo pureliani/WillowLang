@@ -11,7 +11,6 @@ pub mod check_generic_apply_expr;
 pub mod check_identifier_expr;
 pub mod check_if_expr;
 pub mod check_inequality_expr;
-pub mod check_is_type_expr;
 pub mod check_logical_negation_expr;
 pub mod check_numeric_expr;
 pub mod check_or_expr;
@@ -72,7 +71,6 @@ impl<'a> SemanticChecker<'a> {
             ExprKind::Access { left, field } => self.check_access_expr(left, field, expr.span),
             ExprKind::StaticAccess { left, field } => self.check_static_access_expr(left, field, expr.span),
             ExprKind::TypeCast { left, target } => self.check_type_cast_expr(left, target, expr.span),
-            ExprKind::IsType { left, target } => self.check_is_type_expr(left, target, expr.span),
             ExprKind::GenericApply { left, args } => self.check_generic_apply_expr(left, args, expr.span),
             ExprKind::FnCall { left, args } => self.check_fn_call_expr(left, args, expr.span),
             ExprKind::StructLiteral(fields) => self.check_struct_literal_expr(fields, expr.span),

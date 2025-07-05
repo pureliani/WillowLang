@@ -107,12 +107,6 @@ pub enum Instruction {
         target_type: CheckedTypeKind,
         span: Span,
     },
-    IsType {
-        destination: ValueId,
-        operand_to_check: RValue,
-        type_to_check_against: CheckedTypeKind,
-        span: Span,
-    },
     FunctionCall {
         destination: Option<ValueId>,
         function_rvalue: RValue,

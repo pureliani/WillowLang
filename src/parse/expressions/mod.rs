@@ -293,29 +293,19 @@ impl<'a, 'b> Parser<'a, 'b> {
                     TokenKind::Punctuation(PunctuationKind::LParen) => {
                         if let ExprKind::StaticAccess { left, field } = lhs.kind.clone() {
                             let is_type_cast = field.name == self.interner.intern("as");
-                            let is_type_check = field.name == self.interner.intern("is");
 
-                            if is_type_cast || is_type_check {
+                            if is_type_cast {
                                 let start_offset = self.offset;
                                 self.consume_punctuation(PunctuationKind::LParen)?;
                                 let target_type = self.parse_type_annotation(0)?;
                                 self.consume_punctuation(PunctuationKind::RParen)?;
                                 let span_end = self.get_span(start_offset, self.offset - 1)?;
 
-                                let kind = if is_type_cast {
-                                    ExprKind::TypeCast {
-                                        left,
-                                        target: target_type,
-                                    }
-                                } else {
-                                    ExprKind::IsType {
-                                        left,
-                                        target: target_type,
-                                    }
-                                };
-
                                 Some(Expr {
-                                    kind,
+                                    kind: ExprKind::TypeCast {
+                                        left,
+                                        target: target_type,
+                                    },
                                     span: Span {
                                         start: lhs.span.start,
                                         end: span_end.end,
