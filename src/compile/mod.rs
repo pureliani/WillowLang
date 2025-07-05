@@ -69,9 +69,9 @@ pub fn compile_file<'a, 'b>(
         let diagnostic = match &e.kind {
             ParsingErrorKind::DocMustBeFollowedByDeclaration => err
                 .with_message("Documentation must be followed by a declaration of ")
-                .with_label(label.with_message(
-                    "This documentation must be followed by a declaration of either struct, type alias, enum or a variable",
-                )),
+                .with_label(
+                    label.with_message("This documentation must be followed by a declaration of a type alias or a variable"),
+                ),
             ParsingErrorKind::ExpectedAnExpressionButFound(token) => {
                 err.with_message("Expected an expression")
                     .with_label(label.with_message(format!(

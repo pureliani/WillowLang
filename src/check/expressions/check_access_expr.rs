@@ -15,10 +15,7 @@ impl<'a> SemanticChecker<'a> {
         let checked_left = self.check_expr(*left);
 
         let expr_type = match &checked_left.ty.kind {
-            // TODO: Add enum declaration handler
-            CheckedTypeKind::StructDecl(decl) => decl
-                .borrow()
-                .fields
+            CheckedTypeKind::Struct(fields) => fields
                 .iter()
                 .find(|p| p.identifier == field)
                 .map(|p| p.constraint.clone())

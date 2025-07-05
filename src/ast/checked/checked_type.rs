@@ -6,8 +6,7 @@ use std::{
 };
 
 use crate::ast::{
-    base::base_declaration::EnumDecl,
-    checked::checked_declaration::{CheckedFnType, CheckedStructDecl, CheckedTypeAliasDecl},
+    checked::checked_declaration::{CheckedFnType, CheckedParam, CheckedTypeAliasDecl},
     Span,
 };
 
@@ -32,9 +31,8 @@ pub enum CheckedTypeKind {
     F64,
     Char,
     Array { item_type: Box<CheckedType>, size: usize },
-    StructDecl(Rc<RefCell<CheckedStructDecl>>),
+    Struct(Vec<CheckedParam>),
     TypeAliasDecl(Rc<RefCell<CheckedTypeAliasDecl>>),
-    EnumDecl(EnumDecl),
     GenericParam(CheckedGenericParam),
     FnType(CheckedFnType),
     Union(HashSet<CheckedType>),
@@ -64,8 +62,7 @@ impl PartialEq for CheckedTypeKind {
             (CheckedTypeKind::Unknown, CheckedTypeKind::Unknown) => true,
             (CheckedTypeKind::GenericParam(a), CheckedTypeKind::GenericParam(b)) => a == b,
             (CheckedTypeKind::TypeAliasDecl(a), CheckedTypeKind::TypeAliasDecl(b)) => a == b,
-            (CheckedTypeKind::StructDecl(a), CheckedTypeKind::StructDecl(b)) => a == b,
-            (CheckedTypeKind::EnumDecl(a), CheckedTypeKind::EnumDecl(b)) => a == b,
+            (CheckedTypeKind::Struct(a), CheckedTypeKind::Struct(b)) => a == b,
             (CheckedTypeKind::FnType(a), CheckedTypeKind::FnType(b)) => a == b,
             (CheckedTypeKind::Union(a_items), CheckedTypeKind::Union(b_items)) => {
                 if a_items.len() != b_items.len() {
@@ -113,9 +110,8 @@ impl Hash for CheckedTypeKind {
             CheckedTypeKind::F64 => {}
             CheckedTypeKind::Char => {}
             CheckedTypeKind::Unknown => {}
-            CheckedTypeKind::StructDecl(decl) => decl.borrow().hash(state),
+            CheckedTypeKind::Struct(fields) => fields.iter().for_each(|f| f.hash(state)),
             CheckedTypeKind::TypeAliasDecl(decl) => decl.borrow().hash(state),
-            CheckedTypeKind::EnumDecl(decl) => decl.hash(state),
             CheckedTypeKind::GenericParam(decl) => decl.hash(state),
             CheckedTypeKind::FnType(decl) => decl.hash(state),
             CheckedTypeKind::Union(items) => {

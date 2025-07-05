@@ -80,7 +80,7 @@ pub fn is_start_of_expr(token_kind: &TokenKind) -> bool {
 }
 
 impl<'a, 'b> Parser<'a, 'b> {
-    pub fn parse_expr(&mut self, min_prec: u8, allow_struct_literal_suffix: bool) -> Result<Expr, ParsingError<'a>> {
+    pub fn parse_expr(&mut self, min_prec: u8) -> Result<Expr, ParsingError<'a>> {
         let token = self.current().ok_or(self.unexpected_end_of_input())?;
 
         let token_span = token.span;
@@ -121,19 +121,35 @@ impl<'a, 'b> Parser<'a, 'b> {
             TokenKind::Punctuation(PunctuationKind::LBrace) => {
                 let start_offset = self.offset;
 
-                let block_contents = self.parse_codeblock_expr()?;
+                self.place_checkpoint();
+                let result = self.parse_struct_init_expr().or_else(|struct_err| {
+                    let offset_after_struct_expr_attempt = self.offset;
+                    self.goto_checkpoint();
+                    self.parse_codeblock_expr()
+                        .and_then(|block_contents| {
+                            Ok(Expr {
+                                kind: ExprKind::Block(block_contents),
+                                span: self.get_span(start_offset, self.offset - 1)?,
+                            })
+                        })
+                        .or_else(|codeblock_err| {
+                            let offset_after_codeblock_attempt = self.offset;
+                            if offset_after_struct_expr_attempt >= offset_after_codeblock_attempt {
+                                Err(struct_err)
+                            } else {
+                                Err(codeblock_err)
+                            }
+                        })
+                })?;
 
-                Expr {
-                    kind: ExprKind::Block(block_contents),
-                    span: self.get_span(start_offset, self.offset - 1)?,
-                }
+                result
             }
             TokenKind::Punctuation(PunctuationKind::LBracket) => {
                 let start_offset = self.offset;
                 self.consume_punctuation(PunctuationKind::LBracket)?;
                 let items: Vec<Expr> = self
                     .comma_separated(
-                        |p| p.parse_expr(0, true),
+                        |p| p.parse_expr(0),
                         |p| p.match_token(0, TokenKind::Punctuation(PunctuationKind::RBracket)),
                     )?
                     .into_iter()
@@ -153,7 +169,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                 let start_offset = self.offset;
 
                 self.consume_punctuation(PunctuationKind::Minus)?;
-                let expr = self.parse_expr(r_bp, true)?;
+                let expr = self.parse_expr(r_bp)?;
                 Expr {
                     kind: ExprKind::Neg { right: Box::new(expr) },
                     span: self.get_span(start_offset, self.offset - 1)?,
@@ -164,7 +180,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                 let start_offset = self.offset;
 
                 self.consume_punctuation(PunctuationKind::Not)?;
-                let expr = self.parse_expr(r_bp, true)?;
+                let expr = self.parse_expr(r_bp)?;
                 Expr {
                     kind: ExprKind::Not { right: Box::new(expr) },
                     span: self.get_span(start_offset, self.offset - 1)?,
@@ -315,15 +331,6 @@ impl<'a, 'b> Parser<'a, 'b> {
                             Some(self.parse_fn_call_expr(lhs_clone)?)
                         }
                     }
-                    TokenKind::Punctuation(PunctuationKind::LBrace) => {
-                        let allow_lhs_kind = matches!(&lhs_clone.kind, ExprKind::Identifier(_) | ExprKind::GenericApply { .. });
-
-                        if allow_struct_literal_suffix && allow_lhs_kind {
-                            Some(self.parse_struct_init_expr(lhs_clone)?)
-                        } else {
-                            None
-                        }
-                    }
                     _ => {
                         return Err(ParsingError {
                             span: op.span,
@@ -347,7 +354,7 @@ impl<'a, 'b> Parser<'a, 'b> {
 
                 self.advance();
 
-                let rhs = self.parse_expr(right_prec, allow_struct_literal_suffix)?;
+                let rhs = self.parse_expr(right_prec)?;
 
                 let end_pos = rhs.span.end;
 

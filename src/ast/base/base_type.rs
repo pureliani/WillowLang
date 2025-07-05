@@ -24,6 +24,7 @@ pub enum TypeAnnotationKind {
     F64,
     Char,
     Identifier(IdentifierNode),
+    Struct(Vec<Param>),
     Array {
         item_type: Box<TypeAnnotation>,
         size: NumberKind,

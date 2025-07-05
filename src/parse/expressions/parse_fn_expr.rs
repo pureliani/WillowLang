@@ -77,7 +77,7 @@ mod test {
             tokens,
             interner: &mut interner,
         };
-        let actual_ast = parser.parse_expr(0, true);
+        let actual_ast = parser.parse_expr(0);
         let expected_ast = Ok(Expr {
             kind: ExprKind::Fn {
                 params: vec![],
@@ -128,7 +128,7 @@ mod test {
             tokens,
             interner: &mut interner,
         };
-        let actual_ast = parser.parse_expr(0, true);
+        let actual_ast = parser.parse_expr(0);
         let expected_ast = Ok(Expr {
             kind: ExprKind::Fn {
                 params: vec![Param {
@@ -212,7 +212,7 @@ mod test {
             tokens,
             interner: &mut interner,
         };
-        let actual_ast = parser.parse_expr(0, true);
+        let actual_ast = parser.parse_expr(0);
         let expected_ast = Ok(Expr {
             kind: ExprKind::Fn {
                 generic_params: vec![GenericParam {
@@ -328,7 +328,7 @@ mod test {
             tokens,
             interner: &mut interner,
         };
-        let actual_ast = parser.parse_expr(0, true);
+        let actual_ast = parser.parse_expr(0);
         let expected_ast = Ok(Expr {
             kind: ExprKind::Fn {
                 generic_params: vec![GenericParam {

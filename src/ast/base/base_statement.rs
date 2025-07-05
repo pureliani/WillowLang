@@ -1,15 +1,13 @@
 use crate::ast::{IdentifierNode, Span, StringNode};
 
 use super::{
-    base_declaration::{EnumDecl, StructDecl, TypeAliasDecl, VarDecl},
+    base_declaration::{TypeAliasDecl, VarDecl},
     base_expression::{BlockContents, Expr},
 };
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum StmtKind {
     Expression(Expr),
-    StructDecl(StructDecl),
-    EnumDecl(EnumDecl),
     TypeAliasDecl(TypeAliasDecl),
     VarDecl(VarDecl),
     Break,

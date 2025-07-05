@@ -48,30 +48,6 @@ impl Hash for CheckedGenericParam {
 }
 
 #[derive(Clone, Debug)]
-pub struct CheckedStructDecl {
-    pub identifier: IdentifierNode,
-    pub documentation: Option<DocAnnotation>,
-    pub generic_params: Vec<CheckedGenericParam>,
-    pub applied_type_args: Vec<CheckedType>,
-    pub fields: Vec<CheckedParam>,
-    pub span: Span,
-}
-
-impl Eq for CheckedStructDecl {}
-impl PartialEq for CheckedStructDecl {
-    fn eq(&self, other: &Self) -> bool {
-        self.identifier == other.identifier && self.generic_params == other.generic_params && self.fields == other.fields
-    }
-}
-impl Hash for CheckedStructDecl {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.identifier.hash(state);
-        self.generic_params.hash(state);
-        self.fields.hash(state);
-    }
-}
-
-#[derive(Clone, Debug)]
 pub struct CheckedFnType {
     pub params: Vec<CheckedParam>,
     pub return_type: Box<CheckedType>,

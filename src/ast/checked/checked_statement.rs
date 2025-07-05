@@ -1,18 +1,16 @@
 use std::{cell::RefCell, rc::Rc};
 
-use crate::ast::{base::base_declaration::EnumDecl, IdentifierNode, Span, StringNode};
+use crate::ast::{IdentifierNode, Span, StringNode};
 
 use super::{
-    checked_declaration::{CheckedStructDecl, CheckedTypeAliasDecl, CheckedVarDecl},
+    checked_declaration::{CheckedTypeAliasDecl, CheckedVarDecl},
     checked_expression::{CheckedBlockContents, CheckedExpr},
 };
 
 #[derive(Clone, Debug)]
 pub enum CheckedStmt {
     Expression(CheckedExpr),
-    StructDecl(Rc<RefCell<CheckedStructDecl>>),
     TypeAliasDecl(Rc<RefCell<CheckedTypeAliasDecl>>),
-    EnumDecl(EnumDecl),
     VarDecl(Rc<RefCell<CheckedVarDecl>>),
     Break {
         span: Span,

@@ -1,5 +1,6 @@
 pub mod parse_fn_type_annotation;
 pub mod parse_parenthesized_type_annotation;
+pub mod parse_struct_type_annotation;
 
 use super::{Parser, ParsingError, ParsingErrorKind};
 use crate::{
@@ -235,6 +236,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                     span,
                 }
             }
+            TokenKind::Punctuation(PunctuationKind::LBrace) => self.parse_struct_type()?,
             TokenKind::Identifier(_) => {
                 let start_offset = self.offset;
 

@@ -3,7 +3,7 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 use crate::{
     ast::{
         checked::{
-            checked_declaration::{CheckedFnType, CheckedGenericParam, CheckedParam, CheckedStructDecl, CheckedTypeAliasDecl},
+            checked_declaration::{CheckedFnType, CheckedGenericParam, CheckedParam, CheckedTypeAliasDecl},
             checked_type::{CheckedType, CheckedTypeKind},
         },
         Span,
@@ -106,30 +106,18 @@ impl<'a> SemanticChecker<'a> {
                     span: ty.span,
                 }
             }
-            CheckedTypeKind::StructDecl(decl) => {
-                let decl = decl.borrow();
-                let applied_type_args: Vec<CheckedType> =
-                    self.resolve_applied_type_args(&decl.generic_params, substitutions, ty.span);
-
-                let substituted_fields = decl
-                    .fields
+            CheckedTypeKind::Struct(fields) => {
+                let substituted_fields = fields
                     .iter()
-                    .map(|p| CheckedParam {
-                        id: p.id,
-                        identifier: p.identifier,
-                        constraint: self.substitute_generics(&p.constraint, substitutions),
+                    .map(|f| CheckedParam {
+                        id: f.id,
+                        identifier: f.identifier,
+                        constraint: self.substitute_generics(&f.constraint, substitutions),
                     })
                     .collect();
 
                 CheckedType {
-                    kind: CheckedTypeKind::StructDecl(Rc::new(RefCell::new(CheckedStructDecl {
-                        fields: substituted_fields,
-                        documentation: decl.documentation.clone(),
-                        identifier: decl.identifier, // maybe we should rename this?
-                        generic_params: vec![],
-                        span: decl.span,
-                        applied_type_args,
-                    }))),
+                    kind: CheckedTypeKind::Struct(substituted_fields),
                     span: ty.span,
                 }
             }
@@ -181,8 +169,7 @@ impl<'a> SemanticChecker<'a> {
             | CheckedTypeKind::Char
             | CheckedTypeKind::Void
             | CheckedTypeKind::Null
-            | CheckedTypeKind::Unknown
-            | CheckedTypeKind::EnumDecl(_) => ty.clone(),
+            | CheckedTypeKind::Unknown => ty.clone(),
         }
     }
 }

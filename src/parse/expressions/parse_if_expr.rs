@@ -10,7 +10,7 @@ impl<'a, 'b> Parser<'a, 'b> {
 
         self.consume_keyword(KeywordKind::If)?;
 
-        let condition = self.parse_expr(0, false)?;
+        let condition = self.parse_expr(0)?;
         let then_branch = self.parse_codeblock_expr()?;
 
         let mut else_if_branches = Vec::new();
@@ -20,7 +20,7 @@ impl<'a, 'b> Parser<'a, 'b> {
             self.advance();
             self.advance();
 
-            let else_if_condition = self.parse_expr(0, false)?;
+            let else_if_condition = self.parse_expr(0)?;
             let else_if_body = self.parse_codeblock_expr()?;
             else_if_branches.push((Box::new(else_if_condition), else_if_body));
         }

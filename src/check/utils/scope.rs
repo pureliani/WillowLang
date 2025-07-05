@@ -2,8 +2,7 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::{
     ast::{
-        base::base_declaration::EnumDecl,
-        checked::checked_declaration::{CheckedGenericParam, CheckedStructDecl, CheckedTypeAliasDecl, CheckedVarDecl},
+        checked::checked_declaration::{CheckedGenericParam, CheckedTypeAliasDecl, CheckedVarDecl},
         IdentifierNode,
     },
     check::{SemanticChecker, SemanticError},
@@ -17,16 +16,13 @@ pub enum ScopeKind {
     CodeBlock,
     File,
     TypeAlias,
-    Struct,
     FnType,
 }
 
 #[derive(Debug, Clone)]
 pub enum SymbolEntry {
-    StructDecl(Rc<RefCell<CheckedStructDecl>>),
     VarDecl(Rc<RefCell<CheckedVarDecl>>),
     TypeAliasDecl(Rc<RefCell<CheckedTypeAliasDecl>>),
-    EnumDecl(EnumDecl),
     GenericParam(CheckedGenericParam),
 }
 

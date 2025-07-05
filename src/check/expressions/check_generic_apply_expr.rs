@@ -48,7 +48,6 @@ impl<'a> SemanticChecker<'a> {
 
         let (type_kind, substitutions) = match &checked_left.ty.kind {
             CheckedTypeKind::FnType(CheckedFnType { generic_params, .. }) => substitute(generic_params, type_args),
-            CheckedTypeKind::StructDecl(decl) => substitute(&decl.borrow().generic_params, type_args),
             _ => {
                 self.errors.push(SemanticError::CannotApplyTypeArguments {
                     to: checked_left.ty.clone(),

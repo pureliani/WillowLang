@@ -9,7 +9,7 @@ impl<'a, 'b> Parser<'a, 'b> {
         let start_offset = self.offset;
 
         self.consume_keyword(KeywordKind::While)?;
-        let condition = Box::new(self.parse_expr(0, false)?);
+        let condition = Box::new(self.parse_expr(0)?);
         let body = self.parse_codeblock_expr()?;
 
         let span = self.get_span(start_offset, self.offset - 1)?;

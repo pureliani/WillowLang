@@ -14,7 +14,6 @@ pub enum LiteralValue {
     Bool(bool),
     Null,
     // String(InternerId),
-    // EnumVariant(DefinitionId, VariantId),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

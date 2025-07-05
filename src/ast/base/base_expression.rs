@@ -100,10 +100,7 @@ pub enum ExprKind {
         left: Box<Expr>,
         args: Vec<Expr>,
     },
-    StructInit {
-        left: Box<Expr>,
-        fields: Vec<(IdentifierNode, Expr)>,
-    },
+    StructLiteral(Vec<(IdentifierNode, Expr)>),
     Null,
     BoolLiteral {
         value: bool,

@@ -75,7 +75,7 @@ impl<'a> SemanticChecker<'a> {
             ExprKind::IsType { left, target } => self.check_is_type_expr(left, target, expr.span),
             ExprKind::GenericApply { left, args } => self.check_generic_apply_expr(left, args, expr.span),
             ExprKind::FnCall { left, args } => self.check_fn_call_expr(left, args, expr.span),
-            ExprKind::StructInit { left, fields } => self.check_struct_init_expr(left, fields, expr.span),
+            ExprKind::StructLiteral(fields) => self.check_struct_literal_expr(fields, expr.span),
             ExprKind::Null => CheckedExpr {
                 kind: CheckedExprKind::Null,
                 ty: CheckedType {

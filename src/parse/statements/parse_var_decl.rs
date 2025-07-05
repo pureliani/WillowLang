@@ -24,7 +24,7 @@ impl<'a, 'b> Parser<'a, 'b> {
 
         let value = if self.match_token(0, TokenKind::Punctuation(PunctuationKind::Eq)) {
             self.consume_punctuation(PunctuationKind::Eq)?;
-            Some(self.parse_expr(0, true)?)
+            Some(self.parse_expr(0)?)
         } else {
             None
         };

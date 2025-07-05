@@ -112,8 +112,6 @@ impl PunctuationKind {
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum KeywordKind {
-    Struct,
-    Enum,
     Let,
     Return,
     If,
@@ -147,8 +145,6 @@ pub enum KeywordKind {
 impl KeywordKind {
     pub fn to_string(&self) -> String {
         String::from(match self {
-            KeywordKind::Struct => "struct",
-            KeywordKind::Enum => "enum",
             KeywordKind::Let => "let",
             KeywordKind::Return => "return",
             KeywordKind::If => "if",
@@ -514,8 +510,6 @@ fn is_alphanumeric(value: &str) -> bool {
 
 fn is_keyword(identifier: &str) -> Option<KeywordKind> {
     match identifier {
-        "struct" => Some(KeywordKind::Struct),
-        "enum" => Some(KeywordKind::Enum),
         "let" => Some(KeywordKind::Let),
         "return" => Some(KeywordKind::Return),
         "if" => Some(KeywordKind::If),

@@ -19,7 +19,7 @@ impl<'a> Tokenizer<'a> {
 mod tests {
     use crate::{
         ast::{Position, Span},
-        tokenize::{KeywordKind, Token, TokenKind, Tokenizer},
+        tokenize::{Token, TokenKind, Tokenizer},
     };
     use pretty_assertions::assert_eq;
 
@@ -41,30 +41,6 @@ mod tests {
                         line: 1,
                         col: 6,
                         byte_offset: 5
-                    }
-                }
-            }]
-        )
-    }
-
-    #[test]
-    fn tokenizes_keywords() {
-        let (tokens, _) = Tokenizer::tokenize("struct");
-
-        assert_eq!(
-            tokens,
-            vec![Token {
-                kind: TokenKind::Keyword(KeywordKind::Struct),
-                span: Span {
-                    start: Position {
-                        line: 1,
-                        col: 1,
-                        byte_offset: 0
-                    },
-                    end: Position {
-                        line: 1,
-                        col: 7,
-                        byte_offset: 6
                     }
                 }
             }]

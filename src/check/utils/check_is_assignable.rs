@@ -1,4 +1,4 @@
-use std::{collections::HashSet, rc::Rc};
+use std::collections::HashSet;
 
 use crate::{
     ast::checked::{
@@ -38,8 +38,8 @@ impl<'a> SemanticChecker<'a> {
             | (F64, F64)
             | (Char, Char)
             | (Bool, Bool)
-            | (Null, Null)
             | (Void, Void)
+            | (Null, Null)
             | (Unknown, _) => true,
             (Union(source), Union(target)) => source.iter().all(|source_item| {
                 target
@@ -73,30 +73,20 @@ impl<'a> SemanticChecker<'a> {
                     self.check_is_assignable_recursive(source_type, generic_constraint, visited_declarations)
                 }
             },
-            (StructDecl(source), StructDecl(target)) => {
-                if Rc::ptr_eq(source, target) {
-                    return true;
-                }
-
-                let source = source.borrow();
-                let target = target.borrow();
-
-                if source.fields.len() != target.fields.len() {
+            (Struct(source_fields), Struct(target_fields)) => {
+                if source_fields.len() != target_fields.len() {
                     return false;
                 }
 
-                let same_name = source.identifier.name == target.identifier.name;
-
-                let assignable_fields = source.fields.iter().zip(target.fields.iter()).all(|(sp, tp)| {
+                let is_assignable = source_fields.iter().zip(target_fields.iter()).all(|(sp, tp)| {
                     let same_name = sp.identifier.name == tp.identifier.name;
                     let assignable = self.check_is_assignable_recursive(&sp.constraint, &tp.constraint, visited_declarations);
 
                     same_name && assignable
                 });
 
-                same_name && assignable_fields
+                is_assignable
             }
-            (EnumDecl(source), EnumDecl(target)) => source.identifier == target.identifier, // TODO: come up with a way to uniquely identify each declaration
             (
                 Array {
                     item_type: source_item_type,

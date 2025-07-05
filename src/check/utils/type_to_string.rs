@@ -74,26 +74,20 @@ pub fn type_to_string_recursive(ty: &CheckedTypeKind, string_interner: &StringIn
         CheckedTypeKind::F64 => String::from("f64"),
         CheckedTypeKind::Char => String::from("char"),
         CheckedTypeKind::Unknown => String::from("unknown"),
-        CheckedTypeKind::StructDecl(decl) => {
-            let decl = decl.borrow();
+        CheckedTypeKind::Struct(params) => {
+            let params_str = params
+                .iter()
+                .map(|p| {
+                    format!(
+                        "{}: {}",
+                        identifier_to_string(p.identifier.name, string_interner),
+                        type_to_string_recursive(&p.constraint.kind, string_interner, false)
+                    )
+                })
+                .collect::<Vec<String>>()
+                .join(",\n");
 
-            let name = identifier_to_string(decl.identifier.name, string_interner);
-
-            if decl.applied_type_args.len() > 0 {
-                format!(
-                    "{}{}",
-                    name,
-                    applied_type_args_to_string(&decl.applied_type_args, string_interner)
-                )
-            } else {
-                let generics_str = generic_params_to_string(&decl.generic_params, string_interner);
-                format!("{}{}", name, generics_str)
-            }
-        }
-        CheckedTypeKind::EnumDecl(decl) => {
-            let name = identifier_to_string(decl.identifier.name, string_interner);
-
-            name
+            format!("{{\n{}\n}}", params_str)
         }
         CheckedTypeKind::GenericParam(CheckedGenericParam { identifier, .. }) => {
             let name = identifier_to_string(identifier.name, string_interner);

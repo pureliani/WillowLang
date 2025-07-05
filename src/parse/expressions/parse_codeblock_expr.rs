@@ -44,7 +44,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                     })
                 }
 
-                let expr = self.parse_expr(0, true)?;
+                let expr = self.parse_expr(0)?;
 
                 if self.match_token(0, TokenKind::Punctuation(PunctuationKind::Eq))
                     && !self.match_token(1, TokenKind::Punctuation(PunctuationKind::Eq))

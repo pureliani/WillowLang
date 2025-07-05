@@ -3,12 +3,12 @@ use std::{cell::RefCell, rc::Rc};
 use crate::{
     ast::{
         base::{
-            base_declaration::{StructDecl, TypeAliasDecl, VarDecl},
+            base_declaration::{TypeAliasDecl, VarDecl},
             base_expression::{Expr, ExprKind},
             base_statement::{Stmt, StmtKind},
         },
         checked::{
-            checked_declaration::{CheckedStructDecl, CheckedTypeAliasDecl, CheckedVarDecl},
+            checked_declaration::{CheckedTypeAliasDecl, CheckedVarDecl},
             checked_expression::{CheckedBlockContents, CheckedExprKind},
             checked_statement::CheckedStmt,
             checked_type::{CheckedType, CheckedTypeKind},
@@ -24,23 +24,6 @@ impl<'a> SemanticChecker<'a> {
     pub fn placeholder_declarations(&mut self, statements: &Vec<Stmt>) {
         for stmt in statements {
             match &stmt.kind {
-                StmtKind::StructDecl(decl) => {
-                    let placeholder = SymbolEntry::StructDecl(Rc::new(RefCell::new(CheckedStructDecl {
-                        identifier: decl.identifier,
-                        documentation: decl.documentation.clone(),
-                        fields: vec![],
-                        generic_params: vec![],
-                        span: decl.identifier.span,
-                        applied_type_args: vec![],
-                    })));
-
-                    self.scope_insert(decl.identifier, placeholder);
-                }
-                StmtKind::EnumDecl(decl) => {
-                    let actual = SymbolEntry::EnumDecl(decl.clone());
-
-                    self.scope_insert(decl.identifier, actual);
-                }
                 StmtKind::TypeAliasDecl(decl) => {
                     let placeholder = SymbolEntry::TypeAliasDecl(Rc::new(RefCell::new(CheckedTypeAliasDecl {
                         identifier: decl.identifier,
@@ -96,38 +79,6 @@ impl<'a> SemanticChecker<'a> {
     pub fn check_stmt(&mut self, stmt: Stmt) -> CheckedStmt {
         match stmt.kind {
             StmtKind::Expression(expr) => CheckedStmt::Expression(self.check_expr(expr)),
-            StmtKind::StructDecl(StructDecl {
-                identifier,
-                generic_params,
-                fields,
-                documentation: _,
-            }) => {
-                if !self.is_file_scope() {
-                    self.errors
-                        .push(SemanticError::StructMustBeDeclaredAtTopLevel { span: stmt.span });
-                }
-
-                self.enter_scope(ScopeKind::Struct);
-                let checked_generic_params = self.check_generic_params(&generic_params);
-                let checked_fields = self.check_params(&fields);
-                self.exit_scope();
-
-                let decl = match self.scope_lookup(identifier.name) {
-                    Some(SymbolEntry::StructDecl(decl)) => {
-                        let mut mut_decl = decl.borrow_mut();
-                        mut_decl.fields = checked_fields;
-                        mut_decl.generic_params = checked_generic_params;
-                        mut_decl.span = stmt.span;
-                        decl.clone()
-                    }
-                    _ => {
-                        panic!("Expected struct declaration placeholder")
-                    }
-                };
-
-                CheckedStmt::StructDecl(decl)
-            }
-            StmtKind::EnumDecl(decl) => CheckedStmt::EnumDecl(decl.clone()),
             StmtKind::VarDecl(VarDecl {
                 identifier,
                 constraint,
