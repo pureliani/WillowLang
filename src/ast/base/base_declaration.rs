@@ -9,6 +9,14 @@ pub struct Param {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub struct EnumDecl {
+    pub identifier: IdentifierNode,
+    pub documentation: Option<DocAnnotation>,
+    pub generic_params: Vec<GenericParam>,
+    pub variants: Vec<(IdentifierNode, Option<TypeAnnotation>)>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct GenericParam {
     pub identifier: IdentifierNode,
     pub constraint: Option<TypeAnnotation>,

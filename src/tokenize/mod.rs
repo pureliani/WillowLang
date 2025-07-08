@@ -112,6 +112,7 @@ impl PunctuationKind {
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum KeywordKind {
+    Enum,
     Let,
     Return,
     If,
@@ -173,6 +174,7 @@ impl KeywordKind {
             KeywordKind::ISize => "iSize",
             KeywordKind::F32 => "f32",
             KeywordKind::F64 => "f64",
+            KeywordKind::Enum => "enum",
         })
     }
 }
@@ -510,6 +512,7 @@ fn is_alphanumeric(value: &str) -> bool {
 
 fn is_keyword(identifier: &str) -> Option<KeywordKind> {
     match identifier {
+        "enum" => Some(KeywordKind::Enum),
         "let" => Some(KeywordKind::Let),
         "return" => Some(KeywordKind::Return),
         "if" => Some(KeywordKind::If),

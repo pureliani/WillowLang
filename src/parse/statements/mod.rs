@@ -1,6 +1,7 @@
 pub mod parse_assignment_stmt;
 pub mod parse_break_stmt;
 pub mod parse_continue_stmt;
+pub mod parse_enum_decl;
 pub mod parse_expr_stmt;
 pub mod parse_from_stmt;
 pub mod parse_return_stmt;
@@ -49,10 +50,12 @@ impl<'a, 'b> Parser<'a, 'b> {
         } else {
             let documentation = self.consume_optional_doc();
 
-            if self.match_token(0, TokenKind::Keyword(KeywordKind::Type)) {
-                self.parse_type_alias_decl(documentation)
-            } else if self.match_token(0, TokenKind::Keyword(KeywordKind::Let)) {
+            if self.match_token(0, TokenKind::Keyword(KeywordKind::Let)) {
                 self.parse_var_decl(documentation)
+            } else if self.match_token(0, TokenKind::Keyword(KeywordKind::Type)) {
+                self.parse_type_alias_decl(documentation)
+            } else if self.match_token(0, TokenKind::Keyword(KeywordKind::Enum)) {
+                self.parse_enum_decl(documentation)
             } else if let Some(doc) = documentation {
                 Err(ParsingError {
                     kind: ParsingErrorKind::DocMustBeFollowedByDeclaration,
