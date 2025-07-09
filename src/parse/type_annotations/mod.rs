@@ -50,16 +50,6 @@ impl<'a, 'b> Parser<'a, 'b> {
                     span,
                 }
             }
-            TokenKind::Keyword(KeywordKind::Null) => {
-                let start_offset = self.offset;
-
-                self.consume_keyword(KeywordKind::Null)?;
-                let span = self.get_span(start_offset, self.offset - 1)?;
-                TypeAnnotation {
-                    kind: TypeAnnotationKind::Null,
-                    span,
-                }
-            }
             TokenKind::Keyword(KeywordKind::Bool) => {
                 let start_offset = self.offset;
 
@@ -547,24 +537,6 @@ mod tests {
                 "void",
                 TypeAnnotation {
                     kind: TypeAnnotationKind::Void,
-                    span: Span {
-                        start: Position {
-                            line: 1,
-                            col: 1,
-                            byte_offset: 0,
-                        },
-                        end: Position {
-                            line: 1,
-                            col: 5,
-                            byte_offset: 4,
-                        },
-                    },
-                },
-            ),
-            (
-                "null",
-                TypeAnnotation {
-                    kind: TypeAnnotationKind::Null,
                     span: Span {
                         start: Position {
                             line: 1,

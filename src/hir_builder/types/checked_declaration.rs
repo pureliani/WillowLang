@@ -1,11 +1,10 @@
 use std::hash::{Hash, Hasher};
 
 use crate::{
-    ast::{checked::checked_type::Type, DefinitionId, IdentifierNode, Span},
+    ast::{DefinitionId, IdentifierNode, Span},
+    hir_builder::types::checked_type::Type,
     parse::DocAnnotation,
 };
-
-use super::checked_expression::CheckedExpr;
 
 #[derive(Clone, Debug)]
 pub struct CheckedParam {
@@ -96,9 +95,21 @@ impl Hash for CheckedTypeAliasDecl {
 
 #[derive(Clone, Debug)]
 pub struct CheckedEnumVariant {
-    pub id: DefinitionId,
     pub identifier: IdentifierNode,
     pub payload_type: Option<Type>,
+}
+
+impl Eq for CheckedEnumVariant {}
+impl PartialEq for CheckedEnumVariant {
+    fn eq(&self, other: &Self) -> bool {
+        self.identifier == other.identifier && self.payload_type == other.payload_type
+    }
+}
+impl Hash for CheckedEnumVariant {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.identifier.hash(state);
+        self.payload_type.hash(state);
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -107,6 +118,21 @@ pub struct CheckedEnumDecl {
     pub documentation: Option<DocAnnotation>,
     pub generic_params: Vec<CheckedGenericParam>,
     pub variants: Vec<CheckedEnumVariant>,
+    pub applied_type_args: Vec<Type>,
+}
+
+impl Eq for CheckedEnumDecl {}
+impl PartialEq for CheckedEnumDecl {
+    fn eq(&self, other: &Self) -> bool {
+        self.identifier == other.identifier && self.generic_params == other.generic_params && self.variants == other.variants
+    }
+}
+impl Hash for CheckedEnumDecl {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.identifier.hash(state);
+        self.generic_params.hash(state);
+        self.variants.hash(state);
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -115,5 +141,4 @@ pub struct CheckedVarDecl {
     pub identifier: IdentifierNode,
     pub documentation: Option<DocAnnotation>,
     pub constraint: Type,
-    pub value: Option<CheckedExpr>,
 }

@@ -65,14 +65,12 @@ pub fn is_start_of_expr(token_kind: &TokenKind) -> bool {
         | TokenKind::String(_)
         | TokenKind::Keyword(KeywordKind::True)
         | TokenKind::Keyword(KeywordKind::False)
-        | TokenKind::Keyword(KeywordKind::Null)
         | TokenKind::Keyword(KeywordKind::If)               // if expressions
         | TokenKind::Punctuation(PunctuationKind::LParen)   // Parenthesized or fn expr
         | TokenKind::Punctuation(PunctuationKind::LBrace)   // Codeblock expr
         | TokenKind::Punctuation(PunctuationKind::LBracket) // Array literal
         | TokenKind::Punctuation(PunctuationKind::Lt)       // fn expression
         | TokenKind::Punctuation(PunctuationKind::Minus)    // Negation
-        | TokenKind::Punctuation(PunctuationKind::And)      // Address-of
         | TokenKind::Punctuation(PunctuationKind::Not)      // Logical NOT
         => true,
         _ => false,
@@ -203,15 +201,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                     span: self.get_span(start_offset, self.offset - 1)?,
                 }
             }
-            TokenKind::Keyword(KeywordKind::Null) => {
-                let start_offset = self.offset;
 
-                self.consume_keyword(KeywordKind::Null)?;
-                Expr {
-                    kind: ExprKind::Null,
-                    span: self.get_span(start_offset, self.offset - 1)?,
-                }
-            }
             TokenKind::String(_) => {
                 let start_offset = self.offset;
 

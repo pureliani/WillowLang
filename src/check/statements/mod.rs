@@ -21,50 +21,6 @@ use crate::{
 };
 
 impl<'a> SemanticChecker<'a> {
-    pub fn placeholder_declarations(&mut self, statements: &Vec<Stmt>) {
-        for stmt in statements {
-            match &stmt.kind {
-                StmtKind::TypeAliasDecl(decl) => {
-                    let placeholder = SymbolEntry::TypeAliasDecl(Rc::new(RefCell::new(CheckedTypeAliasDecl {
-                        identifier: decl.identifier,
-                        documentation: decl.documentation.clone(),
-                        value: Box::new(Type {
-                            kind: TypeKind::Unknown,
-                            span: decl.identifier.span,
-                        }),
-                        generic_params: vec![],
-                        applied_type_args: vec![],
-                        span: decl.identifier.span,
-                    })));
-
-                    self.scope_insert(decl.identifier, placeholder);
-                }
-                StmtKind::VarDecl(decl) => {
-                    if let Some(Expr {
-                        kind: ExprKind::Fn { .. },
-                        ..
-                    }) = &decl.value
-                    {
-                        let definition_id = self.get_definition_id();
-                        let placeholder = SymbolEntry::VarDecl(Rc::new(RefCell::new(CheckedVarDecl {
-                            id: definition_id,
-                            identifier: decl.identifier,
-                            documentation: decl.documentation.clone(),
-                            value: None,
-                            constraint: Type {
-                                kind: TypeKind::Unknown,
-                                span: decl.identifier.span,
-                            },
-                        })));
-
-                        self.scope_insert(decl.identifier, placeholder);
-                    }
-                }
-                _ => {}
-            }
-        }
-    }
-
     pub fn check_stmts(&mut self, statements: Vec<Stmt>) -> Vec<CheckedStmt> {
         self.placeholder_declarations(&statements);
         statements

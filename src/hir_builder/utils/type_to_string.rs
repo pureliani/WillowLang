@@ -1,9 +1,9 @@
 use crate::{
-    ast::checked::{
+    compile::string_interner::{InternerId, StringInterner},
+    hir_builder::types::{
         checked_declaration::{CheckedFnType, CheckedGenericParam},
         checked_type::{Type, TypeKind},
     },
-    compile::string_interner::{InternerId, StringInterner},
 };
 
 fn applied_type_args_to_string(type_args: &Vec<Type>, string_interner: &StringInterner) -> String {
@@ -58,7 +58,6 @@ pub fn type_to_string_recursive(ty: &TypeKind, string_interner: &StringInterner,
 
     match ty {
         TypeKind::Void => String::from("void"),
-        TypeKind::Null => String::from("null"),
         TypeKind::Bool => String::from("bool"),
         TypeKind::U8 => String::from("u8"),
         TypeKind::U16 => String::from("u16"),
@@ -129,7 +128,6 @@ pub fn type_to_string_recursive(ty: &TypeKind, string_interner: &StringInterner,
             }
         }
         TypeKind::TypeAliasDecl(decl) => {
-            let decl = decl.borrow();
             let name = identifier_to_string(decl.identifier.name, string_interner);
 
             if decl.applied_type_args.len() > 0 {
@@ -155,5 +153,7 @@ pub fn type_to_string_recursive(ty: &TypeKind, string_interner: &StringInterner,
                 size
             )
         }
+        TypeKind::Pointer(ty) => format!("ptr<{}>", type_to_string_recursive(&ty.kind, string_interner, false)),
+        TypeKind::Enum(checked_enum_decl) => todo!(),
     }
 }

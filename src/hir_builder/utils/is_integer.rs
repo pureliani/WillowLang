@@ -1,4 +1,4 @@
-use crate::ast::checked::checked_type::TypeKind;
+use crate::hir_builder::types::checked_type::TypeKind;
 
 pub fn is_integer(ty: &TypeKind) -> bool {
     use TypeKind::*;

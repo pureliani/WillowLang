@@ -97,7 +97,6 @@ pub enum ExprKind {
         args: Vec<Expr>,
     },
     StructLiteral(Vec<(IdentifierNode, Expr)>),
-    Null,
     BoolLiteral {
         value: bool,
     },

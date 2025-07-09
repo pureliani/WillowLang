@@ -1,14 +1,12 @@
 use std::collections::HashMap;
 
 use crate::{
-    ast::{
-        checked::{
-            checked_declaration::{CheckedGenericParam, CheckedParam},
-            checked_type::{Type, TypeKind},
-        },
-        Span,
-    },
+    ast::Span,
     compile::string_interner::InternerId,
+    hir_builder::types::{
+        checked_declaration::{CheckedGenericParam, CheckedParam},
+        checked_type::{Type, TypeKind},
+    },
     tokenize::NumberKind,
 };
 
@@ -26,7 +24,6 @@ pub struct ValueId(pub usize);
 
 #[derive(Clone, Debug)]
 pub enum Value {
-    NullLiteral,
     BoolLiteral(bool),
     NumberLiteral(NumberKind),
     StringLiteral(InternerId),

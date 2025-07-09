@@ -1,22 +1,24 @@
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::collections::HashMap;
 
 use crate::{
-    ast::{
-        checked::{
-            checked_declaration::{CheckedFnType, CheckedGenericParam, CheckedParam, CheckedTypeAliasDecl},
+    ast::Span,
+    compile::string_interner::InternerId,
+    hir_builder::{
+        types::{
+            checked_declaration::{
+                CheckedEnumDecl, CheckedEnumVariant, CheckedFnType, CheckedGenericParam, CheckedParam, CheckedTypeAliasDecl,
+            },
             checked_type::{Type, TypeKind},
         },
-        Span,
+        HIRBuilder, SemanticError,
     },
-    check::{SemanticChecker, SemanticError},
-    compile::string_interner::InternerId,
 };
 
 use super::union_of::union_of;
 
 pub type GenericSubstitutionMap = HashMap<InternerId, Type>;
 
-impl<'a> SemanticChecker<'a> {
+impl<'a> HIRBuilder<'a> {
     pub fn resolve_applied_type_args(
         &mut self,
         generic_params: &[CheckedGenericParam],
@@ -122,20 +124,19 @@ impl<'a> SemanticChecker<'a> {
                 }
             }
             TypeKind::TypeAliasDecl(decl) => {
-                let decl = decl.borrow();
                 let applied_type_args: Vec<Type> = self.resolve_applied_type_args(&decl.generic_params, substitutions, ty.span);
 
                 let substituted_value = self.substitute_generics(&decl.value, substitutions);
 
                 Type {
-                    kind: TypeKind::TypeAliasDecl(Rc::new(RefCell::new(CheckedTypeAliasDecl {
+                    kind: TypeKind::TypeAliasDecl(CheckedTypeAliasDecl {
                         value: Box::new(substituted_value),
                         documentation: decl.documentation.clone(),
                         identifier: decl.identifier, // maybe we should rename this?
                         generic_params: vec![],
                         span: decl.span,
                         applied_type_args,
-                    }))),
+                    }),
                     span: ty.span,
                 }
             }
@@ -152,6 +153,45 @@ impl<'a> SemanticChecker<'a> {
                 // Re-apply union_of logic to simplify the result
                 union_of(substituted_items, ty.span)
             }
+            TypeKind::Pointer(item) => {
+                let substituted = self.substitute_generics(item, substitutions);
+
+                Type {
+                    kind: TypeKind::Pointer(Box::new(substituted)),
+                    span: ty.span,
+                }
+            }
+            TypeKind::Enum(CheckedEnumDecl {
+                identifier,
+                documentation,
+                generic_params,
+                variants,
+                applied_type_args: _,
+            }) => {
+                let applied_type_args: Vec<Type> = self.resolve_applied_type_args(&generic_params, substitutions, ty.span);
+
+                let substituted_variants: Vec<CheckedEnumVariant> = variants
+                    .iter()
+                    .map(|v| CheckedEnumVariant {
+                        identifier: v.identifier,
+                        payload_type: v
+                            .payload_type
+                            .as_ref()
+                            .map(|payload_t| self.substitute_generics(payload_t, substitutions)),
+                    })
+                    .collect();
+
+                Type {
+                    kind: TypeKind::Enum(CheckedEnumDecl {
+                        identifier: *identifier,
+                        documentation: documentation.clone(),
+                        generic_params: vec![],
+                        variants: substituted_variants,
+                        applied_type_args,
+                    }),
+                    span: ty.span,
+                }
+            }
             TypeKind::I8
             | TypeKind::I16
             | TypeKind::I32
@@ -167,7 +207,6 @@ impl<'a> SemanticChecker<'a> {
             | TypeKind::Bool
             | TypeKind::Char
             | TypeKind::Void
-            | TypeKind::Null
             | TypeKind::Unknown => ty.clone(),
         }
     }

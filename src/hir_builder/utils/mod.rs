@@ -1,6 +1,5 @@
 pub mod check_is_assignable;
 pub mod check_is_equatable;
-pub mod check_returns;
 pub mod check_type;
 pub mod get_definition_id;
 pub mod get_numeric_type_rank;

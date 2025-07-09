@@ -8,7 +8,6 @@ use super::base_declaration::{GenericParam, Param};
 #[derive(Clone, Debug, PartialEq)]
 pub enum TypeAnnotationKind {
     Void,
-    Null,
     Bool,
     U8,
     U16,

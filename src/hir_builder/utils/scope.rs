@@ -1,12 +1,12 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::{
-    ast::{
-        checked::checked_declaration::{CheckedGenericParam, CheckedTypeAliasDecl, CheckedVarDecl},
-        IdentifierNode,
-    },
-    check::{SemanticChecker, SemanticError},
+    ast::IdentifierNode,
     compile::string_interner::InternerId,
+    hir_builder::{
+        types::checked_declaration::{CheckedEnumDecl, CheckedGenericParam, CheckedTypeAliasDecl, CheckedVarDecl},
+        HIRBuilder, SemanticError,
+    },
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -21,8 +21,9 @@ pub enum ScopeKind {
 
 #[derive(Debug, Clone)]
 pub enum SymbolEntry {
-    VarDecl(Rc<RefCell<CheckedVarDecl>>),
-    TypeAliasDecl(Rc<RefCell<CheckedTypeAliasDecl>>),
+    VarDecl(CheckedVarDecl),
+    TypeAliasDecl(CheckedTypeAliasDecl),
+    EnumDecl(CheckedEnumDecl),
     GenericParam(CheckedGenericParam),
 }
 
@@ -41,7 +42,7 @@ impl Scope {
     }
 }
 
-impl<'a> SemanticChecker<'a> {
+impl<'a> HIRBuilder<'a> {
     pub fn enter_scope(&mut self, kind: ScopeKind) {
         self.scopes.push(Scope::new(kind));
     }

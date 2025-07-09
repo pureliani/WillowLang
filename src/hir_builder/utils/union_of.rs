@@ -1,8 +1,8 @@
 use std::collections::HashSet;
 
-use crate::ast::{
-    checked::checked_type::{Type, TypeKind},
-    Span,
+use crate::{
+    ast::Span,
+    hir_builder::types::checked_type::{Type, TypeKind},
 };
 
 pub fn union_of(types: impl IntoIterator<Item = Type>, span: Span) -> Type {

@@ -1,13 +1,11 @@
 use std::{
-    cell::RefCell,
     collections::HashSet,
     hash::{Hash, Hasher},
-    rc::Rc,
 };
 
-use crate::ast::{
-    checked::checked_declaration::{CheckedFnType, CheckedParam, CheckedTypeAliasDecl},
-    Span,
+use crate::{
+    ast::Span,
+    hir_builder::types::checked_declaration::{CheckedEnumDecl, CheckedFnType, CheckedParam, CheckedTypeAliasDecl},
 };
 
 use super::checked_declaration::CheckedGenericParam;
@@ -15,7 +13,6 @@ use super::checked_declaration::CheckedGenericParam;
 #[derive(Clone, Debug)]
 pub enum TypeKind {
     Void,
-    Null,
     Bool,
     U8,
     U16,
@@ -32,8 +29,9 @@ pub enum TypeKind {
     Char,
     Array { item_type: Box<Type>, size: usize },
     Struct(Vec<CheckedParam>),
-    TypeAliasDecl(Rc<RefCell<CheckedTypeAliasDecl>>),
+    TypeAliasDecl(CheckedTypeAliasDecl),
     GenericParam(CheckedGenericParam),
+    Enum(CheckedEnumDecl),
     FnType(CheckedFnType),
     Union(HashSet<Type>),
     Unknown,
@@ -45,7 +43,6 @@ impl PartialEq for TypeKind {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
             (TypeKind::Void, TypeKind::Void) => true,
-            (TypeKind::Null, TypeKind::Null) => true,
             (TypeKind::Bool, TypeKind::Bool) => true,
             (TypeKind::U8, TypeKind::U8) => true,
             (TypeKind::U16, TypeKind::U16) => true,
@@ -96,7 +93,6 @@ impl Hash for TypeKind {
 
         match self {
             TypeKind::Void => {}
-            TypeKind::Null => {}
             TypeKind::Bool => {}
             TypeKind::U8 => {}
             TypeKind::U16 => {}
@@ -113,7 +109,7 @@ impl Hash for TypeKind {
             TypeKind::Char => {}
             TypeKind::Unknown => {}
             TypeKind::Struct(fields) => fields.iter().for_each(|f| f.hash(state)),
-            TypeKind::TypeAliasDecl(decl) => decl.borrow().hash(state),
+            TypeKind::TypeAliasDecl(decl) => decl.hash(state),
             TypeKind::GenericParam(decl) => decl.hash(state),
             TypeKind::FnType(decl) => decl.hash(state),
             TypeKind::Pointer(inner) => inner.hash(state),
@@ -137,6 +133,9 @@ impl Hash for TypeKind {
             TypeKind::Array { item_type, size, .. } => {
                 item_type.hash(state);
                 size.hash(state);
+            }
+            TypeKind::Enum(enum_decl) => {
+                enum_decl.hash(state);
             }
         }
     }

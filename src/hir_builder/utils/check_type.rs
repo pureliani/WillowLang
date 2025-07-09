@@ -1,28 +1,26 @@
 use crate::{
-    ast::{
-        base::{
-            base_declaration::{GenericParam, Param},
-            base_type::{TypeAnnotation, TypeAnnotationKind},
-        },
-        checked::{
+    ast::base::{
+        base_declaration::{GenericParam, Param},
+        base_type::{TypeAnnotation, TypeAnnotationKind},
+    },
+    hir_builder::{
+        types::{
             checked_declaration::{CheckedFnType, CheckedGenericParam, CheckedParam},
             checked_type::{Type, TypeKind},
         },
-    },
-    check::{
         utils::{
             scope::{ScopeKind, SymbolEntry},
             substitute_generics::GenericSubstitutionMap,
         },
-        SemanticChecker, SemanticError,
+        HIRBuilder, SemanticError,
     },
     tokenize::NumberKind,
 };
 
-impl<'a> SemanticChecker<'a> {
+impl<'a> HIRBuilder<'a> {
     pub fn check_has_type_arguments_applied(&mut self, target: Type) -> Type {
         let has_type_args = match &target.kind {
-            TypeKind::TypeAliasDecl(decl) => decl.borrow().generic_params.is_empty(),
+            TypeKind::TypeAliasDecl(decl) => decl.generic_params.is_empty(),
             TypeKind::FnType(_) => true,
             _ => true,
         };
@@ -126,7 +124,7 @@ impl<'a> SemanticChecker<'a> {
 
                 match &checked_left.kind {
                     TypeKind::FnType(decl) => substitute(&decl.generic_params, checked_args),
-                    TypeKind::TypeAliasDecl(decl) => substitute(&decl.borrow().generic_params, checked_args),
+                    TypeKind::TypeAliasDecl(decl) => substitute(&decl.generic_params, checked_args),
                     _ => {
                         self.errors.push(SemanticError::CannotApplyTypeArguments {
                             to: checked_left.clone(),
@@ -141,6 +139,7 @@ impl<'a> SemanticChecker<'a> {
                 .map(|entry| match entry {
                     SymbolEntry::TypeAliasDecl(decl) => TypeKind::TypeAliasDecl(decl),
                     SymbolEntry::GenericParam(decl) => TypeKind::GenericParam(decl),
+                    SymbolEntry::EnumDecl(decl) => TypeKind::Enum(decl),
                     SymbolEntry::VarDecl(_) => {
                         self.errors
                             .push(SemanticError::CannotUseVariableDeclarationAsType { span: annotation.span });
@@ -152,7 +151,6 @@ impl<'a> SemanticChecker<'a> {
                     self.errors.push(SemanticError::UndeclaredType { id: *id });
                     TypeKind::Unknown
                 }),
-            TypeAnnotationKind::Null => TypeKind::Null,
             TypeAnnotationKind::FnType {
                 params,
                 return_type,

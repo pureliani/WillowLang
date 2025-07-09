@@ -1,14 +1,15 @@
 use std::collections::HashSet;
 
-use crate::{
-    ast::checked::{
+use crate::hir_builder::{
+    types::{
         checked_declaration::CheckedFnType,
         checked_type::{Type, TypeKind},
     },
-    check::{utils::substitute_generics::GenericSubstitutionMap, SemanticChecker},
+    utils::substitute_generics::GenericSubstitutionMap,
+    HIRBuilder,
 };
 
-impl<'a> SemanticChecker<'a> {
+impl<'a> HIRBuilder<'a> {
     pub fn check_is_assignable(&mut self, source_type: &Type, target_type: &Type) -> bool {
         let mut visited_declarations: HashSet<(usize, usize)> = HashSet::new();
         self.check_is_assignable_recursive(source_type, target_type, &mut visited_declarations)
@@ -39,8 +40,8 @@ impl<'a> SemanticChecker<'a> {
             | (Char, Char)
             | (Bool, Bool)
             | (Void, Void)
-            | (Null, Null)
             | (Unknown, _) => true,
+            (Pointer(source), Pointer(target)) => self.check_is_assignable_recursive(source, target, visited_declarations),
             (Union(source), Union(target)) => source.iter().all(|source_item| {
                 target
                     .iter()
@@ -166,12 +167,8 @@ impl<'a> SemanticChecker<'a> {
 
                 returns_compatible
             }
-            (TypeAliasDecl(source), _) => {
-                self.check_is_assignable_recursive(&source.borrow().value, target_type, visited_declarations)
-            }
-            (_, TypeAliasDecl(target)) => {
-                self.check_is_assignable_recursive(source_type, &target.borrow().value, visited_declarations)
-            }
+            (TypeAliasDecl(source), _) => self.check_is_assignable_recursive(&source.value, target_type, visited_declarations),
+            (_, TypeAliasDecl(target)) => self.check_is_assignable_recursive(source_type, &target.value, visited_declarations),
             _ => false,
         };
 

@@ -12,14 +12,12 @@ use super::{
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum LiteralValue {
     Bool(bool),
-    Null,
     // String(InternerId),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum RefinementKey {
     /// The refinement applies when the function returns a specific literal value.
-    /// e.g., `true`, `null`.
     Literal(LiteralValue),
 
     /// The refinement applies when the function's return value is of a certain type.
@@ -113,7 +111,6 @@ pub enum CheckedExprKind {
         left: Box<CheckedExpr>,
         fields: Vec<(IdentifierNode, CheckedExpr)>,
     },
-    Null,
     BoolLiteral {
         value: bool,
     },

@@ -11,8 +11,7 @@ use string_interner::StringInterner;
 pub mod string_interner;
 
 use crate::{
-    ast::checked::checked_type::TypeKind,
-    check::{utils::type_to_string::type_to_string, SemanticChecker, SemanticError},
+    hir_builder::{types::checked_type::TypeKind, utils::type_to_string::type_to_string, HIRBuilder, SemanticError},
     parse::{Parser, ParsingErrorKind},
     tokenize::{token_kind_to_string, TokenizationErrorKind, Tokenizer},
 };
@@ -28,7 +27,7 @@ pub fn compile_file<'a, 'b>(
 
     let (tokens, tokenization_errors) = Tokenizer::tokenize(source_code);
     let (ast, parsing_errors) = Parser::parse(tokens, string_interner);
-    let (analyzed_tree, semantic_errors) = SemanticChecker::check(ast);
+    let (analyzed_tree, semantic_errors) = HIRBuilder::build(ast);
 
     let mut errors: Vec<Diagnostic<usize>> = vec![];
 

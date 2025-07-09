@@ -1,0 +1,51 @@
+use crate::{
+    ast::base::base_expression::{Expr, ExprKind},
+    cfg::Value,
+    hir_builder::HIRBuilder,
+};
+
+impl<'a> HIRBuilder<'a> {
+    pub fn build_expr(&mut self, expr: Expr) -> Value {
+        match expr.kind {
+            ExprKind::Not { right } => todo!(),
+            ExprKind::Neg { right } => todo!(),
+            ExprKind::Add { left, right } => todo!(),
+            ExprKind::Subtract { left, right } => todo!(),
+            ExprKind::Multiply { left, right } => todo!(),
+            ExprKind::Divide { left, right } => todo!(),
+            ExprKind::Modulo { left, right } => todo!(),
+            ExprKind::LessThan { left, right } => todo!(),
+            ExprKind::LessThanOrEqual { left, right } => todo!(),
+            ExprKind::GreaterThan { left, right } => todo!(),
+            ExprKind::GreaterThanOrEqual { left, right } => todo!(),
+            ExprKind::Equal { left, right } => todo!(),
+            ExprKind::NotEqual { left, right } => todo!(),
+            ExprKind::And { left, right } => todo!(),
+            ExprKind::Or { left, right } => todo!(),
+            ExprKind::Access { left, field } => todo!(),
+            ExprKind::StaticAccess { left, field } => todo!(),
+            ExprKind::TypeCast { left, target } => todo!(),
+            ExprKind::GenericApply { left, args } => todo!(),
+            ExprKind::FnCall { left, args } => todo!(),
+            ExprKind::StructLiteral(items) => todo!(),
+            ExprKind::BoolLiteral { value } => todo!(),
+            ExprKind::Number { value } => todo!(),
+            ExprKind::String(string_node) => todo!(),
+            ExprKind::Identifier(identifier_node) => todo!(),
+            ExprKind::Fn {
+                params,
+                body,
+                return_type,
+                generic_params,
+            } => todo!(),
+            ExprKind::If {
+                condition,
+                then_branch,
+                else_if_branches,
+                else_branch,
+            } => todo!(),
+            ExprKind::ArrayLiteral { items } => todo!(),
+            ExprKind::Block(block_contents) => todo!(),
+        }
+    }
+}

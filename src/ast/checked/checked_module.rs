@@ -1,13 +1,10 @@
 use std::collections::HashMap;
 
 use crate::{
-    ast::{
-        base::base_declaration::EnumDecl,
-        checked::checked_declaration::{CheckedTypeAliasDecl, CheckedVarDecl},
-        DefinitionId, ModuleId,
-    },
+    ast::{base::base_declaration::EnumDecl, DefinitionId, ModuleId},
     cfg::ControlFlowGraph,
     compile::string_interner::InternerId,
+    hir_builder::types::checked_declaration::{CheckedTypeAliasDecl, CheckedVarDecl},
 };
 
 #[derive(Clone, Debug)]

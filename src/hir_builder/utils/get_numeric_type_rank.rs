@@ -1,4 +1,4 @@
-use crate::ast::checked::checked_type::TypeKind;
+use crate::hir_builder::types::checked_type::TypeKind;
 
 pub fn get_numeric_type_rank(ty: &TypeKind) -> i32 {
     use TypeKind::*;

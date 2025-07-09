@@ -1,14 +1,14 @@
-use crate::{
-    ast::checked::{
+use crate::hir_builder::{
+    types::{
         checked_declaration::CheckedFnType,
         checked_type::{Type, TypeKind},
     },
-    check::{SemanticChecker, SemanticError},
+    HIRBuilder, SemanticError,
 };
 
 use super::substitute_generics::GenericSubstitutionMap;
 
-impl<'a> SemanticChecker<'a> {
+impl<'a> HIRBuilder<'a> {
     pub fn infer_generics(&mut self, expected: &Type, received: &Type, substitution: &mut GenericSubstitutionMap) {
         match (&expected.kind, &received.kind) {
             (TypeKind::GenericParam(expected_gp), _) => {
