@@ -1,7 +1,7 @@
 use crate::{
     ast::checked::{
         checked_declaration::CheckedFnType,
-        checked_type::{CheckedType, CheckedTypeKind},
+        checked_type::{Type, TypeKind},
     },
     check::{SemanticChecker, SemanticError},
 };
@@ -9,9 +9,9 @@ use crate::{
 use super::substitute_generics::GenericSubstitutionMap;
 
 impl<'a> SemanticChecker<'a> {
-    pub fn infer_generics(&mut self, expected: &CheckedType, received: &CheckedType, substitution: &mut GenericSubstitutionMap) {
+    pub fn infer_generics(&mut self, expected: &Type, received: &Type, substitution: &mut GenericSubstitutionMap) {
         match (&expected.kind, &received.kind) {
-            (CheckedTypeKind::GenericParam(expected_gp), _) => {
+            (TypeKind::GenericParam(expected_gp), _) => {
                 let name = &expected_gp.identifier.name;
                 if let Some(existing) = substitution.get(name) {
                     if existing != received {
@@ -26,31 +26,31 @@ impl<'a> SemanticChecker<'a> {
                 }
             }
             (
-                CheckedTypeKind::Array {
+                TypeKind::Array {
                     item_type: expected_item_type,
                     ..
                 },
-                CheckedTypeKind::Array {
+                TypeKind::Array {
                     item_type: received_item_type,
                     ..
                 },
             ) => {
                 self.infer_generics(&expected_item_type, &received_item_type, substitution);
             }
-            (CheckedTypeKind::Struct(expected_fields), CheckedTypeKind::Struct(received_fields)) => {
+            (TypeKind::Struct(expected_fields), TypeKind::Struct(received_fields)) => {
                 for (expected_field, received_field) in expected_fields.iter().zip(received_fields.iter()) {
                     self.infer_generics(&expected_field.constraint, &received_field.constraint, substitution);
                 }
             }
             (
-                CheckedTypeKind::FnType(CheckedFnType {
+                TypeKind::FnType(CheckedFnType {
                     params: generic_params,
                     return_type: generic_return_type,
                     generic_params: _,
                     span: _,
                     applied_type_args: _,
                 }),
-                CheckedTypeKind::FnType(CheckedFnType {
+                TypeKind::FnType(CheckedFnType {
                     params: concrete_params,
                     return_type: concrete_return_type,
                     generic_params: _,
@@ -64,10 +64,10 @@ impl<'a> SemanticChecker<'a> {
 
                 self.infer_generics(&generic_return_type, &concrete_return_type, substitution);
             }
-            (CheckedTypeKind::Union(expected_union), CheckedTypeKind::Union(received_union)) => {
+            (TypeKind::Union(expected_union), TypeKind::Union(received_union)) => {
                 todo!()
             }
-            (CheckedTypeKind::Union(expected_union), received) => {
+            (TypeKind::Union(expected_union), received) => {
                 todo!()
             }
             _ => {}

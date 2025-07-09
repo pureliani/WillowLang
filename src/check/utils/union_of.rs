@@ -1,18 +1,18 @@
 use std::collections::HashSet;
 
 use crate::ast::{
-    checked::checked_type::{CheckedType, CheckedTypeKind},
+    checked::checked_type::{Type, TypeKind},
     Span,
 };
 
-pub fn union_of(types: impl IntoIterator<Item = CheckedType>, span: Span) -> CheckedType {
-    let mut union_items: HashSet<CheckedType> = HashSet::new();
+pub fn union_of(types: impl IntoIterator<Item = Type>, span: Span) -> Type {
+    let mut union_items: HashSet<Type> = HashSet::new();
 
     for t in types {
         match t.kind {
-            CheckedTypeKind::Union(items) => {
+            TypeKind::Union(items) => {
                 for item in items {
-                    if !matches!(item.kind, CheckedTypeKind::Void) {
+                    if !matches!(item.kind, TypeKind::Void) {
                         union_items.insert(item);
                     }
                 }
@@ -24,8 +24,8 @@ pub fn union_of(types: impl IntoIterator<Item = CheckedType>, span: Span) -> Che
     }
 
     if union_items.is_empty() {
-        return CheckedType {
-            kind: CheckedTypeKind::Void,
+        return Type {
+            kind: TypeKind::Void,
             span,
         };
     }
@@ -34,31 +34,31 @@ pub fn union_of(types: impl IntoIterator<Item = CheckedType>, span: Span) -> Che
         return union_items.into_iter().next().unwrap();
     }
 
-    CheckedType {
-        kind: CheckedTypeKind::Union(union_items),
+    Type {
+        kind: TypeKind::Union(union_items),
         span,
     }
 }
 
-pub fn union_of_kinds(types: impl IntoIterator<Item = CheckedTypeKind>) -> CheckedTypeKind {
-    let mut union_items: HashSet<CheckedType> = HashSet::new();
+pub fn union_of_kinds(types: impl IntoIterator<Item = TypeKind>) -> TypeKind {
+    let mut union_items: HashSet<Type> = HashSet::new();
 
     for t_rc in types {
         match &t_rc {
-            CheckedTypeKind::Union(items) => {
+            TypeKind::Union(items) => {
                 for item in items {
-                    if !matches!(item.kind, CheckedTypeKind::Void) {
+                    if !matches!(item.kind, TypeKind::Void) {
                         union_items.insert(item.clone());
                     }
                 }
             }
-            CheckedTypeKind::Unknown => {
-                return CheckedTypeKind::Unknown;
+            TypeKind::Unknown => {
+                return TypeKind::Unknown;
             }
-            CheckedTypeKind::Void => {}
+            TypeKind::Void => {}
             _ => {
                 // A placeholder span is acceptable for internal calculations.
-                union_items.insert(CheckedType {
+                union_items.insert(Type {
                     kind: t_rc.clone(),
                     span: crate::ast::Span {
                         // Using a dummy span
@@ -79,12 +79,12 @@ pub fn union_of_kinds(types: impl IntoIterator<Item = CheckedTypeKind>) -> Check
     }
 
     if union_items.is_empty() {
-        return CheckedTypeKind::Void;
+        return TypeKind::Void;
     }
 
     if union_items.len() == 1 {
         return union_items.into_iter().next().unwrap().kind;
     }
 
-    CheckedTypeKind::Union(union_items)
+    TypeKind::Union(union_items)
 }

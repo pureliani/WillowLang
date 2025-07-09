@@ -11,7 +11,7 @@ use string_interner::StringInterner;
 pub mod string_interner;
 
 use crate::{
-    ast::checked::checked_type::CheckedTypeKind,
+    ast::checked::checked_type::TypeKind,
     check::{utils::type_to_string::type_to_string, SemanticChecker, SemanticError},
     parse::{Parser, ParsingErrorKind},
     tokenize::{token_kind_to_string, TokenizationErrorKind, Tokenizer},
@@ -354,7 +354,7 @@ pub fn compile_file<'a, 'b>(
                 .with_message("Ambiguous generic inference for union")
                 .with_label(label.with_message(format!(
                     "There are multiple ways to infer generic parameters in \"{}\" from \"{}\"",
-                    type_to_string(&CheckedTypeKind::Union(expected.clone()), string_interner),
+                    type_to_string(&TypeKind::Union(expected.clone()), string_interner),
                     type_to_string(&received.kind, string_interner)
                 ))),
             SemanticError::FailedToInferGenericsInUnion {
@@ -364,7 +364,7 @@ pub fn compile_file<'a, 'b>(
                 .with_message("Failed to infer generic parameters in union")
                 .with_label(label.with_message(format!(
                     "Failed to infer generic parameters in \"{}\" from {}",
-                    type_to_string(&CheckedTypeKind::Union(expected_union.clone()), string_interner),
+                    type_to_string(&TypeKind::Union(expected_union.clone()), string_interner),
                     type_to_string(&received.kind, string_interner)
                 ))),
             SemanticError::DuplicateIdentifier { id } => {

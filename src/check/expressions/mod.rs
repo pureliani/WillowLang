@@ -23,7 +23,7 @@ use crate::{
         base::base_expression::{Expr, ExprKind},
         checked::{
             checked_expression::{CheckedExpr, CheckedExprKind},
-            checked_type::{CheckedType, CheckedTypeKind},
+            checked_type::{Type, TypeKind},
         },
     },
     check::SemanticChecker,
@@ -76,25 +76,25 @@ impl<'a> SemanticChecker<'a> {
             ExprKind::StructLiteral(fields) => self.check_struct_literal_expr(fields, expr.span),
             ExprKind::Null => CheckedExpr {
                 kind: CheckedExprKind::Null,
-                ty: CheckedType {
-                    kind: CheckedTypeKind::Null,
+                ty: Type {
+                    kind: TypeKind::Null,
                     span: expr.span,
                 },
             },
             ExprKind::BoolLiteral { value } => CheckedExpr {
                 kind: CheckedExprKind::BoolLiteral { value },
-                ty: CheckedType {
-                    kind: CheckedTypeKind::Bool,
+                ty: Type {
+                    kind: TypeKind::Bool,
                     span: expr.span,
                 },
             },
             ExprKind::String(string_node) => CheckedExpr {
                 kind: CheckedExprKind::String(string_node),
-                ty: CheckedType {
+                ty: Type {
                     span: expr.span,
-                    kind: CheckedTypeKind::Array {
-                        item_type: Box::new(CheckedType {
-                            kind: CheckedTypeKind::Char,
+                    kind: TypeKind::Array {
+                        item_type: Box::new(Type {
+                            kind: TypeKind::Char,
                             span: expr.span, // TODO: come up with better span
                         }),
                         size: string_node.len,

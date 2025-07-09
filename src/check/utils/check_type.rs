@@ -6,7 +6,7 @@ use crate::{
         },
         checked::{
             checked_declaration::{CheckedFnType, CheckedGenericParam, CheckedParam},
-            checked_type::{CheckedType, CheckedTypeKind},
+            checked_type::{Type, TypeKind},
         },
     },
     check::{
@@ -20,17 +20,17 @@ use crate::{
 };
 
 impl<'a> SemanticChecker<'a> {
-    pub fn check_has_type_arguments_applied(&mut self, target: CheckedType) -> CheckedType {
+    pub fn check_has_type_arguments_applied(&mut self, target: Type) -> Type {
         let has_type_args = match &target.kind {
-            CheckedTypeKind::TypeAliasDecl(decl) => decl.borrow().generic_params.is_empty(),
-            CheckedTypeKind::FnType(_) => true,
+            TypeKind::TypeAliasDecl(decl) => decl.borrow().generic_params.is_empty(),
+            TypeKind::FnType(_) => true,
             _ => true,
         };
 
         if !has_type_args {
             self.errors.push(SemanticError::ExpectedTypeArguments { span: target.span });
-            CheckedType {
-                kind: CheckedTypeKind::Unknown,
+            Type {
+                kind: TypeKind::Unknown,
                 span: target.span,
             }
         } else {
@@ -76,27 +76,27 @@ impl<'a> SemanticChecker<'a> {
             .collect()
     }
 
-    pub fn check_type_annotation_recursive(&mut self, annotation: &TypeAnnotation) -> CheckedType {
+    pub fn check_type_annotation_recursive(&mut self, annotation: &TypeAnnotation) -> Type {
         let kind = match &annotation.kind {
-            TypeAnnotationKind::Void => CheckedTypeKind::Void,
-            TypeAnnotationKind::Bool => CheckedTypeKind::Bool,
-            TypeAnnotationKind::U8 => CheckedTypeKind::U8,
-            TypeAnnotationKind::U16 => CheckedTypeKind::U16,
-            TypeAnnotationKind::U32 => CheckedTypeKind::U32,
-            TypeAnnotationKind::U64 => CheckedTypeKind::U64,
-            TypeAnnotationKind::USize => CheckedTypeKind::USize,
-            TypeAnnotationKind::ISize => CheckedTypeKind::ISize,
-            TypeAnnotationKind::I8 => CheckedTypeKind::I8,
-            TypeAnnotationKind::I16 => CheckedTypeKind::I16,
-            TypeAnnotationKind::I32 => CheckedTypeKind::I32,
-            TypeAnnotationKind::I64 => CheckedTypeKind::I64,
-            TypeAnnotationKind::F32 => CheckedTypeKind::F32,
-            TypeAnnotationKind::F64 => CheckedTypeKind::F64,
-            TypeAnnotationKind::Char => CheckedTypeKind::Char,
-            TypeAnnotationKind::Struct(params) => CheckedTypeKind::Struct(self.check_params(params)),
+            TypeAnnotationKind::Void => TypeKind::Void,
+            TypeAnnotationKind::Bool => TypeKind::Bool,
+            TypeAnnotationKind::U8 => TypeKind::U8,
+            TypeAnnotationKind::U16 => TypeKind::U16,
+            TypeAnnotationKind::U32 => TypeKind::U32,
+            TypeAnnotationKind::U64 => TypeKind::U64,
+            TypeAnnotationKind::USize => TypeKind::USize,
+            TypeAnnotationKind::ISize => TypeKind::ISize,
+            TypeAnnotationKind::I8 => TypeKind::I8,
+            TypeAnnotationKind::I16 => TypeKind::I16,
+            TypeAnnotationKind::I32 => TypeKind::I32,
+            TypeAnnotationKind::I64 => TypeKind::I64,
+            TypeAnnotationKind::F32 => TypeKind::F32,
+            TypeAnnotationKind::F64 => TypeKind::F64,
+            TypeAnnotationKind::Char => TypeKind::Char,
+            TypeAnnotationKind::Struct(params) => TypeKind::Struct(self.check_params(params)),
             TypeAnnotationKind::GenericApply { left, args } => {
                 let checked_left = self.check_type_annotation_recursive(&left);
-                let checked_args: Vec<CheckedType> = args
+                let checked_args: Vec<Type> = args
                     .into_iter()
                     .map(|arg_annotation| {
                         let checked_arg = self.check_type_annotation_recursive(&arg_annotation);
@@ -105,7 +105,7 @@ impl<'a> SemanticChecker<'a> {
                     })
                     .collect();
 
-                let mut substitute = |generic_params: &Vec<CheckedGenericParam>, type_args: Vec<CheckedType>| {
+                let mut substitute = |generic_params: &Vec<CheckedGenericParam>, type_args: Vec<Type>| {
                     if generic_params.len() != type_args.len() {
                         self.errors.push(SemanticError::GenericArgumentCountMismatch {
                             expected: generic_params.len(),
@@ -113,7 +113,7 @@ impl<'a> SemanticChecker<'a> {
                             span: annotation.span,
                         });
 
-                        CheckedTypeKind::Unknown
+                        TypeKind::Unknown
                     } else {
                         let mut substitutions = GenericSubstitutionMap::new();
                         for (gp_decl, type_arg) in generic_params.iter().zip(type_args.into_iter()) {
@@ -125,34 +125,34 @@ impl<'a> SemanticChecker<'a> {
                 };
 
                 match &checked_left.kind {
-                    CheckedTypeKind::FnType(decl) => substitute(&decl.generic_params, checked_args),
-                    CheckedTypeKind::TypeAliasDecl(decl) => substitute(&decl.borrow().generic_params, checked_args),
+                    TypeKind::FnType(decl) => substitute(&decl.generic_params, checked_args),
+                    TypeKind::TypeAliasDecl(decl) => substitute(&decl.borrow().generic_params, checked_args),
                     _ => {
                         self.errors.push(SemanticError::CannotApplyTypeArguments {
                             to: checked_left.clone(),
                         });
 
-                        CheckedTypeKind::Unknown
+                        TypeKind::Unknown
                     }
                 }
             }
             TypeAnnotationKind::Identifier(id) => self
                 .scope_lookup(id.name)
                 .map(|entry| match entry {
-                    SymbolEntry::TypeAliasDecl(decl) => CheckedTypeKind::TypeAliasDecl(decl),
-                    SymbolEntry::GenericParam(decl) => CheckedTypeKind::GenericParam(decl),
+                    SymbolEntry::TypeAliasDecl(decl) => TypeKind::TypeAliasDecl(decl),
+                    SymbolEntry::GenericParam(decl) => TypeKind::GenericParam(decl),
                     SymbolEntry::VarDecl(_) => {
                         self.errors
                             .push(SemanticError::CannotUseVariableDeclarationAsType { span: annotation.span });
 
-                        CheckedTypeKind::Unknown
+                        TypeKind::Unknown
                     }
                 })
                 .unwrap_or_else(|| {
                     self.errors.push(SemanticError::UndeclaredType { id: *id });
-                    CheckedTypeKind::Unknown
+                    TypeKind::Unknown
                 }),
-            TypeAnnotationKind::Null => CheckedTypeKind::Null,
+            TypeAnnotationKind::Null => TypeKind::Null,
             TypeAnnotationKind::FnType {
                 params,
                 return_type,
@@ -165,7 +165,7 @@ impl<'a> SemanticChecker<'a> {
                 let checked_return_type = self.check_has_type_arguments_applied(partially_checked_return_type);
                 self.exit_scope();
 
-                CheckedTypeKind::FnType(CheckedFnType {
+                TypeKind::FnType(CheckedFnType {
                     params: checked_params,
                     return_type: Box::new(checked_return_type),
                     generic_params: checked_generic_params,
@@ -173,7 +173,7 @@ impl<'a> SemanticChecker<'a> {
                     applied_type_args: vec![],
                 })
             }
-            TypeAnnotationKind::Union(items) => CheckedTypeKind::Union(
+            TypeAnnotationKind::Union(items) => TypeKind::Union(
                 items
                     .iter()
                     .map(|i| {
@@ -204,7 +204,7 @@ impl<'a> SemanticChecker<'a> {
                     Some(valid_size) => {
                         let item_type = self.check_type_annotation_recursive(&left);
                         let result_item_type = self.check_has_type_arguments_applied(item_type);
-                        CheckedTypeKind::Array {
+                        TypeKind::Array {
                             item_type: Box::new(result_item_type),
                             size: valid_size,
                         }
@@ -218,19 +218,19 @@ impl<'a> SemanticChecker<'a> {
                         // Process for errors, ignore result
                         let result = self.check_type_annotation_recursive(&left);
                         let _ = self.check_has_type_arguments_applied(result);
-                        CheckedTypeKind::Unknown
+                        TypeKind::Unknown
                     }
                 }
             }
         };
 
-        CheckedType {
+        Type {
             kind,
             span: annotation.span,
         }
     }
 
-    pub fn check_type_annotation(&mut self, annotation: &TypeAnnotation) -> CheckedType {
+    pub fn check_type_annotation(&mut self, annotation: &TypeAnnotation) -> Type {
         let checked_type = self.check_type_annotation_recursive(annotation);
         let result = self.check_has_type_arguments_applied(checked_type);
         result

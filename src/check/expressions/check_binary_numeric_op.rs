@@ -11,20 +11,20 @@ use crate::{
 };
 
 use crate::{
-    ast::checked::checked_type::{CheckedType, CheckedTypeKind},
+    ast::checked::checked_type::{Type, TypeKind},
     check::SemanticError,
 };
 
 impl<'a> SemanticChecker<'a> {
-    pub fn check_binary_numeric_operation(&mut self, left: &CheckedExpr, right: &CheckedExpr, span: Span) -> CheckedType {
+    pub fn check_binary_numeric_operation(&mut self, left: &CheckedExpr, right: &CheckedExpr, span: Span) -> Type {
         let left_type = if is_float(&left.ty.kind) || is_integer(&left.ty.kind) {
             &left.ty
         } else {
             self.errors
                 .push(SemanticError::ExpectedANumericOperand { span: left.ty.span });
 
-            return CheckedType {
-                kind: CheckedTypeKind::Unknown,
+            return Type {
+                kind: TypeKind::Unknown,
                 span: left.ty.span,
             };
         };
@@ -35,8 +35,8 @@ impl<'a> SemanticChecker<'a> {
             self.errors
                 .push(SemanticError::ExpectedANumericOperand { span: right.ty.span });
 
-            return CheckedType {
-                kind: CheckedTypeKind::Unknown,
+            return Type {
+                kind: TypeKind::Unknown,
                 span: right.ty.span,
             };
         };
@@ -46,8 +46,8 @@ impl<'a> SemanticChecker<'a> {
         {
             self.errors.push(SemanticError::MixedFloatAndInteger { span });
 
-            return CheckedType {
-                kind: CheckedTypeKind::Unknown,
+            return Type {
+                kind: TypeKind::Unknown,
                 span: span,
             };
         }
@@ -55,8 +55,8 @@ impl<'a> SemanticChecker<'a> {
         if is_signed(&left_type.kind) != is_signed(&right_type.kind) {
             self.errors.push(SemanticError::MixedSignedAndUnsigned { span });
 
-            return CheckedType {
-                kind: CheckedTypeKind::Unknown,
+            return Type {
+                kind: TypeKind::Unknown,
                 span: span,
             };
         }
@@ -69,12 +69,12 @@ impl<'a> SemanticChecker<'a> {
         let right_rank = get_numeric_type_rank(&right_type.kind);
 
         if left_rank > right_rank {
-            CheckedType {
+            Type {
                 kind: left_type.kind.clone(),
                 span,
             }
         } else {
-            CheckedType {
+            Type {
                 kind: right_type.kind.clone(),
                 span,
             }
@@ -109,11 +109,11 @@ impl<'a> SemanticChecker<'a> {
         let checked_right = self.check_expr(*right);
         let checked_op = self.check_binary_numeric_operation(&checked_left, &checked_right, span);
 
-        let expr_type = if matches!(checked_op.kind, CheckedTypeKind::Unknown) {
+        let expr_type = if matches!(checked_op.kind, TypeKind::Unknown) {
             checked_op
         } else {
-            CheckedType {
-                kind: CheckedTypeKind::Bool,
+            Type {
+                kind: TypeKind::Bool,
                 span,
             }
         };

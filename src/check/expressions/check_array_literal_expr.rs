@@ -3,7 +3,7 @@ use crate::{
         base::base_expression::Expr,
         checked::{
             checked_expression::{CheckedExpr, CheckedExprKind},
-            checked_type::{CheckedType, CheckedTypeKind},
+            checked_type::{Type, TypeKind},
         },
         Span,
     },
@@ -18,8 +18,8 @@ impl<'a> SemanticChecker<'a> {
 
         let unionized_types = union_of(checked_items.iter().map(|item| item.ty.clone()), span);
 
-        let expr_type = CheckedType {
-            kind: CheckedTypeKind::Array {
+        let expr_type = Type {
+            kind: TypeKind::Array {
                 item_type: Box::new(unionized_types),
                 size,
             },

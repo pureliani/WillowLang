@@ -3,7 +3,7 @@ use crate::{
         base::base_expression::Expr,
         checked::{
             checked_expression::{CheckedExpr, CheckedExprKind},
-            checked_type::{CheckedType, CheckedTypeKind},
+            checked_type::{Type, TypeKind},
         },
         IdentifierNode, Span,
     },
@@ -15,15 +15,15 @@ impl<'a> SemanticChecker<'a> {
         let checked_left = self.check_expr(*left);
 
         let expr_type = match &checked_left.ty.kind {
-            CheckedTypeKind::Struct(fields) => fields
+            TypeKind::Struct(fields) => fields
                 .iter()
                 .find(|p| p.identifier == field)
                 .map(|p| p.constraint.clone())
                 .unwrap_or_else(|| {
                     self.errors.push(SemanticError::AccessToUndefinedField { field });
 
-                    CheckedType {
-                        kind: CheckedTypeKind::Unknown,
+                    Type {
+                        kind: TypeKind::Unknown,
                         span,
                     }
                 }),
@@ -32,8 +32,8 @@ impl<'a> SemanticChecker<'a> {
                     target: checked_left.ty.clone(),
                 });
 
-                CheckedType {
-                    kind: CheckedTypeKind::Unknown,
+                Type {
+                    kind: TypeKind::Unknown,
                     span,
                 }
             }

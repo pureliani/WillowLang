@@ -3,7 +3,7 @@ use crate::{
         base::base_expression::Expr,
         checked::{
             checked_expression::{CheckedExpr, CheckedExprKind},
-            checked_type::{CheckedType, CheckedTypeKind},
+            checked_type::{Type, TypeKind},
         },
         Span,
     },
@@ -12,8 +12,8 @@ use crate::{
 
 impl<'a> SemanticChecker<'a> {
     pub fn check_inequality_expr(&mut self, left: Box<Expr>, right: Box<Expr>, span: Span) -> CheckedExpr {
-        let mut expr_type = CheckedType {
-            kind: CheckedTypeKind::Bool,
+        let mut expr_type = Type {
+            kind: TypeKind::Bool,
             span,
         };
 
@@ -26,7 +26,7 @@ impl<'a> SemanticChecker<'a> {
                 to: checked_right.ty.clone(),
             });
 
-            expr_type.kind = CheckedTypeKind::Unknown;
+            expr_type.kind = TypeKind::Unknown;
         }
 
         CheckedExpr {

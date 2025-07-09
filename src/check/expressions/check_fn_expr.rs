@@ -10,7 +10,7 @@ use crate::{
         checked::{
             checked_declaration::{CheckedFnType, CheckedParam, CheckedVarDecl},
             checked_expression::{CheckedBlockContents, CheckedExpr, CheckedExprKind},
-            checked_type::{CheckedType, CheckedTypeKind},
+            checked_type::{Type, TypeKind},
         },
         Span,
     },
@@ -80,8 +80,8 @@ impl<'a> SemanticChecker<'a> {
         } else if return_exprs.len() == 1 {
             return_exprs.get(0).map(|e| e.ty.clone()).unwrap()
         } else {
-            CheckedType {
-                kind: CheckedTypeKind::Void,
+            Type {
+                kind: TypeKind::Void,
                 span,
             }
         };
@@ -100,8 +100,8 @@ impl<'a> SemanticChecker<'a> {
             actual_return_type
         };
 
-        let expr_type = CheckedType {
-            kind: CheckedTypeKind::FnType(CheckedFnType {
+        let expr_type = Type {
+            kind: TypeKind::FnType(CheckedFnType {
                 params: checked_params.clone(),
                 return_type: Box::new(final_return_type.clone()),
                 generic_params: checked_generic_params.clone(),

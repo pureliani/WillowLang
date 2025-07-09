@@ -5,7 +5,7 @@ use crate::{
         base::base_expression::Expr,
         checked::{
             checked_expression::{CheckedExpr, CheckedExprKind},
-            checked_type::{CheckedType, CheckedTypeKind},
+            checked_type::{Type, TypeKind},
         },
         Span,
     },
@@ -17,49 +17,49 @@ impl<'a> SemanticChecker<'a> {
         let checked_right = self.check_expr(*right);
 
         let expr_type = match &checked_right.ty.kind {
-            t if is_signed(&t) => CheckedType { kind: t.clone(), span },
+            t if is_signed(&t) => Type { kind: t.clone(), span },
             _ => {
                 let expected = HashSet::from([
-                    CheckedType {
-                        kind: CheckedTypeKind::I8,
+                    Type {
+                        kind: TypeKind::I8,
                         span: checked_right.ty.span,
                     },
-                    CheckedType {
-                        kind: CheckedTypeKind::I16,
+                    Type {
+                        kind: TypeKind::I16,
                         span: checked_right.ty.span,
                     },
-                    CheckedType {
-                        kind: CheckedTypeKind::I32,
+                    Type {
+                        kind: TypeKind::I32,
                         span: checked_right.ty.span,
                     },
-                    CheckedType {
-                        kind: CheckedTypeKind::I64,
+                    Type {
+                        kind: TypeKind::I64,
                         span: checked_right.ty.span,
                     },
-                    CheckedType {
-                        kind: CheckedTypeKind::ISize,
+                    Type {
+                        kind: TypeKind::ISize,
                         span: checked_right.ty.span,
                     },
-                    CheckedType {
-                        kind: CheckedTypeKind::F32,
+                    Type {
+                        kind: TypeKind::F32,
                         span: checked_right.ty.span,
                     },
-                    CheckedType {
-                        kind: CheckedTypeKind::F64,
+                    Type {
+                        kind: TypeKind::F64,
                         span: checked_right.ty.span,
                     },
                 ]);
 
                 self.errors.push(SemanticError::TypeMismatch {
-                    expected: CheckedType {
-                        kind: CheckedTypeKind::Union(expected),
+                    expected: Type {
+                        kind: TypeKind::Union(expected),
                         span: checked_right.ty.span,
                     },
                     received: checked_right.ty.clone(),
                 });
 
-                CheckedType {
-                    kind: CheckedTypeKind::Unknown,
+                Type {
+                    kind: TypeKind::Unknown,
                     span,
                 }
             }

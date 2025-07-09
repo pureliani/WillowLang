@@ -3,7 +3,7 @@ use crate::{
         base::base_expression::Expr,
         checked::{
             checked_expression::CheckedExpr,
-            checked_type::{CheckedType, CheckedTypeKind},
+            checked_type::{Type, TypeKind},
         },
         IdentifierNode, Span,
     },
@@ -17,8 +17,8 @@ impl<'a> SemanticChecker<'a> {
             .map(|(ident, expr)| (ident, self.check_expr(expr)))
             .collect();
 
-        let mut result_struct_type = CheckedType {
-            kind: CheckedTypeKind::Unknown,
+        let mut result_struct_type = Type {
+            kind: TypeKind::Unknown,
             span,
         };
 

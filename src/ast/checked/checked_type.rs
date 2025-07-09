@@ -13,7 +13,7 @@ use crate::ast::{
 use super::checked_declaration::CheckedGenericParam;
 
 #[derive(Clone, Debug)]
-pub enum CheckedTypeKind {
+pub enum TypeKind {
     Void,
     Null,
     Bool,
@@ -30,41 +30,43 @@ pub enum CheckedTypeKind {
     F32,
     F64,
     Char,
-    Array { item_type: Box<CheckedType>, size: usize },
+    Array { item_type: Box<Type>, size: usize },
     Struct(Vec<CheckedParam>),
     TypeAliasDecl(Rc<RefCell<CheckedTypeAliasDecl>>),
     GenericParam(CheckedGenericParam),
     FnType(CheckedFnType),
-    Union(HashSet<CheckedType>),
+    Union(HashSet<Type>),
     Unknown,
+    Pointer(Box<Type>),
 }
 
-impl Eq for CheckedTypeKind {}
-impl PartialEq for CheckedTypeKind {
+impl Eq for TypeKind {}
+impl PartialEq for TypeKind {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (CheckedTypeKind::Void, CheckedTypeKind::Void) => true,
-            (CheckedTypeKind::Null, CheckedTypeKind::Null) => true,
-            (CheckedTypeKind::Bool, CheckedTypeKind::Bool) => true,
-            (CheckedTypeKind::U8, CheckedTypeKind::U8) => true,
-            (CheckedTypeKind::U16, CheckedTypeKind::U16) => true,
-            (CheckedTypeKind::U32, CheckedTypeKind::U32) => true,
-            (CheckedTypeKind::U64, CheckedTypeKind::U64) => true,
-            (CheckedTypeKind::USize, CheckedTypeKind::USize) => true,
-            (CheckedTypeKind::ISize, CheckedTypeKind::ISize) => true,
-            (CheckedTypeKind::I8, CheckedTypeKind::I8) => true,
-            (CheckedTypeKind::I16, CheckedTypeKind::I16) => true,
-            (CheckedTypeKind::I32, CheckedTypeKind::I32) => true,
-            (CheckedTypeKind::I64, CheckedTypeKind::I64) => true,
-            (CheckedTypeKind::F32, CheckedTypeKind::F32) => true,
-            (CheckedTypeKind::F64, CheckedTypeKind::F64) => true,
-            (CheckedTypeKind::Char, CheckedTypeKind::Char) => true,
-            (CheckedTypeKind::Unknown, CheckedTypeKind::Unknown) => true,
-            (CheckedTypeKind::GenericParam(a), CheckedTypeKind::GenericParam(b)) => a == b,
-            (CheckedTypeKind::TypeAliasDecl(a), CheckedTypeKind::TypeAliasDecl(b)) => a == b,
-            (CheckedTypeKind::Struct(a), CheckedTypeKind::Struct(b)) => a == b,
-            (CheckedTypeKind::FnType(a), CheckedTypeKind::FnType(b)) => a == b,
-            (CheckedTypeKind::Union(a_items), CheckedTypeKind::Union(b_items)) => {
+            (TypeKind::Void, TypeKind::Void) => true,
+            (TypeKind::Null, TypeKind::Null) => true,
+            (TypeKind::Bool, TypeKind::Bool) => true,
+            (TypeKind::U8, TypeKind::U8) => true,
+            (TypeKind::U16, TypeKind::U16) => true,
+            (TypeKind::U32, TypeKind::U32) => true,
+            (TypeKind::U64, TypeKind::U64) => true,
+            (TypeKind::USize, TypeKind::USize) => true,
+            (TypeKind::ISize, TypeKind::ISize) => true,
+            (TypeKind::I8, TypeKind::I8) => true,
+            (TypeKind::I16, TypeKind::I16) => true,
+            (TypeKind::I32, TypeKind::I32) => true,
+            (TypeKind::I64, TypeKind::I64) => true,
+            (TypeKind::F32, TypeKind::F32) => true,
+            (TypeKind::F64, TypeKind::F64) => true,
+            (TypeKind::Char, TypeKind::Char) => true,
+            (TypeKind::Unknown, TypeKind::Unknown) => true,
+            (TypeKind::GenericParam(a), TypeKind::GenericParam(b)) => a == b,
+            (TypeKind::TypeAliasDecl(a), TypeKind::TypeAliasDecl(b)) => a == b,
+            (TypeKind::Struct(a), TypeKind::Struct(b)) => a == b,
+            (TypeKind::FnType(a), TypeKind::FnType(b)) => a == b,
+            (TypeKind::Pointer(a), TypeKind::Pointer(b)) => a == b,
+            (TypeKind::Union(a_items), TypeKind::Union(b_items)) => {
                 if a_items.len() != b_items.len() {
                     return false;
                 }
@@ -72,12 +74,12 @@ impl PartialEq for CheckedTypeKind {
                 a_items.iter().all(|item_a| b_items.contains(item_a)) && b_items.iter().all(|item_b| a_items.contains(item_b))
             }
             (
-                CheckedTypeKind::Array {
+                TypeKind::Array {
                     item_type: ai,
                     size: asize,
                     ..
                 },
-                CheckedTypeKind::Array {
+                TypeKind::Array {
                     item_type: bi,
                     size: bsize,
                     ..
@@ -88,33 +90,34 @@ impl PartialEq for CheckedTypeKind {
     }
 }
 
-impl Hash for CheckedTypeKind {
+impl Hash for TypeKind {
     fn hash<H: Hasher>(&self, state: &mut H) {
         std::mem::discriminant(self).hash(state);
 
         match self {
-            CheckedTypeKind::Void => {}
-            CheckedTypeKind::Null => {}
-            CheckedTypeKind::Bool => {}
-            CheckedTypeKind::U8 => {}
-            CheckedTypeKind::U16 => {}
-            CheckedTypeKind::U32 => {}
-            CheckedTypeKind::U64 => {}
-            CheckedTypeKind::USize => {}
-            CheckedTypeKind::ISize => {}
-            CheckedTypeKind::I8 => {}
-            CheckedTypeKind::I16 => {}
-            CheckedTypeKind::I32 => {}
-            CheckedTypeKind::I64 => {}
-            CheckedTypeKind::F32 => {}
-            CheckedTypeKind::F64 => {}
-            CheckedTypeKind::Char => {}
-            CheckedTypeKind::Unknown => {}
-            CheckedTypeKind::Struct(fields) => fields.iter().for_each(|f| f.hash(state)),
-            CheckedTypeKind::TypeAliasDecl(decl) => decl.borrow().hash(state),
-            CheckedTypeKind::GenericParam(decl) => decl.hash(state),
-            CheckedTypeKind::FnType(decl) => decl.hash(state),
-            CheckedTypeKind::Union(items) => {
+            TypeKind::Void => {}
+            TypeKind::Null => {}
+            TypeKind::Bool => {}
+            TypeKind::U8 => {}
+            TypeKind::U16 => {}
+            TypeKind::U32 => {}
+            TypeKind::U64 => {}
+            TypeKind::USize => {}
+            TypeKind::ISize => {}
+            TypeKind::I8 => {}
+            TypeKind::I16 => {}
+            TypeKind::I32 => {}
+            TypeKind::I64 => {}
+            TypeKind::F32 => {}
+            TypeKind::F64 => {}
+            TypeKind::Char => {}
+            TypeKind::Unknown => {}
+            TypeKind::Struct(fields) => fields.iter().for_each(|f| f.hash(state)),
+            TypeKind::TypeAliasDecl(decl) => decl.borrow().hash(state),
+            TypeKind::GenericParam(decl) => decl.hash(state),
+            TypeKind::FnType(decl) => decl.hash(state),
+            TypeKind::Pointer(inner) => inner.hash(state),
+            TypeKind::Union(items) => {
                 state.write_usize(items.len());
                 if !items.is_empty() {
                     let mut item_hashes: Vec<u64> = items
@@ -131,7 +134,7 @@ impl Hash for CheckedTypeKind {
                     }
                 }
             }
-            CheckedTypeKind::Array { item_type, size, .. } => {
+            TypeKind::Array { item_type, size, .. } => {
                 item_type.hash(state);
                 size.hash(state);
             }
@@ -140,18 +143,18 @@ impl Hash for CheckedTypeKind {
 }
 
 #[derive(Debug, Clone)]
-pub struct CheckedType {
-    pub kind: CheckedTypeKind,
+pub struct Type {
+    pub kind: TypeKind,
     pub span: Span,
 }
 
-impl Eq for CheckedType {}
-impl PartialEq for CheckedType {
+impl Eq for Type {}
+impl PartialEq for Type {
     fn eq(&self, other: &Self) -> bool {
         self.kind == other.kind
     }
 }
-impl Hash for CheckedType {
+impl Hash for Type {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.kind.hash(state);
     }

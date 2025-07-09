@@ -1,12 +1,12 @@
 use crate::{
     ast::checked::{
         checked_declaration::{CheckedFnType, CheckedGenericParam},
-        checked_type::{CheckedType, CheckedTypeKind},
+        checked_type::{Type, TypeKind},
     },
     compile::string_interner::{InternerId, StringInterner},
 };
 
-fn applied_type_args_to_string(type_args: &Vec<CheckedType>, string_interner: &StringInterner) -> String {
+fn applied_type_args_to_string(type_args: &Vec<Type>, string_interner: &StringInterner) -> String {
     if type_args.is_empty() {
         return "".to_string();
     }
@@ -49,32 +49,32 @@ fn generic_params_to_string(generic_params: &Vec<CheckedGenericParam>, string_in
     }
 }
 
-pub fn type_to_string(ty: &CheckedTypeKind, string_interner: &StringInterner) -> String {
+pub fn type_to_string(ty: &TypeKind, string_interner: &StringInterner) -> String {
     type_to_string_recursive(ty, string_interner, false)
 }
 
-pub fn type_to_string_recursive(ty: &CheckedTypeKind, string_interner: &StringInterner, is_union_context: bool) -> String {
+pub fn type_to_string_recursive(ty: &TypeKind, string_interner: &StringInterner, is_union_context: bool) -> String {
     // TODO: add recursion detection and handling
 
     match ty {
-        CheckedTypeKind::Void => String::from("void"),
-        CheckedTypeKind::Null => String::from("null"),
-        CheckedTypeKind::Bool => String::from("bool"),
-        CheckedTypeKind::U8 => String::from("u8"),
-        CheckedTypeKind::U16 => String::from("u16"),
-        CheckedTypeKind::U32 => String::from("u32"),
-        CheckedTypeKind::U64 => String::from("u64"),
-        CheckedTypeKind::USize => String::from("usize"),
-        CheckedTypeKind::ISize => String::from("isize"),
-        CheckedTypeKind::I8 => String::from("i8"),
-        CheckedTypeKind::I16 => String::from("i16"),
-        CheckedTypeKind::I32 => String::from("i32"),
-        CheckedTypeKind::I64 => String::from("i64"),
-        CheckedTypeKind::F32 => String::from("f32"),
-        CheckedTypeKind::F64 => String::from("f64"),
-        CheckedTypeKind::Char => String::from("char"),
-        CheckedTypeKind::Unknown => String::from("unknown"),
-        CheckedTypeKind::Struct(params) => {
+        TypeKind::Void => String::from("void"),
+        TypeKind::Null => String::from("null"),
+        TypeKind::Bool => String::from("bool"),
+        TypeKind::U8 => String::from("u8"),
+        TypeKind::U16 => String::from("u16"),
+        TypeKind::U32 => String::from("u32"),
+        TypeKind::U64 => String::from("u64"),
+        TypeKind::USize => String::from("usize"),
+        TypeKind::ISize => String::from("isize"),
+        TypeKind::I8 => String::from("i8"),
+        TypeKind::I16 => String::from("i16"),
+        TypeKind::I32 => String::from("i32"),
+        TypeKind::I64 => String::from("i64"),
+        TypeKind::F32 => String::from("f32"),
+        TypeKind::F64 => String::from("f64"),
+        TypeKind::Char => String::from("char"),
+        TypeKind::Unknown => String::from("unknown"),
+        TypeKind::Struct(params) => {
             let params_str = params
                 .iter()
                 .map(|p| {
@@ -89,12 +89,12 @@ pub fn type_to_string_recursive(ty: &CheckedTypeKind, string_interner: &StringIn
 
             format!("{{\n{}\n}}", params_str)
         }
-        CheckedTypeKind::GenericParam(CheckedGenericParam { identifier, .. }) => {
+        TypeKind::GenericParam(CheckedGenericParam { identifier, .. }) => {
             let name = identifier_to_string(identifier.name, string_interner);
 
             name
         }
-        CheckedTypeKind::FnType(CheckedFnType {
+        TypeKind::FnType(CheckedFnType {
             params,
             return_type,
             generic_params,
@@ -128,7 +128,7 @@ pub fn type_to_string_recursive(ty: &CheckedTypeKind, string_interner: &StringIn
                 fn_str
             }
         }
-        CheckedTypeKind::TypeAliasDecl(decl) => {
+        TypeKind::TypeAliasDecl(decl) => {
             let decl = decl.borrow();
             let name = identifier_to_string(decl.identifier.name, string_interner);
 
@@ -143,12 +143,12 @@ pub fn type_to_string_recursive(ty: &CheckedTypeKind, string_interner: &StringIn
                 format!("{}{}", name, generics_str)
             }
         }
-        CheckedTypeKind::Union(hash_set) => hash_set
+        TypeKind::Union(hash_set) => hash_set
             .iter()
             .map(|t| type_to_string_recursive(&t.kind, string_interner, true))
             .collect::<Vec<String>>()
             .join(" | "),
-        CheckedTypeKind::Array { item_type, size } => {
+        TypeKind::Array { item_type, size } => {
             format!(
                 "[{}; {}]",
                 type_to_string_recursive(&item_type.kind, string_interner, false),

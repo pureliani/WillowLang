@@ -3,24 +3,24 @@ use std::collections::HashSet;
 use crate::{
     ast::checked::{
         checked_declaration::CheckedFnType,
-        checked_type::{CheckedType, CheckedTypeKind},
+        checked_type::{Type, TypeKind},
     },
     check::{utils::substitute_generics::GenericSubstitutionMap, SemanticChecker},
 };
 
 impl<'a> SemanticChecker<'a> {
-    pub fn check_is_assignable(&mut self, source_type: &CheckedType, target_type: &CheckedType) -> bool {
+    pub fn check_is_assignable(&mut self, source_type: &Type, target_type: &Type) -> bool {
         let mut visited_declarations: HashSet<(usize, usize)> = HashSet::new();
         self.check_is_assignable_recursive(source_type, target_type, &mut visited_declarations)
     }
 
     pub fn check_is_assignable_recursive(
         &mut self,
-        source_type: &CheckedType,
-        target_type: &CheckedType,
+        source_type: &Type,
+        target_type: &Type,
         visited_declarations: &mut HashSet<(usize, usize)>,
     ) -> bool {
-        use CheckedTypeKind::*;
+        use TypeKind::*;
         // TODO: add recursion detection and handling
 
         let result = match (&source_type.kind, &target_type.kind) {
@@ -141,7 +141,7 @@ impl<'a> SemanticChecker<'a> {
 
                 let mut substitution_map = GenericSubstitutionMap::new();
                 for (sgp, tgp) in source_generic_params.iter().zip(target_generic_params.iter()) {
-                    let source_generic_param_as_type = CheckedType {
+                    let source_generic_param_as_type = Type {
                         kind: GenericParam(sgp.clone()),
                         span: sgp.identifier.span,
                     };

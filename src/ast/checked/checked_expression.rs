@@ -1,5 +1,5 @@
 use crate::{
-    ast::{checked::checked_type::CheckedType, DefinitionId, IdentifierNode, StringNode},
+    ast::{checked::checked_type::Type, DefinitionId, IdentifierNode, StringNode},
     check::utils::substitute_generics::GenericSubstitutionMap,
     tokenize::NumberKind,
 };
@@ -24,7 +24,7 @@ pub enum RefinementKey {
 
     /// The refinement applies when the function's return value is of a certain type.
     /// This handles the non-literal return case.
-    Type(CheckedType),
+    Type(Type),
 }
 
 #[derive(Clone, Debug)]
@@ -103,7 +103,7 @@ pub enum CheckedExprKind {
     },
     TypeCast {
         left: Box<CheckedExpr>,
-        target: CheckedType,
+        target: Type,
     },
     FnCall {
         left: Box<CheckedExpr>,
@@ -126,7 +126,7 @@ pub enum CheckedExprKind {
         id: DefinitionId,
         params: Vec<CheckedParam>,
         body: CheckedBlockContents,
-        return_type: CheckedType,
+        return_type: Type,
         generic_params: Vec<CheckedGenericParam>,
     },
     If {
@@ -148,5 +148,5 @@ pub enum CheckedExprKind {
 #[derive(Clone, Debug)]
 pub struct CheckedExpr {
     pub kind: CheckedExprKind,
-    pub ty: CheckedType,
+    pub ty: Type,
 }

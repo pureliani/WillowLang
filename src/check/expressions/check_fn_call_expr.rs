@@ -4,7 +4,7 @@ use crate::{
         checked::{
             checked_declaration::{CheckedFnType, CheckedParam},
             checked_expression::{CheckedExpr, CheckedExprKind},
-            checked_type::{CheckedType, CheckedTypeKind},
+            checked_type::{Type, TypeKind},
         },
         Span,
     },
@@ -17,7 +17,7 @@ impl<'a> SemanticChecker<'a> {
         let checked_args: Vec<_> = args.into_iter().map(|arg| self.check_expr(arg)).collect();
 
         let return_type = match &checked_left.ty.kind {
-            CheckedTypeKind::FnType(CheckedFnType {
+            TypeKind::FnType(CheckedFnType {
                 params,
                 return_type,
                 generic_params: _,
@@ -30,8 +30,8 @@ impl<'a> SemanticChecker<'a> {
                         span: checked_left.ty.span,
                     });
 
-                    CheckedType {
-                        kind: CheckedTypeKind::Unknown,
+                    Type {
+                        kind: TypeKind::Unknown,
                         span,
                     }
                 } else {
@@ -59,7 +59,7 @@ impl<'a> SemanticChecker<'a> {
                                 received: call_arg_expr.ty.clone(),
                             });
 
-                            substituted_return.kind = CheckedTypeKind::Unknown;
+                            substituted_return.kind = TypeKind::Unknown;
                         }
                     }
 
@@ -71,8 +71,8 @@ impl<'a> SemanticChecker<'a> {
                     target: checked_left.ty.clone(),
                 });
 
-                CheckedType {
-                    kind: CheckedTypeKind::Unknown,
+                Type {
+                    kind: TypeKind::Unknown,
                     span,
                 }
             }

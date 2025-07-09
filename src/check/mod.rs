@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use crate::{
     ast::{
         base::base_statement::Stmt,
-        checked::{checked_declaration::CheckedGenericParam, checked_statement::CheckedStmt, checked_type::CheckedType},
+        checked::{checked_declaration::CheckedGenericParam, checked_statement::CheckedStmt, checked_type::Type},
         IdentifierNode, Span,
     },
     check::utils::scope::{Scope, ScopeKind},
@@ -24,16 +24,16 @@ pub enum SemanticError {
         id: IdentifierNode,
     },
     AmbiguousGenericInferenceForUnion {
-        expected: HashSet<CheckedType>,
-        received: CheckedType,
+        expected: HashSet<Type>,
+        received: Type,
     },
     FailedToInferGenericsInUnion {
-        expected_union: HashSet<CheckedType>,
-        received: CheckedType,
+        expected_union: HashSet<Type>,
+        received: Type,
     },
     IncompatibleGenericParamSubstitution {
         generic_param: CheckedGenericParam,
-        arg_type: CheckedType,
+        arg_type: Type,
         is_inferred: bool,
     },
     VarDeclWithoutInitializer {
@@ -62,8 +62,8 @@ pub enum SemanticError {
         span: Span,
     },
     CannotCompareType {
-        of: CheckedType,
-        to: CheckedType,
+        of: Type,
+        to: Type,
     },
     UndeclaredIdentifier {
         id: IdentifierNode,
@@ -81,11 +81,11 @@ pub enum SemanticError {
         span: Span,
     },
     InvalidAssignmentTarget {
-        target: CheckedType,
+        target: Type,
     },
     TypeMismatch {
-        expected: CheckedType,
-        received: CheckedType,
+        expected: Type,
+        received: Type,
     },
     InvalidArraySizeValue {
         value: NumberKind,
@@ -95,14 +95,14 @@ pub enum SemanticError {
         span: Span,
     },
     ReturnTypeMismatch {
-        expected: CheckedType,
-        received: CheckedType,
+        expected: Type,
+        received: Type,
     },
     CannotAccess {
-        target: CheckedType,
+        target: Type,
     },
     CannotCall {
-        target: CheckedType,
+        target: Type,
     },
     FnArgumentCountMismatch {
         expected: usize,
@@ -129,8 +129,8 @@ pub enum SemanticError {
     },
     ConflictingGenericBinding {
         generic_param: CheckedGenericParam,
-        existing: CheckedType,
-        new: CheckedType,
+        existing: Type,
+        new: Type,
     },
     TypeAliasMustBeDeclaredAtTopLevel {
         span: Span,
@@ -139,7 +139,7 @@ pub enum SemanticError {
         span: Span,
     },
     CannotApplyTypeArguments {
-        to: CheckedType,
+        to: Type,
     },
 }
 

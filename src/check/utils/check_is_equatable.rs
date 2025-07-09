@@ -1,16 +1,16 @@
-use crate::ast::checked::checked_type::CheckedTypeKind;
+use crate::ast::checked::checked_type::TypeKind;
 
 use super::is_integer::is_integer;
 
-pub fn check_is_equatable(left: &CheckedTypeKind, right: &CheckedTypeKind) -> bool {
+pub fn check_is_equatable(left: &TypeKind, right: &TypeKind) -> bool {
     match (left, right) {
-        (CheckedTypeKind::Bool, CheckedTypeKind::Bool) => true,
-        (CheckedTypeKind::Char, CheckedTypeKind::Char) => true,
+        (TypeKind::Bool, TypeKind::Bool) => true,
+        (TypeKind::Char, TypeKind::Char) => true,
         (a, b) if is_integer(a) && is_integer(b) => true,
-        (CheckedTypeKind::Union(a_items), CheckedTypeKind::Union(b_items)) => a_items
+        (TypeKind::Union(a_items), TypeKind::Union(b_items)) => a_items
             .iter()
             .any(|a| b_items.iter().any(|b| check_is_equatable(&a.kind, &b.kind))),
-        (CheckedTypeKind::Union(items), other) | (other, CheckedTypeKind::Union(items)) => {
+        (TypeKind::Union(items), other) | (other, TypeKind::Union(items)) => {
             items.iter().any(|item| check_is_equatable(&item.kind, other))
         }
         _ => false,

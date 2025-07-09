@@ -11,7 +11,7 @@ use crate::{
             checked_declaration::{CheckedTypeAliasDecl, CheckedVarDecl},
             checked_expression::{CheckedBlockContents, CheckedExprKind},
             checked_statement::CheckedStmt,
-            checked_type::{CheckedType, CheckedTypeKind},
+            checked_type::{Type, TypeKind},
         },
     },
     check::{
@@ -28,8 +28,8 @@ impl<'a> SemanticChecker<'a> {
                     let placeholder = SymbolEntry::TypeAliasDecl(Rc::new(RefCell::new(CheckedTypeAliasDecl {
                         identifier: decl.identifier,
                         documentation: decl.documentation.clone(),
-                        value: Box::new(CheckedType {
-                            kind: CheckedTypeKind::Unknown,
+                        value: Box::new(Type {
+                            kind: TypeKind::Unknown,
                             span: decl.identifier.span,
                         }),
                         generic_params: vec![],
@@ -51,8 +51,8 @@ impl<'a> SemanticChecker<'a> {
                             identifier: decl.identifier,
                             documentation: decl.documentation.clone(),
                             value: None,
-                            constraint: CheckedType {
-                                kind: CheckedTypeKind::Unknown,
+                            constraint: Type {
+                                kind: TypeKind::Unknown,
                                 span: decl.identifier.span,
                             },
                         })));
@@ -126,8 +126,8 @@ impl<'a> SemanticChecker<'a> {
                     (None, _) => {
                         self.errors.push(SemanticError::VarDeclWithoutInitializer { span: stmt.span });
 
-                        CheckedType {
-                            kind: CheckedTypeKind::Unknown,
+                        Type {
+                            kind: TypeKind::Unknown,
                             span: identifier.span,
                         }
                     }
@@ -263,8 +263,8 @@ impl<'a> SemanticChecker<'a> {
                 let checked_condition = self.check_expr(*condition);
 
                 self.enter_scope(ScopeKind::While);
-                let expected_condition_type = CheckedType {
-                    kind: CheckedTypeKind::Bool,
+                let expected_condition_type = Type {
+                    kind: TypeKind::Bool,
                     span: checked_condition.ty.span,
                 };
 

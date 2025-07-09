@@ -3,14 +3,14 @@ use crate::{
         base::base_expression::BlockContents,
         checked::{
             checked_expression::CheckedBlockContents,
-            checked_type::{CheckedType, CheckedTypeKind},
+            checked_type::{Type, TypeKind},
         },
     },
     check::{utils::scope::ScopeKind, SemanticChecker},
 };
 
 impl<'a> SemanticChecker<'a> {
-    pub fn check_codeblock(&mut self, block_contents: BlockContents) -> (CheckedType, CheckedBlockContents) {
+    pub fn check_codeblock(&mut self, block_contents: BlockContents) -> (Type, CheckedBlockContents) {
         self.enter_scope(ScopeKind::CodeBlock);
         let checked_codeblock_statements = self.check_stmts(block_contents.statements);
         let checked_codeblock_final_expr = block_contents.final_expr.map(|fe| {
@@ -20,8 +20,8 @@ impl<'a> SemanticChecker<'a> {
         });
         self.exit_scope();
 
-        let ty = checked_codeblock_final_expr.clone().map(|fe| fe.ty).unwrap_or(CheckedType {
-            kind: CheckedTypeKind::Void,
+        let ty = checked_codeblock_final_expr.clone().map(|fe| fe.ty).unwrap_or(Type {
+            kind: TypeKind::Void,
             span: block_contents.span,
         });
 

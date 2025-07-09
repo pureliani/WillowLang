@@ -3,7 +3,7 @@ use crate::{
         base::base_expression::{BlockContents, Expr},
         checked::{
             checked_expression::{CheckedExpr, CheckedExprKind},
-            checked_type::{CheckedType, CheckedTypeKind},
+            checked_type::{Type, TypeKind},
         },
         Span,
     },

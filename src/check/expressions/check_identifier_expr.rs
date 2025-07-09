@@ -2,7 +2,7 @@ use crate::{
     ast::{
         checked::{
             checked_expression::{CheckedExpr, CheckedExprKind},
-            checked_type::{CheckedType, CheckedTypeKind},
+            checked_type::{Type, TypeKind},
         },
         IdentifierNode, Span,
     },
@@ -15,25 +15,25 @@ impl<'a> SemanticChecker<'a> {
 
         let kind = match entry {
             Some(e) => match e {
-                SymbolEntry::TypeAliasDecl(decl) => CheckedTypeKind::TypeAliasDecl(decl.clone()),
+                SymbolEntry::TypeAliasDecl(decl) => TypeKind::TypeAliasDecl(decl.clone()),
                 SymbolEntry::VarDecl(decl) => {
                     todo!()
                 }
                 SymbolEntry::GenericParam(_) => {
                     self.errors.push(SemanticError::CannotUseGenericParameterAsValue { span });
 
-                    CheckedTypeKind::Unknown
+                    TypeKind::Unknown
                 }
             },
             None => {
                 self.errors.push(SemanticError::UndeclaredIdentifier { id });
 
-                CheckedTypeKind::Unknown
+                TypeKind::Unknown
             }
         };
 
         CheckedExpr {
-            ty: CheckedType { kind, span },
+            ty: Type { kind, span },
             kind: CheckedExprKind::Identifier(id),
         }
     }

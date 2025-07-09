@@ -4,7 +4,7 @@ use crate::{
         checked::{
             checked_declaration::{CheckedFnType, CheckedGenericParam},
             checked_expression::{CheckedExpr, CheckedExprKind},
-            checked_type::{CheckedType, CheckedTypeKind},
+            checked_type::{Type, TypeKind},
         },
         Span,
     },
@@ -19,7 +19,7 @@ impl<'a> SemanticChecker<'a> {
             .map(|type_arg| self.check_type_annotation(&type_arg))
             .collect();
 
-        let mut substitute = |generic_params: &[CheckedGenericParam], type_args: Vec<CheckedType>| {
+        let mut substitute = |generic_params: &[CheckedGenericParam], type_args: Vec<Type>| {
             if generic_params.len() != type_args.len() {
                 self.errors.push(SemanticError::GenericArgumentCountMismatch {
                     expected: generic_params.len(),
@@ -28,8 +28,8 @@ impl<'a> SemanticChecker<'a> {
                 });
 
                 (
-                    CheckedType {
-                        kind: CheckedTypeKind::Unknown,
+                    Type {
+                        kind: TypeKind::Unknown,
                         span,
                     },
                     GenericSubstitutionMap::new(),
@@ -47,15 +47,15 @@ impl<'a> SemanticChecker<'a> {
         };
 
         let (type_kind, substitutions) = match &checked_left.ty.kind {
-            CheckedTypeKind::FnType(CheckedFnType { generic_params, .. }) => substitute(generic_params, type_args),
+            TypeKind::FnType(CheckedFnType { generic_params, .. }) => substitute(generic_params, type_args),
             _ => {
                 self.errors.push(SemanticError::CannotApplyTypeArguments {
                     to: checked_left.ty.clone(),
                 });
 
                 (
-                    CheckedType {
-                        kind: CheckedTypeKind::Unknown,
+                    Type {
+                        kind: TypeKind::Unknown,
                         span: checked_left.ty.span,
                     },
                     GenericSubstitutionMap::new(),

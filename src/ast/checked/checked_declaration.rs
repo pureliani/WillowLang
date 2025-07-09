@@ -1,7 +1,7 @@
 use std::hash::{Hash, Hasher};
 
 use crate::{
-    ast::{checked::checked_type::CheckedType, DefinitionId, IdentifierNode, Span},
+    ast::{checked::checked_type::Type, DefinitionId, IdentifierNode, Span},
     parse::DocAnnotation,
 };
 
@@ -11,7 +11,7 @@ use super::checked_expression::CheckedExpr;
 pub struct CheckedParam {
     pub id: DefinitionId,
     pub identifier: IdentifierNode,
-    pub constraint: CheckedType,
+    pub constraint: Type,
 }
 
 impl Eq for CheckedParam {}
@@ -31,7 +31,7 @@ impl Hash for CheckedParam {
 #[derive(Clone, Debug)]
 pub struct CheckedGenericParam {
     pub identifier: IdentifierNode,
-    pub constraint: Option<Box<CheckedType>>,
+    pub constraint: Option<Box<Type>>,
 }
 
 impl Eq for CheckedGenericParam {}
@@ -50,9 +50,9 @@ impl Hash for CheckedGenericParam {
 #[derive(Clone, Debug)]
 pub struct CheckedFnType {
     pub params: Vec<CheckedParam>,
-    pub return_type: Box<CheckedType>,
+    pub return_type: Box<Type>,
     pub generic_params: Vec<CheckedGenericParam>,
-    pub applied_type_args: Vec<CheckedType>,
+    pub applied_type_args: Vec<Type>,
     pub span: Span,
 }
 
@@ -75,8 +75,8 @@ pub struct CheckedTypeAliasDecl {
     pub identifier: IdentifierNode,
     pub documentation: Option<DocAnnotation>,
     pub generic_params: Vec<CheckedGenericParam>,
-    pub value: Box<CheckedType>,
-    pub applied_type_args: Vec<CheckedType>,
+    pub value: Box<Type>,
+    pub applied_type_args: Vec<Type>,
     pub span: Span,
 }
 
@@ -95,10 +95,25 @@ impl Hash for CheckedTypeAliasDecl {
 }
 
 #[derive(Clone, Debug)]
+pub struct CheckedEnumVariant {
+    pub id: DefinitionId,
+    pub identifier: IdentifierNode,
+    pub payload_type: Option<Type>,
+}
+
+#[derive(Clone, Debug)]
+pub struct CheckedEnumDecl {
+    pub identifier: IdentifierNode,
+    pub documentation: Option<DocAnnotation>,
+    pub generic_params: Vec<CheckedGenericParam>,
+    pub variants: Vec<CheckedEnumVariant>,
+}
+
+#[derive(Clone, Debug)]
 pub struct CheckedVarDecl {
     pub id: DefinitionId,
     pub identifier: IdentifierNode,
     pub documentation: Option<DocAnnotation>,
-    pub constraint: CheckedType,
+    pub constraint: Type,
     pub value: Option<CheckedExpr>,
 }

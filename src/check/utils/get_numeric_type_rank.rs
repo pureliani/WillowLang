@@ -1,7 +1,7 @@
-use crate::ast::checked::checked_type::CheckedTypeKind;
+use crate::ast::checked::checked_type::TypeKind;
 
-pub fn get_numeric_type_rank(ty: &CheckedTypeKind) -> i32 {
-    use CheckedTypeKind::*;
+pub fn get_numeric_type_rank(ty: &TypeKind) -> i32 {
+    use TypeKind::*;
     match &ty {
         I8 { .. } | U8 { .. } => 1,
         I16 { .. } | U16 { .. } => 2,

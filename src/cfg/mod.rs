@@ -4,119 +4,101 @@ use crate::{
     ast::{
         checked::{
             checked_declaration::{CheckedGenericParam, CheckedParam},
-            checked_type::CheckedTypeKind,
+            checked_type::{Type, TypeKind},
         },
-        DefinitionId, IdentifierNode, Span,
+        Span,
     },
     compile::string_interner::InternerId,
     tokenize::NumberKind,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub struct BasicBlockId(usize);
+pub struct FunctionId(pub usize);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub struct AllocationSiteId(usize);
+pub struct BasicBlockId(pub usize);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub struct ValueId(usize);
+pub struct HeapAllocationId(pub usize);
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct ValueId(pub usize);
 
 #[derive(Clone, Debug)]
-pub enum RValue {
-    NullLiteral {
-        ty: CheckedTypeKind,
-        span: Span,
-    },
-    BoolLiteral {
-        value: bool,
-        ty: CheckedTypeKind,
-        span: Span,
-    },
-    NumberLiteral {
-        value: NumberKind,
-        ty: CheckedTypeKind,
-        span: Span,
-    },
-    StringLiteral {
-        value: InternerId,
-        ty: CheckedTypeKind,
-        span: Span,
-    },
-    Use {
-        id: ValueId,
-        ty: CheckedTypeKind,
-    },
-}
-
-#[derive(Clone, Debug)]
-pub enum Pointer {
-    StackSlot {
-        id: DefinitionId,
-        ty: CheckedTypeKind,
-        span: Span,
-    },
-    FieldAccess {
-        object_ptr: ValueId,
-        object_type: CheckedTypeKind,
-        field_name: IdentifierNode,
-        field_type: CheckedTypeKind,
-        span: Span,
-    },
+pub enum Value {
+    NullLiteral,
+    BoolLiteral(bool),
+    NumberLiteral(NumberKind),
+    StringLiteral(InternerId),
+    FunctionAddr { function_id: FunctionId, ty: Type },
+    Use(ValueId),
 }
 
 #[derive(Clone, Debug)]
 pub enum Instruction {
     Alloc {
-        destination_ptr: Pointer,
-        span: Span,
-    },
-    Store {
-        destination_ptr: Pointer,
-        source_val: RValue,
-        span: Span,
-    },
-    Load {
-        destination_temp: ValueId,
-        source_ptr: Pointer,
+        destination: ValueId,
+        ty: TypeKind,
         span: Span,
     },
     New {
-        destination_temp: ValueId,
-        result_type: CheckedTypeKind,
-        allocation_site_id: AllocationSiteId,
+        destination: ValueId,
+        allocation_site_id: HeapAllocationId,
+        ty: TypeKind,
+        span: Span,
+    },
+    Store {
+        destination_ptr: ValueId,
+        source_val: Value,
+        span: Span,
+    },
+    Load {
+        destination: ValueId,
+        source_ptr: ValueId,
+        span: Span,
+    },
+    FieldPtr {
+        destination: ValueId,
+        base_ptr: ValueId,
+        field_index: usize,
+        span: Span,
+    },
+    ElementPtr {
+        destination: ValueId,
+        base_ptr: ValueId,
+        index: Value,
         span: Span,
     },
     UnaryOp {
         op_kind: UnaryOperationKind,
         destination: ValueId,
-        operand: RValue,
-        result_type: CheckedTypeKind,
+        operand: Value,
+        result_type: TypeKind,
         span: Span,
     },
     BinaryOp {
         op_kind: BinaryOperationKind,
         destination: ValueId,
-        left: RValue,
-        right: RValue,
-        result_type: CheckedTypeKind,
+        left: Value,
+        right: Value,
+        result_type: TypeKind,
         span: Span,
     },
     TypeCast {
         destination: ValueId,
-        operand: RValue,
-        target_type: CheckedTypeKind,
+        operand: Value,
+        target_type: TypeKind,
         span: Span,
     },
     FunctionCall {
         destination: Option<ValueId>,
-        function_rvalue: RValue,
-        args: Vec<RValue>,
-        result_type: CheckedTypeKind,
+        function_rvalue: Value,
+        args: Vec<Value>,
         span: Span,
     },
     Phi {
         destination: ValueId,
-        sources: Vec<(BasicBlockId, RValue)>,
+        sources: Vec<(BasicBlockId, ValueId)>,
     },
     Nop {
         span: Span,
@@ -151,13 +133,13 @@ pub enum Terminator {
         span: Span,
     },
     CondJump {
-        condition: RValue,
+        condition: Value,
         true_target: BasicBlockId,
         false_target: BasicBlockId,
         span: Span,
     },
     Return {
-        value: Option<RValue>,
+        value: Option<Value>,
         span: Span,
     },
     Unreachable {
@@ -176,8 +158,8 @@ pub struct BasicBlock {
 pub struct ControlFlowGraph {
     pub generic_params: Vec<CheckedGenericParam>,
     pub parms: Vec<CheckedParam>,
-    pub return_type: CheckedTypeKind,
+    pub return_type: TypeKind,
     pub entry_block: BasicBlockId,
     pub blocks: HashMap<BasicBlockId, BasicBlock>,
-    pub value_types: HashMap<ValueId, CheckedTypeKind>,
+    pub value_types: HashMap<ValueId, Type>,
 }
