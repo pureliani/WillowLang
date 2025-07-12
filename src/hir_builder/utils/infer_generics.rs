@@ -49,6 +49,7 @@ impl<'a> HIRBuilder<'a> {
                     generic_params: _,
                     span: _,
                     applied_type_args: _,
+                    id: _,
                 }),
                 TypeKind::FnType(CheckedFnType {
                     params: concrete_params,
@@ -56,6 +57,7 @@ impl<'a> HIRBuilder<'a> {
                     generic_params: _,
                     span: _,
                     applied_type_args: _,
+                    id: _,
                 }),
             ) => {
                 for (generic_param, concrete_param) in generic_params.iter().zip(concrete_params.iter()) {
@@ -63,12 +65,6 @@ impl<'a> HIRBuilder<'a> {
                 }
 
                 self.infer_generics(&generic_return_type, &concrete_return_type, substitution);
-            }
-            (TypeKind::Union(expected_union), TypeKind::Union(received_union)) => {
-                todo!()
-            }
-            (TypeKind::Union(expected_union), received) => {
-                todo!()
             }
             _ => {}
         }

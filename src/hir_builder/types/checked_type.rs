@@ -1,11 +1,10 @@
-use std::{
-    collections::HashSet,
-    hash::{Hash, Hasher},
-};
+use std::hash::{Hash, Hasher};
 
 use crate::{
     ast::Span,
-    hir_builder::types::checked_declaration::{CheckedEnumDecl, CheckedFnType, CheckedParam, CheckedTypeAliasDecl},
+    hir_builder::types::checked_declaration::{
+        CheckedEnumDecl, CheckedEnumVariant, CheckedFnType, CheckedParam, CheckedTypeAliasDecl,
+    },
 };
 
 use super::checked_declaration::CheckedGenericParam;
@@ -27,13 +26,19 @@ pub enum TypeKind {
     F32,
     F64,
     Char,
-    Array { item_type: Box<Type>, size: usize },
+    Array {
+        item_type: Box<Type>,
+        size: usize,
+    },
     Struct(Vec<CheckedParam>),
     TypeAliasDecl(CheckedTypeAliasDecl),
     GenericParam(CheckedGenericParam),
     Enum(CheckedEnumDecl),
+    EnumVariant {
+        parent_enum: CheckedEnumDecl,
+        variant: Box<CheckedEnumVariant>,
+    },
     FnType(CheckedFnType),
-    Union(HashSet<Type>),
     Unknown,
     Pointer(Box<Type>),
 }
@@ -63,13 +68,17 @@ impl PartialEq for TypeKind {
             (TypeKind::Struct(a), TypeKind::Struct(b)) => a == b,
             (TypeKind::FnType(a), TypeKind::FnType(b)) => a == b,
             (TypeKind::Pointer(a), TypeKind::Pointer(b)) => a == b,
-            (TypeKind::Union(a_items), TypeKind::Union(b_items)) => {
-                if a_items.len() != b_items.len() {
-                    return false;
-                }
-                // Order-insensitive comparison for unions
-                a_items.iter().all(|item_a| b_items.contains(item_a)) && b_items.iter().all(|item_b| a_items.contains(item_b))
-            }
+            (TypeKind::Enum(a), TypeKind::Enum(b)) => a == b,
+            (
+                TypeKind::EnumVariant {
+                    parent_enum: pa,
+                    variant: va,
+                },
+                TypeKind::EnumVariant {
+                    parent_enum: pb,
+                    variant: vb,
+                },
+            ) => pa == pb && va == vb,
             (
                 TypeKind::Array {
                     item_type: ai,
@@ -113,29 +122,16 @@ impl Hash for TypeKind {
             TypeKind::GenericParam(decl) => decl.hash(state),
             TypeKind::FnType(decl) => decl.hash(state),
             TypeKind::Pointer(inner) => inner.hash(state),
-            TypeKind::Union(items) => {
-                state.write_usize(items.len());
-                if !items.is_empty() {
-                    let mut item_hashes: Vec<u64> = items
-                        .iter()
-                        .map(|item| {
-                            let mut item_hasher = std::collections::hash_map::DefaultHasher::new();
-                            item.hash(&mut item_hasher);
-                            item_hasher.finish()
-                        })
-                        .collect();
-                    item_hashes.sort_unstable();
-                    for h in item_hashes {
-                        h.hash(state);
-                    }
-                }
+            TypeKind::Enum(enum_decl) => {
+                enum_decl.hash(state);
+            }
+            TypeKind::EnumVariant { parent_enum, variant } => {
+                parent_enum.hash(state);
+                variant.hash(state);
             }
             TypeKind::Array { item_type, size, .. } => {
                 item_type.hash(state);
                 size.hash(state);
-            }
-            TypeKind::Enum(enum_decl) => {
-                enum_decl.hash(state);
             }
         }
     }

@@ -14,8 +14,6 @@ use crate::{
     },
 };
 
-use super::union_of::union_of;
-
 pub type GenericSubstitutionMap = HashMap<InternerId, Type>;
 
 impl<'a> HIRBuilder<'a> {
@@ -80,6 +78,7 @@ impl<'a> HIRBuilder<'a> {
                 generic_params,
                 span,
                 applied_type_args: _,
+                id,
             }) => {
                 let applied_type_args: Vec<Type> = self.resolve_applied_type_args(&generic_params, substitutions, ty.span);
 
@@ -89,7 +88,6 @@ impl<'a> HIRBuilder<'a> {
                 let substituted_params = params
                     .iter()
                     .map(|p| CheckedParam {
-                        id: p.id,
                         identifier: p.identifier,
                         constraint: self.substitute_generics(&p.constraint, substitutions),
                     })
@@ -99,6 +97,7 @@ impl<'a> HIRBuilder<'a> {
 
                 Type {
                     kind: TypeKind::FnType(CheckedFnType {
+                        id: *id,
                         params: substituted_params,
                         return_type: Box::new(substituted_return_type),
                         generic_params: vec![],
@@ -112,7 +111,6 @@ impl<'a> HIRBuilder<'a> {
                 let substituted_fields = fields
                     .iter()
                     .map(|f| CheckedParam {
-                        id: f.id,
                         identifier: f.identifier,
                         constraint: self.substitute_generics(&f.constraint, substitutions),
                     })
@@ -136,6 +134,7 @@ impl<'a> HIRBuilder<'a> {
                         generic_params: vec![],
                         span: decl.span,
                         applied_type_args,
+                        module_id: decl.module_id,
                     }),
                     span: ty.span,
                 }
@@ -147,12 +146,6 @@ impl<'a> HIRBuilder<'a> {
                 },
                 span: ty.span,
             },
-            TypeKind::Union(items) => {
-                let substituted_items = items.iter().map(|t| self.substitute_generics(t, substitutions));
-
-                // Re-apply union_of logic to simplify the result
-                union_of(substituted_items, ty.span)
-            }
             TypeKind::Pointer(item) => {
                 let substituted = self.substitute_generics(item, substitutions);
 
@@ -161,16 +154,11 @@ impl<'a> HIRBuilder<'a> {
                     span: ty.span,
                 }
             }
-            TypeKind::Enum(CheckedEnumDecl {
-                identifier,
-                documentation,
-                generic_params,
-                variants,
-                applied_type_args: _,
-            }) => {
-                let applied_type_args: Vec<Type> = self.resolve_applied_type_args(&generic_params, substitutions, ty.span);
+            TypeKind::Enum(decl) => {
+                let applied_type_args: Vec<Type> = self.resolve_applied_type_args(&decl.generic_params, substitutions, ty.span);
 
-                let substituted_variants: Vec<CheckedEnumVariant> = variants
+                let substituted_variants: Vec<CheckedEnumVariant> = decl
+                    .variants
                     .iter()
                     .map(|v| CheckedEnumVariant {
                         identifier: v.identifier,
@@ -183,12 +171,33 @@ impl<'a> HIRBuilder<'a> {
 
                 Type {
                     kind: TypeKind::Enum(CheckedEnumDecl {
-                        identifier: *identifier,
-                        documentation: documentation.clone(),
-                        generic_params: vec![],
+                        identifier: decl.identifier,
+                        module_id: decl.module_id,
+                        documentation: decl.documentation.clone(),
                         variants: substituted_variants,
+                        generic_params: vec![],
                         applied_type_args,
+                        span: decl.span,
                     }),
+                    span: ty.span,
+                }
+            }
+            TypeKind::EnumVariant { parent_enum, variant } => {
+                let substituted_payload = variant
+                    .payload_type
+                    .as_ref()
+                    .map(|pt| self.substitute_generics(pt, substitutions));
+
+                let variant = Box::new(CheckedEnumVariant {
+                    payload_type: substituted_payload,
+                    identifier: variant.identifier,
+                });
+
+                Type {
+                    kind: TypeKind::EnumVariant {
+                        parent_enum: parent_enum.clone(),
+                        variant,
+                    },
                     span: ty.span,
                 }
             }

@@ -1,9 +1,8 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::{
-    ast::{decl::EnumDecl, DefinitionId, ModuleId},
-    cfg::ControlFlowGraph,
-    compile::string_interner::InternerId,
+    ast::{decl::EnumDecl, IdentifierNode, ModuleId},
+    cfg::{ControlFlowGraph, FunctionId},
     hir_builder::types::checked_declaration::{CheckedTypeAliasDecl, CheckedVarDecl},
 };
 
@@ -11,10 +10,10 @@ use crate::{
 pub struct CheckedModule {
     pub id: ModuleId,
     pub name: String,
-    pub functions: HashMap<DefinitionId, ControlFlowGraph>,
-    pub type_declarations: HashMap<DefinitionId, CheckedTypeAliasDecl>,
-    pub enum_declarations: HashMap<DefinitionId, EnumDecl>,
-    pub global_variables: HashMap<DefinitionId, CheckedVarDecl>,
+    pub functions: HashMap<FunctionId, ControlFlowGraph>,
+    pub type_declarations: HashMap<IdentifierNode, CheckedTypeAliasDecl>,
+    pub enum_declarations: HashMap<IdentifierNode, EnumDecl>,
+    pub global_variables: HashMap<IdentifierNode, CheckedVarDecl>,
     pub initializer_cfg: Option<ControlFlowGraph>,
-    pub exports: HashMap<InternerId, DefinitionId>,
+    pub exports: HashSet<IdentifierNode>,
 }

@@ -1,7 +1,7 @@
 use std::hash::{Hash, Hasher};
 
 use crate::{
-    ast::{DefinitionId, IdentifierNode, Span},
+    ast::{IdentifierNode, ModuleId, Span},
     cfg::ValueId,
     hir_builder::types::checked_type::Type,
     parse::DocAnnotation,
@@ -9,7 +9,6 @@ use crate::{
 
 #[derive(Clone, Debug)]
 pub struct CheckedParam {
-    pub id: DefinitionId,
     pub identifier: IdentifierNode,
     pub constraint: Type,
 }
@@ -17,12 +16,11 @@ pub struct CheckedParam {
 impl Eq for CheckedParam {}
 impl PartialEq for CheckedParam {
     fn eq(&self, other: &Self) -> bool {
-        self.id == other.id && self.identifier == other.identifier && self.constraint == other.constraint
+        self.identifier == other.identifier && self.constraint == other.constraint
     }
 }
 impl Hash for CheckedParam {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.id.hash(state);
         self.identifier.hash(state);
         self.constraint.hash(state);
     }
@@ -59,12 +57,16 @@ pub struct CheckedFnType {
 impl Eq for CheckedFnType {}
 impl PartialEq for CheckedFnType {
     fn eq(&self, other: &Self) -> bool {
-        self.generic_params == other.generic_params && self.params == other.params && self.return_type == other.return_type
+        self.generic_params == other.generic_params
+            && self.applied_type_args == other.applied_type_args
+            && self.params == other.params
+            && self.return_type == other.return_type
     }
 }
 impl Hash for CheckedFnType {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.generic_params.hash(state);
+        self.applied_type_args.hash(state);
         self.params.hash(state);
         self.return_type.hash(state);
     }
@@ -73,6 +75,7 @@ impl Hash for CheckedFnType {
 #[derive(Clone, Debug)]
 pub struct CheckedTypeAliasDecl {
     pub identifier: IdentifierNode,
+    pub module_id: ModuleId,
     pub documentation: Option<DocAnnotation>,
     pub generic_params: Vec<CheckedGenericParam>,
     pub value: Box<Type>,
@@ -83,14 +86,16 @@ pub struct CheckedTypeAliasDecl {
 impl Eq for CheckedTypeAliasDecl {}
 impl PartialEq for CheckedTypeAliasDecl {
     fn eq(&self, other: &Self) -> bool {
-        self.identifier == other.identifier && self.generic_params == other.generic_params && self.value == other.value
+        self.identifier == other.identifier
+            && self.module_id == other.module_id
+            && self.applied_type_args == other.applied_type_args
     }
 }
 impl Hash for CheckedTypeAliasDecl {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.identifier.hash(state);
-        self.generic_params.hash(state);
-        self.value.hash(state);
+        self.module_id.hash(state);
+        self.applied_type_args.hash(state);
     }
 }
 
@@ -116,23 +121,27 @@ impl Hash for CheckedEnumVariant {
 #[derive(Clone, Debug)]
 pub struct CheckedEnumDecl {
     pub identifier: IdentifierNode,
+    pub module_id: ModuleId,
     pub documentation: Option<DocAnnotation>,
     pub generic_params: Vec<CheckedGenericParam>,
     pub variants: Vec<CheckedEnumVariant>,
     pub applied_type_args: Vec<Type>,
+    pub span: Span,
 }
 
 impl Eq for CheckedEnumDecl {}
 impl PartialEq for CheckedEnumDecl {
     fn eq(&self, other: &Self) -> bool {
-        self.identifier == other.identifier && self.generic_params == other.generic_params && self.variants == other.variants
+        self.identifier == other.identifier
+            && self.module_id == other.module_id
+            && self.applied_type_args == other.applied_type_args
     }
 }
 impl Hash for CheckedEnumDecl {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.identifier.hash(state);
-        self.generic_params.hash(state);
-        self.variants.hash(state);
+        self.module_id.hash(state);
+        self.applied_type_args.hash(state);
     }
 }
 

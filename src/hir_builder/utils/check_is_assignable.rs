@@ -42,18 +42,62 @@ impl<'a> HIRBuilder<'a> {
             | (Void, Void)
             | (Unknown, _) => true,
             (Pointer(source), Pointer(target)) => self.check_is_assignable_recursive(source, target, visited_declarations),
-            (Union(source), Union(target)) => source.iter().all(|source_item| {
-                target
-                    .iter()
-                    .any(|target_item| self.check_is_assignable_recursive(source_item, target_item, visited_declarations))
-            }),
-            (_, Union(target)) => target
-                .iter()
-                .any(|target_item| self.check_is_assignable_recursive(source_type, target_item, visited_declarations)),
-            (Union(source), _) => source
-                .iter()
-                .all(|source_item| self.check_is_assignable_recursive(source_item, target_type, visited_declarations)),
+            (Enum(source), Enum(target)) => {
+                if source.module_id != target.module_id || source.identifier != target.identifier {
+                    return false;
+                }
 
+                if source.applied_type_args.len() != target.applied_type_args.len() {
+                    return false;
+                }
+
+                source
+                    .applied_type_args
+                    .iter()
+                    .zip(target.applied_type_args.iter())
+                    .all(|(source_arg, target_arg)| {
+                        self.check_is_assignable_recursive(source_arg, target_arg, visited_declarations)
+                            && self.check_is_assignable_recursive(target_arg, source_arg, visited_declarations)
+                    })
+            }
+            (
+                EnumVariant {
+                    parent_enum: source_parent_enum,
+                    variant: _,
+                },
+                Enum(_),
+            ) => self.check_is_assignable_recursive(
+                &Type {
+                    kind: Enum(source_parent_enum.clone()),
+                    span: source_type.span,
+                },
+                target_type,
+                visited_declarations,
+            ),
+            (
+                EnumVariant {
+                    parent_enum: source_parent,
+                    variant: source_variant,
+                },
+                EnumVariant {
+                    parent_enum: target_parent,
+                    variant: target_variant,
+                },
+            ) => {
+                let parents_are_assignable = self.check_is_assignable_recursive(
+                    &Type {
+                        kind: Enum(source_parent.clone()),
+                        span: source_type.span,
+                    },
+                    &Type {
+                        kind: Enum(target_parent.clone()),
+                        span: target_type.span,
+                    },
+                    visited_declarations,
+                );
+
+                parents_are_assignable && source_variant.identifier == target_variant.identifier
+            }
             (GenericParam(source), GenericParam(target)) => match (&source.constraint, &target.constraint) {
                 (None, None) => true,
                 (Some(_), None) => true,
@@ -118,14 +162,15 @@ impl<'a> HIRBuilder<'a> {
                     ..
                 }),
             ) => {
-                if source_generic_params.len() != target_generic_params.len() {
-                    return false;
-                }
                 if source_params.len() != target_params.len() {
                     return false;
                 }
 
-                let fn_generics_constraints_compatible =
+                if source_generic_params.len() != target_generic_params.len() {
+                    return false;
+                }
+
+                let generics_constraints_compatible =
                     source_generic_params
                         .iter()
                         .zip(target_generic_params.iter())
@@ -136,7 +181,7 @@ impl<'a> HIRBuilder<'a> {
                             (None, None) => true,
                         });
 
-                if !fn_generics_constraints_compatible {
+                if !generics_constraints_compatible {
                     return false;
                 }
 

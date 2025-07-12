@@ -63,11 +63,9 @@ impl<'a> HIRBuilder<'a> {
         params
             .into_iter()
             .map(|p| {
-                let definition_id = self.get_definition_id();
                 let checked_constraint = self.check_type_annotation_recursive(&p.constraint);
                 let result = self.check_has_type_arguments_applied(checked_constraint);
                 CheckedParam {
-                    id: definition_id,
                     constraint: result,
                     identifier: p.identifier,
                 }
@@ -126,6 +124,7 @@ impl<'a> HIRBuilder<'a> {
                 match &checked_left.kind {
                     TypeKind::FnType(decl) => substitute(&decl.generic_params, checked_args),
                     TypeKind::TypeAliasDecl(decl) => substitute(&decl.generic_params, checked_args),
+                    TypeKind::Enum(decl) => substitute(&decl.generic_params, checked_args),
                     _ => {
                         self.errors.push(SemanticError::CannotApplyTypeArguments {
                             to: checked_left.clone(),
@@ -172,16 +171,6 @@ impl<'a> HIRBuilder<'a> {
                     applied_type_args: vec![],
                 })
             }
-            TypeAnnotationKind::Union(items) => TypeKind::Union(
-                items
-                    .iter()
-                    .map(|i| {
-                        let checked_item_type = self.check_type_annotation_recursive(&i);
-                        let result_item_type = self.check_has_type_arguments_applied(checked_item_type);
-                        result_item_type
-                    })
-                    .collect(),
-            ),
             TypeAnnotationKind::Array { item_type: left, size } => {
                 let maybe_size: Option<usize> = match size {
                     &NumberKind::USize(v) => Some(v),

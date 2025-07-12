@@ -33,8 +33,6 @@ pub enum TypeAnnotationKind {
         return_type: Box<TypeAnnotation>,
         generic_params: Vec<GenericParam>,
     },
-    // Infix types
-    Union(Vec<TypeAnnotation>),
     // Suffix types
     GenericApply {
         left: Box<TypeAnnotation>,

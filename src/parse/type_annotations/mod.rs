@@ -11,18 +11,6 @@ use crate::{
     tokenize::{KeywordKind, PunctuationKind, TokenKind},
 };
 
-fn infix_bp(token_kind: &TokenKind) -> Option<(u8, u8)> {
-    use PunctuationKind::*;
-    use TokenKind::*;
-
-    let priority = match token_kind {
-        Punctuation(Or) => (1, 2),
-        _ => return None,
-    };
-
-    Some(priority)
-}
-
 fn suffix_bp(token_kind: &TokenKind) -> Option<(u8, ())> {
     use PunctuationKind::*;
     use TokenKind::*;
@@ -276,37 +264,6 @@ impl<'a, 'b> Parser<'a, 'b> {
                     _ => break,
                 };
 
-                continue;
-            }
-
-            if let Some((left_prec, right_prec)) = infix_bp(&op.kind) {
-                if left_prec < min_prec {
-                    break;
-                }
-
-                lhs = match op.kind {
-                    TokenKind::Punctuation(PunctuationKind::Or) => {
-                        let start_offset = self.offset;
-
-                        self.advance();
-                        let rhs = self.parse_type_annotation(right_prec)?;
-                        let end_span = self.get_span(start_offset, self.offset - 1)?;
-                        let span = Span {
-                            start: lhs.span.start,
-                            end: end_span.end,
-                        };
-
-                        let kind = if let TypeAnnotationKind::Union(existing_variants) = &mut lhs.kind {
-                            existing_variants.push(rhs);
-                            lhs.kind
-                        } else {
-                            TypeAnnotationKind::Union(vec![lhs, rhs])
-                        };
-
-                        TypeAnnotation { kind, span }
-                    }
-                    _ => break,
-                };
                 continue;
             }
 
@@ -601,101 +558,5 @@ mod tests {
 
             assert_eq!(result, Ok(expected))
         }
-    }
-
-    #[test]
-    fn parses_union_types() {
-        use crate::ast::Position;
-        use crate::tokenize::Tokenizer;
-        use pretty_assertions::assert_eq;
-
-        let (tokens, _) = Tokenizer::tokenize("i8 | i16 | i32 | i64");
-        let mut parser = Parser {
-            offset: 0,
-            checkpoint_offset: 0,
-            tokens,
-            interner: &mut StringInterner::new(),
-        };
-        let result = parser.parse_type_annotation(0);
-
-        assert_eq!(
-            result,
-            Ok(TypeAnnotation {
-                kind: TypeAnnotationKind::Union(vec![
-                    TypeAnnotation {
-                        kind: TypeAnnotationKind::I8,
-                        span: Span {
-                            start: Position {
-                                line: 1,
-                                col: 1,
-                                byte_offset: 0
-                            },
-                            end: Position {
-                                line: 1,
-                                col: 3,
-                                byte_offset: 2
-                            }
-                        }
-                    },
-                    TypeAnnotation {
-                        kind: TypeAnnotationKind::I16,
-                        span: Span {
-                            start: Position {
-                                line: 1,
-                                col: 6,
-                                byte_offset: 5
-                            },
-                            end: Position {
-                                line: 1,
-                                col: 9,
-                                byte_offset: 8
-                            }
-                        }
-                    },
-                    TypeAnnotation {
-                        kind: TypeAnnotationKind::I32,
-                        span: Span {
-                            start: Position {
-                                line: 1,
-                                col: 12,
-                                byte_offset: 11
-                            },
-                            end: Position {
-                                line: 1,
-                                col: 15,
-                                byte_offset: 14
-                            }
-                        }
-                    },
-                    TypeAnnotation {
-                        kind: TypeAnnotationKind::I64,
-                        span: Span {
-                            start: Position {
-                                line: 1,
-                                col: 18,
-                                byte_offset: 17
-                            },
-                            end: Position {
-                                line: 1,
-                                col: 21,
-                                byte_offset: 20
-                            }
-                        }
-                    }
-                ]),
-                span: Span {
-                    start: Position {
-                        line: 1,
-                        col: 1,
-                        byte_offset: 0
-                    },
-                    end: Position {
-                        line: 1,
-                        col: 21,
-                        byte_offset: 20
-                    }
-                }
-            })
-        )
     }
 }

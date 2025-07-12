@@ -58,7 +58,4 @@ pub struct Span {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub struct DefinitionId(pub usize);
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct ModuleId(pub usize);
