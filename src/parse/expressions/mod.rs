@@ -126,7 +126,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                     self.parse_codeblock_expr()
                         .and_then(|block_contents| {
                             Ok(Expr {
-                                kind: ExprKind::Block(block_contents),
+                                kind: ExprKind::CodeBlock(block_contents),
                                 span: self.get_span(start_offset, self.offset - 1)?,
                             })
                         })

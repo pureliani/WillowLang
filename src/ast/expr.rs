@@ -120,7 +120,7 @@ pub enum ExprKind {
     ArrayLiteral {
         items: Vec<Expr>,
     },
-    Block(BlockContents),
+    CodeBlock(BlockContents),
 }
 
 #[derive(Clone, Debug, PartialEq)]

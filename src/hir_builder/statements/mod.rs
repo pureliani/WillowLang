@@ -1,3 +1,12 @@
+pub mod assignment;
+pub mod enum_decl;
+pub mod expression;
+pub mod from;
+pub mod r#return;
+pub mod type_alias_decl;
+pub mod var_decl;
+pub mod r#while;
+
 use crate::{
     ast::stmt::{Stmt, StmtKind},
     hir_builder::HIRBuilder,
@@ -11,12 +20,12 @@ impl<'a> HIRBuilder<'a> {
                 StmtKind::TypeAliasDecl(type_alias_decl) => todo!(),
                 StmtKind::EnumDecl(enum_decl) => todo!(),
                 StmtKind::VarDecl(var_decl) => todo!(),
-                StmtKind::Break => todo!(),
-                StmtKind::Continue => todo!(),
                 StmtKind::Return(expr) => todo!(),
                 StmtKind::Assignment { target, value } => todo!(),
                 StmtKind::From { path, identifiers } => todo!(),
-                StmtKind::While { condition, body } => todo!(),
+                StmtKind::While { condition, body } => todo!(), // TODO: implement in while.rs
+                StmtKind::Break => todo!(),                     // TODO: implement in while.rs
+                StmtKind::Continue => todo!(),                  // TODO: implement in while.rs
             }
         }
     }
