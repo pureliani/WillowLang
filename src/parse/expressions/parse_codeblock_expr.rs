@@ -1,9 +1,7 @@
 use crate::{
     ast::{
-        base::{
-            base_expression::{BlockContents, Expr},
-            base_statement::{Stmt, StmtKind},
-        },
+        expr::{BlockContents, Expr},
+        stmt::{Stmt, StmtKind},
         Span,
     },
     parse::{statements::is_start_of_stmt, Parser, ParsingError, ParsingErrorKind},

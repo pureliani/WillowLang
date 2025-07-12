@@ -7,7 +7,7 @@ pub mod parse_struct_init_expr;
 
 use crate::{
     ast::{
-        base::base_expression::{Expr, ExprKind},
+        expr::{Expr, ExprKind},
         Span,
     },
     tokenize::{KeywordKind, PunctuationKind, TokenKind},

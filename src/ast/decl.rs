@@ -1,6 +1,6 @@
 use crate::{ast::IdentifierNode, parse::DocAnnotation};
 
-use super::{base_expression::Expr, base_type::TypeAnnotation};
+use super::{expr::Expr, type_annotation::TypeAnnotation};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Param {

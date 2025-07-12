@@ -11,7 +11,7 @@ pub mod parse_while_stmt;
 
 use crate::{
     ast::{
-        base::base_statement::{Stmt, StmtKind},
+        stmt::{Stmt, StmtKind},
         Span,
     },
     parse::{Parser, ParsingErrorKind},

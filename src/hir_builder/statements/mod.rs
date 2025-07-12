@@ -1,5 +1,5 @@
 use crate::{
-    ast::base::base_statement::{Stmt, StmtKind},
+    ast::stmt::{Stmt, StmtKind},
     hir_builder::HIRBuilder,
 };
 

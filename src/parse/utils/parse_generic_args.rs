@@ -1,5 +1,5 @@
 use crate::{
-    ast::base::base_type::TypeAnnotation,
+    ast::type_annotation::TypeAnnotation,
     parse::{Parser, ParsingError},
     tokenize::{PunctuationKind, TokenKind},
 };

@@ -1,7 +1,7 @@
 use crate::{
-    ast::base::{
-        base_declaration::Param,
-        base_expression::{Expr, ExprKind},
+    ast::{
+        decl::Param,
+        expr::{Expr, ExprKind},
     },
     parse::{Parser, ParsingError},
     tokenize::{PunctuationKind, TokenKind},
@@ -55,11 +55,9 @@ mod test {
     use super::Parser;
     use crate::{
         ast::{
-            base::{
-                base_declaration::{GenericParam, Param},
-                base_expression::{BlockContents, Expr, ExprKind},
-                base_type::{TypeAnnotation, TypeAnnotationKind},
-            },
+            decl::{GenericParam, Param},
+            expr::{BlockContents, Expr, ExprKind},
+            type_annotation::{TypeAnnotation, TypeAnnotationKind},
             IdentifierNode, Position, Span,
         },
         compile::string_interner::StringInterner,

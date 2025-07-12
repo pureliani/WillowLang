@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
-    ast::{base::base_declaration::EnumDecl, DefinitionId, ModuleId},
+    ast::{decl::EnumDecl, DefinitionId, ModuleId},
     cfg::ControlFlowGraph,
     compile::string_interner::InternerId,
     hir_builder::types::checked_declaration::{CheckedTypeAliasDecl, CheckedVarDecl},

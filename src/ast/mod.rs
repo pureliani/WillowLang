@@ -2,8 +2,10 @@ use std::hash::{Hash, Hasher};
 
 use crate::compile::string_interner::InternerId;
 
-pub mod base;
-pub mod checked;
+pub mod decl;
+pub mod expr;
+pub mod stmt;
+pub mod type_annotation;
 
 #[derive(Debug, Clone, Copy)]
 pub struct IdentifierNode {

@@ -1,9 +1,10 @@
 use crate::{
-    ast::base::{
-        base_declaration::{GenericParam, Param},
-        base_type::{TypeAnnotation, TypeAnnotationKind},
+    ast::{
+        decl::{GenericParam, Param},
+        type_annotation::{TypeAnnotation, TypeAnnotationKind},
     },
     hir_builder::{
+        errors::SemanticError,
         types::{
             checked_declaration::{CheckedFnType, CheckedGenericParam, CheckedParam},
             checked_type::{Type, TypeKind},
@@ -12,7 +13,7 @@ use crate::{
             scope::{ScopeKind, SymbolEntry},
             substitute_generics::GenericSubstitutionMap,
         },
-        HIRBuilder, SemanticError,
+        HIRBuilder,
     },
     tokenize::NumberKind,
 };

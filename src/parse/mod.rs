@@ -13,7 +13,7 @@ pub struct Parser<'a, 'b> {
 use unicode_segmentation::UnicodeSegmentation;
 
 use crate::{
-    ast::{base::base_statement::Stmt, IdentifierNode, Position, Span, StringNode},
+    ast::{stmt::Stmt, IdentifierNode, Position, Span, StringNode},
     compile::string_interner::{InternerId, StringInterner},
     tokenize::{KeywordKind, NumberKind, PunctuationKind, Token, TokenKind},
 };

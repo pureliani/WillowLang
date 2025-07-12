@@ -1,7 +1,7 @@
 use crate::{
-    ast::base::{
-        base_expression::Expr,
-        base_statement::{Stmt, StmtKind},
+    ast::{
+        expr::Expr,
+        stmt::{Stmt, StmtKind},
     },
     parse::{Parser, ParsingError},
 };

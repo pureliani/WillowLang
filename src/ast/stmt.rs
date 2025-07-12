@@ -1,8 +1,8 @@
-use crate::ast::{base::base_declaration::EnumDecl, IdentifierNode, Span, StringNode};
+use crate::ast::{decl::EnumDecl, IdentifierNode, Span, StringNode};
 
 use super::{
-    base_declaration::{TypeAliasDecl, VarDecl},
-    base_expression::{BlockContents, Expr},
+    decl::{TypeAliasDecl, VarDecl},
+    expr::{BlockContents, Expr},
 };
 
 #[derive(Clone, Debug, PartialEq)]

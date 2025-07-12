@@ -95,7 +95,7 @@ pub enum Instruction {
     },
     Phi {
         destination: ValueId,
-        sources: Vec<(BasicBlockId, ValueId)>,
+        sources: Vec<(BasicBlockId, Value)>,
     },
     Nop {
         span: Span,

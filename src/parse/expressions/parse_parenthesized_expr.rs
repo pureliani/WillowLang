@@ -1,5 +1,5 @@
 use crate::{
-    ast::base::base_expression::Expr,
+    ast::expr::Expr,
     parse::{Parser, ParsingError},
     tokenize::PunctuationKind,
 };

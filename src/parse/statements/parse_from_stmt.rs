@@ -1,5 +1,5 @@
 use crate::{
-    ast::base::base_statement::{Stmt, StmtKind},
+    ast::stmt::{Stmt, StmtKind},
     parse::{Parser, ParsingError},
     tokenize::{KeywordKind, PunctuationKind, TokenKind},
 };

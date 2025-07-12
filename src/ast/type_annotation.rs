@@ -3,7 +3,7 @@ use crate::{
     tokenize::NumberKind,
 };
 
-use super::base_declaration::{GenericParam, Param};
+use super::decl::{GenericParam, Param};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum TypeAnnotationKind {

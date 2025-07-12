@@ -11,7 +11,7 @@ use string_interner::StringInterner;
 pub mod string_interner;
 
 use crate::{
-    hir_builder::{types::checked_type::TypeKind, utils::type_to_string::type_to_string, HIRBuilder, SemanticError},
+    hir_builder::{errors::SemanticError, types::checked_type::TypeKind, utils::type_to_string::type_to_string, HIRBuilder},
     parse::{Parser, ParsingErrorKind},
     tokenize::{token_kind_to_string, TokenizationErrorKind, Tokenizer},
 };

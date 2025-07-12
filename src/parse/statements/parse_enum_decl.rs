@@ -1,7 +1,7 @@
 use crate::{
-    ast::base::{
-        base_declaration::EnumDecl,
-        base_statement::{Stmt, StmtKind},
+    ast::{
+        decl::EnumDecl,
+        stmt::{Stmt, StmtKind},
     },
     parse::{DocAnnotation, Parser, ParsingError},
     tokenize::{KeywordKind, PunctuationKind, TokenKind},

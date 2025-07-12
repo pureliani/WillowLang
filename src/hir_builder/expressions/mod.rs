@@ -1,5 +1,5 @@
 use crate::{
-    ast::base::base_expression::{Expr, ExprKind},
+    ast::expr::{Expr, ExprKind},
     cfg::Value,
     hir_builder::HIRBuilder,
 };

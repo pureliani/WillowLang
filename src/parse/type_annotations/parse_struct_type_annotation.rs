@@ -1,7 +1,7 @@
 use crate::{
-    ast::base::{
-        base_declaration::Param,
-        base_type::{TypeAnnotation, TypeAnnotationKind},
+    ast::{
+        decl::Param,
+        type_annotation::{TypeAnnotation, TypeAnnotationKind},
     },
     parse::{Parser, ParsingError},
     tokenize::{PunctuationKind, TokenKind},

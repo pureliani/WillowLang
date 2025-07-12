@@ -4,9 +4,9 @@ use crate::{
 };
 
 use super::{
-    base_declaration::{GenericParam, Param},
-    base_statement::Stmt,
-    base_type::TypeAnnotation,
+    decl::{GenericParam, Param},
+    stmt::Stmt,
+    type_annotation::TypeAnnotation,
 };
 
 #[derive(Clone, Debug, PartialEq)]

@@ -5,7 +5,7 @@ pub mod parse_struct_type_annotation;
 use super::{Parser, ParsingError, ParsingErrorKind};
 use crate::{
     ast::{
-        base::base_type::{TypeAnnotation, TypeAnnotationKind},
+        type_annotation::{TypeAnnotation, TypeAnnotationKind},
         Span,
     },
     tokenize::{KeywordKind, PunctuationKind, TokenKind},
@@ -321,7 +321,7 @@ impl<'a, 'b> Parser<'a, 'b> {
 mod tests {
     use crate::{
         ast::{
-            base::base_type::{TypeAnnotation, TypeAnnotationKind},
+            type_annotation::{TypeAnnotation, TypeAnnotationKind},
             Span,
         },
         compile::string_interner::StringInterner,
