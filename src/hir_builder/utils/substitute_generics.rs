@@ -78,7 +78,6 @@ impl<'a> HIRBuilder<'a> {
                 generic_params,
                 span,
                 applied_type_args: _,
-                id,
             }) => {
                 let applied_type_args: Vec<Type> = self.resolve_applied_type_args(&generic_params, substitutions, ty.span);
 
@@ -97,7 +96,6 @@ impl<'a> HIRBuilder<'a> {
 
                 Type {
                     kind: TypeKind::FnType(CheckedFnType {
-                        id: *id,
                         params: substituted_params,
                         return_type: Box::new(substituted_return_type),
                         generic_params: vec![],

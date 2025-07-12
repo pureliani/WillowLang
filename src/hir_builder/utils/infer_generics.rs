@@ -49,7 +49,6 @@ impl<'a> HIRBuilder<'a> {
                     generic_params: _,
                     span: _,
                     applied_type_args: _,
-                    id: _,
                 }),
                 TypeKind::FnType(CheckedFnType {
                     params: concrete_params,
@@ -57,7 +56,6 @@ impl<'a> HIRBuilder<'a> {
                     generic_params: _,
                     span: _,
                     applied_type_args: _,
-                    id: _,
                 }),
             ) => {
                 for (generic_param, concrete_param) in generic_params.iter().zip(concrete_params.iter()) {

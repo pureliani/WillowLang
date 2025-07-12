@@ -141,11 +141,6 @@ pub fn type_to_string_recursive(ty: &TypeKind, string_interner: &StringInterner,
                 format!("{}{}", name, generics_str)
             }
         }
-        TypeKind::Union(hash_set) => hash_set
-            .iter()
-            .map(|t| type_to_string_recursive(&t.kind, string_interner, true))
-            .collect::<Vec<String>>()
-            .join(" | "),
         TypeKind::Array { item_type, size } => {
             format!(
                 "[{}; {}]",
@@ -155,5 +150,6 @@ pub fn type_to_string_recursive(ty: &TypeKind, string_interner: &StringInterner,
         }
         TypeKind::Pointer(ty) => format!("ptr<{}>", type_to_string_recursive(&ty.kind, string_interner, false)),
         TypeKind::Enum(checked_enum_decl) => todo!(),
+        TypeKind::EnumVariant { parent_enum, variant } => todo!(),
     }
 }
