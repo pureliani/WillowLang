@@ -2,6 +2,7 @@ use std::hash::{Hash, Hasher};
 
 use crate::{
     ast::{DefinitionId, IdentifierNode, Span},
+    cfg::ValueId,
     hir_builder::types::checked_type::Type,
     parse::DocAnnotation,
 };
@@ -137,7 +138,7 @@ impl Hash for CheckedEnumDecl {
 
 #[derive(Clone, Debug)]
 pub struct CheckedVarDecl {
-    pub id: DefinitionId,
+    pub value_id: ValueId, // pointer to stack variable
     pub identifier: IdentifierNode,
     pub documentation: Option<DocAnnotation>,
     pub constraint: Type,

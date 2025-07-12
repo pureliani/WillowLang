@@ -1,7 +1,8 @@
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::collections::HashMap;
 
 use crate::{
     ast::IdentifierNode,
+    cfg::BasicBlockId,
     compile::string_interner::InternerId,
     hir_builder::{
         types::checked_declaration::{CheckedEnumDecl, CheckedGenericParam, CheckedTypeAliasDecl, CheckedVarDecl},
@@ -12,7 +13,10 @@ use crate::{
 #[derive(Debug, Clone, PartialEq)]
 pub enum ScopeKind {
     Function,
-    While,
+    While {
+        break_target: BasicBlockId,
+        continue_target: BasicBlockId,
+    },
     CodeBlock,
     File,
     TypeAlias,
@@ -88,16 +92,19 @@ impl<'a> HIRBuilder<'a> {
         return false;
     }
 
-    pub fn within_loop_scope(&self) -> bool {
+    pub fn within_loop_scope(&self) -> Option<(BasicBlockId, BasicBlockId)> {
         for scope in self.scopes.iter().rev() {
             match scope.kind {
                 ScopeKind::CodeBlock => {}
-                ScopeKind::While => return true,
-                _ => return false,
+                ScopeKind::While {
+                    continue_target,
+                    break_target,
+                } => return Some((continue_target, break_target)),
+                _ => return None,
             }
         }
 
-        false
+        None
     }
 
     pub fn is_file_scope(&self) -> bool {
