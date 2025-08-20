@@ -240,7 +240,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                         Some(Expr {
                             kind: ExprKind::Access {
                                 left: Box::new(lhs_clone),
-                                field: field,
+                                field,
                             },
                             span: self.get_span(start_offset, self.offset - 1)?,
                         })

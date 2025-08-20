@@ -6,7 +6,7 @@ pub mod infer_generics;
 pub mod is_float;
 pub mod is_integer;
 pub mod is_signed;
+pub mod new_value_id;
 pub mod scope;
 pub mod substitute_generics;
 pub mod type_to_string;
-pub mod union_of;

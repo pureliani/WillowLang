@@ -31,21 +31,21 @@ impl<'a> HIRBuilder<'a> {
             ExprKind::Not { right } => todo!(),
             ExprKind::Neg { right } => todo!(),
 
-            ExprKind::Add { left, right } => todo!(), // TODO: implement in arithmetic.rs
-            ExprKind::Subtract { left, right } => todo!(), // TODO: implement in arithmetic.rs
-            ExprKind::Multiply { left, right } => todo!(), // TODO: implement in arithmetic.rs
-            ExprKind::Divide { left, right } => todo!(), // TODO: implement in arithmetic.rs
-            ExprKind::Modulo { left, right } => todo!(), // TODO: implement in arithmetic.rs
+            ExprKind::Add { left, right } => {}
+            ExprKind::Subtract { left, right } => todo!(),
+            ExprKind::Multiply { left, right } => todo!(),
+            ExprKind::Divide { left, right } => todo!(),
+            ExprKind::Modulo { left, right } => todo!(),
 
-            ExprKind::LessThan { left, right } => todo!(), // TODO: implement in comparison.rs
-            ExprKind::LessThanOrEqual { left, right } => todo!(), // TODO: implement in comparison.rs
-            ExprKind::GreaterThan { left, right } => todo!(), // TODO: implement in comparison.rs
-            ExprKind::GreaterThanOrEqual { left, right } => todo!(), // TODO: implement in comparison.rs
+            ExprKind::LessThan { left, right } => todo!(),
+            ExprKind::LessThanOrEqual { left, right } => todo!(),
+            ExprKind::GreaterThan { left, right } => todo!(),
+            ExprKind::GreaterThanOrEqual { left, right } => todo!(),
 
-            ExprKind::Equal { left, right } => todo!(), // TODO: implement in equality.rs
-            ExprKind::NotEqual { left, right } => todo!(), // TODO: implement in equality.rs
+            ExprKind::Equal { left, right } => todo!(),
+            ExprKind::NotEqual { left, right } => todo!(),
 
-            ExprKind::And { left, right } => todo!(),
+            ExprKind::And { left, right } => self.build_and_expr(left, right),
             ExprKind::Or { left, right } => todo!(),
             ExprKind::Access { left, field } => todo!(),
             ExprKind::StaticAccess { left, field } => todo!(),
