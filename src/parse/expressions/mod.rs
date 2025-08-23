@@ -63,13 +63,13 @@ pub fn is_start_of_expr(token_kind: &TokenKind) -> bool {
         TokenKind::Identifier(_)
         | TokenKind::Number(_)
         | TokenKind::String(_)
+        | TokenKind::Keyword(KeywordKind::Fn)
         | TokenKind::Keyword(KeywordKind::True)
         | TokenKind::Keyword(KeywordKind::False)
-        | TokenKind::Keyword(KeywordKind::If)               // if expressions
-        | TokenKind::Punctuation(PunctuationKind::LParen)   // Parenthesized or fn expr
+        | TokenKind::Keyword(KeywordKind::If)               
+        | TokenKind::Punctuation(PunctuationKind::LParen)   // Parenthesized expr
         | TokenKind::Punctuation(PunctuationKind::LBrace)   // Codeblock expr
         | TokenKind::Punctuation(PunctuationKind::LBracket) // List literal
-        | TokenKind::Punctuation(PunctuationKind::Lt)       // fn expression
         | TokenKind::Punctuation(PunctuationKind::Minus)    // Negation
         | TokenKind::Punctuation(PunctuationKind::Not)      // Logical NOT
         => true,
@@ -98,6 +98,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                     span: token_span,
                 }
             }
+            TokenKind::Keyword(KeywordKind::Fn) => self.parse_fn_expr()?,
             TokenKind::Punctuation(PunctuationKind::Hashtag) => self.parse_tag_expr()?,
             TokenKind::Punctuation(PunctuationKind::LParen) => {
                 let start_offset = self.offset;
