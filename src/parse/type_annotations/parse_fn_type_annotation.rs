@@ -13,7 +13,8 @@ impl<'a, 'b> Parser<'a, 'b> {
     pub fn parse_fn_type_annotation(&mut self) -> Result<TypeAnnotation, ParsingError<'a>> {
         let start_offset = self.offset;
 
-        let generic_params = self.parse_optional_generic_params()?;
+        // TODO: fix this
+
         self.consume_punctuation(PunctuationKind::LParen)?;
         let params = self.comma_separated(
             |p| {
@@ -27,18 +28,12 @@ impl<'a, 'b> Parser<'a, 'b> {
         )?;
         self.consume_punctuation(PunctuationKind::RParen)?;
 
-        self.consume_punctuation(PunctuationKind::FatArrow)?;
-
         let return_type = Box::new(self.parse_type_annotation(0)?);
 
         let span = self.get_span(start_offset, self.offset - 1)?;
 
         Ok(TypeAnnotation {
-            kind: TypeAnnotationKind::FnType {
-                params,
-                return_type,
-                generic_params,
-            },
+            kind: TypeAnnotationKind::FnType { params, return_type },
             span,
         })
     }

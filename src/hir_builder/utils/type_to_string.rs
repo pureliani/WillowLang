@@ -1,22 +1,10 @@
 use crate::{
     compile::string_interner::{InternerId, StringInterner},
     hir_builder::types::{
-        checked_declaration::{CheckedFnType, CheckedGenericParam},
-        checked_type::{Type, TypeKind},
+        checked_declaration::{CheckedFnType, CheckedTag},
+        checked_type::TypeKind,
     },
 };
-
-fn applied_type_args_to_string(type_args: &Vec<Type>, string_interner: &StringInterner) -> String {
-    if type_args.is_empty() {
-        return "".to_string();
-    }
-    let joined_args = type_args
-        .iter()
-        .map(|arg_ty| type_to_string_recursive(&arg_ty.kind, string_interner, false))
-        .collect::<Vec<String>>()
-        .join(", ");
-    format!("<{}>", joined_args)
-}
 
 fn identifier_to_string(id: InternerId, string_interner: &StringInterner) -> String {
     let identifier_name = string_interner.resolve(id).unwrap();
@@ -24,36 +12,26 @@ fn identifier_to_string(id: InternerId, string_interner: &StringInterner) -> Str
     identifier_name.to_owned()
 }
 
-fn generic_params_to_string(generic_params: &Vec<CheckedGenericParam>, string_interner: &StringInterner) -> String {
-    if !generic_params.is_empty() {
-        let joined = generic_params
-            .iter()
-            .map(|gp| {
-                let name = identifier_to_string(gp.identifier.name, string_interner);
+fn checked_tag_to_string(tag: &CheckedTag, string_interner: &StringInterner) -> String {
+    let name = identifier_to_string(tag.identifier.name, string_interner);
 
-                match &gp.constraint {
-                    Some(c) => {
-                        format!("{}: {}", name, type_to_string_recursive(&c.kind, string_interner, false))
-                    }
-                    None => {
-                        format!("{}", name)
-                    }
-                }
-            })
-            .collect::<Vec<String>>()
-            .join(", ");
+    let value_type_string = match &tag.value_type {
+        Some(t) => {
+            format!("({})", type_to_string_recursive(&t.kind, string_interner))
+        }
+        None => "".to_string(),
+    };
 
-        format!("<{}>", joined)
-    } else {
-        "".to_owned()
-    }
+    let result = format!("#{}{}", name, value_type_string);
+
+    result
 }
 
 pub fn type_to_string(ty: &TypeKind, string_interner: &StringInterner) -> String {
-    type_to_string_recursive(ty, string_interner, false)
+    type_to_string_recursive(ty, string_interner)
 }
 
-pub fn type_to_string_recursive(ty: &TypeKind, string_interner: &StringInterner, is_union_context: bool) -> String {
+pub fn type_to_string_recursive(ty: &TypeKind, string_interner: &StringInterner) -> String {
     // TODO: add recursion detection and handling
 
     match ty {
@@ -71,7 +49,7 @@ pub fn type_to_string_recursive(ty: &TypeKind, string_interner: &StringInterner,
         TypeKind::I64 => String::from("i64"),
         TypeKind::F32 => String::from("f32"),
         TypeKind::F64 => String::from("f64"),
-        TypeKind::Char => String::from("char"),
+        TypeKind::String => String::from("string"),
         TypeKind::Unknown => String::from("unknown"),
         TypeKind::Struct(params) => {
             let params_str = params
@@ -80,7 +58,7 @@ pub fn type_to_string_recursive(ty: &TypeKind, string_interner: &StringInterner,
                     format!(
                         "{}: {}",
                         identifier_to_string(p.identifier.name, string_interner),
-                        type_to_string_recursive(&p.constraint.kind, string_interner, false)
+                        type_to_string_recursive(&p.constraint.kind, string_interner)
                     )
                 })
                 .collect::<Vec<String>>()
@@ -88,68 +66,44 @@ pub fn type_to_string_recursive(ty: &TypeKind, string_interner: &StringInterner,
 
             format!("{{\n{}\n}}", params_str)
         }
-        TypeKind::GenericParam(CheckedGenericParam { identifier, .. }) => {
-            let name = identifier_to_string(identifier.name, string_interner);
-
-            name
-        }
         TypeKind::FnType(CheckedFnType {
             params,
             return_type,
-            generic_params,
-            applied_type_args,
             span: _,
         }) => {
-            let type_args_str = if applied_type_args.len() > 0 {
-                applied_type_args_to_string(&applied_type_args, string_interner)
-            } else {
-                generic_params_to_string(&generic_params, string_interner)
-            };
-
             let params_str = params
                 .iter()
                 .map(|p| {
                     format!(
                         "{}: {}",
                         identifier_to_string(p.identifier.name, string_interner),
-                        type_to_string_recursive(&p.constraint.kind, string_interner, false)
+                        type_to_string_recursive(&p.constraint.kind, string_interner)
                     )
                 })
                 .collect::<Vec<String>>()
                 .join(", ");
 
-            let return_type_str = type_to_string_recursive(&return_type.kind, string_interner, false);
-            let fn_str = format!("{}({}) => {}", type_args_str, params_str, return_type_str);
+            let return_type_str = type_to_string_recursive(&return_type.kind, string_interner);
+            let fn_str = format!("fn ({}): {}", params_str, return_type_str);
 
-            if is_union_context {
-                format!("({})", fn_str)
-            } else {
-                fn_str
-            }
+            fn_str
         }
         TypeKind::TypeAliasDecl(decl) => {
             let name = identifier_to_string(decl.identifier.name, string_interner);
 
-            if decl.applied_type_args.len() > 0 {
-                format!(
-                    "{}{}",
-                    name,
-                    applied_type_args_to_string(&decl.applied_type_args, string_interner)
-                )
-            } else {
-                let generics_str = generic_params_to_string(&decl.generic_params, string_interner);
-                format!("{}{}", name, generics_str)
-            }
+            let value = type_to_string_recursive(&decl.value.kind, string_interner);
+
+            format!("type {} = {};", name, value)
         }
-        TypeKind::Array { item_type, size } => {
-            format!(
-                "[{}; {}]",
-                type_to_string_recursive(&item_type.kind, string_interner, false),
-                size
-            )
+        TypeKind::List(item_type) => {
+            format!("{}[]", type_to_string_recursive(&item_type.kind, string_interner,))
         }
-        TypeKind::Pointer(ty) => format!("ptr<{}>", type_to_string_recursive(&ty.kind, string_interner, false)),
-        TypeKind::Enum(checked_enum_decl) => todo!(),
-        TypeKind::EnumVariant { parent_enum, variant } => todo!(),
+        TypeKind::Pointer(ty) => format!("ptr<{}>", type_to_string_recursive(&ty.kind, string_interner,)),
+        TypeKind::Union(checked_tags) => checked_tags
+            .iter()
+            .map(|t| checked_tag_to_string(t, string_interner))
+            .collect::<Vec<String>>()
+            .join(" | "),
+        TypeKind::Tag(checked_tag) => checked_tag_to_string(checked_tag, string_interner),
     }
 }

@@ -1,9 +1,6 @@
-use crate::{
-    ast::{IdentifierNode, Span},
-    tokenize::NumberKind,
-};
+use crate::ast::{IdentifierNode, Span};
 
-use super::decl::{GenericParam, Param};
+use super::decl::Param;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum TypeAnnotationKind {
@@ -21,22 +18,23 @@ pub enum TypeAnnotationKind {
     I64,
     F32,
     F64,
-    Char,
-    Identifier(IdentifierNode),
-    Struct(Vec<Param>),
-    Array {
+    String,
+    Tag {
+        identifier: IdentifierNode,
+        value_type: Option<Box<TypeAnnotation>>,
+    },
+    Identifier {
+        identifier: IdentifierNode,
+    },
+    Struct {
+        fields: Vec<Param>,
+    },
+    List {
         item_type: Box<TypeAnnotation>,
-        size: NumberKind,
     },
     FnType {
         params: Vec<Param>,
         return_type: Box<TypeAnnotation>,
-        generic_params: Vec<GenericParam>,
-    },
-    // Suffix types
-    GenericApply {
-        left: Box<TypeAnnotation>,
-        args: Vec<TypeAnnotation>,
     },
 }
 

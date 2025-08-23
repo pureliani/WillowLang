@@ -1,4 +1,4 @@
-use crate::ast::{decl::EnumDecl, IdentifierNode, Span, StringNode};
+use crate::ast::{IdentifierNode, Span, StringNode};
 
 use super::{
     decl::{TypeAliasDecl, VarDecl},
@@ -9,11 +9,12 @@ use super::{
 pub enum StmtKind {
     Expression(Expr),
     TypeAliasDecl(TypeAliasDecl),
-    EnumDecl(EnumDecl),
     VarDecl(VarDecl),
     Break,
     Continue,
-    Return(Expr),
+    Return {
+        value: Expr,
+    },
     Assignment {
         target: Expr,
         value: Expr,

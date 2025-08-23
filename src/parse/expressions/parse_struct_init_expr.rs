@@ -9,7 +9,7 @@ impl<'a, 'b> Parser<'a, 'b> {
         let start_offset = self.offset;
 
         self.consume_punctuation(PunctuationKind::LBrace)?;
-        let args = self.comma_separated(
+        let fields = self.comma_separated(
             |p| {
                 let name = p.consume_identifier()?;
                 p.consume_punctuation(PunctuationKind::Col)?;
@@ -23,7 +23,7 @@ impl<'a, 'b> Parser<'a, 'b> {
         let span = self.get_span(start_offset, self.offset - 1)?;
 
         Ok(Expr {
-            kind: ExprKind::StructLiteral(args),
+            kind: ExprKind::StructLiteral { fields },
             span,
         })
     }

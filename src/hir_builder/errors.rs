@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use crate::{
     ast::{IdentifierNode, Span},
     compile::string_interner::InternerId,
-    hir_builder::types::{checked_declaration::CheckedGenericParam, checked_type::Type},
+    hir_builder::types::checked_type::Type,
     tokenize::NumberKind,
 };
 
@@ -14,19 +14,6 @@ pub enum SemanticError {
     },
     DuplicateIdentifier {
         id: IdentifierNode,
-    },
-    AmbiguousGenericInferenceForUnion {
-        expected: HashSet<Type>,
-        received: Type,
-    },
-    FailedToInferGenericsInUnion {
-        expected_union: HashSet<Type>,
-        received: Type,
-    },
-    IncompatibleGenericParamSubstitution {
-        generic_param: CheckedGenericParam,
-        arg_type: Type,
-        is_inferred: bool,
     },
     VarDeclWithoutInitializer {
         span: Span,
@@ -101,28 +88,11 @@ pub enum SemanticError {
         received: usize,
         span: Span,
     },
-    GenericArgumentCountMismatch {
-        expected: usize,
-        received: usize,
-        span: Span,
-    },
-    CannotUseGenericParameterAsValue {
-        span: Span,
-    },
     CannotUseVariableDeclarationAsType {
         span: Span,
     },
     AccessToUndefinedField {
         field: IdentifierNode,
-    },
-    UnresolvedGenericParam {
-        param: IdentifierNode,
-        span: Span,
-    },
-    ConflictingGenericBinding {
-        generic_param: CheckedGenericParam,
-        existing: Type,
-        new: Type,
     },
     TypeAliasMustBeDeclaredAtTopLevel {
         span: Span,
@@ -138,9 +108,6 @@ pub enum SemanticError {
 impl SemanticError {
     pub fn span(&self) -> Span {
         match self {
-            SemanticError::AmbiguousGenericInferenceForUnion { received, .. } => received.span,
-            SemanticError::FailedToInferGenericsInUnion { received, .. } => received.span,
-            SemanticError::IncompatibleGenericParamSubstitution { arg_type: with_type, .. } => with_type.span,
             SemanticError::VarDeclWithoutInitializer { span } => *span,
             SemanticError::DuplicateStructFieldInitializer { id } => id.span,
             SemanticError::UnknownStructFieldInitializer { id } => id.span,
@@ -163,12 +130,8 @@ impl SemanticError {
             SemanticError::CannotAccess { target } => target.span,
             SemanticError::CannotCall { target } => target.span,
             SemanticError::FnArgumentCountMismatch { span, .. } => *span,
-            SemanticError::GenericArgumentCountMismatch { span, .. } => *span,
-            SemanticError::CannotUseGenericParameterAsValue { span, .. } => *span,
             SemanticError::CannotUseVariableDeclarationAsType { span, .. } => *span,
             SemanticError::AccessToUndefinedField { field } => field.span,
-            SemanticError::UnresolvedGenericParam { span, .. } => *span,
-            SemanticError::ConflictingGenericBinding { new, .. } => new.span,
             SemanticError::TypeAliasMustBeDeclaredAtTopLevel { span } => *span,
             SemanticError::StructMustBeDeclaredAtTopLevel { span } => *span,
             SemanticError::CannotApplyTypeArguments { to } => to.span,
@@ -194,15 +157,11 @@ impl SemanticError {
             SemanticError::UndeclaredType { .. } => 13,
             SemanticError::CannotAccess { .. } => 14,
             SemanticError::CannotCall { .. } => 15,
-            SemanticError::CannotUseGenericParameterAsValue { .. } => 16,
             SemanticError::CannotUseVariableDeclarationAsType { .. } => 17,
             SemanticError::VarDeclWithoutInitializer { .. } => 18,
             SemanticError::AccessToUndefinedField { .. } => 19,
             SemanticError::InvalidArraySizeValue { .. } => 21,
             SemanticError::FnArgumentCountMismatch { .. } => 22,
-            SemanticError::GenericArgumentCountMismatch { .. } => 23,
-            SemanticError::UnresolvedGenericParam { .. } => 24,
-            SemanticError::ConflictingGenericBinding { .. } => 25,
             SemanticError::CannotApplyTypeArguments { .. } => 26,
             SemanticError::TypeAliasMustBeDeclaredAtTopLevel { .. } => 27,
             SemanticError::StructMustBeDeclaredAtTopLevel { .. } => 28,
@@ -210,9 +169,6 @@ impl SemanticError {
             SemanticError::UnknownStructFieldInitializer { .. } => 30,
             SemanticError::MissingStructFieldInitializer { .. } => 31,
             SemanticError::CannotApplyStructInitializer { .. } => 32,
-            SemanticError::IncompatibleGenericParamSubstitution { .. } => 33,
-            SemanticError::AmbiguousGenericInferenceForUnion { .. } => 34,
-            SemanticError::FailedToInferGenericsInUnion { .. } => 35,
             SemanticError::DuplicateIdentifier { .. } => 36,
             SemanticError::ExpectedTypeArguments { .. } => 37,
         }

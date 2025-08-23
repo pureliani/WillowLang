@@ -14,7 +14,6 @@ impl<'a, 'b> Parser<'a, 'b> {
         self.consume_keyword(KeywordKind::Type)?;
 
         let name = self.consume_identifier()?;
-        let generic_params = self.parse_optional_generic_params()?;
 
         self.consume_punctuation(PunctuationKind::Eq)?;
 
@@ -28,7 +27,6 @@ impl<'a, 'b> Parser<'a, 'b> {
             kind: StmtKind::TypeAliasDecl(TypeAliasDecl {
                 identifier: name,
                 documentation,
-                generic_params,
                 value: ty,
             }),
             span,

@@ -4,10 +4,7 @@ pub mod parse_struct_type_annotation;
 
 use super::{Parser, ParsingError, ParsingErrorKind};
 use crate::{
-    ast::{
-        type_annotation::{TypeAnnotation, TypeAnnotationKind},
-        Span,
-    },
+    ast::type_annotation::{TypeAnnotation, TypeAnnotationKind},
     tokenize::{KeywordKind, PunctuationKind, TokenKind},
 };
 
@@ -168,13 +165,13 @@ impl<'a, 'b> Parser<'a, 'b> {
                     span,
                 }
             }
-            TokenKind::Keyword(KeywordKind::Char) => {
+            TokenKind::Keyword(KeywordKind::String) => {
                 let start_offset = self.offset;
 
-                self.consume_keyword(KeywordKind::Char)?;
+                self.consume_keyword(KeywordKind::String)?;
                 let span = self.get_span(start_offset, self.offset - 1)?;
                 TypeAnnotation {
-                    kind: TypeAnnotationKind::Char,
+                    kind: TypeAnnotationKind::String,
                     span,
                 }
             }
@@ -196,32 +193,14 @@ impl<'a, 'b> Parser<'a, 'b> {
                 type_annotation
             }
             TokenKind::Punctuation(PunctuationKind::Lt) => self.parse_fn_type_annotation()?,
-            TokenKind::Punctuation(PunctuationKind::LBracket) => {
-                let start_offset = self.offset;
-
-                self.consume_punctuation(PunctuationKind::LBracket)?;
-                let ty = self.parse_type_annotation(0)?;
-                self.consume_punctuation(PunctuationKind::SemiCol)?;
-                let size = self.consume_number()?;
-                self.consume_punctuation(PunctuationKind::RBracket)?;
-
-                let span = self.get_span(start_offset, self.offset - 1)?;
-                TypeAnnotation {
-                    kind: TypeAnnotationKind::Array {
-                        item_type: Box::new(ty),
-                        size,
-                    },
-                    span,
-                }
-            }
             TokenKind::Punctuation(PunctuationKind::LBrace) => self.parse_struct_type()?,
             TokenKind::Identifier(_) => {
                 let start_offset = self.offset;
 
-                let id = self.consume_identifier()?;
+                let identifier = self.consume_identifier()?;
                 let span = self.get_span(start_offset, self.offset - 1)?;
                 TypeAnnotation {
-                    kind: TypeAnnotationKind::Identifier(id),
+                    kind: TypeAnnotationKind::Identifier { identifier },
                     span,
                 }
             }
@@ -245,22 +224,22 @@ impl<'a, 'b> Parser<'a, 'b> {
                 }
 
                 lhs = match op.kind {
-                    TokenKind::Punctuation(PunctuationKind::Lt) => {
+                    TokenKind::Punctuation(PunctuationKind::Or) => todo!(),
+                    TokenKind::Punctuation(PunctuationKind::LBracket) => {
                         let start_offset = self.offset;
-                        let generic_args = self.parse_optional_generic_args()?;
-                        let span = Span {
-                            start: lhs.span.start,
-                            end: self.get_span(start_offset, self.offset - 1)?.end,
-                        };
 
+                        self.consume_punctuation(PunctuationKind::LBracket)?;
+                        self.consume_punctuation(PunctuationKind::RBracket)?;
+
+                        let span = self.get_span(start_offset, self.offset - 1)?;
                         TypeAnnotation {
-                            kind: TypeAnnotationKind::GenericApply {
-                                left: Box::new(lhs.clone()),
-                                args: generic_args,
+                            kind: TypeAnnotationKind::List {
+                                item_type: Box::new(lhs.clone()),
                             },
                             span,
                         }
                     }
+
                     _ => break,
                 };
 
@@ -527,9 +506,9 @@ mod tests {
                 },
             ),
             (
-                "char",
+                "string",
                 TypeAnnotation {
-                    kind: TypeAnnotationKind::Char,
+                    kind: TypeAnnotationKind::String,
                     span: Span {
                         start: Position {
                             line: 1,
@@ -538,8 +517,8 @@ mod tests {
                         },
                         end: Position {
                             line: 1,
-                            col: 5,
-                            byte_offset: 4,
+                            col: 7,
+                            byte_offset: 6,
                         },
                     },
                 },

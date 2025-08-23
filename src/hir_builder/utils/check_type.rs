@@ -1,74 +1,26 @@
 use crate::{
     ast::{
-        decl::{GenericParam, Param},
+        decl::Param,
         type_annotation::{TypeAnnotation, TypeAnnotationKind},
     },
     hir_builder::{
         errors::SemanticError,
         types::{
-            checked_declaration::{CheckedFnType, CheckedGenericParam, CheckedParam},
+            checked_declaration::{CheckedFnType, CheckedParam, CheckedTag},
             checked_type::{Type, TypeKind},
         },
-        utils::{
-            scope::{ScopeKind, SymbolEntry},
-            substitute_generics::GenericSubstitutionMap,
-        },
+        utils::scope::{ScopeKind, SymbolEntry},
         HIRBuilder,
     },
-    tokenize::NumberKind,
 };
 
 impl<'a> HIRBuilder<'a> {
-    pub fn check_has_type_arguments_applied(&mut self, target: Type) -> Type {
-        let has_type_args = match &target.kind {
-            TypeKind::TypeAliasDecl(decl) => decl.generic_params.is_empty(),
-            TypeKind::FnType(_) => true,
-            _ => true,
-        };
-
-        if !has_type_args {
-            self.errors.push(SemanticError::ExpectedTypeArguments { span: target.span });
-            Type {
-                kind: TypeKind::Unknown,
-                span: target.span,
-            }
-        } else {
-            target
-        }
-    }
-
-    pub fn check_generic_params(&mut self, generic_params: &[GenericParam]) -> Vec<CheckedGenericParam> {
-        generic_params
-            .into_iter()
-            .map(|gp| {
-                let checked_constraint = gp.constraint.as_ref().map(|constraint| {
-                    let checked_constraint = self.check_type_annotation_recursive(constraint);
-                    let result = self.check_has_type_arguments_applied(checked_constraint);
-                    Box::new(result)
-                });
-
-                let checked_gp = CheckedGenericParam {
-                    constraint: checked_constraint,
-                    identifier: gp.identifier,
-                };
-
-                self.scope_insert(gp.identifier, SymbolEntry::GenericParam(checked_gp.clone()));
-
-                checked_gp
-            })
-            .collect()
-    }
-
     pub fn check_params(&mut self, params: &Vec<Param>) -> Vec<CheckedParam> {
         params
             .into_iter()
-            .map(|p| {
-                let checked_constraint = self.check_type_annotation_recursive(&p.constraint);
-                let result = self.check_has_type_arguments_applied(checked_constraint);
-                CheckedParam {
-                    constraint: result,
-                    identifier: p.identifier,
-                }
+            .map(|p| CheckedParam {
+                constraint: self.check_type_annotation_recursive(&p.constraint),
+                identifier: p.identifier,
             })
             .collect()
     }
@@ -89,57 +41,12 @@ impl<'a> HIRBuilder<'a> {
             TypeAnnotationKind::I64 => TypeKind::I64,
             TypeAnnotationKind::F32 => TypeKind::F32,
             TypeAnnotationKind::F64 => TypeKind::F64,
-            TypeAnnotationKind::Char => TypeKind::Char,
-            TypeAnnotationKind::Struct(params) => TypeKind::Struct(self.check_params(params)),
-            TypeAnnotationKind::GenericApply { left, args } => {
-                let checked_left = self.check_type_annotation_recursive(&left);
-                let checked_args: Vec<Type> = args
-                    .into_iter()
-                    .map(|arg_annotation| {
-                        let checked_arg = self.check_type_annotation_recursive(&arg_annotation);
-                        let result = self.check_has_type_arguments_applied(checked_arg);
-                        result
-                    })
-                    .collect();
-
-                let mut substitute = |generic_params: &Vec<CheckedGenericParam>, type_args: Vec<Type>| {
-                    if generic_params.len() != type_args.len() {
-                        self.errors.push(SemanticError::GenericArgumentCountMismatch {
-                            expected: generic_params.len(),
-                            received: type_args.len(),
-                            span: annotation.span,
-                        });
-
-                        TypeKind::Unknown
-                    } else {
-                        let mut substitutions = GenericSubstitutionMap::new();
-                        for (gp_decl, type_arg) in generic_params.iter().zip(type_args.into_iter()) {
-                            substitutions.insert(gp_decl.identifier.name, type_arg);
-                        }
-
-                        self.substitute_generics(&checked_left, &substitutions).kind
-                    }
-                };
-
-                match &checked_left.kind {
-                    TypeKind::FnType(decl) => substitute(&decl.generic_params, checked_args),
-                    TypeKind::TypeAliasDecl(decl) => substitute(&decl.generic_params, checked_args),
-                    TypeKind::Enum(decl) => substitute(&decl.generic_params, checked_args),
-                    _ => {
-                        self.errors.push(SemanticError::CannotApplyTypeArguments {
-                            to: checked_left.clone(),
-                        });
-
-                        TypeKind::Unknown
-                    }
-                }
-            }
-            TypeAnnotationKind::Identifier(id) => self
+            TypeAnnotationKind::String => TypeKind::String,
+            TypeAnnotationKind::Struct { fields } => TypeKind::Struct(self.check_params(fields)),
+            TypeAnnotationKind::Identifier { identifier: id } => self
                 .scope_lookup(id.name)
                 .map(|entry| match entry {
                     SymbolEntry::TypeAliasDecl(decl) => TypeKind::TypeAliasDecl(decl),
-                    SymbolEntry::GenericParam(decl) => TypeKind::GenericParam(decl),
-                    SymbolEntry::EnumDecl(decl) => TypeKind::Enum(decl),
                     SymbolEntry::VarDecl(_) => {
                         self.errors
                             .push(SemanticError::CannotUseVariableDeclarationAsType { span: annotation.span });
@@ -151,64 +58,28 @@ impl<'a> HIRBuilder<'a> {
                     self.errors.push(SemanticError::UndeclaredType { id: *id });
                     TypeKind::Unknown
                 }),
-            TypeAnnotationKind::FnType {
-                params,
-                return_type,
-                generic_params,
-            } => {
+            TypeAnnotationKind::FnType { params, return_type } => {
                 self.enter_scope(ScopeKind::FnType);
-                let checked_generic_params = self.check_generic_params(&generic_params);
                 let checked_params = self.check_params(&params);
-                let partially_checked_return_type = self.check_type_annotation_recursive(return_type);
-                let checked_return_type = self.check_has_type_arguments_applied(partially_checked_return_type);
+                let checked_return_type = self.check_type_annotation_recursive(return_type);
                 self.exit_scope();
 
                 TypeKind::FnType(CheckedFnType {
                     params: checked_params,
                     return_type: Box::new(checked_return_type),
-                    generic_params: checked_generic_params,
                     span: annotation.span,
-                    applied_type_args: vec![],
                 })
             }
-            TypeAnnotationKind::Array { item_type: left, size } => {
-                let maybe_size: Option<usize> = match size {
-                    &NumberKind::USize(v) => Some(v),
-                    &NumberKind::U64(v) => v.try_into().ok(),
-                    &NumberKind::U32(v) => v.try_into().ok(),
-                    &NumberKind::U16(v) => Some(v as usize),
-                    &NumberKind::U8(v) => Some(v as usize),
-
-                    &NumberKind::ISize(v) => v.try_into().ok(),
-                    &NumberKind::I64(v) => v.try_into().ok(),
-                    &NumberKind::I32(v) => v.try_into().ok(),
-                    &NumberKind::I16(v) => v.try_into().ok(),
-                    &NumberKind::I8(v) => v.try_into().ok(),
-
-                    &NumberKind::F32(_) | &NumberKind::F64(_) => None,
-                };
-
-                match maybe_size {
-                    Some(valid_size) => {
-                        let item_type = self.check_type_annotation_recursive(&left);
-                        let result_item_type = self.check_has_type_arguments_applied(item_type);
-                        TypeKind::Array {
-                            item_type: Box::new(result_item_type),
-                            size: valid_size,
-                        }
-                    }
-                    None => {
-                        self.errors.push(SemanticError::InvalidArraySizeValue {
-                            span: annotation.span,
-                            value: *size,
-                        });
-
-                        // Process for errors, ignore result
-                        let result = self.check_type_annotation_recursive(&left);
-                        let _ = self.check_has_type_arguments_applied(result);
-                        TypeKind::Unknown
-                    }
-                }
+            TypeAnnotationKind::List { item_type } => {
+                let checked_item_type = self.check_type_annotation_recursive(item_type);
+                TypeKind::List(Box::new(checked_item_type))
+            }
+            TypeAnnotationKind::Tag { identifier, value_type } => {
+                let checked_value_type = value_type.as_ref().map(|t| Box::new(self.check_type_annotation_recursive(t)));
+                TypeKind::Tag(CheckedTag {
+                    identifier: *identifier,
+                    value_type: checked_value_type,
+                })
             }
         };
 
@@ -219,8 +90,6 @@ impl<'a> HIRBuilder<'a> {
     }
 
     pub fn check_type_annotation(&mut self, annotation: &TypeAnnotation) -> Type {
-        let checked_type = self.check_type_annotation_recursive(annotation);
-        let result = self.check_has_type_arguments_applied(checked_type);
-        result
+        self.check_type_annotation_recursive(annotation)
     }
 }

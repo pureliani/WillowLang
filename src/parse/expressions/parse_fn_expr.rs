@@ -4,14 +4,16 @@ use crate::{
         expr::{Expr, ExprKind},
     },
     parse::{Parser, ParsingError},
-    tokenize::{PunctuationKind, TokenKind},
+    tokenize::{KeywordKind, PunctuationKind, TokenKind},
 };
 
 impl<'a, 'b> Parser<'a, 'b> {
     pub fn parse_fn_expr(&mut self) -> Result<Expr, ParsingError<'a>> {
         let start_offset = self.offset;
 
-        let generic_params = self.parse_optional_generic_params()?;
+        self.consume_keyword(KeywordKind::Fn)?;
+        let namme = self.consume_identifier()?;
+
         self.consume_punctuation(PunctuationKind::LParen)?;
         let params = self.comma_separated(
             |p| {
@@ -43,7 +45,6 @@ impl<'a, 'b> Parser<'a, 'b> {
                 params,
                 body,
                 return_type,
-                generic_params,
             },
             span: self.get_span(start_offset, self.offset - 1)?,
         })
@@ -329,24 +330,7 @@ mod test {
         let actual_ast = parser.parse_expr(0);
         let expected_ast = Ok(Expr {
             kind: ExprKind::Fn {
-                generic_params: vec![GenericParam {
-                    constraint: None,
-                    identifier: IdentifierNode {
-                        name: generic_aparam,
-                        span: Span {
-                            start: Position {
-                                line: 1,
-                                col: 2,
-                                byte_offset: 1,
-                            },
-                            end: Position {
-                                line: 1,
-                                col: 8,
-                                byte_offset: 7,
-                            },
-                        },
-                    },
-                }],
+                name: todo!(),
                 params: vec![Param {
                     identifier: IdentifierNode {
                         name: param_a,
@@ -364,21 +348,23 @@ mod test {
                         },
                     },
                     constraint: TypeAnnotation {
-                        kind: TypeAnnotationKind::Identifier(IdentifierNode {
-                            name: generic_aparam,
-                            span: Span {
-                                start: Position {
-                                    line: 1,
-                                    col: 13,
-                                    byte_offset: 12,
-                                },
-                                end: Position {
-                                    line: 1,
-                                    col: 19,
-                                    byte_offset: 18,
+                        kind: TypeAnnotationKind::Identifier {
+                            identifier: IdentifierNode {
+                                name: generic_aparam,
+                                span: Span {
+                                    start: Position {
+                                        line: 1,
+                                        col: 13,
+                                        byte_offset: 12,
+                                    },
+                                    end: Position {
+                                        line: 1,
+                                        col: 19,
+                                        byte_offset: 18,
+                                    },
                                 },
                             },
-                        }),
+                        },
                         span: Span {
                             start: Position {
                                 line: 1,

@@ -18,9 +18,8 @@ impl<'a> HIRBuilder<'a> {
             match statement.kind {
                 StmtKind::Expression(expr) => todo!(),
                 StmtKind::TypeAliasDecl(type_alias_decl) => todo!(),
-                StmtKind::EnumDecl(enum_decl) => todo!(),
                 StmtKind::VarDecl(var_decl) => todo!(),
-                StmtKind::Return(expr) => todo!(),
+                StmtKind::Return { value } => todo!(),
                 StmtKind::Assignment { target, value } => todo!(),
                 StmtKind::From { path, identifiers } => todo!(),
                 StmtKind::While { condition, body } => todo!(), // TODO: implement in while.rs

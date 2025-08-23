@@ -26,7 +26,7 @@ impl<'a> Tokenizer<'a> {
     }
 }
 
-const SUFFIX_INFOS: [(&'static str, bool); 12] = [
+const SUFFIX_INFOS: [(&str, bool); 12] = [
     ("f64", true),
     ("f32", true),
     ("usize", false),

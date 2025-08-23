@@ -30,38 +30,33 @@ impl<'a> HIRBuilder<'a> {
         match expr.kind {
             ExprKind::Not { right } => todo!(),
             ExprKind::Neg { right } => todo!(),
-
-            ExprKind::Add { left, right } => {}
+            ExprKind::Add { left, right } => todo!(),
             ExprKind::Subtract { left, right } => todo!(),
             ExprKind::Multiply { left, right } => todo!(),
             ExprKind::Divide { left, right } => todo!(),
             ExprKind::Modulo { left, right } => todo!(),
-
             ExprKind::LessThan { left, right } => todo!(),
             ExprKind::LessThanOrEqual { left, right } => todo!(),
             ExprKind::GreaterThan { left, right } => todo!(),
             ExprKind::GreaterThanOrEqual { left, right } => todo!(),
-
             ExprKind::Equal { left, right } => todo!(),
             ExprKind::NotEqual { left, right } => todo!(),
-
             ExprKind::And { left, right } => self.build_and_expr(left, right),
             ExprKind::Or { left, right } => todo!(),
             ExprKind::Access { left, field } => todo!(),
             ExprKind::StaticAccess { left, field } => todo!(),
             ExprKind::TypeCast { left, target } => todo!(),
-            ExprKind::GenericApply { left, args } => todo!(),
             ExprKind::FnCall { left, args } => todo!(),
-            ExprKind::StructLiteral(items) => todo!(),
-            ExprKind::BoolLiteral { value } => todo!(),
+            ExprKind::StructLiteral { fields } => todo!(),
+            ExprKind::BoolLiteral { value } => self.build_bool_literal(value),
             ExprKind::Number { value } => todo!(),
-            ExprKind::String(string_node) => todo!(),
-            ExprKind::Identifier(identifier_node) => todo!(),
+            ExprKind::String { value } => todo!(),
+            ExprKind::Identifier { identifier } => todo!(),
             ExprKind::Fn {
                 params,
                 body,
                 return_type,
-                generic_params,
+                name,
             } => todo!(),
             ExprKind::If {
                 condition,
@@ -69,8 +64,9 @@ impl<'a> HIRBuilder<'a> {
                 else_if_branches,
                 else_branch,
             } => todo!(),
-            ExprKind::ArrayLiteral { items } => todo!(),
+            ExprKind::ListLiteral { items } => todo!(),
             ExprKind::CodeBlock(block_contents) => todo!(),
+            ExprKind::Tag { identifier, value } => todo!(),
         }
     }
 }

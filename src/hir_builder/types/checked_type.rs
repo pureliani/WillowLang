@@ -2,12 +2,8 @@ use std::hash::{Hash, Hasher};
 
 use crate::{
     ast::Span,
-    hir_builder::types::checked_declaration::{
-        CheckedEnumDecl, CheckedEnumVariant, CheckedFnType, CheckedParam, CheckedTypeAliasDecl,
-    },
+    hir_builder::types::checked_declaration::{CheckedFnType, CheckedParam, CheckedTag, CheckedTypeAliasDecl},
 };
-
-use super::checked_declaration::CheckedGenericParam;
 
 #[derive(Clone, Debug)]
 pub enum TypeKind {
@@ -25,22 +21,15 @@ pub enum TypeKind {
     I64,
     F32,
     F64,
-    Char,
-    Array {
-        item_type: Box<Type>,
-        size: usize,
-    },
+    String,
+    Union(Vec<CheckedTag>),
+    Tag(CheckedTag),
+    List(Box<Type>),
     Struct(Vec<CheckedParam>),
     TypeAliasDecl(CheckedTypeAliasDecl),
-    GenericParam(CheckedGenericParam),
-    Enum(CheckedEnumDecl),
-    EnumVariant {
-        parent_enum: CheckedEnumDecl,
-        variant: Box<CheckedEnumVariant>,
-    },
     FnType(CheckedFnType),
-    Unknown,
     Pointer(Box<Type>),
+    Unknown,
 }
 
 impl Eq for TypeKind {}
@@ -61,36 +50,30 @@ impl PartialEq for TypeKind {
             (TypeKind::I64, TypeKind::I64) => true,
             (TypeKind::F32, TypeKind::F32) => true,
             (TypeKind::F64, TypeKind::F64) => true,
-            (TypeKind::Char, TypeKind::Char) => true,
+            (TypeKind::String, TypeKind::String) => true,
             (TypeKind::Unknown, TypeKind::Unknown) => true,
-            (TypeKind::GenericParam(a), TypeKind::GenericParam(b)) => a == b,
             (TypeKind::TypeAliasDecl(a), TypeKind::TypeAliasDecl(b)) => a == b,
+            (
+                TypeKind::Tag(CheckedTag {
+                    identifier: id_a,
+                    value_type: kind_a,
+                }),
+                TypeKind::Tag(CheckedTag {
+                    identifier: id_b,
+                    value_type: kind_b,
+                }),
+            ) => id_a == id_b && kind_a == kind_b,
             (TypeKind::Struct(a), TypeKind::Struct(b)) => a == b,
             (TypeKind::FnType(a), TypeKind::FnType(b)) => a == b,
             (TypeKind::Pointer(a), TypeKind::Pointer(b)) => a == b,
-            (TypeKind::Enum(a), TypeKind::Enum(b)) => a == b,
-            (
-                TypeKind::EnumVariant {
-                    parent_enum: pa,
-                    variant: va,
-                },
-                TypeKind::EnumVariant {
-                    parent_enum: pb,
-                    variant: vb,
-                },
-            ) => pa == pb && va == vb,
-            (
-                TypeKind::Array {
-                    item_type: ai,
-                    size: asize,
-                    ..
-                },
-                TypeKind::Array {
-                    item_type: bi,
-                    size: bsize,
-                    ..
-                },
-            ) => ai == bi && asize == bsize,
+            (TypeKind::List(t1), TypeKind::List(t2)) => t1 == t2,
+            (TypeKind::Union(u1), TypeKind::Union(u2)) => {
+                if u1.len() != u2.len() {
+                    return false;
+                }
+
+                u1.iter().all(|u1_element| u2.contains(u1_element)) && u2.iter().all(|u2_element| u1.contains(u2_element))
+            }
             _ => false,
         }
     }
@@ -115,23 +98,35 @@ impl Hash for TypeKind {
             TypeKind::I64 => {}
             TypeKind::F32 => {}
             TypeKind::F64 => {}
-            TypeKind::Char => {}
+            TypeKind::String => {}
             TypeKind::Unknown => {}
             TypeKind::Struct(fields) => fields.iter().for_each(|f| f.hash(state)),
             TypeKind::TypeAliasDecl(decl) => decl.hash(state),
-            TypeKind::GenericParam(decl) => decl.hash(state),
             TypeKind::FnType(decl) => decl.hash(state),
             TypeKind::Pointer(inner) => inner.hash(state),
-            TypeKind::Enum(enum_decl) => {
-                enum_decl.hash(state);
-            }
-            TypeKind::EnumVariant { parent_enum, variant } => {
-                parent_enum.hash(state);
-                variant.hash(state);
-            }
-            TypeKind::Array { item_type, size, .. } => {
+            TypeKind::List(item_type) => {
                 item_type.hash(state);
-                size.hash(state);
+            }
+            TypeKind::Tag(CheckedTag { identifier, value_type }) => {
+                identifier.hash(state);
+                value_type.hash(state);
+            }
+            TypeKind::Union(items) => {
+                state.write_usize(items.len());
+                if !items.is_empty() {
+                    let mut item_hashes: Vec<u64> = items
+                        .iter()
+                        .map(|item| {
+                            let mut item_hasher = std::collections::hash_map::DefaultHasher::new();
+                            item.hash(&mut item_hasher);
+                            item_hasher.finish()
+                        })
+                        .collect();
+                    item_hashes.sort_unstable();
+                    for h in item_hashes {
+                        h.hash(state);
+                    }
+                }
             }
         }
     }

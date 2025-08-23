@@ -29,7 +29,7 @@ impl<'a, 'b> Parser<'a, 'b> {
         let span = self.get_span(start_offset, self.offset - 1)?;
 
         Ok(TypeAnnotation {
-            kind: TypeAnnotationKind::Struct(fields),
+            kind: TypeAnnotationKind::Struct { fields },
             span,
         })
     }

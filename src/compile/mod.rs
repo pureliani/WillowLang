@@ -233,16 +233,7 @@ pub fn compile_file<'a, 'b>(
                         received.to_string()
                     )))
             }
-            SemanticError::GenericArgumentCountMismatch { expected, received, .. } => err
-                .with_message("Generic argument count mismatch")
-                .with_label(label.with_message(format!(
-                    "Expected {} type arguments, but instead received {}",
-                    expected.to_string(),
-                    received.to_string()
-                ))),
-            SemanticError::CannotUseGenericParameterAsValue { .. } => err
-                .with_message("Cannot use generic parameters as values")
-                .with_label(label.with_message("Cannot use generic parameter where an expression is expected")),
+
             SemanticError::CannotUseVariableDeclarationAsType { .. } => err
                 .with_message("Cannot use variable declaration as a type")
                 .with_label(label.with_message("Cannot use variable declaration as a type")),
@@ -250,26 +241,6 @@ pub fn compile_file<'a, 'b>(
                 let name = string_interner.resolve(field.name).unwrap();
                 err.with_message("Access to an undefined field")
                     .with_label(label.with_message(format!("Field {} is not defined", name)))
-            }
-            SemanticError::UnresolvedGenericParam { param, .. } => {
-                let name = string_interner.resolve(param.name).unwrap();
-                err.with_message("Unresolved generic parameter")
-                    .with_label(label.with_message(format!("Could not resolve generic parameter with name \"{}\"", name)))
-            }
-            SemanticError::ConflictingGenericBinding {
-                generic_param,
-                existing,
-                new,
-            } => {
-                let name = string_interner.resolve(generic_param.identifier.name).unwrap();
-
-                err.with_message("Conflicting generic binding")
-                    .with_label(label.with_message(format!(
-                        "Generic parameter identifier {} is already bound to type {}, cannot re-bind it to {}",
-                        name,
-                        type_to_string(&existing.kind, string_interner),
-                        type_to_string(&new.kind, string_interner)
-                    )))
             }
             SemanticError::TypeAliasMustBeDeclaredAtTopLevel { .. } => err
                 .with_message("Type aliases must be declared in the file scope")
@@ -313,59 +284,6 @@ pub fn compile_file<'a, 'b>(
             SemanticError::VarDeclWithoutInitializer { .. } => err
                 .with_message("Variable declarations must have an initializer")
                 .with_label(label.with_message("This variable declaration must have an initializer")),
-            SemanticError::IncompatibleGenericParamSubstitution {
-                generic_param,
-                arg_type: with_type,
-                is_inferred,
-            } => {
-                let inferred_message = if *is_inferred { "inferred" } else { "provided" };
-                let gp_name = string_interner.resolve(generic_param.identifier.name).unwrap();
-
-                let gp_string = match &generic_param.constraint {
-                    Some(c) => {
-                        format!("{}: {}", gp_name, type_to_string(&c.kind, string_interner))
-                    }
-                    None => {
-                        format!("{}", gp_name)
-                    }
-                };
-                let gp_span_start = generic_param.identifier.span.start.byte_offset;
-                let gp_span = if let Some(c) = &generic_param.constraint {
-                    gp_span_start..c.span.end.byte_offset
-                } else {
-                    gp_span_start..generic_param.identifier.span.end.byte_offset
-                };
-
-                let argument_span = with_type.span.start.byte_offset..with_type.span.end.byte_offset;
-
-                err.with_message("Generic param received incompatible type argument")
-                    .with_labels(vec![
-                        Label::secondary(interned_fp, gp_span).with_message(format!(
-                            "Generic param \"{}\" received incompatible type argument \"{}\"",
-                            gp_string,
-                            type_to_string(&with_type.kind, string_interner)
-                        )),
-                        Label::primary(interned_fp, argument_span)
-                            .with_message(format!("type argument {} here", inferred_message)),
-                    ])
-            }
-            SemanticError::AmbiguousGenericInferenceForUnion { received, expected } => err
-                .with_message("Ambiguous generic inference for union")
-                .with_label(label.with_message(format!(
-                    "There are multiple ways to infer generic parameters in \"{}\" from \"{}\"",
-                    type_to_string(&TypeKind::Union(expected.clone()), string_interner),
-                    type_to_string(&received.kind, string_interner)
-                ))),
-            SemanticError::FailedToInferGenericsInUnion {
-                expected_union,
-                received,
-            } => err
-                .with_message("Failed to infer generic parameters in union")
-                .with_label(label.with_message(format!(
-                    "Failed to infer generic parameters in \"{}\" from {}",
-                    type_to_string(&TypeKind::Union(expected_union.clone()), string_interner),
-                    type_to_string(&received.kind, string_interner)
-                ))),
             SemanticError::DuplicateIdentifier { id } => {
                 let identifier_name = string_interner.resolve(id.name).unwrap();
                 err.with_message("Duplicate identifier")

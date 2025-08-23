@@ -158,7 +158,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                 let span = self.get_span(start_offset, self.offset - 1)?;
 
                 Expr {
-                    kind: ExprKind::ArrayLiteral { items },
+                    kind: ExprKind::ListLiteral { items },
                     span,
                 }
             }

@@ -42,11 +42,6 @@ impl<'a> Tokenizer<'a> {
                     self.consume();
                     Some(PunctuationKind::DoubleEq)
                 }
-                Some(">") => {
-                    self.consume();
-                    self.consume();
-                    Some(PunctuationKind::FatArrow)
-                }
                 _ => {
                     self.consume();
                     Some(PunctuationKind::Eq)
@@ -148,6 +143,10 @@ impl<'a> Tokenizer<'a> {
             "?" => {
                 self.consume();
                 Some(PunctuationKind::Question)
+            }
+            "#" => {
+                self.consume();
+                Some(PunctuationKind::Hashtag)
             }
             _ => None,
         }

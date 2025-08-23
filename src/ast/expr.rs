@@ -3,11 +3,7 @@ use crate::{
     tokenize::NumberKind,
 };
 
-use super::{
-    decl::{GenericParam, Param},
-    stmt::Stmt,
-    type_annotation::TypeAnnotation,
-};
+use super::{decl::Param, stmt::Stmt, type_annotation::TypeAnnotation};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct BlockContents {
@@ -88,28 +84,34 @@ pub enum ExprKind {
         left: Box<Expr>,
         target: TypeAnnotation,
     },
-    GenericApply {
-        left: Box<Expr>,
-        args: Vec<TypeAnnotation>,
+    Tag {
+        identifier: IdentifierNode,
+        value: Option<Box<Expr>>,
     },
     FnCall {
         left: Box<Expr>,
         args: Vec<Expr>,
     },
-    StructLiteral(Vec<(IdentifierNode, Expr)>),
+    StructLiteral {
+        fields: Vec<(IdentifierNode, Expr)>,
+    },
     BoolLiteral {
         value: bool,
     },
     Number {
         value: NumberKind,
     },
-    String(StringNode),
-    Identifier(IdentifierNode),
+    String {
+        value: StringNode,
+    },
+    Identifier {
+        identifier: IdentifierNode,
+    },
     Fn {
+        name: IdentifierNode,
         params: Vec<Param>,
-        body: BlockContents,
         return_type: Option<TypeAnnotation>,
-        generic_params: Vec<GenericParam>,
+        body: BlockContents,
     },
     If {
         condition: Box<Expr>,
@@ -117,7 +119,7 @@ pub enum ExprKind {
         else_if_branches: Vec<(Box<Expr>, BlockContents)>,
         else_branch: Option<BlockContents>,
     },
-    ArrayLiteral {
+    ListLiteral {
         items: Vec<Expr>,
     },
     CodeBlock(BlockContents),

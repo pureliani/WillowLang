@@ -5,7 +5,7 @@ use crate::{
     cfg::BasicBlockId,
     compile::string_interner::InternerId,
     hir_builder::{
-        types::checked_declaration::{CheckedEnumDecl, CheckedGenericParam, CheckedTypeAliasDecl, CheckedVarDecl},
+        types::checked_declaration::{CheckedTypeAliasDecl, CheckedVarDecl},
         HIRBuilder, SemanticError,
     },
 };
@@ -27,8 +27,6 @@ pub enum ScopeKind {
 pub enum SymbolEntry {
     VarDecl(CheckedVarDecl),
     TypeAliasDecl(CheckedTypeAliasDecl),
-    EnumDecl(CheckedEnumDecl),
-    GenericParam(CheckedGenericParam),
 }
 
 #[derive(Debug)]

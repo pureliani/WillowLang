@@ -69,7 +69,7 @@ pub enum PunctuationKind {
     Comma,
     Dollar,
     Question,
-    FatArrow,
+    Hashtag,
 }
 
 impl PunctuationKind {
@@ -105,14 +105,13 @@ impl PunctuationKind {
             PunctuationKind::Comma => ",",
             PunctuationKind::Dollar => "$",
             PunctuationKind::Question => "?",
-            PunctuationKind::FatArrow => "=>",
+            PunctuationKind::Hashtag => "#",
         })
     }
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum KeywordKind {
-    Enum,
     Let,
     Return,
     If,
@@ -126,7 +125,7 @@ pub enum KeywordKind {
     True,
     False,
     Pub,
-    Char,
+    String,
     Bool,
     I8,
     I16,
@@ -140,6 +139,7 @@ pub enum KeywordKind {
     ISize,
     F32,
     F64,
+    Fn,
 }
 
 impl KeywordKind {
@@ -158,7 +158,7 @@ impl KeywordKind {
             KeywordKind::True => "true",
             KeywordKind::False => "false",
             KeywordKind::Pub => "pub",
-            KeywordKind::Char => "char",
+            KeywordKind::String => "string",
             KeywordKind::Bool => "bool",
             KeywordKind::I8 => "i8",
             KeywordKind::I16 => "i16",
@@ -172,7 +172,7 @@ impl KeywordKind {
             KeywordKind::ISize => "iSize",
             KeywordKind::F32 => "f32",
             KeywordKind::F64 => "f64",
-            KeywordKind::Enum => "enum",
+            KeywordKind::Fn => "fn",
         })
     }
 }
@@ -510,7 +510,7 @@ fn is_alphanumeric(value: &str) -> bool {
 
 fn is_keyword(identifier: &str) -> Option<KeywordKind> {
     match identifier {
-        "enum" => Some(KeywordKind::Enum),
+        "fn" => Some(KeywordKind::Fn),
         "let" => Some(KeywordKind::Let),
         "return" => Some(KeywordKind::Return),
         "if" => Some(KeywordKind::If),
@@ -524,7 +524,7 @@ fn is_keyword(identifier: &str) -> Option<KeywordKind> {
         "true" => Some(KeywordKind::True),
         "false" => Some(KeywordKind::False),
         "pub" => Some(KeywordKind::Pub),
-        "char" => Some(KeywordKind::Char),
+        "string" => Some(KeywordKind::String),
         "bool" => Some(KeywordKind::Bool),
         "i8" => Some(KeywordKind::I8),
         "i16" => Some(KeywordKind::I16),
