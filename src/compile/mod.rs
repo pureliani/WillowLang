@@ -248,13 +248,6 @@ pub fn compile_file<'a, 'b>(
             SemanticError::StructMustBeDeclaredAtTopLevel { .. } => err
                 .with_message("Structs must be declared in the file scope")
                 .with_label(label.with_message("Structs must be declared in the file scope")),
-            SemanticError::CannotApplyTypeArguments { to } => {
-                err.with_message("Cannot apply type arguments")
-                    .with_label(label.with_message(format!(
-                        "Cannot apply type arguments to non-generic type {}",
-                        type_to_string(&to.kind, string_interner)
-                    )))
-            }
             SemanticError::DuplicateStructFieldInitializer { id } => {
                 let name = string_interner.resolve(id.name).unwrap();
                 err.with_message("Duplicate initializer for a struct field")
@@ -289,9 +282,6 @@ pub fn compile_file<'a, 'b>(
                 err.with_message("Duplicate identifier")
                     .with_label(label.with_message(format!("Duplicate identifier declaration \"{}\"", identifier_name)))
             }
-            SemanticError::ExpectedTypeArguments { .. } => err
-                .with_message("Expected type argument")
-                .with_label(label.with_message("Expected type arguments to be applied to this type")),
         };
 
         errors.push(diagnostic);

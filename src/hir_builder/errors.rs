@@ -9,9 +9,6 @@ use crate::{
 
 #[derive(Debug, Clone)]
 pub enum SemanticError {
-    ExpectedTypeArguments {
-        span: Span,
-    },
     DuplicateIdentifier {
         id: IdentifierNode,
     },
@@ -100,9 +97,6 @@ pub enum SemanticError {
     StructMustBeDeclaredAtTopLevel {
         span: Span,
     },
-    CannotApplyTypeArguments {
-        to: Type,
-    },
 }
 
 impl SemanticError {
@@ -134,9 +128,7 @@ impl SemanticError {
             SemanticError::AccessToUndefinedField { field } => field.span,
             SemanticError::TypeAliasMustBeDeclaredAtTopLevel { span } => *span,
             SemanticError::StructMustBeDeclaredAtTopLevel { span } => *span,
-            SemanticError::CannotApplyTypeArguments { to } => to.span,
             SemanticError::DuplicateIdentifier { id } => id.span,
-            SemanticError::ExpectedTypeArguments { span } => *span,
         }
     }
 
@@ -162,7 +154,6 @@ impl SemanticError {
             SemanticError::AccessToUndefinedField { .. } => 19,
             SemanticError::InvalidArraySizeValue { .. } => 21,
             SemanticError::FnArgumentCountMismatch { .. } => 22,
-            SemanticError::CannotApplyTypeArguments { .. } => 26,
             SemanticError::TypeAliasMustBeDeclaredAtTopLevel { .. } => 27,
             SemanticError::StructMustBeDeclaredAtTopLevel { .. } => 28,
             SemanticError::DuplicateStructFieldInitializer { .. } => 29,
@@ -170,7 +161,6 @@ impl SemanticError {
             SemanticError::MissingStructFieldInitializer { .. } => 31,
             SemanticError::CannotApplyStructInitializer { .. } => 32,
             SemanticError::DuplicateIdentifier { .. } => 36,
-            SemanticError::ExpectedTypeArguments { .. } => 37,
         }
     }
 }

@@ -12,13 +12,14 @@ pub struct Parser<'a, 'b> {
 use unicode_segmentation::UnicodeSegmentation;
 
 use crate::{
-    ast::{stmt::Stmt, IdentifierNode, Position, Span, StringNode},
+    ast::{stmt::Stmt, type_annotation::TypeAnnotation, IdentifierNode, Position, Span, StringNode},
     compile::string_interner::{InternerId, StringInterner},
     tokenize::{KeywordKind, NumberKind, PunctuationKind, Token, TokenKind},
 };
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum ParsingErrorKind<'a> {
+    ExpectedATagTypeButFound(TypeAnnotation),
     DocMustBeFollowedByDeclaration,
     ExpectedAnExpressionButFound(Token<'a>),
     ExpectedATypeButFound(Token<'a>),
@@ -52,6 +53,7 @@ impl<'a> ParsingErrorKind<'a> {
             ParsingErrorKind::UnexpectedStatementAfterFinalExpression => 22,
             ParsingErrorKind::ExpectedStatementOrExpression { .. } => 23,
             ParsingErrorKind::UnexpectedTokenAfterFinalExpression { .. } => 24,
+            ParsingErrorKind::ExpectedATagTypeButFound(..) => 25,
         }
     }
 }

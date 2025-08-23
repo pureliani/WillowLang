@@ -14,6 +14,44 @@ impl<'a> HIRBuilder<'a> {
         self.check_is_assignable_recursive(source_type, target_type, &mut visited_declarations)
     }
 
+    pub fn check_is_tag_assignable(
+        &mut self,
+        source_tag: &CheckedTag,
+        target_tag: &CheckedTag,
+        visited_declarations: &mut HashSet<(usize, usize)>,
+    ) -> bool {
+        match (source_tag, target_tag) {
+            (
+                CheckedTag {
+                    identifier: id_a,
+                    value_type: Some(value_type_a),
+                },
+                CheckedTag {
+                    identifier: id_b,
+                    value_type: Some(value_type_b),
+                },
+            ) => {
+                if id_a != id_b {
+                    return false;
+                }
+
+                self.check_is_assignable_recursive(value_type_a, value_type_b, visited_declarations)
+                    && self.check_is_assignable_recursive(value_type_b, value_type_a, visited_declarations)
+            }
+            (
+                CheckedTag {
+                    identifier: id_a,
+                    value_type: None,
+                },
+                CheckedTag {
+                    identifier: id_b,
+                    value_type: None,
+                },
+            ) => id_a == id_b,
+            _ => false,
+        }
+    }
+
     pub fn check_is_assignable_recursive(
         &mut self,
         source_type: &Type,
@@ -40,26 +78,15 @@ impl<'a> HIRBuilder<'a> {
             | (Bool, Bool)
             | (Void, Void)
             | (Unknown, _) => true,
-            (
-                Tag(CheckedTag {
-                    identifier: source_identifier,
-                    value_type: source_type,
-                }),
-                Tag(CheckedTag {
-                    identifier: target_identifier,
-                    value_type: target_type,
-                }),
-            ) => {
-                if source_identifier != target_identifier {
-                    return false;
-                }
-
-                match (source_type, target_type) {
-                    (Some(st), Some(tt)) => self.check_is_assignable_recursive(&st, &tt, visited_declarations),
-                    (None, None) => true,
-                    _ => false,
-                }
-            }
+            (Union(source), Union(target)) => source.iter().all(|source_item| {
+                target
+                    .iter()
+                    .any(|target_item| self.check_is_tag_assignable(source_item, target_item, visited_declarations))
+            }),
+            (Tag(source_item), Union(target_union)) => target_union
+                .iter()
+                .any(|target_item| self.check_is_tag_assignable(source_item, target_item, visited_declarations)),
+            (Tag(t1), Tag(t2)) => self.check_is_tag_assignable(t1, t2, visited_declarations),
             (Pointer(source), Pointer(target)) => self.check_is_assignable_recursive(source, target, visited_declarations),
             (Struct(source_fields), Struct(target_fields)) => {
                 if source_fields.len() != target_fields.len() {

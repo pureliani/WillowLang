@@ -1,7 +1,7 @@
 use crate::{
     ast::{
         decl::Param,
-        type_annotation::{TypeAnnotation, TypeAnnotationKind},
+        type_annotation::{TagAnnotation, TypeAnnotation, TypeAnnotationKind},
     },
     hir_builder::{
         errors::SemanticError,
@@ -15,17 +15,27 @@ use crate::{
 };
 
 impl<'a> HIRBuilder<'a> {
+    pub fn check_tag_type_annotation(&mut self, annotation: &TagAnnotation) -> CheckedTag {
+        CheckedTag {
+            identifier: annotation.identifier,
+            value_type: annotation
+                .value_type
+                .as_ref()
+                .map(|t| Box::new(self.check_type_annotation(t))),
+        }
+    }
+
     pub fn check_params(&mut self, params: &Vec<Param>) -> Vec<CheckedParam> {
         params
             .into_iter()
             .map(|p| CheckedParam {
-                constraint: self.check_type_annotation_recursive(&p.constraint),
+                constraint: self.check_type_annotation(&p.constraint),
                 identifier: p.identifier,
             })
             .collect()
     }
 
-    pub fn check_type_annotation_recursive(&mut self, annotation: &TypeAnnotation) -> Type {
+    pub fn check_type_annotation(&mut self, annotation: &TypeAnnotation) -> Type {
         let kind = match &annotation.kind {
             TypeAnnotationKind::Void => TypeKind::Void,
             TypeAnnotationKind::Bool => TypeKind::Bool,
@@ -61,7 +71,7 @@ impl<'a> HIRBuilder<'a> {
             TypeAnnotationKind::FnType { params, return_type } => {
                 self.enter_scope(ScopeKind::FnType);
                 let checked_params = self.check_params(&params);
-                let checked_return_type = self.check_type_annotation_recursive(return_type);
+                let checked_return_type = self.check_type_annotation(return_type);
                 self.exit_scope();
 
                 TypeKind::FnType(CheckedFnType {
@@ -71,15 +81,13 @@ impl<'a> HIRBuilder<'a> {
                 })
             }
             TypeAnnotationKind::List { item_type } => {
-                let checked_item_type = self.check_type_annotation_recursive(item_type);
+                let checked_item_type = self.check_type_annotation(item_type);
                 TypeKind::List(Box::new(checked_item_type))
             }
-            TypeAnnotationKind::Tag { identifier, value_type } => {
-                let checked_value_type = value_type.as_ref().map(|t| Box::new(self.check_type_annotation_recursive(t)));
-                TypeKind::Tag(CheckedTag {
-                    identifier: *identifier,
-                    value_type: checked_value_type,
-                })
+            TypeAnnotationKind::Tag(t) => TypeKind::Tag(self.check_tag_type_annotation(t)),
+            TypeAnnotationKind::Union(tag_annotations) => {
+                let checked_tags = tag_annotations.iter().map(|t| self.check_tag_type_annotation(t)).collect();
+                TypeKind::Union(checked_tags)
             }
         };
 
@@ -87,9 +95,5 @@ impl<'a> HIRBuilder<'a> {
             kind,
             span: annotation.span,
         }
-    }
-
-    pub fn check_type_annotation(&mut self, annotation: &TypeAnnotation) -> Type {
-        self.check_type_annotation_recursive(annotation)
     }
 }

@@ -1,6 +1,7 @@
 pub mod parse_fn_type_annotation;
 pub mod parse_parenthesized_type_annotation;
 pub mod parse_struct_type_annotation;
+pub mod parse_tag_type_annotation;
 
 use super::{Parser, ParsingError, ParsingErrorKind};
 use crate::{
@@ -13,7 +14,7 @@ fn suffix_bp(token_kind: &TokenKind) -> Option<(u8, ())> {
     use TokenKind::*;
 
     let priority = match token_kind {
-        Punctuation(Lt) => (3, ()),
+        Punctuation(LBracket) => (3, ()),
         _ => return None,
     };
 
@@ -175,25 +176,10 @@ impl<'a, 'b> Parser<'a, 'b> {
                     span,
                 }
             }
-            TokenKind::Punctuation(PunctuationKind::LParen) => {
-                self.place_checkpoint();
-                let type_annotation = self.parse_fn_type_annotation().or_else(|fn_err| {
-                    let offset_after_fn_attempt = self.offset;
-                    self.goto_checkpoint();
-                    self.parse_parenthesized_type_annotation().or_else(|paren_err| {
-                        let offset_after_paren_attempt = self.offset;
-                        if offset_after_fn_attempt >= offset_after_paren_attempt {
-                            Err(fn_err)
-                        } else {
-                            Err(paren_err)
-                        }
-                    })
-                })?;
-
-                type_annotation
-            }
-            TokenKind::Punctuation(PunctuationKind::Lt) => self.parse_fn_type_annotation()?,
+            TokenKind::Punctuation(PunctuationKind::LParen) => self.parse_parenthesized_type_annotation()?,
+            TokenKind::Keyword(KeywordKind::Fn) => self.parse_fn_type_annotation()?,
             TokenKind::Punctuation(PunctuationKind::LBrace) => self.parse_struct_type()?,
+            TokenKind::Punctuation(PunctuationKind::Hashtag) => self.parse_tag_type_annotation()?,
             TokenKind::Identifier(_) => {
                 let start_offset = self.offset;
 
@@ -224,14 +210,11 @@ impl<'a, 'b> Parser<'a, 'b> {
                 }
 
                 lhs = match op.kind {
-                    TokenKind::Punctuation(PunctuationKind::Or) => todo!(),
                     TokenKind::Punctuation(PunctuationKind::LBracket) => {
-                        let start_offset = self.offset;
-
                         self.consume_punctuation(PunctuationKind::LBracket)?;
                         self.consume_punctuation(PunctuationKind::RBracket)?;
 
-                        let span = self.get_span(start_offset, self.offset - 1)?;
+                        let span = self.get_span(lhs.span.start.byte_offset, self.offset - 1)?;
                         TypeAnnotation {
                             kind: TypeAnnotationKind::List {
                                 item_type: Box::new(lhs.clone()),
@@ -239,8 +222,9 @@ impl<'a, 'b> Parser<'a, 'b> {
                             span,
                         }
                     }
-
-                    _ => break,
+                    _ => {
+                        panic!("Unexpected suffix type-annotation operator")
+                    }
                 };
 
                 continue;
