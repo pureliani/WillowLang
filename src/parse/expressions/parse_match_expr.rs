@@ -1,45 +1,49 @@
 use crate::{
-    ast::expr::{Expr, ExprKind},
+    ast::expr::{Expr, ExprKind, MatchArm},
     parse::{Parser, ParsingError},
-    tokenize::{KeywordKind, TokenKind},
+    tokenize::{KeywordKind, PunctuationKind, TokenKind},
 };
 
 impl<'a, 'b> Parser<'a, 'b> {
     pub fn parse_match_expr(&mut self) -> Result<Expr, ParsingError<'a>> {
         let start_offset = self.offset;
 
-        self.consume_keyword(KeywordKind::If)?;
-
+        self.consume_keyword(KeywordKind::Match)?;
         let condition = self.parse_expr(0)?;
-        let then_branch = self.parse_codeblock_expr()?;
+        self.consume_punctuation(PunctuationKind::LBrace)?;
+        let arms = self.comma_separated(
+            |p| {
+                p.consume_punctuation(PunctuationKind::Hashtag)?;
+                let tag_name = p.consume_identifier()?;
 
-        let mut else_if_branches = Vec::new();
-        while self.match_token(0, TokenKind::Keyword(KeywordKind::Else))
-            && self.match_token(1, TokenKind::Keyword(KeywordKind::If))
-        {
-            self.advance();
-            self.advance();
+                let binding_name = if p.match_token(0, TokenKind::Punctuation(PunctuationKind::LParen)) {
+                    p.advance();
+                    let id = p.consume_identifier()?;
+                    p.consume_punctuation(PunctuationKind::RParen)?;
+                    Some(id)
+                } else {
+                    None
+                };
 
-            let else_if_condition = self.parse_expr(0)?;
-            let else_if_body = self.parse_codeblock_expr()?;
-            else_if_branches.push((Box::new(else_if_condition), else_if_body));
-        }
+                p.consume_punctuation(PunctuationKind::Eq)?;
+                p.consume_punctuation(PunctuationKind::Gt)?;
 
-        let else_branch = if self.match_token(0, TokenKind::Keyword(KeywordKind::Else)) {
-            self.advance();
+                let expr = p.parse_expr(0)?;
 
-            let else_body = self.parse_codeblock_expr()?;
-            Some(else_body)
-        } else {
-            None
-        };
+                Ok(MatchArm {
+                    tag_name,
+                    binding_name,
+                    expr,
+                })
+            },
+            |p| p.match_token(0, TokenKind::Punctuation(PunctuationKind::RBrace)),
+        )?;
+        self.consume_punctuation(PunctuationKind::RBrace)?;
 
         Ok(Expr {
-            kind: ExprKind::If {
+            kind: ExprKind::Match {
                 condition: Box::new(condition),
-                then_branch,
-                else_if_branches,
-                else_branch,
+                arms,
             },
             span: self.get_span(start_offset, self.offset - 1)?,
         })

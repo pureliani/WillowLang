@@ -13,6 +13,13 @@ pub struct BlockContents {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub struct MatchArm {
+    pub tag_name: IdentifierNode,
+    pub binding_name: Option<IdentifierNode>,
+    pub expr: Expr,
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub enum ExprKind {
     Not {
         right: Box<Expr>,
@@ -112,6 +119,10 @@ pub enum ExprKind {
         params: Vec<Param>,
         return_type: TypeAnnotation,
         body: BlockContents,
+    },
+    Match {
+        condition: Box<Expr>,
+        arms: Vec<MatchArm>,
     },
     If {
         condition: Box<Expr>,

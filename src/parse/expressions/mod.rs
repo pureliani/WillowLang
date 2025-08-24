@@ -99,6 +99,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                     span: token_span,
                 }
             }
+            TokenKind::Keyword(KeywordKind::Match) => self.parse_match_expr()?,
             TokenKind::Keyword(KeywordKind::Fn) => self.parse_fn_expr()?,
             TokenKind::Punctuation(PunctuationKind::Hashtag) => self.parse_tag_expr()?,
             TokenKind::Punctuation(PunctuationKind::LParen) => {
