@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use crate::{
-    ast::Span,
     compile::string_interner::InternerId,
     hir_builder::types::{
         checked_declaration::CheckedParam,
@@ -36,42 +35,35 @@ pub enum Instruction {
     Alloc {
         destination: ValueId,
         ty: TypeKind,
-        span: Span,
     },
     New {
         destination: ValueId,
         allocation_site_id: HeapAllocationId,
         ty: TypeKind,
-        span: Span,
     },
     Store {
         destination_ptr: ValueId,
         source_val: Value,
-        span: Span,
     },
     Load {
         destination: ValueId,
         source_ptr: ValueId,
-        span: Span,
     },
     FieldPtr {
         destination: ValueId,
         base_ptr: ValueId,
         field_index: usize,
-        span: Span,
     },
     ElementPtr {
         destination: ValueId,
         base_ptr: ValueId,
         index: Value,
-        span: Span,
     },
     UnaryOp {
         op_kind: UnaryOperationKind,
         destination: ValueId,
         operand: Value,
         result_type: TypeKind,
-        span: Span,
     },
     BinaryOp {
         op_kind: BinaryOperationKind,
@@ -79,27 +71,22 @@ pub enum Instruction {
         left: Value,
         right: Value,
         result_type: TypeKind,
-        span: Span,
     },
     TypeCast {
         destination: ValueId,
         operand: Value,
         target_type: TypeKind,
-        span: Span,
     },
     FunctionCall {
         destination: Option<ValueId>,
         function_rvalue: Value,
         args: Vec<Value>,
-        span: Span,
     },
     Phi {
         destination: ValueId,
         sources: Vec<(BasicBlockId, Value)>,
     },
-    Nop {
-        span: Span,
-    },
+    Nop,
 }
 
 #[derive(Clone, Debug)]
@@ -127,21 +114,16 @@ pub enum BinaryOperationKind {
 pub enum Terminator {
     Jump {
         target: BasicBlockId,
-        span: Span,
     },
     CondJump {
         condition: Value,
         true_target: BasicBlockId,
         false_target: BasicBlockId,
-        span: Span,
     },
     Return {
         value: Option<Value>,
-        span: Span,
     },
-    Unreachable {
-        span: Span,
-    },
+    Unreachable,
 }
 
 #[derive(Clone, Debug)]

@@ -1,3 +1,4 @@
+pub mod add_basic_block_instruction;
 pub mod check_is_assignable;
 pub mod check_is_equatable;
 pub mod check_type;
@@ -5,6 +6,9 @@ pub mod get_numeric_type_rank;
 pub mod is_float;
 pub mod is_integer;
 pub mod is_signed;
+pub mod new_basic_block;
 pub mod new_value_id;
 pub mod scope;
+pub mod set_basic_block_terminator;
 pub mod type_to_string;
+pub mod use_basic_block;

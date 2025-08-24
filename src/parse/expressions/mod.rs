@@ -5,6 +5,7 @@ pub mod parse_if_expr;
 pub mod parse_parenthesized_expr;
 pub mod parse_struct_init_expr;
 pub mod parse_tag_expr;
+pub mod parse_match_expr;
 
 use crate::{
     ast::{
