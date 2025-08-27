@@ -11,8 +11,10 @@ pub mod fn_call;
 pub mod generic_apply;
 pub mod identifier;
 pub mod r#if;
+pub mod r#match;
 pub mod neg;
 pub mod not;
+pub mod number_literal;
 pub mod or;
 pub mod static_access;
 pub mod string;
@@ -28,7 +30,7 @@ use crate::{
 impl<'a> HIRBuilder<'a> {
     pub fn build_expr(&mut self, expr: Expr) -> Value {
         match expr.kind {
-            ExprKind::Not { right } => todo!(),
+            ExprKind::Not { right } => self.build_not_expr(right),
             ExprKind::Neg { right } => todo!(),
             ExprKind::Add { left, right } => todo!(),
             ExprKind::Subtract { left, right } => todo!(),
@@ -42,14 +44,14 @@ impl<'a> HIRBuilder<'a> {
             ExprKind::Equal { left, right } => todo!(),
             ExprKind::NotEqual { left, right } => todo!(),
             ExprKind::And { left, right } => self.build_and_expr(left, right),
-            ExprKind::Or { left, right } => todo!(),
+            ExprKind::Or { left, right } => self.build_or_expr(left, right),
             ExprKind::Access { left, field } => todo!(),
             ExprKind::StaticAccess { left, field } => todo!(),
             ExprKind::TypeCast { left, target } => todo!(),
             ExprKind::FnCall { left, args } => todo!(),
             ExprKind::StructLiteral { fields } => todo!(),
             ExprKind::BoolLiteral { value } => self.build_bool_literal(value),
-            ExprKind::Number { value } => todo!(),
+            ExprKind::Number { value } => self.build_number_literal(value),
             ExprKind::String { value } => todo!(),
             ExprKind::Identifier { identifier } => todo!(),
             ExprKind::Fn {
@@ -67,6 +69,7 @@ impl<'a> HIRBuilder<'a> {
             ExprKind::ListLiteral { items } => todo!(),
             ExprKind::CodeBlock(block_contents) => todo!(),
             ExprKind::Tag { identifier, value } => todo!(),
+            ExprKind::Match { condition, arms } => todo!(),
         }
     }
 }

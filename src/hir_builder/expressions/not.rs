@@ -1,3 +1,41 @@
-use crate::hir_builder::HIRBuilder;
+use crate::{
+    ast::expr::Expr,
+    cfg::{Instruction, UnaryOperationKind, Value},
+    ensure,
+    hir_builder::{
+        errors::SemanticError,
+        types::checked_type::{Type, TypeKind},
+        HIRBuilder,
+    },
+};
 
-impl<'a> HIRBuilder<'a> {}
+impl<'a> HIRBuilder<'a> {
+    pub fn build_not_expr(&mut self, expr: Box<Expr>) -> Value {
+        let bool_type = Type {
+            kind: TypeKind::Bool,
+            span: expr.span,
+        };
+
+        let value = self.build_expr(*expr);
+        let value_type = self.get_value_type(&value);
+        ensure!(
+            self,
+            self.check_is_assignable(&value_type, &bool_type),
+            SemanticError::TypeMismatch {
+                expected: bool_type.clone(),
+                received: value_type,
+            }
+        );
+
+        let result_id = self.new_value_id();
+        self.cfg.value_types.insert(result_id, bool_type);
+        self.add_basic_block_instruction(Instruction::UnaryOp {
+            op_kind: UnaryOperationKind::Not,
+            destination: result_id,
+            operand: value,
+            result_type: TypeKind::Bool,
+        });
+
+        Value::Use(result_id)
+    }
+}

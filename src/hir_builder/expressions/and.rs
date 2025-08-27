@@ -6,21 +6,21 @@ use crate::{
 
 impl<'a> HIRBuilder<'a> {
     pub fn build_and_expr(&mut self, left: Box<Expr>, right: Box<Expr>) -> Value {
-        let right_side_entry_block_id = self.new_basic_block();
+        let right_entry_block_id = self.new_basic_block();
         let merge_block_id = self.new_basic_block();
 
         let left_value = self.build_expr(*left);
-        let left_side_exit_block_id = self.current_block_id;
+        let left_exit_block_id = self.current_block_id;
 
         self.set_basic_block_terminator(Terminator::CondJump {
             condition: left_value,
-            true_target: right_side_entry_block_id,
+            true_target: right_entry_block_id,
             false_target: merge_block_id,
         });
 
-        self.use_basic_block(right_side_entry_block_id);
+        self.use_basic_block(right_entry_block_id);
         let right_value = self.build_expr(*right);
-        let right_side_exit_block_id = self.current_block_id;
+        let right_exit_block_id = self.current_block_id;
         self.set_basic_block_terminator(Terminator::Jump { target: merge_block_id });
 
         self.use_basic_block(merge_block_id);
@@ -28,8 +28,8 @@ impl<'a> HIRBuilder<'a> {
         let phi_instruction = Instruction::Phi {
             destination: phi_destination,
             sources: vec![
-                (left_side_exit_block_id, Value::BoolLiteral(false)),
-                (right_side_exit_block_id, right_value),
+                (left_exit_block_id, Value::BoolLiteral(false)),
+                (right_exit_block_id, right_value),
             ],
         };
         self.add_basic_block_instruction(phi_instruction);

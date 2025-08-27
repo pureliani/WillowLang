@@ -9,13 +9,13 @@ use crate::hir_builder::{
 };
 
 impl<'a> HIRBuilder<'a> {
-    pub fn check_is_assignable(&mut self, source_type: &Type, target_type: &Type) -> bool {
+    pub fn check_is_assignable(&self, source_type: &Type, target_type: &Type) -> bool {
         let mut visited_declarations: HashSet<(usize, usize)> = HashSet::new();
         self.check_is_assignable_recursive(source_type, target_type, &mut visited_declarations)
     }
 
     pub fn check_is_tag_assignable(
-        &mut self,
+        &self,
         source_tag: &CheckedTag,
         target_tag: &CheckedTag,
         visited_declarations: &mut HashSet<(usize, usize)>,
@@ -53,7 +53,7 @@ impl<'a> HIRBuilder<'a> {
     }
 
     pub fn check_is_assignable_recursive(
-        &mut self,
+        &self,
         source_type: &Type,
         target_type: &Type,
         visited_declarations: &mut HashSet<(usize, usize)>,
