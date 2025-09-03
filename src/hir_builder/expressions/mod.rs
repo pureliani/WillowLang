@@ -1,7 +1,6 @@
 pub mod access;
 pub mod and;
 pub mod arithmetic;
-pub mod array_literal;
 pub mod bool_literal;
 pub mod code_block;
 pub mod comparison;
@@ -11,6 +10,7 @@ pub mod fn_call;
 pub mod generic_apply;
 pub mod identifier;
 pub mod r#if;
+pub mod list_literal;
 pub mod r#match;
 pub mod neg;
 pub mod not;
@@ -23,7 +23,7 @@ pub mod type_cast;
 
 use crate::{
     ast::expr::{Expr, ExprKind},
-    cfg::Value,
+    cfg::{BinaryOperationKind, Value},
     hir_builder::HIRBuilder,
 };
 
@@ -37,12 +37,16 @@ impl<'a> HIRBuilder<'a> {
             ExprKind::Multiply { left, right } => todo!(),
             ExprKind::Divide { left, right } => todo!(),
             ExprKind::Modulo { left, right } => todo!(),
-            ExprKind::LessThan { left, right } => todo!(),
-            ExprKind::LessThanOrEqual { left, right } => todo!(),
-            ExprKind::GreaterThan { left, right } => todo!(),
-            ExprKind::GreaterThanOrEqual { left, right } => todo!(),
-            ExprKind::Equal { left, right } => todo!(),
-            ExprKind::NotEqual { left, right } => todo!(),
+            ExprKind::LessThan { left, right } => self.build_comparison_expr(left, right, BinaryOperationKind::LessThan),
+            ExprKind::LessThanOrEqual { left, right } => {
+                self.build_comparison_expr(left, right, BinaryOperationKind::LessThanOrEqual)
+            }
+            ExprKind::GreaterThan { left, right } => self.build_comparison_expr(left, right, BinaryOperationKind::GreaterThan),
+            ExprKind::GreaterThanOrEqual { left, right } => {
+                self.build_comparison_expr(left, right, BinaryOperationKind::GreaterThanOrEqual)
+            }
+            ExprKind::Equal { left, right } => self.build_equality_expr(left, right, BinaryOperationKind::Equal),
+            ExprKind::NotEqual { left, right } => self.build_equality_expr(left, right, BinaryOperationKind::NotEqual),
             ExprKind::And { left, right } => self.build_and_expr(left, right),
             ExprKind::Or { left, right } => self.build_or_expr(left, right),
             ExprKind::Access { left, field } => todo!(),
