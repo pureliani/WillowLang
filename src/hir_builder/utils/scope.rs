@@ -1,12 +1,13 @@
 use std::collections::HashMap;
 
 use crate::{
-    ast::IdentifierNode,
+    ast::{IdentifierNode, Span},
     cfg::BasicBlockId,
     compile::string_interner::InternerId,
     hir_builder::{
+        errors::SemanticError,
         types::checked_declaration::{CheckedTypeAliasDecl, CheckedVarDecl},
-        HIRBuilder, SemanticError,
+        HIRBuilder, SemanticErrorKind,
     },
 };
 
@@ -61,11 +62,14 @@ impl<'a> HIRBuilder<'a> {
         self.scopes.last_mut().expect("Expected to find the last mutable scope")
     }
 
-    pub fn scope_insert(&mut self, key: IdentifierNode, value: SymbolEntry) {
+    pub fn scope_insert(&mut self, id: IdentifierNode, value: SymbolEntry, span: Span) {
         let last_scope = self.last_scope_mut();
 
-        if let Some(_) = last_scope.symbols.insert(key.name, value) {
-            self.errors.push(SemanticError::DuplicateIdentifier { id: key });
+        if let Some(_) = last_scope.symbols.insert(id.name, value) {
+            self.errors.push(SemanticError {
+                kind: SemanticErrorKind::DuplicateIdentifier(id),
+                span,
+            });
         }
     }
 

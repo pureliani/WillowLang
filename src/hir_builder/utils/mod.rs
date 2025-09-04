@@ -1,9 +1,9 @@
 pub mod add_basic_block_instruction;
+pub mod check_binary_numeric_op;
 pub mod check_is_assignable;
 pub mod check_is_equatable;
 pub mod check_type;
 pub mod get_numeric_type_rank;
-pub mod get_value_type;
 pub mod is_float;
 pub mod is_integer;
 pub mod is_signed;

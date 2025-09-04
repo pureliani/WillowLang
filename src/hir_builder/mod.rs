@@ -5,7 +5,7 @@ use crate::{
     cfg::{BasicBlockId, ControlFlowGraph},
     compile::string_interner::StringInterner,
     hir_builder::{
-        errors::SemanticError,
+        errors::{SemanticError, SemanticErrorKind},
         utils::scope::{Scope, ScopeKind},
     },
 };

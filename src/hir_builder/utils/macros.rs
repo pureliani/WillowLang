@@ -8,7 +8,7 @@ macro_rules! ensure {
         // and an expression that creates the SemanticError.
         if !$condition {
             let error = $error_expr;
-            let error_span = error.span();
+            let error_span = error.span;
             $self.errors.push(error);
 
             let unknown_result = $self.new_value_id();

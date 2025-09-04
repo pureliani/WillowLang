@@ -4,7 +4,7 @@ use crate::{
         type_annotation::{TagAnnotation, TypeAnnotation, TypeAnnotationKind},
     },
     hir_builder::{
-        errors::SemanticError,
+        errors::{SemanticError, SemanticErrorKind},
         types::{
             checked_declaration::{CheckedFnType, CheckedParam, CheckedTag},
             checked_type::{Type, TypeKind},
@@ -58,14 +58,20 @@ impl<'a> HIRBuilder<'a> {
                 .map(|entry| match entry {
                     SymbolEntry::TypeAliasDecl(decl) => TypeKind::TypeAliasDecl(decl),
                     SymbolEntry::VarDecl(_) => {
-                        self.errors
-                            .push(SemanticError::CannotUseVariableDeclarationAsType { span: annotation.span });
+                        self.errors.push(SemanticError {
+                            kind: SemanticErrorKind::CannotUseVariableDeclarationAsType,
+                            span: annotation.span,
+                        });
 
                         TypeKind::Unknown
                     }
                 })
                 .unwrap_or_else(|| {
-                    self.errors.push(SemanticError::UndeclaredType { id: *id });
+                    self.errors.push(SemanticError {
+                        kind: SemanticErrorKind::UndeclaredType(*id),
+                        span: annotation.span,
+                    });
+
                     TypeKind::Unknown
                 }),
             TypeAnnotationKind::FnType { params, return_type } => {

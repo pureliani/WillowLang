@@ -35,7 +35,7 @@ impl Value {
         match self {
             Value::BoolLiteral(_) => Type {
                 kind: TypeKind::Bool,
-                // TODO: re-introduce spans in the CFG so that we don't have to resort to default spans
+                // TODO: fix this later
                 span: Default::default(),
             },
             Value::NumberLiteral(kind) => {
@@ -76,12 +76,10 @@ impl Value {
 pub enum Instruction {
     Alloc {
         destination: ValueId,
-        ty: TypeKind,
     },
     New {
         destination: ValueId,
         allocation_site_id: HeapAllocationId,
-        ty: TypeKind,
     },
     Store {
         destination_ptr: ValueId,
@@ -105,14 +103,12 @@ pub enum Instruction {
         op_kind: UnaryOperationKind,
         destination: ValueId,
         operand: Value,
-        result_type: TypeKind,
     },
     BinaryOp {
         op_kind: BinaryOperationKind,
         destination: ValueId,
         left: Value,
         right: Value,
-        result_type: TypeKind,
     },
     TypeCast {
         destination: ValueId,

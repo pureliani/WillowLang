@@ -3,7 +3,7 @@ use crate::{
     cfg::{Instruction, UnaryOperationKind, Value},
     ensure,
     hir_builder::{
-        errors::SemanticError,
+        errors::{SemanticError, SemanticErrorKind},
         types::checked_type::{Type, TypeKind},
         HIRBuilder,
     },
@@ -11,19 +11,25 @@ use crate::{
 
 impl<'a> HIRBuilder<'a> {
     pub fn build_not_expr(&mut self, expr: Box<Expr>) -> Value {
+        let span = expr.span;
+
         let bool_type = Type {
             kind: TypeKind::Bool,
-            span: expr.span,
+            span,
         };
 
         let value = self.build_expr(*expr);
         let value_type = value.get_value_type(&self.cfg.value_types);
+
         ensure!(
             self,
             self.check_is_assignable(&value_type, &bool_type),
-            SemanticError::TypeMismatch {
-                expected: bool_type.clone(),
-                received: value_type,
+            SemanticError {
+                kind: SemanticErrorKind::TypeMismatch {
+                    expected: bool_type.clone(),
+                    received: value_type,
+                },
+                span
             }
         );
 
@@ -33,7 +39,6 @@ impl<'a> HIRBuilder<'a> {
             op_kind: UnaryOperationKind::Not,
             destination: result_id,
             operand: value,
-            result_type: TypeKind::Bool,
         });
 
         Value::Use(result_id)

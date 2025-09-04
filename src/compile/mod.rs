@@ -11,7 +11,7 @@ use string_interner::StringInterner;
 pub mod string_interner;
 
 use crate::{
-    hir_builder::{errors::SemanticError, types::checked_type::TypeKind, utils::type_to_string::type_to_string, HIRBuilder},
+    hir_builder::{errors::SemanticErrorKind, types::checked_type::TypeKind, utils::type_to_string::type_to_string, HIRBuilder},
     parse::{Parser, ParsingErrorKind},
     tokenize::{token_kind_to_string, TokenizationErrorKind, Tokenizer},
 };
@@ -141,16 +141,16 @@ pub fn compile_file<'a, 'b>(
         let err = Diagnostic::error().with_code(format!("S{}", e.code()));
 
         let diagnostic = match &e {
-            SemanticError::ExpectedANumericOperand { .. } => err
+            SemanticErrorKind::ExpectedANumericOperand { .. } => err
                 .with_message("Expected a numeric operand")
                 .with_label(label.with_message("Expected this value to have a numeric type")),
-            SemanticError::MixedSignedAndUnsigned { .. } => err
+            SemanticErrorKind::MixedSignedAndUnsigned { .. } => err
                 .with_message("Mixed signed and unsigned operands")
                 .with_label(label.with_message("Mixing signed and unsigned operands in an arithmetic operation is not allowed")),
-            SemanticError::MixedFloatAndInteger { .. } => err.with_message("Mixed float and integer operands").with_label(
+            SemanticErrorKind::MixedFloatAndInteger { .. } => err.with_message("Mixed float and integer operands").with_label(
                 label.with_message("Mixing integer and floating-point numbers in an arithmetic operation is not allowed"),
             ),
-            SemanticError::CannotCompareType { of, to } => {
+            SemanticErrorKind::CannotCompareType { of, to } => {
                 err.with_message("Cannot compare types")
                     .with_label(label.with_message(format!(
                         "Cannot compare type \"{}\" to type \"{}\"",
@@ -158,31 +158,31 @@ pub fn compile_file<'a, 'b>(
                         type_to_string(&to.kind, string_interner)
                     )))
             }
-            SemanticError::UndeclaredIdentifier { id } => {
+            SemanticErrorKind::UndeclaredIdentifier { id } => {
                 let name = string_interner.resolve(id.name).unwrap();
 
                 err.with_message("Undeclared identifier")
                     .with_label(label.with_message(format!("Undeclared identifier \"{}\"", name)))
             }
-            SemanticError::UndeclaredType { id } => {
+            SemanticErrorKind::UndeclaredType { id } => {
                 let name = string_interner.resolve(id.name).unwrap();
 
                 err.with_message("Undeclared type")
                     .with_label(label.with_message(format!("Undeclared type \"{}\"", name)))
             }
-            SemanticError::ReturnKeywordOutsideFunction { .. } => err
+            SemanticErrorKind::ReturnKeywordOutsideFunction { .. } => err
                 .with_message("Keyword \"return\" used outside of a function scope")
                 .with_label(label.with_message("Cannot use the \"return\" keyword outside of a function scope")),
-            SemanticError::BreakKeywordOutsideLoop { .. } => err
+            SemanticErrorKind::BreakKeywordOutsideLoop { .. } => err
                 .with_message("Keyword \"break\" used outside of a loop scope")
                 .with_label(label.with_message("Cannot use the \"break\" keyword outside of a loop scope")),
-            SemanticError::ContinueKeywordOutsideLoop { .. } => err
+            SemanticErrorKind::ContinueKeywordOutsideLoop { .. } => err
                 .with_message("Keyword \"continue\" used outside of a loop scope")
                 .with_label(label.with_message("Cannot use the \"continue\" keyword outside of a loop scope")),
-            SemanticError::InvalidAssignmentTarget { .. } => err
+            SemanticErrorKind::InvalidAssignmentTarget { .. } => err
                 .with_message("Invalid assignment target")
                 .with_label(label.with_message("Invalid assignment target")),
-            SemanticError::TypeMismatch { expected, received } => {
+            SemanticErrorKind::TypeMismatch { expected, received } => {
                 let constraint_str = type_to_string(&expected.kind, string_interner);
                 let declaration_of_expected = expected.span.start.byte_offset..expected.span.end.byte_offset;
 
@@ -196,13 +196,13 @@ pub fn compile_file<'a, 'b>(
                         .with_message(format!("expected type \"{}\" originated here", constraint_str)),
                 ])
             }
-            SemanticError::InvalidArraySizeValue { value, .. } => err
+            SemanticErrorKind::InvalidArraySizeValue { value, .. } => err
                 .with_message("Invalid array size")
                 .with_label(label.with_message(format!("Invalid array size: {}", value.to_string()))),
-            SemanticError::ReturnNotLastStatement { .. } => err
+            SemanticErrorKind::ReturnNotLastStatement { .. } => err
                 .with_message("Expected the return statement to be the last statement in the function")
                 .with_label(label.with_message("Expected the return statement to be the last statement in the function")),
-            SemanticError::ReturnTypeMismatch { expected, received } => {
+            SemanticErrorKind::ReturnTypeMismatch { expected, received } => {
                 err.with_message("Return type mismatch")
                     .with_label(label.with_message(format!(
                         "Expected the return value to be assignable to {}, found {}",
@@ -210,20 +210,20 @@ pub fn compile_file<'a, 'b>(
                         type_to_string(&received.kind, string_interner)
                     )))
             }
-            SemanticError::CannotAccess { target } => {
+            SemanticErrorKind::CannotAccess { target } => {
                 err.with_message("Cannot access field").with_label(label.with_message(format!(
                     "Cannot use the access operator on the type \"{}\"",
                     type_to_string(&target.kind, string_interner)
                 )))
             }
-            SemanticError::CannotCall { target } => {
+            SemanticErrorKind::CannotCall { target } => {
                 err.with_message("Cannot use the function call operator")
                     .with_label(label.with_message(format!(
                         "Cannot use the function-call operator on type \"{}\"",
                         type_to_string(&target.kind, string_interner)
                     )))
             }
-            SemanticError::FnArgumentCountMismatch { expected, received, .. } => {
+            SemanticErrorKind::FnArgumentCountMismatch { expected, received, .. } => {
                 let s = if *expected > 1 { "s" } else { "" };
                 err.with_message("Function argument count mismatch")
                     .with_label(label.with_message(format!(
@@ -234,31 +234,31 @@ pub fn compile_file<'a, 'b>(
                     )))
             }
 
-            SemanticError::CannotUseVariableDeclarationAsType { .. } => err
+            SemanticErrorKind::CannotUseVariableDeclarationAsType { .. } => err
                 .with_message("Cannot use variable declaration as a type")
                 .with_label(label.with_message("Cannot use variable declaration as a type")),
-            SemanticError::AccessToUndefinedField { field } => {
+            SemanticErrorKind::AccessToUndefinedField { field } => {
                 let name = string_interner.resolve(field.name).unwrap();
                 err.with_message("Access to an undefined field")
                     .with_label(label.with_message(format!("Field {} is not defined", name)))
             }
-            SemanticError::TypeAliasMustBeDeclaredAtTopLevel { .. } => err
+            SemanticErrorKind::TypeAliasMustBeDeclaredAtTopLevel { .. } => err
                 .with_message("Type aliases must be declared in the file scope")
                 .with_label(label.with_message("Type aliases must be declared in the file scope")),
-            SemanticError::StructMustBeDeclaredAtTopLevel { .. } => err
+            SemanticErrorKind::StructMustBeDeclaredAtTopLevel { .. } => err
                 .with_message("Structs must be declared in the file scope")
                 .with_label(label.with_message("Structs must be declared in the file scope")),
-            SemanticError::DuplicateStructFieldInitializer { id } => {
+            SemanticErrorKind::DuplicateStructFieldInitializer { id } => {
                 let name = string_interner.resolve(id.name).unwrap();
                 err.with_message("Duplicate initializer for a struct field")
                     .with_label(label.with_message(format!("Struct field \"{}\" cannot be initialized multiple times", name)))
             }
-            SemanticError::UnknownStructFieldInitializer { id } => {
+            SemanticErrorKind::UnknownStructFieldInitializer { id } => {
                 let name = string_interner.resolve(id.name).unwrap();
                 err.with_message("Unknown field in the struct initializer")
                     .with_label(label.with_message(format!("Unknown struct field \"{}\"", name)))
             }
-            SemanticError::MissingStructFieldInitializer { missing_fields, .. } => {
+            SemanticErrorKind::MissingStructFieldInitializer { missing_fields, .. } => {
                 let field_names: Vec<&'a str> = missing_fields
                     .into_iter()
                     .map(|f| string_interner.resolve(*f).unwrap())
@@ -271,13 +271,13 @@ pub fn compile_file<'a, 'b>(
                 err.with_message("Missing field initializers")
                     .with_label(label.with_message(format!("Missing initializers for the following struct fields {}", joined)))
             }
-            SemanticError::CannotApplyStructInitializer { .. } => err
+            SemanticErrorKind::CannotApplyStructInitializer { .. } => err
                 .with_message("Cannot apply struct initializer")
                 .with_label(label.with_message("Cannot apply struct initializer to this expression")),
-            SemanticError::VarDeclWithoutInitializer { .. } => err
+            SemanticErrorKind::VarDeclWithoutInitializer { .. } => err
                 .with_message("Variable declarations must have an initializer")
                 .with_label(label.with_message("This variable declaration must have an initializer")),
-            SemanticError::DuplicateIdentifier { id } => {
+            SemanticErrorKind::DuplicateIdentifier { id } => {
                 let identifier_name = string_interner.resolve(id.name).unwrap();
                 err.with_message("Duplicate identifier")
                     .with_label(label.with_message(format!("Duplicate identifier declaration \"{}\"", identifier_name)))
