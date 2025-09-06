@@ -23,6 +23,7 @@ pub struct ValueId(pub usize);
 
 #[derive(Clone, Debug)]
 pub enum Value {
+    VoidLiteral,
     BoolLiteral(bool),
     NumberLiteral(NumberKind),
     StringLiteral(InternerId),

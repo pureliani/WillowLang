@@ -18,6 +18,10 @@ impl<'a> HIRBuilder<'a> {
 
     pub fn get_value_type(&self, value: &Value) -> Type {
         match value {
+            Value::VoidLiteral => Type {
+                kind: TypeKind::Void,
+                span: Default::default(),
+            },
             Value::BoolLiteral(_) => Type {
                 kind: TypeKind::Bool,
                 // TODO: fix this later

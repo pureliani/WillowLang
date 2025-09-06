@@ -125,9 +125,7 @@ pub enum ExprKind {
         arms: Vec<MatchArm>,
     },
     If {
-        condition: Box<Expr>,
-        then_branch: BlockContents,
-        else_if_branches: Vec<(Box<Expr>, BlockContents)>,
+        branches: Vec<(Box<Expr>, BlockContents)>,
         else_branch: Option<BlockContents>,
     },
     ListLiteral {

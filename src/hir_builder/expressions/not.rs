@@ -18,7 +18,7 @@ impl<'a> HIRBuilder<'a> {
         };
 
         let value = self.build_expr(*expr);
-        let value_type = value.get_value_type(&self.cfg.value_types);
+        let value_type = self.get_value_type(&value);
 
         if !self.check_is_assignable(&value_type, &bool_type) {
             return self.report_error_and_get_poison(SemanticError {

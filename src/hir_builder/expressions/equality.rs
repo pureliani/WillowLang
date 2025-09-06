@@ -22,10 +22,10 @@ impl<'a> HIRBuilder<'a> {
         };
 
         let left_value = self.build_expr(*left);
-        let left_type = left_value.get_value_type(&self.cfg.value_types);
+        let left_type = self.get_value_type(&left_value);
 
         let right_value = self.build_expr(*right);
-        let right_type = right_value.get_value_type(&self.cfg.value_types);
+        let right_type = self.get_value_type(&right_value);
 
         if !check_is_equatable(&left_type.kind, &right_type.kind) {
             return self.report_error_and_get_poison(SemanticError {

@@ -3,6 +3,7 @@ pub mod and;
 pub mod arithmetic;
 pub mod bool_literal;
 pub mod code_block;
+pub mod codeblock;
 pub mod comparison;
 pub mod equality;
 pub mod r#fn;
@@ -32,11 +33,11 @@ impl<'a> HIRBuilder<'a> {
         match expr.kind {
             ExprKind::Not { right } => self.build_not_expr(right),
             ExprKind::Neg { right } => todo!(),
-            ExprKind::Add { left, right } => todo!(),
-            ExprKind::Subtract { left, right } => todo!(),
-            ExprKind::Multiply { left, right } => todo!(),
-            ExprKind::Divide { left, right } => todo!(),
-            ExprKind::Modulo { left, right } => todo!(),
+            ExprKind::Add { left, right } => self.build_arithmetic_expr(left, right, BinaryOperationKind::Add),
+            ExprKind::Subtract { left, right } => self.build_arithmetic_expr(left, right, BinaryOperationKind::Subtract),
+            ExprKind::Multiply { left, right } => self.build_arithmetic_expr(left, right, BinaryOperationKind::Multiply),
+            ExprKind::Divide { left, right } => self.build_arithmetic_expr(left, right, BinaryOperationKind::Divide),
+            ExprKind::Modulo { left, right } => self.build_arithmetic_expr(left, right, BinaryOperationKind::Modulo),
             ExprKind::LessThan { left, right } => self.build_comparison_expr(left, right, BinaryOperationKind::LessThan),
             ExprKind::LessThanOrEqual { left, right } => {
                 self.build_comparison_expr(left, right, BinaryOperationKind::LessThanOrEqual)
@@ -64,14 +65,9 @@ impl<'a> HIRBuilder<'a> {
                 return_type,
                 name,
             } => todo!(),
-            ExprKind::If {
-                condition,
-                then_branch,
-                else_if_branches,
-                else_branch,
-            } => todo!(),
+            ExprKind::If { branches, else_branch } => self.build_if_expr(branches, else_branch),
             ExprKind::ListLiteral { items } => todo!(),
-            ExprKind::CodeBlock(block_contents) => todo!(),
+            ExprKind::CodeBlock(block_contents) => self.build_codeblock_expr(block_contents),
             ExprKind::Tag { identifier, value } => todo!(),
             ExprKind::Match { condition, arms } => todo!(),
         }
