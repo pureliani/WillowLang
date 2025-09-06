@@ -1,7 +1,6 @@
 use crate::{
     ast::expr::Expr,
     cfg::{BinaryOperationKind, Instruction, Value},
-    ensure,
     hir_builder::HIRBuilder,
 };
 
@@ -14,12 +13,14 @@ impl<'a> HIRBuilder<'a> {
         let right_type = right_value.get_value_type(&self.cfg.value_types);
 
         let validation_result = self.check_binary_numeric_operation(&left_type, &right_type);
-        let is_valid = matches!(validation_result, Ok(_));
 
-        // TODO: if not valid push error and return unknown
+        let result_type = match validation_result {
+            Ok(t) => t,
+            Err(e) => return self.report_error_and_get_poison(e),
+        };
 
         let destination = self.new_value_id();
-        self.cfg.value_types.insert(destination, validation_result.unwrap());
+        self.cfg.value_types.insert(destination, result_type);
 
         self.add_basic_block_instruction(Instruction::BinaryOp {
             op_kind,

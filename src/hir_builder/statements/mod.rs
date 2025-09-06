@@ -16,7 +16,9 @@ impl<'a> HIRBuilder<'a> {
     pub fn build_statements(&mut self, statements: Vec<Stmt>) {
         for statement in statements {
             match statement.kind {
-                StmtKind::Expression(expr) => todo!(),
+                StmtKind::Expression(expr) => {
+                    self.build_expr(expr);
+                }
                 StmtKind::TypeAliasDecl(type_alias_decl) => todo!(),
                 StmtKind::VarDecl(var_decl) => todo!(),
                 StmtKind::Return { value } => todo!(),

@@ -179,7 +179,7 @@ pub fn compile_file<'a, 'b>(
             SemanticErrorKind::ContinueKeywordOutsideLoop { .. } => err
                 .with_message("Keyword \"continue\" used outside of a loop scope")
                 .with_label(label.with_message("Cannot use the \"continue\" keyword outside of a loop scope")),
-            SemanticErrorKind::InvalidAssignmentTarget { .. } => err
+            SemanticErrorKind::InvalidLValue { .. } => err
                 .with_message("Invalid assignment target")
                 .with_label(label.with_message("Invalid assignment target")),
             SemanticErrorKind::TypeMismatch { expected, received } => {

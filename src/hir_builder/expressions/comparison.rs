@@ -1,7 +1,6 @@
 use crate::{
     ast::{expr::Expr, Span},
     cfg::{BinaryOperationKind, Instruction, Value},
-    ensure,
     hir_builder::{
         types::checked_type::{Type, TypeKind},
         HIRBuilder,
@@ -25,9 +24,10 @@ impl<'a> HIRBuilder<'a> {
         let right_type = right_value.get_value_type(&self.cfg.value_types);
 
         let validation_result = self.check_binary_numeric_operation(&left_type, &right_type);
-        let is_valid = matches!(validation_result, Ok(_));
 
-        // TODO: if not valid push error and return unknown
+        if let Err(e) = validation_result {
+            return self.report_error_and_get_poison(e);
+        };
 
         let destination = self.new_value_id();
         self.cfg.value_types.insert(destination, result_type.clone());

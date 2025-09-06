@@ -1,7 +1,6 @@
 use crate::{
     ast::expr::Expr,
     cfg::{Instruction, UnaryOperationKind, Value},
-    ensure,
     hir_builder::{
         errors::{SemanticError, SemanticErrorKind},
         types::checked_type::{Type, TypeKind},
@@ -21,17 +20,15 @@ impl<'a> HIRBuilder<'a> {
         let value = self.build_expr(*expr);
         let value_type = value.get_value_type(&self.cfg.value_types);
 
-        ensure!(
-            self,
-            self.check_is_assignable(&value_type, &bool_type),
-            SemanticError {
+        if !self.check_is_assignable(&value_type, &bool_type) {
+            return self.report_error_and_get_poison(SemanticError {
                 kind: SemanticErrorKind::TypeMismatch {
                     expected: bool_type.clone(),
                     received: value_type,
                 },
-                span
-            }
-        );
+                span,
+            });
+        }
 
         let result_id = self.new_value_id();
         self.cfg.value_types.insert(result_id, bool_type);

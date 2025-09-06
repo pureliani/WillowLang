@@ -1,7 +1,6 @@
 use crate::{
     ast::{expr::Expr, Span},
     cfg::{BinaryOperationKind, Instruction, Value},
-    ensure,
     hir_builder::{
         errors::{SemanticError, SemanticErrorKind},
         types::checked_type::{Type, TypeKind},
@@ -28,17 +27,15 @@ impl<'a> HIRBuilder<'a> {
         let right_value = self.build_expr(*right);
         let right_type = right_value.get_value_type(&self.cfg.value_types);
 
-        ensure!(
-            self,
-            check_is_equatable(&left_type.kind, &right_type.kind),
-            SemanticError {
+        if !check_is_equatable(&left_type.kind, &right_type.kind) {
+            return self.report_error_and_get_poison(SemanticError {
                 kind: SemanticErrorKind::CannotCompareType {
                     of: left_type,
-                    to: right_type
+                    to: right_type,
                 },
-                span
-            }
-        );
+                span,
+            });
+        }
 
         let destination_id = self.new_value_id();
         self.cfg.value_types.insert(destination_id, result_type.clone());
