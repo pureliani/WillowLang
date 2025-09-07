@@ -11,7 +11,7 @@ use string_interner::StringInterner;
 pub mod string_interner;
 
 use crate::{
-    hir_builder::{errors::SemanticErrorKind, types::checked_type::TypeKind, utils::type_to_string::type_to_string, HIRBuilder},
+    hir_builder::{errors::SemanticErrorKind, utils::type_to_string::type_to_string, HIRBuilder},
     parse::{Parser, ParsingErrorKind},
     tokenize::{token_kind_to_string, TokenizationErrorKind, Tokenizer},
 };
@@ -110,7 +110,7 @@ pub fn compile_file<'a, 'b>(
                 .with_message("Expected a numeric literal")
                 .with_label(label.with_message("Expected a numeric literal")),
             ParsingErrorKind::UnknownStaticMethod(identifier_node) => {
-                let name = string_interner.resolve(identifier_node.name).unwrap();
+                let name = string_interner.resolve(identifier_node.name);
                 err.with_message("Unknown static method")
                     .with_label(label.with_message(format!("Static method with name \"{}\" doesn't exist", name)))
             }
@@ -129,6 +129,7 @@ pub fn compile_file<'a, 'b>(
                     "Unexpected token \"{}\" after final expression",
                     token_kind_to_string(found)
                 ))),
+            ParsingErrorKind::ExpectedATagTypeButFound(type_annotation) => todo!(),
         };
 
         errors.push(diagnostic);
@@ -158,14 +159,14 @@ pub fn compile_file<'a, 'b>(
                         type_to_string(&to.kind, string_interner)
                     )))
             }
-            SemanticErrorKind::UndeclaredIdentifier { id } => {
-                let name = string_interner.resolve(id.name).unwrap();
+            SemanticErrorKind::UndeclaredIdentifier(id) => {
+                let name = string_interner.resolve(id.name);
 
                 err.with_message("Undeclared identifier")
                     .with_label(label.with_message(format!("Undeclared identifier \"{}\"", name)))
             }
-            SemanticErrorKind::UndeclaredType { id } => {
-                let name = string_interner.resolve(id.name).unwrap();
+            SemanticErrorKind::UndeclaredType(id) => {
+                let name = string_interner.resolve(id.name);
 
                 err.with_message("Undeclared type")
                     .with_label(label.with_message(format!("Undeclared type \"{}\"", name)))
@@ -196,9 +197,6 @@ pub fn compile_file<'a, 'b>(
                         .with_message(format!("expected type \"{}\" originated here", constraint_str)),
                 ])
             }
-            SemanticErrorKind::InvalidArraySizeValue { value, .. } => err
-                .with_message("Invalid array size")
-                .with_label(label.with_message(format!("Invalid array size: {}", value.to_string()))),
             SemanticErrorKind::ReturnNotLastStatement { .. } => err
                 .with_message("Expected the return statement to be the last statement in the function")
                 .with_label(label.with_message("Expected the return statement to be the last statement in the function")),
@@ -210,13 +208,13 @@ pub fn compile_file<'a, 'b>(
                         type_to_string(&received.kind, string_interner)
                     )))
             }
-            SemanticErrorKind::CannotAccess { target } => {
+            SemanticErrorKind::CannotAccess(target) => {
                 err.with_message("Cannot access field").with_label(label.with_message(format!(
                     "Cannot use the access operator on the type \"{}\"",
                     type_to_string(&target.kind, string_interner)
                 )))
             }
-            SemanticErrorKind::CannotCall { target } => {
+            SemanticErrorKind::CannotCall(target) => {
                 err.with_message("Cannot use the function call operator")
                     .with_label(label.with_message(format!(
                         "Cannot use the function-call operator on type \"{}\"",
@@ -224,7 +222,7 @@ pub fn compile_file<'a, 'b>(
                     )))
             }
             SemanticErrorKind::FnArgumentCountMismatch { expected, received, .. } => {
-                let s = if *expected > 1 { "s" } else { "" };
+                let s = if expected > 1 { "s" } else { "" };
                 err.with_message("Function argument count mismatch")
                     .with_label(label.with_message(format!(
                         "This function expects {} argument{}, but instead received {}",
@@ -238,7 +236,7 @@ pub fn compile_file<'a, 'b>(
                 .with_message("Cannot use variable declaration as a type")
                 .with_label(label.with_message("Cannot use variable declaration as a type")),
             SemanticErrorKind::AccessToUndefinedField { field } => {
-                let name = string_interner.resolve(field.name).unwrap();
+                let name = string_interner.resolve(field.name);
                 err.with_message("Access to an undefined field")
                     .with_label(label.with_message(format!("Field {} is not defined", name)))
             }
@@ -248,21 +246,18 @@ pub fn compile_file<'a, 'b>(
             SemanticErrorKind::StructMustBeDeclaredAtTopLevel { .. } => err
                 .with_message("Structs must be declared in the file scope")
                 .with_label(label.with_message("Structs must be declared in the file scope")),
-            SemanticErrorKind::DuplicateStructFieldInitializer { id } => {
-                let name = string_interner.resolve(id.name).unwrap();
+            SemanticErrorKind::DuplicateStructFieldInitializer(id) => {
+                let name = string_interner.resolve(id.name);
                 err.with_message("Duplicate initializer for a struct field")
                     .with_label(label.with_message(format!("Struct field \"{}\" cannot be initialized multiple times", name)))
             }
-            SemanticErrorKind::UnknownStructFieldInitializer { id } => {
-                let name = string_interner.resolve(id.name).unwrap();
+            SemanticErrorKind::UnknownStructFieldInitializer(id) => {
+                let name = string_interner.resolve(id.name);
                 err.with_message("Unknown field in the struct initializer")
                     .with_label(label.with_message(format!("Unknown struct field \"{}\"", name)))
             }
             SemanticErrorKind::MissingStructFieldInitializer { missing_fields, .. } => {
-                let field_names: Vec<&'a str> = missing_fields
-                    .into_iter()
-                    .map(|f| string_interner.resolve(*f).unwrap())
-                    .collect();
+                let field_names: Vec<&'a str> = missing_fields.into_iter().map(|f| string_interner.resolve(*f)).collect();
                 let joined = field_names
                     .iter()
                     .map(|n| format!("\"{}\"", n))
@@ -277,8 +272,8 @@ pub fn compile_file<'a, 'b>(
             SemanticErrorKind::VarDeclWithoutInitializer { .. } => err
                 .with_message("Variable declarations must have an initializer")
                 .with_label(label.with_message("This variable declaration must have an initializer")),
-            SemanticErrorKind::DuplicateIdentifier { id } => {
-                let identifier_name = string_interner.resolve(id.name).unwrap();
+            SemanticErrorKind::DuplicateIdentifier(id) => {
+                let identifier_name = string_interner.resolve(id.name);
                 err.with_message("Duplicate identifier")
                     .with_label(label.with_message(format!("Duplicate identifier declaration \"{}\"", identifier_name)))
             }

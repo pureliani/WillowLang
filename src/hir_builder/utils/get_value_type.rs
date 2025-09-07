@@ -12,7 +12,7 @@ impl<'a> HIRBuilder<'a> {
         self.cfg
             .value_types
             .get(value_id)
-            .expect("INTERNAL: All ValueIds must have a corresponding type")
+            .expect("INTERNAL COMPILER ERROR: All ValueIds must have a corresponding type")
             .clone()
     }
 

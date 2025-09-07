@@ -53,15 +53,21 @@ impl<'a> HIRBuilder<'a> {
     }
 
     pub fn exit_scope(&mut self) -> Scope {
-        self.scopes.pop().expect("Expected to be able to pop the last scope")
+        self.scopes
+            .pop()
+            .expect("INTERNAL COMPILER ERROR: Expected to be able to pop the last scope")
     }
 
     pub fn last_scope(&self) -> &Scope {
-        self.scopes.last().expect("Expected to find the last scope")
+        self.scopes
+            .last()
+            .expect("INTERNAL COMPILER ERROR: Expected to find the last scope")
     }
 
     pub fn last_scope_mut(&mut self) -> &mut Scope {
-        self.scopes.last_mut().expect("Expected to find the last mutable scope")
+        self.scopes
+            .last_mut()
+            .expect("INTERNAL COMPILER ERROR: Expected to find the last mutable scope")
     }
 
     pub fn scope_insert(&mut self, id: IdentifierNode, value: SymbolEntry, span: Span) {

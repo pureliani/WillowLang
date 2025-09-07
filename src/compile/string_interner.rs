@@ -44,7 +44,10 @@ impl<'a> StringInterner<'a> {
         }
     }
 
-    pub fn resolve(&self, key: InternerId) -> Option<&'a str> {
-        self.backward.get(key.0).map(|v| *v)
+    pub fn resolve(&self, key: InternerId) -> &'a str {
+        self.backward.get(key.0).map(|v| *v).expect(&format!(
+            "INTERNAL COMPILER ERROR: string interner expected key {} to exist",
+            key.0
+        ))
     }
 }

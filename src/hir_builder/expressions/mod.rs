@@ -64,7 +64,7 @@ impl<'a> HIRBuilder<'a> {
                 return_type,
                 name,
             } => todo!(),
-            ExprKind::If { branches, else_branch } => self.build_if_expr(branches, else_branch, IfContext::Expression),
+            ExprKind::If { branches, else_branch } => self.build_if(branches, else_branch, IfContext::Expression),
             ExprKind::ListLiteral(items) => todo!(),
             ExprKind::CodeBlock(block_contents) => self.build_codeblock_expr(block_contents),
             ExprKind::Match { condition, arms } => todo!(),

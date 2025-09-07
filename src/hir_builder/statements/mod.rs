@@ -21,7 +21,7 @@ impl<'a> HIRBuilder<'a> {
             match statement.kind {
                 StmtKind::Expression(expr) => {
                     if let ExprKind::If { branches, else_branch } = expr.kind {
-                        self.build_if_expr(branches, else_branch, IfContext::Statement);
+                        self.build_if(branches, else_branch, IfContext::Statement);
                     } else {
                         self.build_expr(expr);
                     }

@@ -4,7 +4,7 @@ use crate::{
 };
 
 fn identifier_to_string(id: InternerId, string_interner: &StringInterner) -> String {
-    let identifier_name = string_interner.resolve(id).unwrap();
+    let identifier_name = string_interner.resolve(id);
 
     identifier_name.to_owned()
 }
