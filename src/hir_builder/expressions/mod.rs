@@ -32,7 +32,7 @@ impl<'a> HIRBuilder<'a> {
     pub fn build_expr(&mut self, expr: Expr) -> Value {
         match expr.kind {
             ExprKind::Not { right } => self.build_not_expr(right),
-            ExprKind::Neg { right } => todo!(),
+            ExprKind::Neg { right } => self.build_airthmetic_negation_expr(right),
             ExprKind::Add { left, right } => self.build_arithmetic_expr(left, right, BinaryOperationKind::Add),
             ExprKind::Subtract { left, right } => self.build_arithmetic_expr(left, right, BinaryOperationKind::Subtract),
             ExprKind::Multiply { left, right } => self.build_arithmetic_expr(left, right, BinaryOperationKind::Multiply),

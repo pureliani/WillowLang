@@ -26,6 +26,7 @@ pub enum SemanticErrorKind {
     ContinueKeywordOutsideLoop,
     InvalidLValue,
     TypeMismatch { expected: Type, received: Type },
+    TypeMismatchExpectedOneOf { expected: HashSet<Type>, received: Type },
     ReturnNotLastStatement,
     ReturnTypeMismatch { expected: Type, received: Type },
     CannotAccess(Type),
@@ -73,8 +74,9 @@ impl SemanticErrorKind {
             SemanticErrorKind::MissingStructFieldInitializers { .. } => 25,
             SemanticErrorKind::CannotApplyStructInitializer { .. } => 26,
             SemanticErrorKind::DuplicateIdentifier { .. } => 27,
-            SemanticErrorKind::IncompatibleBranchTypes { first, second } => 28,
+            SemanticErrorKind::IncompatibleBranchTypes { .. } => 28,
             SemanticErrorKind::IfExpressionMissingElse => 29,
+            SemanticErrorKind::TypeMismatchExpectedOneOf { .. } => 30,
         }
     }
 }
