@@ -14,9 +14,9 @@ pub struct BlockContents {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct MatchArm {
-    pub tag_name: IdentifierNode,
+    pub evaluate: Expr,
+    pub variant_name: IdentifierNode,
     pub binding_name: Option<IdentifierNode>,
-    pub expr: Expr,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -79,6 +79,10 @@ pub enum ExprKind {
         left: Box<Expr>,
         right: Box<Expr>,
     },
+    StructInit {
+        left: Box<Expr>,
+        fields: Vec<(IdentifierNode, Expr)>,
+    },
     Access {
         left: Box<Expr>,
         field: IdentifierNode,
@@ -91,29 +95,14 @@ pub enum ExprKind {
         left: Box<Expr>,
         target: TypeAnnotation,
     },
-    Tag {
-        identifier: IdentifierNode,
-        value: Option<Box<Expr>>,
-    },
     FnCall {
         left: Box<Expr>,
         args: Vec<Expr>,
     },
-    StructLiteral {
-        fields: Vec<(IdentifierNode, Expr)>,
-    },
-    BoolLiteral {
-        value: bool,
-    },
-    Number {
-        value: NumberKind,
-    },
-    String {
-        value: StringNode,
-    },
-    Identifier {
-        identifier: IdentifierNode,
-    },
+    BoolLiteral(bool),
+    Number(NumberKind),
+    String(StringNode),
+    Identifier(IdentifierNode),
     Fn {
         name: IdentifierNode,
         params: Vec<Param>,
@@ -128,9 +117,7 @@ pub enum ExprKind {
         branches: Vec<(Box<Expr>, BlockContents)>,
         else_branch: Option<BlockContents>,
     },
-    ListLiteral {
-        items: Vec<Expr>,
-    },
+    ListLiteral(Vec<Expr>),
     CodeBlock(BlockContents),
 }
 

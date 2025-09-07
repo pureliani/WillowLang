@@ -69,7 +69,6 @@ pub enum PunctuationKind {
     Comma,
     Dollar,
     Question,
-    Hashtag,
 }
 
 impl PunctuationKind {
@@ -105,7 +104,6 @@ impl PunctuationKind {
             PunctuationKind::Comma => ",",
             PunctuationKind::Dollar => "$",
             PunctuationKind::Question => "?",
-            PunctuationKind::Hashtag => "#",
         })
     }
 }
@@ -141,6 +139,8 @@ pub enum KeywordKind {
     F64,
     Fn,
     Match,
+    Union,
+    Struct,
 }
 
 impl KeywordKind {
@@ -175,6 +175,8 @@ impl KeywordKind {
             KeywordKind::F64 => "f64",
             KeywordKind::Fn => "fn",
             KeywordKind::Match => "match",
+            KeywordKind::Union => "union",
+            KeywordKind::Struct => "struct",
         })
     }
 }
@@ -541,6 +543,8 @@ fn is_keyword(identifier: &str) -> Option<KeywordKind> {
         "usize" => Some(KeywordKind::USize),
         "isize" => Some(KeywordKind::ISize),
         "match" => Some(KeywordKind::Match),
+        "union" => Some(KeywordKind::Union),
+        "Struct" => Some(KeywordKind::Struct),
         _ => None,
     }
 }

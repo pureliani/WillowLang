@@ -16,6 +16,20 @@ pub struct TypeAliasDecl {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub struct StructDecl {
+    pub identifier: IdentifierNode,
+    pub documentation: Option<DocAnnotation>,
+    pub fields: Vec<Param>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct UnionDecl {
+    pub identifier: IdentifierNode,
+    pub documentation: Option<DocAnnotation>,
+    pub variants: Vec<(IdentifierNode, Option<TypeAnnotation>)>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct VarDecl {
     pub identifier: IdentifierNode,
     pub documentation: Option<DocAnnotation>,

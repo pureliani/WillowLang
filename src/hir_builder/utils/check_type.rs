@@ -1,12 +1,12 @@
 use crate::{
     ast::{
         decl::Param,
-        type_annotation::{TagAnnotation, TypeAnnotation, TypeAnnotationKind},
+        type_annotation::{TypeAnnotation, TypeAnnotationKind},
     },
     hir_builder::{
         errors::{SemanticError, SemanticErrorKind},
         types::{
-            checked_declaration::{CheckedFnType, CheckedParam, CheckedTag},
+            checked_declaration::{CheckedFnType, CheckedParam},
             checked_type::{Type, TypeKind},
         },
         utils::scope::{ScopeKind, SymbolEntry},
@@ -15,16 +15,6 @@ use crate::{
 };
 
 impl<'a> HIRBuilder<'a> {
-    pub fn check_tag_type_annotation(&mut self, annotation: &TagAnnotation) -> CheckedTag {
-        CheckedTag {
-            identifier: annotation.identifier,
-            value_type: annotation
-                .value_type
-                .as_ref()
-                .map(|t| Box::new(self.check_type_annotation(t))),
-        }
-    }
-
     pub fn check_params(&mut self, params: &Vec<Param>) -> Vec<CheckedParam> {
         params
             .into_iter()
@@ -52,11 +42,12 @@ impl<'a> HIRBuilder<'a> {
             TypeAnnotationKind::F32 => TypeKind::F32,
             TypeAnnotationKind::F64 => TypeKind::F64,
             TypeAnnotationKind::String => TypeKind::String,
-            TypeAnnotationKind::Struct { fields } => TypeKind::Struct(self.check_params(fields)),
-            TypeAnnotationKind::Identifier { identifier: id } => self
+            TypeAnnotationKind::Identifier(id) => self
                 .scope_lookup(id.name)
                 .map(|entry| match entry {
                     SymbolEntry::TypeAliasDecl(decl) => TypeKind::TypeAliasDecl(decl),
+                    SymbolEntry::StructDecl(decl) => TypeKind::Struct(decl),
+                    SymbolEntry::UnionDecl(decl) => TypeKind::Union(decl),
                     SymbolEntry::VarDecl(_) => {
                         self.errors.push(SemanticError {
                             kind: SemanticErrorKind::CannotUseVariableDeclarationAsType,
@@ -89,11 +80,6 @@ impl<'a> HIRBuilder<'a> {
             TypeAnnotationKind::List { item_type } => {
                 let checked_item_type = self.check_type_annotation(item_type);
                 TypeKind::List(Box::new(checked_item_type))
-            }
-            TypeAnnotationKind::Tag(t) => TypeKind::Tag(self.check_tag_type_annotation(t)),
-            TypeAnnotationKind::Union(tag_annotations) => {
-                let checked_tags = tag_annotations.iter().map(|t| self.check_tag_type_annotation(t)).collect();
-                TypeKind::Union(checked_tags)
             }
         };
 

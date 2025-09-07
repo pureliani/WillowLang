@@ -1,7 +1,5 @@
 pub mod parse_fn_type_annotation;
 pub mod parse_parenthesized_type_annotation;
-pub mod parse_struct_type_annotation;
-pub mod parse_tag_type_annotation;
 
 use super::{Parser, ParsingError, ParsingErrorKind};
 use crate::{
@@ -178,16 +176,11 @@ impl<'a, 'b> Parser<'a, 'b> {
             }
             TokenKind::Punctuation(PunctuationKind::LParen) => self.parse_parenthesized_type_annotation()?,
             TokenKind::Keyword(KeywordKind::Fn) => self.parse_fn_type_annotation()?,
-            TokenKind::Punctuation(PunctuationKind::LBrace) => self.parse_struct_type()?,
-            TokenKind::Punctuation(PunctuationKind::Hashtag) => self.parse_tag_type_annotation()?,
             TokenKind::Identifier(_) => {
-                let start_offset = self.offset;
-
                 let identifier = self.consume_identifier()?;
-                let span = self.get_span(start_offset, self.offset - 1)?;
                 TypeAnnotation {
-                    kind: TypeAnnotationKind::Identifier { identifier },
-                    span,
+                    span: identifier.span,
+                    kind: TypeAnnotationKind::Identifier(identifier),
                 }
             }
             _ => {

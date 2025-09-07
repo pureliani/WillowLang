@@ -3,13 +3,6 @@ use crate::ast::{IdentifierNode, Span};
 use super::decl::Param;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct TagAnnotation {
-    pub identifier: IdentifierNode,
-    pub value_type: Option<Box<TypeAnnotation>>,
-    pub span: Span,
-}
-
-#[derive(Clone, Debug, PartialEq)]
 pub enum TypeAnnotationKind {
     Void,
     Bool,
@@ -26,14 +19,7 @@ pub enum TypeAnnotationKind {
     F32,
     F64,
     String,
-    Tag(TagAnnotation),
-    Union(Vec<TagAnnotation>),
-    Identifier {
-        identifier: IdentifierNode,
-    },
-    Struct {
-        fields: Vec<Param>,
-    },
+    Identifier(IdentifierNode),
     List {
         item_type: Box<TypeAnnotation>,
     },

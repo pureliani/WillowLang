@@ -13,8 +13,7 @@ impl<'a, 'b> Parser<'a, 'b> {
         self.consume_punctuation(PunctuationKind::LBrace)?;
         let arms = self.comma_separated(
             |p| {
-                p.consume_punctuation(PunctuationKind::Hashtag)?;
-                let tag_name = p.consume_identifier()?;
+                let variant_name = p.consume_identifier()?;
 
                 let binding_name = if p.match_token(0, TokenKind::Punctuation(PunctuationKind::LParen)) {
                     p.advance();
@@ -31,9 +30,9 @@ impl<'a, 'b> Parser<'a, 'b> {
                 let expr = p.parse_expr(0)?;
 
                 Ok(MatchArm {
-                    tag_name,
+                    variant_name,
                     binding_name,
-                    expr,
+                    evaluate: expr,
                 })
             },
             |p| p.match_token(0, TokenKind::Punctuation(PunctuationKind::RBrace)),

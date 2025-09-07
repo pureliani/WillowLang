@@ -5,9 +5,9 @@ use crate::{
 };
 
 impl<'a, 'b> Parser<'a, 'b> {
-    pub fn parse_struct_init_expr(&mut self) -> Result<Expr, ParsingError<'a>> {
+    pub fn parse_struct_init_expr(&mut self, left: Expr) -> Result<Expr, ParsingError<'a>> {
         let start_offset = self.offset;
-
+        let mut span = left.span;
         self.consume_punctuation(PunctuationKind::LBrace)?;
         let fields = self.comma_separated(
             |p| {
@@ -20,10 +20,14 @@ impl<'a, 'b> Parser<'a, 'b> {
         )?;
         self.consume_punctuation(PunctuationKind::RBrace)?;
 
-        let span = self.get_span(start_offset, self.offset - 1)?;
+        let span_end = self.get_span(start_offset, self.offset - 1)?;
+        span.end = span_end.end;
 
         Ok(Expr {
-            kind: ExprKind::StructLiteral { fields },
+            kind: ExprKind::StructInit {
+                left: Box::new(left),
+                fields,
+            },
             span,
         })
     }

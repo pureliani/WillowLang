@@ -15,6 +15,7 @@ pub enum SemanticErrorKind {
     MissingStructFieldInitializers(HashSet<InternerId>),
     CannotApplyStructInitializer,
     ExpectedANumericOperand,
+    IncompatibleBranchTypes { first: Type, second: Type },
     MixedSignedAndUnsigned,
     MixedFloatAndInteger,
     CannotCompareType { of: Type, to: Type },
@@ -34,6 +35,7 @@ pub enum SemanticErrorKind {
     AccessToUndefinedField { field: IdentifierNode },
     TypeAliasMustBeDeclaredAtTopLevel,
     StructMustBeDeclaredAtTopLevel,
+    IfExpressionMissingElse,
 }
 
 #[derive(Debug, Clone)]
@@ -71,6 +73,8 @@ impl SemanticErrorKind {
             SemanticErrorKind::MissingStructFieldInitializers { .. } => 25,
             SemanticErrorKind::CannotApplyStructInitializer { .. } => 26,
             SemanticErrorKind::DuplicateIdentifier { .. } => 27,
+            SemanticErrorKind::IncompatibleBranchTypes { first, second } => 28,
+            SemanticErrorKind::IfExpressionMissingElse => 29,
         }
     }
 }

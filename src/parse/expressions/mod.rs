@@ -2,10 +2,11 @@ pub mod parse_codeblock_expr;
 pub mod parse_fn_call_expr;
 pub mod parse_fn_expr;
 pub mod parse_if_expr;
+pub mod parse_list_literal_expr;
+pub mod parse_match_expr;
 pub mod parse_parenthesized_expr;
 pub mod parse_struct_init_expr;
-pub mod parse_tag_expr;
-pub mod parse_match_expr;
+pub mod parse_union_init_expr;
 
 use crate::{
     ast::{
@@ -67,7 +68,7 @@ pub fn is_start_of_expr(token_kind: &TokenKind) -> bool {
         | TokenKind::Keyword(KeywordKind::Fn)
         | TokenKind::Keyword(KeywordKind::True)
         | TokenKind::Keyword(KeywordKind::False)
-        | TokenKind::Keyword(KeywordKind::If)               
+        | TokenKind::Keyword(KeywordKind::If)
         | TokenKind::Punctuation(PunctuationKind::LParen)   // Parenthesized expr
         | TokenKind::Punctuation(PunctuationKind::LBrace)   // Codeblock expr
         | TokenKind::Punctuation(PunctuationKind::LBracket) // List literal
@@ -88,20 +89,19 @@ impl<'a, 'b> Parser<'a, 'b> {
             TokenKind::Identifier(_) => {
                 let identifier = self.consume_identifier()?;
                 Expr {
-                    kind: ExprKind::Identifier { identifier },
+                    kind: ExprKind::Identifier(identifier),
                     span: token_span,
                 }
             }
             TokenKind::Number(_) => {
                 let number = self.consume_number()?;
                 Expr {
-                    kind: ExprKind::Number { value: number },
+                    kind: ExprKind::Number(number),
                     span: token_span,
                 }
             }
             TokenKind::Keyword(KeywordKind::Match) => self.parse_match_expr()?,
             TokenKind::Keyword(KeywordKind::Fn) => self.parse_fn_expr()?,
-            TokenKind::Punctuation(PunctuationKind::Hashtag) => self.parse_tag_expr()?,
             TokenKind::Punctuation(PunctuationKind::LParen) => {
                 let start_offset = self.offset;
                 let result = self.parse_parenthesized_expr()?;
@@ -110,47 +110,14 @@ impl<'a, 'b> Parser<'a, 'b> {
                 Expr { kind: result.kind, span }
             }
             TokenKind::Punctuation(PunctuationKind::LBrace) => {
-                let start_offset = self.offset;
-
-                self.place_checkpoint();
-                let result = self.parse_struct_init_expr().or_else(|struct_err| {
-                    let offset_after_struct_expr_attempt = self.offset;
-                    self.goto_checkpoint();
-                    self.parse_codeblock_expr()
-                        .and_then(|block_contents| {
-                            Ok(Expr {
-                                kind: ExprKind::CodeBlock(block_contents),
-                                span: self.get_span(start_offset, self.offset - 1)?,
-                            })
-                        })
-                        .or_else(|codeblock_err| {
-                            let offset_after_codeblock_attempt = self.offset;
-                            if offset_after_struct_expr_attempt >= offset_after_codeblock_attempt {
-                                Err(struct_err)
-                            } else {
-                                Err(codeblock_err)
-                            }
-                        })
-                })?;
-
-                result
-            }
-            TokenKind::Punctuation(PunctuationKind::LBracket) => {
-                let start_offset = self.offset;
-                self.consume_punctuation(PunctuationKind::LBracket)?;
-                let items: Vec<Expr> = self.comma_separated(
-                    |p| p.parse_expr(0),
-                    |p| p.match_token(0, TokenKind::Punctuation(PunctuationKind::RBracket)),
-                )?;
-                self.consume_punctuation(PunctuationKind::RBracket)?;
-
-                let span = self.get_span(start_offset, self.offset - 1)?;
+                let block_contents = self.parse_codeblock_expr()?;
 
                 Expr {
-                    kind: ExprKind::ListLiteral { items },
-                    span,
+                    span: block_contents.span,
+                    kind: ExprKind::CodeBlock(block_contents),
                 }
             }
+            TokenKind::Punctuation(PunctuationKind::LBracket) => self.parse_list_literal_expr()?,
             TokenKind::Punctuation(PunctuationKind::Minus) => {
                 let ((), r_bp) = prefix_bp(&TokenKind::Punctuation(PunctuationKind::Minus)).unwrap();
                 let start_offset = self.offset;
@@ -174,30 +141,20 @@ impl<'a, 'b> Parser<'a, 'b> {
                 }
             }
             TokenKind::Keyword(KeywordKind::If) => self.parse_if_expr()?,
-            TokenKind::Keyword(KeywordKind::True) => {
+            TokenKind::Keyword(variant @ KeywordKind::True | variant @ KeywordKind::False) => {
                 let start_offset = self.offset;
-                self.consume_keyword(KeywordKind::True)?;
+                self.consume_keyword(variant)?;
+                let is_true = matches!(variant, KeywordKind::True);
                 Expr {
-                    kind: ExprKind::BoolLiteral { value: true },
+                    kind: ExprKind::BoolLiteral(is_true),
                     span: self.get_span(start_offset, self.offset - 1)?,
                 }
             }
-            TokenKind::Keyword(KeywordKind::False) => {
-                let start_offset = self.offset;
-                self.consume_keyword(KeywordKind::False)?;
-                Expr {
-                    kind: ExprKind::BoolLiteral { value: false },
-                    span: self.get_span(start_offset, self.offset - 1)?,
-                }
-            }
-
             TokenKind::String(_) => {
-                let start_offset = self.offset;
-
                 let value = self.consume_string()?;
                 Expr {
-                    kind: ExprKind::String { value },
-                    span: self.get_span(start_offset, self.offset - 1)?,
+                    span: value.span,
+                    kind: ExprKind::String(value),
                 }
             }
             _ => {
@@ -276,6 +233,15 @@ impl<'a, 'b> Parser<'a, 'b> {
                             }
                         } else {
                             Some(self.parse_fn_call_expr(lhs_clone)?)
+                        }
+                    }
+                    TokenKind::Punctuation(PunctuationKind::LBrace) => {
+                        let allow_lhs_kind = matches!(&lhs_clone.kind, ExprKind::Identifier(_));
+
+                        if allow_lhs_kind {
+                            Some(self.parse_struct_init_expr(lhs_clone)?)
+                        } else {
+                            None
                         }
                     }
                     _ => {

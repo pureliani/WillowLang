@@ -4,7 +4,9 @@ pub mod parse_continue_stmt;
 pub mod parse_expr_stmt;
 pub mod parse_from_stmt;
 pub mod parse_return_stmt;
+pub mod parse_struct_decl;
 pub mod parse_type_alias_decl;
+pub mod parse_union_decl;
 pub mod parse_var_decl;
 pub mod parse_while_stmt;
 
@@ -53,6 +55,10 @@ impl<'a, 'b> Parser<'a, 'b> {
                 self.parse_var_decl(documentation)
             } else if self.match_token(0, TokenKind::Keyword(KeywordKind::Type)) {
                 self.parse_type_alias_decl(documentation)
+            } else if self.match_token(0, TokenKind::Keyword(KeywordKind::Struct)) {
+                self.parse_struct_decl(documentation)
+            } else if self.match_token(0, TokenKind::Keyword(KeywordKind::Union)) {
+                self.parse_union_decl(documentation)
             } else if let Some(doc) = documentation {
                 Err(ParsingError {
                     kind: ParsingErrorKind::DocMustBeFollowedByDeclaration,

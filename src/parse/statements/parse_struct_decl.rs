@@ -1,15 +1,18 @@
 use crate::{
     ast::{
-        decl::Param,
-        type_annotation::{TypeAnnotation, TypeAnnotationKind},
+        decl::{Param, StructDecl},
+        stmt::{Stmt, StmtKind},
     },
-    parse::{Parser, ParsingError},
-    tokenize::{PunctuationKind, TokenKind},
+    parse::{DocAnnotation, Parser, ParsingError},
+    tokenize::{KeywordKind, PunctuationKind, TokenKind},
 };
 
 impl<'a, 'b> Parser<'a, 'b> {
-    pub fn parse_struct_type(&mut self) -> Result<TypeAnnotation, ParsingError<'a>> {
+    pub fn parse_struct_decl(&mut self, documentation: Option<DocAnnotation>) -> Result<Stmt, ParsingError<'a>> {
         let start_offset = self.offset;
+
+        self.consume_keyword(KeywordKind::Struct)?;
+        let name = self.consume_identifier()?;
         self.consume_punctuation(PunctuationKind::LBrace)?;
         let fields = self.comma_separated(
             |p| {
@@ -28,8 +31,12 @@ impl<'a, 'b> Parser<'a, 'b> {
 
         let span = self.get_span(start_offset, self.offset - 1)?;
 
-        Ok(TypeAnnotation {
-            kind: TypeAnnotationKind::Struct { fields },
+        Ok(Stmt {
+            kind: StmtKind::StructDecl(StructDecl {
+                identifier: name,
+                documentation,
+                fields,
+            }),
             span,
         })
     }

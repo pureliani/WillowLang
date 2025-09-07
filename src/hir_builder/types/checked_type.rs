@@ -2,7 +2,7 @@ use std::hash::{Hash, Hasher};
 
 use crate::{
     ast::Span,
-    hir_builder::types::checked_declaration::{CheckedFnType, CheckedParam, CheckedTag, CheckedTypeAliasDecl},
+    hir_builder::types::checked_declaration::{CheckedFnType, CheckedStructDecl, CheckedTypeAliasDecl, CheckedUnionDecl},
 };
 
 #[derive(Clone, Debug)]
@@ -22,10 +22,9 @@ pub enum TypeKind {
     F32,
     F64,
     String,
-    Union(Vec<CheckedTag>),
-    Tag(CheckedTag),
+    Union(CheckedUnionDecl),
+    Struct(CheckedStructDecl),
     List(Box<Type>),
-    Struct(Vec<CheckedParam>),
     TypeAliasDecl(CheckedTypeAliasDecl),
     FnType(CheckedFnType),
     Pointer(Box<Type>),
@@ -53,27 +52,11 @@ impl PartialEq for TypeKind {
             (TypeKind::String, TypeKind::String) => true,
             (TypeKind::Unknown, TypeKind::Unknown) => true,
             (TypeKind::TypeAliasDecl(a), TypeKind::TypeAliasDecl(b)) => a == b,
-            (
-                TypeKind::Tag(CheckedTag {
-                    identifier: id_a,
-                    value_type: kind_a,
-                }),
-                TypeKind::Tag(CheckedTag {
-                    identifier: id_b,
-                    value_type: kind_b,
-                }),
-            ) => id_a == id_b && kind_a == kind_b,
             (TypeKind::Struct(a), TypeKind::Struct(b)) => a == b,
             (TypeKind::FnType(a), TypeKind::FnType(b)) => a == b,
             (TypeKind::Pointer(a), TypeKind::Pointer(b)) => a == b,
             (TypeKind::List(t1), TypeKind::List(t2)) => t1 == t2,
-            (TypeKind::Union(u1), TypeKind::Union(u2)) => {
-                if u1.len() != u2.len() {
-                    return false;
-                }
-
-                u1.iter().all(|u1_element| u2.contains(u1_element)) && u2.iter().all(|u2_element| u1.contains(u2_element))
-            }
+            (TypeKind::Union(u1), TypeKind::Union(u2)) => u1.identifier == u2.identifier,
             _ => false,
         }
     }
@@ -100,34 +83,14 @@ impl Hash for TypeKind {
             TypeKind::F64 => {}
             TypeKind::String => {}
             TypeKind::Unknown => {}
-            TypeKind::Struct(fields) => fields.iter().for_each(|f| f.hash(state)),
+            TypeKind::Struct(decl) => decl.hash(state),
             TypeKind::TypeAliasDecl(decl) => decl.hash(state),
             TypeKind::FnType(decl) => decl.hash(state),
             TypeKind::Pointer(inner) => inner.hash(state),
             TypeKind::List(item_type) => {
                 item_type.hash(state);
             }
-            TypeKind::Tag(CheckedTag { identifier, value_type }) => {
-                identifier.hash(state);
-                value_type.hash(state);
-            }
-            TypeKind::Union(items) => {
-                state.write_usize(items.len());
-                if !items.is_empty() {
-                    let mut item_hashes: Vec<u64> = items
-                        .iter()
-                        .map(|item| {
-                            let mut item_hasher = std::collections::hash_map::DefaultHasher::new();
-                            item.hash(&mut item_hasher);
-                            item_hasher.finish()
-                        })
-                        .collect();
-                    item_hashes.sort_unstable();
-                    for h in item_hashes {
-                        h.hash(state);
-                    }
-                }
-            }
+            TypeKind::Union(decl) => decl.hash(state),
         }
     }
 }

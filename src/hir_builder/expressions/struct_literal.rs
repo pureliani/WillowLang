@@ -5,7 +5,7 @@ use crate::{
 };
 
 impl<'a> HIRBuilder<'a> {
-    pub fn build_struct_literal(&mut self, fields: Vec<(IdentifierNode, Expr)>) -> Value {
+    pub fn build_struct_initializer_expr(&mut self, fields: Vec<(IdentifierNode, Expr)>) -> Value {
         todo!()
     }
 }

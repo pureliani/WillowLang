@@ -12,7 +12,7 @@ use crate::{
 impl<'a> HIRBuilder<'a> {
     pub fn build_lvalue_expr(&mut self, expr: Expr) -> Result<ValueId, SemanticError> {
         match expr.kind {
-            ExprKind::Identifier { identifier } => {
+            ExprKind::Identifier(identifier) => {
                 if let Some(SymbolEntry::VarDecl(decl)) = self.scope_lookup(identifier.name) {
                     return Ok(decl.value_id); // ValueId which holds Pointer<T>
                 } else {
@@ -27,9 +27,12 @@ impl<'a> HIRBuilder<'a> {
                 let base_ptr_type = self.get_value_id_type(&base_ptr_id);
 
                 if let TypeKind::Pointer(ptr_to) = &base_ptr_type.kind {
-                    if let TypeKind::Struct(fields) = &ptr_to.kind {
-                        if let Some((field_index, field)) =
-                            fields.iter().enumerate().find(|(_, f)| f.identifier.name == field.name)
+                    if let TypeKind::Struct(struct_decl) = &ptr_to.kind {
+                        if let Some((field_index, field)) = struct_decl
+                            .fields
+                            .iter()
+                            .enumerate()
+                            .find(|(_, f)| f.identifier.name == field.name)
                         {
                             let field_ptr_id = self.new_value_id();
                             self.cfg.value_types.insert(
@@ -55,7 +58,7 @@ impl<'a> HIRBuilder<'a> {
                         }
                     } else {
                         return Err(SemanticError {
-                            kind: SemanticErrorKind::CannotAccess(base_ptr_type),
+                            kind: SemanticErrorKind::CannotAccess(ptr_to.as_ref().clone()),
                             span: expr.span,
                         });
                     }

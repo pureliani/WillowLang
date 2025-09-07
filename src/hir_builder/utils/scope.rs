@@ -6,7 +6,7 @@ use crate::{
     compile::string_interner::InternerId,
     hir_builder::{
         errors::SemanticError,
-        types::checked_declaration::{CheckedTypeAliasDecl, CheckedVarDecl},
+        types::checked_declaration::{CheckedStructDecl, CheckedTypeAliasDecl, CheckedUnionDecl, CheckedVarDecl},
         HIRBuilder, SemanticErrorKind,
     },
 };
@@ -28,6 +28,8 @@ pub enum ScopeKind {
 pub enum SymbolEntry {
     VarDecl(CheckedVarDecl),
     TypeAliasDecl(CheckedTypeAliasDecl),
+    StructDecl(CheckedStructDecl),
+    UnionDecl(CheckedUnionDecl),
 }
 
 #[derive(Debug)]

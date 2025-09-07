@@ -25,7 +25,7 @@ pub mod type_cast;
 use crate::{
     ast::expr::{Expr, ExprKind},
     cfg::{BinaryOperationKind, Value},
-    hir_builder::HIRBuilder,
+    hir_builder::{expressions::r#if::IfContext, HIRBuilder},
 };
 
 impl<'a> HIRBuilder<'a> {
@@ -54,22 +54,21 @@ impl<'a> HIRBuilder<'a> {
             ExprKind::StaticAccess { left, field } => todo!(),
             ExprKind::TypeCast { left, target } => todo!(),
             ExprKind::FnCall { left, args } => todo!(),
-            ExprKind::StructLiteral { fields } => todo!(),
-            ExprKind::BoolLiteral { value } => self.build_bool_literal(value),
-            ExprKind::Number { value } => self.build_number_literal(value),
-            ExprKind::String { value } => todo!(),
-            ExprKind::Identifier { identifier } => todo!(),
+            ExprKind::BoolLiteral(value) => self.build_bool_literal(value),
+            ExprKind::Number(value) => self.build_number_literal(value),
+            ExprKind::String(value) => todo!(),
+            ExprKind::Identifier(identifier) => todo!(),
             ExprKind::Fn {
                 params,
                 body,
                 return_type,
                 name,
             } => todo!(),
-            ExprKind::If { branches, else_branch } => self.build_if_expr(branches, else_branch),
-            ExprKind::ListLiteral { items } => todo!(),
+            ExprKind::If { branches, else_branch } => self.build_if_expr(branches, else_branch, IfContext::Expression),
+            ExprKind::ListLiteral(items) => todo!(),
             ExprKind::CodeBlock(block_contents) => self.build_codeblock_expr(block_contents),
-            ExprKind::Tag { identifier, value } => todo!(),
             ExprKind::Match { condition, arms } => todo!(),
+            ExprKind::StructInit { left, fields } => todo!(),
         }
     }
 }

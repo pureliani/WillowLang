@@ -8,8 +8,11 @@ pub mod var_decl;
 pub mod r#while;
 
 use crate::{
-    ast::stmt::{Stmt, StmtKind},
-    hir_builder::HIRBuilder,
+    ast::{
+        expr::ExprKind,
+        stmt::{Stmt, StmtKind},
+    },
+    hir_builder::{expressions::r#if::IfContext, HIRBuilder},
 };
 
 impl<'a> HIRBuilder<'a> {
@@ -17,16 +20,22 @@ impl<'a> HIRBuilder<'a> {
         for statement in statements {
             match statement.kind {
                 StmtKind::Expression(expr) => {
-                    self.build_expr(expr);
+                    if let ExprKind::If { branches, else_branch } = expr.kind {
+                        self.build_if_expr(branches, else_branch, IfContext::Statement);
+                    } else {
+                        self.build_expr(expr);
+                    }
                 }
                 StmtKind::TypeAliasDecl(type_alias_decl) => todo!(),
                 StmtKind::VarDecl(var_decl) => todo!(),
                 StmtKind::Return { value } => todo!(),
                 StmtKind::Assignment { target, value } => todo!(),
                 StmtKind::From { path, identifiers } => todo!(),
-                StmtKind::While { condition, body } => todo!(), // TODO: implement in while.rs
-                StmtKind::Break => todo!(),                     // TODO: implement in while.rs
-                StmtKind::Continue => todo!(),                  // TODO: implement in while.rs
+                StmtKind::While { condition, body } => todo!(),
+                StmtKind::Break => todo!(),
+                StmtKind::Continue => todo!(),
+                StmtKind::StructDecl(struct_decl) => todo!(),
+                StmtKind::UnionDecl(union_decl) => todo!(),
             }
         }
     }

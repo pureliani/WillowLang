@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use crate::hir_builder::{
     types::{
-        checked_declaration::{CheckedFnType, CheckedTag},
+        checked_declaration::CheckedFnType,
         checked_type::{Type, TypeKind},
     },
     HIRBuilder,
@@ -12,44 +12,6 @@ impl<'a> HIRBuilder<'a> {
     pub fn check_is_assignable(&self, source_type: &Type, target_type: &Type) -> bool {
         let mut visited_declarations: HashSet<(usize, usize)> = HashSet::new();
         self.check_is_assignable_recursive(source_type, target_type, &mut visited_declarations)
-    }
-
-    pub fn check_is_tag_assignable(
-        &self,
-        source_tag: &CheckedTag,
-        target_tag: &CheckedTag,
-        visited_declarations: &mut HashSet<(usize, usize)>,
-    ) -> bool {
-        match (source_tag, target_tag) {
-            (
-                CheckedTag {
-                    identifier: id_a,
-                    value_type: Some(value_type_a),
-                },
-                CheckedTag {
-                    identifier: id_b,
-                    value_type: Some(value_type_b),
-                },
-            ) => {
-                if id_a != id_b {
-                    return false;
-                }
-
-                self.check_is_assignable_recursive(value_type_a, value_type_b, visited_declarations)
-                    && self.check_is_assignable_recursive(value_type_b, value_type_a, visited_declarations)
-            }
-            (
-                CheckedTag {
-                    identifier: id_a,
-                    value_type: None,
-                },
-                CheckedTag {
-                    identifier: id_b,
-                    value_type: None,
-                },
-            ) => id_a == id_b,
-            _ => false,
-        }
     }
 
     pub fn check_is_assignable_recursive(
@@ -78,33 +40,15 @@ impl<'a> HIRBuilder<'a> {
             | (Bool, Bool)
             | (Void, Void)
             | (Unknown, _) => true,
-            (Union(source), Union(target)) => source.iter().all(|source_item| {
-                target
-                    .iter()
-                    .any(|target_item| self.check_is_tag_assignable(source_item, target_item, visited_declarations))
-            }),
-            (Tag(source_item), Union(target_union)) => target_union
-                .iter()
-                .any(|target_item| self.check_is_tag_assignable(source_item, target_item, visited_declarations)),
-            (Tag(t1), Tag(t2)) => self.check_is_tag_assignable(t1, t2, visited_declarations),
             (Pointer(source), Pointer(target)) => self.check_is_assignable_recursive(source, target, visited_declarations),
-            (Struct(source_fields), Struct(target_fields)) => {
-                if source_fields.len() != target_fields.len() {
-                    return false;
-                }
-
-                let is_assignable = source_fields.iter().zip(target_fields.iter()).all(|(sp, tp)| {
-                    let same_name = sp.identifier.name == tp.identifier.name;
-                    let assignable = self.check_is_assignable_recursive(&sp.constraint, &tp.constraint, visited_declarations);
-
-                    same_name && assignable
-                });
-
-                is_assignable
+            (Struct(source_decl), Struct(target_decl)) => {
+                todo!()
+            }
+            (Union(source_decl), Union(target_decl)) => {
+                todo!()
             }
             (List(source_item_type), List(target_item_type)) => {
                 self.check_is_assignable_recursive(source_item_type, target_item_type, visited_declarations)
-                    && self.check_is_assignable_recursive(target_item_type, source_item_type, visited_declarations)
             }
             (
                 FnType(CheckedFnType {

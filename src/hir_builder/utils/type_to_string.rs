@@ -1,30 +1,12 @@
 use crate::{
     compile::string_interner::{InternerId, StringInterner},
-    hir_builder::types::{
-        checked_declaration::{CheckedFnType, CheckedTag},
-        checked_type::TypeKind,
-    },
+    hir_builder::types::{checked_declaration::CheckedFnType, checked_type::TypeKind},
 };
 
 fn identifier_to_string(id: InternerId, string_interner: &StringInterner) -> String {
     let identifier_name = string_interner.resolve(id).unwrap();
 
     identifier_name.to_owned()
-}
-
-fn checked_tag_to_string(tag: &CheckedTag, string_interner: &StringInterner) -> String {
-    let name = identifier_to_string(tag.identifier.name, string_interner);
-
-    let value_type_string = match &tag.value_type {
-        Some(t) => {
-            format!("({})", type_to_string_recursive(&t.kind, string_interner))
-        }
-        None => "".to_string(),
-    };
-
-    let result = format!("#{}{}", name, value_type_string);
-
-    result
 }
 
 pub fn type_to_string(ty: &TypeKind, string_interner: &StringInterner) -> String {
@@ -99,11 +81,10 @@ pub fn type_to_string_recursive(ty: &TypeKind, string_interner: &StringInterner)
             format!("{}[]", type_to_string_recursive(&item_type.kind, string_interner,))
         }
         TypeKind::Pointer(ty) => format!("ptr<{}>", type_to_string_recursive(&ty.kind, string_interner,)),
-        TypeKind::Union(checked_tags) => checked_tags
+        TypeKind::Union(decl) => checked_tags
             .iter()
             .map(|t| checked_tag_to_string(t, string_interner))
             .collect::<Vec<String>>()
             .join(" | "),
-        TypeKind::Tag(checked_tag) => checked_tag_to_string(checked_tag, string_interner),
     }
 }
