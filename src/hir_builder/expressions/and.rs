@@ -1,10 +1,10 @@
 use crate::{
     ast::expr::Expr,
     cfg::{Instruction, Terminator, Value},
-    hir_builder::HIRBuilder,
+    hir_builder::FunctionBuilder,
 };
 
-impl<'a> HIRBuilder<'a> {
+impl<'a> FunctionBuilder<'a> {
     pub fn build_and_expr(&mut self, left: Box<Expr>, right: Box<Expr>) -> Value {
         let right_entry_block_id = self.new_basic_block();
         let merge_block_id = self.new_basic_block();

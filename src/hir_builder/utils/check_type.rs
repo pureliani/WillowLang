@@ -10,11 +10,11 @@ use crate::{
             checked_type::{Type, TypeKind},
         },
         utils::scope::{ScopeKind, SymbolEntry},
-        HIRBuilder,
+        FunctionBuilder,
     },
 };
 
-impl<'a> HIRBuilder<'a> {
+impl<'a> FunctionBuilder<'a> {
     pub fn check_params(&mut self, params: &Vec<Param>) -> Vec<CheckedParam> {
         params
             .into_iter()

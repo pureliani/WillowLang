@@ -12,10 +12,10 @@ use crate::{
         expr::ExprKind,
         stmt::{Stmt, StmtKind},
     },
-    hir_builder::{expressions::r#if::IfContext, HIRBuilder},
+    hir_builder::{expressions::r#if::IfContext, FunctionBuilder},
 };
 
-impl<'a> HIRBuilder<'a> {
+impl<'a> FunctionBuilder<'a> {
     pub fn build_statements(&mut self, statements: Vec<Stmt>) {
         for statement in statements {
             match statement.kind {

@@ -5,10 +5,10 @@ use crate::hir_builder::{
         checked_declaration::CheckedFnType,
         checked_type::{Type, TypeKind},
     },
-    HIRBuilder,
+    FunctionBuilder,
 };
 
-impl<'a> HIRBuilder<'a> {
+impl<'a> FunctionBuilder<'a> {
     pub fn check_is_assignable(&self, source_type: &Type, target_type: &Type) -> bool {
         let mut visited_declarations: HashSet<(usize, usize)> = HashSet::new();
         self.check_is_assignable_recursive(source_type, target_type, &mut visited_declarations)

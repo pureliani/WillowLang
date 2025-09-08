@@ -1,3 +1,3 @@
-use crate::hir_builder::HIRBuilder;
+use crate::hir_builder::FunctionBuilder;
 
-impl<'a> HIRBuilder<'a> {}
+impl<'a> FunctionBuilder<'a> {}

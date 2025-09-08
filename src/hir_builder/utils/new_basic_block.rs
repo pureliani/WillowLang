@@ -1,9 +1,9 @@
 use crate::{
     cfg::{BasicBlock, BasicBlockId, Terminator},
-    hir_builder::HIRBuilder,
+    hir_builder::FunctionBuilder,
 };
 
-impl<'a> HIRBuilder<'a> {
+impl<'a> FunctionBuilder<'a> {
     pub fn new_basic_block(&mut self) -> BasicBlockId {
         let block_id = BasicBlockId(self.block_id_counter);
         self.block_id_counter += 1;

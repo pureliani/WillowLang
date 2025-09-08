@@ -1,6 +1,6 @@
-use crate::{cfg::Terminator, hir_builder::HIRBuilder};
+use crate::{cfg::Terminator, hir_builder::FunctionBuilder};
 
-impl<'a> HIRBuilder<'a> {
+impl<'a> FunctionBuilder<'a> {
     pub fn set_basic_block_terminator(&mut self, terminator: Terminator) {
         let current_basic_block = self.cfg.blocks.get_mut(&self.current_block_id);
 

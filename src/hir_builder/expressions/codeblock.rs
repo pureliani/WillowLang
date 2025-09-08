@@ -1,10 +1,10 @@
 use crate::{
     ast::expr::BlockContents,
     cfg::Value,
-    hir_builder::{utils::scope::ScopeKind, HIRBuilder},
+    hir_builder::{utils::scope::ScopeKind, FunctionBuilder},
 };
 
-impl<'a> HIRBuilder<'a> {
+impl<'a> FunctionBuilder<'a> {
     pub fn build_codeblock_expr(&mut self, codeblock: BlockContents) -> Value {
         self.enter_scope(ScopeKind::CodeBlock);
         self.build_statements(codeblock.statements);

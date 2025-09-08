@@ -4,11 +4,11 @@ use crate::{
         errors::{SemanticError, SemanticErrorKind},
         types::checked_type::Type,
         utils::{get_numeric_type_rank::get_numeric_type_rank, is_float::is_float, is_integer::is_integer, is_signed::is_signed},
-        HIRBuilder,
+        FunctionBuilder,
     },
 };
 
-impl<'a> HIRBuilder<'a> {
+impl<'a> FunctionBuilder<'a> {
     pub fn check_binary_numeric_operation(&mut self, left: &Type, right: &Type) -> Result<Type, SemanticError> {
         let span = Span {
             start: left.span.start,

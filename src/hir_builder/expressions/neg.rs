@@ -7,11 +7,11 @@ use crate::{
         errors::{SemanticError, SemanticErrorKind},
         types::checked_type::{Type, TypeKind},
         utils::is_signed::is_signed,
-        HIRBuilder,
+        FunctionBuilder,
     },
 };
 
-impl<'a> HIRBuilder<'a> {
+impl<'a> FunctionBuilder<'a> {
     pub fn build_airthmetic_negation_expr(&mut self, expr: Box<Expr>) -> Value {
         let span = expr.span;
         let value = self.build_expr(*expr);

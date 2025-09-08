@@ -4,7 +4,7 @@ use crate::{
     hir_builder::{
         errors::{SemanticError, SemanticErrorKind},
         types::checked_type::{Type, TypeKind},
-        HIRBuilder,
+        FunctionBuilder,
     },
 };
 
@@ -16,7 +16,7 @@ pub enum IfContext {
     Statement,
 }
 
-impl<'a> HIRBuilder<'a> {
+impl<'a> FunctionBuilder<'a> {
     pub fn build_if(
         &mut self,
         branches: Vec<(Box<Expr>, BlockContents)>,

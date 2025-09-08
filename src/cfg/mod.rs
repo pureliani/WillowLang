@@ -1,13 +1,17 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::{
+    ast::IdentifierNode,
     compile::string_interner::InternerId,
     hir_builder::types::{
-        checked_declaration::CheckedParam,
+        checked_declaration::{CheckedParam, CheckedStructDecl, CheckedTypeAliasDecl, CheckedVarDecl},
         checked_type::{Type, TypeKind},
     },
     tokenize::NumberKind,
 };
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct ModuleId(pub usize);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct FunctionId(pub usize);
@@ -20,6 +24,9 @@ pub struct HeapAllocationId(pub usize);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct ValueId(pub usize);
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct ConstantId(pub usize);
 
 #[derive(Clone, Debug)]
 pub enum Value {
@@ -137,4 +144,21 @@ pub struct ControlFlowGraph {
     pub entry_block: BasicBlockId,
     pub blocks: HashMap<BasicBlockId, BasicBlock>,
     pub value_types: HashMap<ValueId, Type>,
+}
+
+#[derive(Clone, Debug)]
+pub enum CheckedDeclaration {
+    TypeAliasDecl(CheckedTypeAliasDecl),
+    StructDecl(CheckedStructDecl),
+    UnionDecl(CheckedVarDecl),
+}
+
+#[derive(Clone, Debug)]
+pub struct CheckedModule {
+    pub id: ModuleId,
+    pub name: String,
+    pub functions: HashMap<FunctionId, ControlFlowGraph>,
+    pub constant_data: HashMap<ConstantId, Vec<u8>>, // map: id -> bytes
+    pub declarations: HashMap<IdentifierNode, CheckedDeclaration>,
+    pub exports: HashSet<IdentifierNode>,
 }

@@ -2,7 +2,6 @@ pub mod access;
 pub mod and;
 pub mod arithmetic;
 pub mod bool_literal;
-pub mod code_block;
 pub mod codeblock;
 pub mod comparison;
 pub mod equality;
@@ -25,10 +24,10 @@ pub mod type_cast;
 use crate::{
     ast::expr::{Expr, ExprKind},
     cfg::{BinaryOperationKind, Value},
-    hir_builder::{expressions::r#if::IfContext, HIRBuilder},
+    hir_builder::{expressions::r#if::IfContext, FunctionBuilder},
 };
 
-impl<'a> HIRBuilder<'a> {
+impl<'a> FunctionBuilder<'a> {
     pub fn build_expr(&mut self, expr: Expr) -> Value {
         match expr.kind {
             ExprKind::Not { right } => self.build_not_expr(right),

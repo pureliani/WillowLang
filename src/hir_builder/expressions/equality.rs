@@ -5,11 +5,11 @@ use crate::{
         errors::{SemanticError, SemanticErrorKind},
         types::checked_type::{Type, TypeKind},
         utils::check_is_equatable::check_is_equatable,
-        HIRBuilder,
+        FunctionBuilder,
     },
 };
 
-impl<'a> HIRBuilder<'a> {
+impl<'a> FunctionBuilder<'a> {
     pub fn build_equality_expr(&mut self, left: Box<Expr>, right: Box<Expr>, op_kind: BinaryOperationKind) -> Value {
         let span = Span {
             start: left.span.start,

@@ -3,11 +3,11 @@ use crate::{
     cfg::{BinaryOperationKind, Instruction, Value},
     hir_builder::{
         types::checked_type::{Type, TypeKind},
-        HIRBuilder,
+        FunctionBuilder,
     },
 };
 
-impl<'a> HIRBuilder<'a> {
+impl<'a> FunctionBuilder<'a> {
     pub fn build_comparison_expr(&mut self, left: Box<Expr>, right: Box<Expr>, op_kind: BinaryOperationKind) -> Value {
         let result_type = Type {
             kind: TypeKind::Bool,

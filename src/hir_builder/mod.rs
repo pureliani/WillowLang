@@ -12,13 +12,12 @@ use crate::{
 
 pub mod errors;
 pub mod expressions;
-pub mod module;
 pub mod statements;
 pub mod types;
 pub mod utils;
 
 #[derive(Debug)]
-pub struct HIRBuilder<'a> {
+pub struct FunctionBuilder<'a> {
     string_interner: &'a StringInterner<'a>,
     cfg: ControlFlowGraph,
     errors: Vec<SemanticError>,
@@ -26,9 +25,10 @@ pub struct HIRBuilder<'a> {
     current_block_id: BasicBlockId,
     block_id_counter: usize,
     value_id_counter: usize,
+    allocation_counter: usize,
 }
 
-impl<'a> HIRBuilder<'a> {
+impl<'a> FunctionBuilder<'a> {
     pub fn build(statements: Vec<Stmt>, string_interner: &'a StringInterner<'a>) {
         let cfg = ControlFlowGraph {
             blocks: HashMap::new(),
@@ -36,7 +36,7 @@ impl<'a> HIRBuilder<'a> {
             value_types: HashMap::new(),
         };
 
-        let mut builder = HIRBuilder {
+        let mut builder = FunctionBuilder {
             string_interner,
             cfg,
             errors: vec![],

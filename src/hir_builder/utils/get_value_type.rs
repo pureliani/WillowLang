@@ -2,12 +2,12 @@ use crate::{
     cfg::{Value, ValueId},
     hir_builder::{
         types::checked_type::{Type, TypeKind},
-        HIRBuilder,
+        FunctionBuilder,
     },
     tokenize::NumberKind,
 };
 
-impl<'a> HIRBuilder<'a> {
+impl<'a> FunctionBuilder<'a> {
     pub fn get_value_id_type(&self, value_id: &ValueId) -> Type {
         self.cfg
             .value_types

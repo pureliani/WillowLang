@@ -5,11 +5,11 @@ use crate::{
         errors::{SemanticError, SemanticErrorKind},
         types::checked_type::{Type, TypeKind},
         utils::scope::SymbolEntry,
-        HIRBuilder,
+        FunctionBuilder,
     },
 };
 
-impl<'a> HIRBuilder<'a> {
+impl<'a> FunctionBuilder<'a> {
     pub fn build_lvalue_expr(&mut self, expr: Expr) -> Result<ValueId, SemanticError> {
         match expr.kind {
             ExprKind::Identifier(identifier) => {
