@@ -4,7 +4,7 @@ use crate::{
     ast::IdentifierNode,
     compile::string_interner::InternerId,
     hir_builder::types::{
-        checked_declaration::{CheckedParam, CheckedStructDecl, CheckedTypeAliasDecl, CheckedVarDecl},
+        checked_declaration::{CheckedStructDecl, CheckedTypeAliasDecl, CheckedVarDecl},
         checked_type::{Type, TypeKind},
     },
     tokenize::NumberKind,
@@ -139,8 +139,6 @@ pub struct BasicBlock {
 
 #[derive(Clone, Debug)]
 pub struct ControlFlowGraph {
-    pub parms: Vec<CheckedParam>,
-    pub return_type: TypeKind,
     pub entry_block: BasicBlockId,
     pub blocks: HashMap<BasicBlockId, BasicBlock>,
     pub value_types: HashMap<ValueId, Type>,

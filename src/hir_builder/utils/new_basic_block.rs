@@ -3,7 +3,7 @@ use crate::{
     hir_builder::FunctionBuilder,
 };
 
-impl<'a> FunctionBuilder<'a> {
+impl FunctionBuilder {
     pub fn new_basic_block(&mut self) -> BasicBlockId {
         let block_id = BasicBlockId(self.block_id_counter);
         self.block_id_counter += 1;

@@ -1,6 +1,6 @@
 use crate::{cfg::BasicBlockId, hir_builder::FunctionBuilder};
 
-impl<'a> FunctionBuilder<'a> {
+impl FunctionBuilder {
     pub fn use_basic_block(&mut self, id: BasicBlockId) {
         if let Some(_) = self.cfg.blocks.get(&id) {
             self.current_block_id = id;

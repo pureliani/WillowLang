@@ -16,7 +16,7 @@ pub enum IfContext {
     Statement,
 }
 
-impl<'a> FunctionBuilder<'a> {
+impl FunctionBuilder {
     pub fn build_if(
         &mut self,
         branches: Vec<(Box<Expr>, BlockContents)>,

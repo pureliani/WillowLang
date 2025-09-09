@@ -1,6 +1,6 @@
 use crate::{cfg::Instruction, hir_builder::FunctionBuilder};
 
-impl<'a> FunctionBuilder<'a> {
+impl FunctionBuilder {
     pub fn add_basic_block_instruction(&mut self, instruction: Instruction) {
         let current_basic_block = self.cfg.blocks.get_mut(&self.current_block_id);
 

@@ -9,7 +9,7 @@ use crate::{
     },
 };
 
-impl<'a> FunctionBuilder<'a> {
+impl FunctionBuilder {
     pub fn build_equality_expr(&mut self, left: Box<Expr>, right: Box<Expr>, op_kind: BinaryOperationKind) -> Value {
         let span = Span {
             start: left.span.start,

@@ -7,7 +7,7 @@ use crate::{
     tokenize::NumberKind,
 };
 
-impl<'a> FunctionBuilder<'a> {
+impl FunctionBuilder {
     pub fn get_value_id_type(&self, value_id: &ValueId) -> Type {
         self.cfg
             .value_types

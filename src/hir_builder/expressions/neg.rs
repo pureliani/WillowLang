@@ -11,7 +11,7 @@ use crate::{
     },
 };
 
-impl<'a> FunctionBuilder<'a> {
+impl FunctionBuilder {
     pub fn build_airthmetic_negation_expr(&mut self, expr: Box<Expr>) -> Value {
         let span = expr.span;
         let value = self.build_expr(*expr);

@@ -27,7 +27,7 @@ use crate::{
     hir_builder::{expressions::r#if::IfContext, FunctionBuilder},
 };
 
-impl<'a> FunctionBuilder<'a> {
+impl FunctionBuilder {
     pub fn build_expr(&mut self, expr: Expr) -> Value {
         match expr.kind {
             ExprKind::Not { right } => self.build_not_expr(right),

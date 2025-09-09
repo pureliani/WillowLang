@@ -4,7 +4,7 @@ use crate::{
     hir_builder::{utils::scope::ScopeKind, FunctionBuilder},
 };
 
-impl<'a> FunctionBuilder<'a> {
+impl FunctionBuilder {
     pub fn build_codeblock_expr(&mut self, codeblock: BlockContents) -> Value {
         self.enter_scope(ScopeKind::CodeBlock);
         self.build_statements(codeblock.statements);

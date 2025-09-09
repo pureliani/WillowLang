@@ -8,7 +8,7 @@ use crate::{
     },
 };
 
-impl<'a> FunctionBuilder<'a> {
+impl FunctionBuilder {
     pub fn check_binary_numeric_operation(&mut self, left: &Type, right: &Type) -> Result<Type, SemanticError> {
         let span = Span {
             start: left.span.start,

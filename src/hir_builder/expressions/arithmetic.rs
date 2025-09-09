@@ -4,7 +4,7 @@ use crate::{
     hir_builder::FunctionBuilder,
 };
 
-impl<'a> FunctionBuilder<'a> {
+impl FunctionBuilder {
     pub fn build_arithmetic_expr(&mut self, left: Box<Expr>, right: Box<Expr>, op_kind: BinaryOperationKind) -> Value {
         let left_value = self.build_expr(*left);
         let left_type = self.get_value_type(&left_value);

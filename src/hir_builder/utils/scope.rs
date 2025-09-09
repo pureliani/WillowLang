@@ -7,7 +7,7 @@ use crate::{
     hir_builder::{
         errors::SemanticError,
         types::checked_declaration::{CheckedStructDecl, CheckedTypeAliasDecl, CheckedUnionDecl, CheckedVarDecl},
-        FunctionBuilder, SemanticErrorKind,
+        ModuleBuilder, SemanticErrorKind,
     },
 };
 
@@ -47,7 +47,7 @@ impl Scope {
     }
 }
 
-impl<'a> FunctionBuilder<'a> {
+impl<'a> ModuleBuilder<'a> {
     pub fn enter_scope(&mut self, kind: ScopeKind) {
         self.scopes.push(Scope::new(kind));
     }

@@ -4,7 +4,7 @@ use crate::{
     hir_builder::FunctionBuilder,
 };
 
-impl<'a> FunctionBuilder<'a> {
+impl FunctionBuilder {
     pub fn build_struct_initializer_expr(&mut self, fields: Vec<(IdentifierNode, Expr)>) -> Value {
         todo!()
     }

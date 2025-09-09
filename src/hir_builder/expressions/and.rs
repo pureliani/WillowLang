@@ -4,7 +4,7 @@ use crate::{
     hir_builder::FunctionBuilder,
 };
 
-impl<'a> FunctionBuilder<'a> {
+impl FunctionBuilder {
     pub fn build_and_expr(&mut self, left: Box<Expr>, right: Box<Expr>) -> Value {
         let right_entry_block_id = self.new_basic_block();
         let merge_block_id = self.new_basic_block();

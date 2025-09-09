@@ -3,16 +3,16 @@ use crate::{
     hir_builder::{
         errors::SemanticError,
         types::checked_type::{Type, TypeKind},
-        FunctionBuilder,
+        FunctionBuilder, ModuleBuilder,
     },
 };
 
-impl<'a> FunctionBuilder<'a> {
+impl FunctionBuilder {
     /// Records a semantic error and returns a new "poison" Value of type Unknown.
     /// The caller is responsible for immediately returning the poison Value.
-    pub fn report_error_and_get_poison(&mut self, error: SemanticError) -> Value {
+    pub fn report_error_and_get_poison(&mut self, module_builder: &mut ModuleBuilder, error: SemanticError) -> Value {
         let error_span = error.span;
-        self.errors.push(error);
+        module_builder.errors.push(error);
         let unknown_result_id = self.new_value_id();
         self.cfg.value_types.insert(
             unknown_result_id,

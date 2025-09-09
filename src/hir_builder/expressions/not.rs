@@ -8,7 +8,7 @@ use crate::{
     },
 };
 
-impl<'a> FunctionBuilder<'a> {
+impl FunctionBuilder {
     pub fn build_not_expr(&mut self, expr: Box<Expr>) -> Value {
         let span = expr.span;
 

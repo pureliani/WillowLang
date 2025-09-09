@@ -8,7 +8,7 @@ use crate::hir_builder::{
     FunctionBuilder,
 };
 
-impl<'a> FunctionBuilder<'a> {
+impl FunctionBuilder {
     pub fn check_is_assignable(&self, source_type: &Type, target_type: &Type) -> bool {
         let mut visited_declarations: HashSet<(usize, usize)> = HashSet::new();
         self.check_is_assignable_recursive(source_type, target_type, &mut visited_declarations)
