@@ -7,14 +7,14 @@ use crate::{
         errors::{SemanticError, SemanticErrorKind},
         types::checked_type::{Type, TypeKind},
         utils::is_signed::is_signed,
-        FunctionBuilder,
+        FunctionBuilder, ModuleBuilder,
     },
 };
 
 impl FunctionBuilder {
-    pub fn build_airthmetic_negation_expr(&mut self, expr: Box<Expr>) -> Value {
+    pub fn build_airthmetic_negation_expr(&mut self, module_builder: &mut ModuleBuilder, expr: Box<Expr>) -> Value {
         let span = expr.span;
-        let value = self.build_expr(*expr);
+        let value = self.build_expr(module_builder, *expr);
         let value_type = self.get_value_type(&value);
 
         if !is_signed(&value_type.kind) {
@@ -49,13 +49,16 @@ impl FunctionBuilder {
                 },
             ]);
 
-            return self.report_error_and_get_poison(SemanticError {
-                kind: SemanticErrorKind::TypeMismatchExpectedOneOf {
-                    expected,
-                    received: value_type.clone(),
+            return self.report_error_and_get_poison(
+                module_builder,
+                SemanticError {
+                    kind: SemanticErrorKind::TypeMismatchExpectedOneOf {
+                        expected,
+                        received: value_type.clone(),
+                    },
+                    span,
                 },
-                span,
-            });
+            );
         }
 
         let destination = self.new_value_id();

@@ -76,7 +76,7 @@ impl FunctionBuilder {
     }
 
     pub fn build_assignment_stmt(&mut self, module_builder: &mut ModuleBuilder, target: Expr, value: Expr) {
-        let source_val = self.build_expr(value);
+        let source_val = self.build_expr(module_builder, value);
         let source_type = self.get_value_type(&source_val);
 
         let destination_ptr_id = match self.build_lvalue_expr(module_builder, target) {

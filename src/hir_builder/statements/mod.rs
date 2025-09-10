@@ -21,15 +21,15 @@ impl FunctionBuilder {
             match statement.kind {
                 StmtKind::Expression(expr) => {
                     if let ExprKind::If { branches, else_branch } = expr.kind {
-                        self.build_if(branches, else_branch, IfContext::Statement);
+                        self.build_if(module_builder, branches, else_branch, IfContext::Statement);
                     } else {
-                        self.build_expr(expr);
+                        self.build_expr(module_builder, expr);
                     }
                 }
                 StmtKind::TypeAliasDecl(type_alias_decl) => todo!(),
                 StmtKind::VarDecl(var_decl) => todo!(),
                 StmtKind::Return { value } => todo!(),
-                StmtKind::Assignment { target, value } => todo!(),
+                StmtKind::Assignment { target, value } => self.build_assignment_stmt(module_builder, target, value),
                 StmtKind::From { path, identifiers } => todo!(),
                 StmtKind::While { condition, body } => todo!(),
                 StmtKind::Break => todo!(),

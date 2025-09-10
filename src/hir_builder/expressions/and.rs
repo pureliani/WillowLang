@@ -1,15 +1,15 @@
 use crate::{
     ast::expr::Expr,
     cfg::{Instruction, Terminator, Value},
-    hir_builder::FunctionBuilder,
+    hir_builder::{FunctionBuilder, ModuleBuilder},
 };
 
 impl FunctionBuilder {
-    pub fn build_and_expr(&mut self, left: Box<Expr>, right: Box<Expr>) -> Value {
+    pub fn build_and_expr(&mut self, module_builder: &mut ModuleBuilder, left: Box<Expr>, right: Box<Expr>) -> Value {
         let right_entry_block_id = self.new_basic_block();
         let merge_block_id = self.new_basic_block();
 
-        let left_value = self.build_expr(*left);
+        let left_value = self.build_expr(module_builder, *left);
         let left_exit_block_id = self.current_block_id;
 
         self.set_basic_block_terminator(Terminator::CondJump {
@@ -19,7 +19,7 @@ impl FunctionBuilder {
         });
 
         self.use_basic_block(right_entry_block_id);
-        let right_value = self.build_expr(*right);
+        let right_value = self.build_expr(module_builder, *right);
         let right_exit_block_id = self.current_block_id;
         self.set_basic_block_terminator(Terminator::Jump { target: merge_block_id });
 

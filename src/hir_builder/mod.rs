@@ -54,12 +54,12 @@ pub struct ModuleBuilder<'a> {
 impl<'a> ModuleBuilder<'a> {
     pub fn build(
         module_id: ModuleId,
-        name: String,
+        name: &str,
         string_interner: &'a StringInterner<'a>,
     ) -> (CheckedModule, Vec<SemanticError>) {
         let module = CheckedModule {
             id: module_id,
-            name,
+            name: name.to_string(),
             constant_data: HashMap::new(),
             declarations: HashMap::new(),
             exports: HashSet::new(),

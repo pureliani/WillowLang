@@ -3,12 +3,18 @@ use crate::{
     cfg::{BinaryOperationKind, Instruction, Value},
     hir_builder::{
         types::checked_type::{Type, TypeKind},
-        FunctionBuilder,
+        FunctionBuilder, ModuleBuilder,
     },
 };
 
 impl FunctionBuilder {
-    pub fn build_comparison_expr(&mut self, left: Box<Expr>, right: Box<Expr>, op_kind: BinaryOperationKind) -> Value {
+    pub fn build_comparison_expr(
+        &mut self,
+        module_builder: &mut ModuleBuilder,
+        left: Box<Expr>,
+        right: Box<Expr>,
+        op_kind: BinaryOperationKind,
+    ) -> Value {
         let result_type = Type {
             kind: TypeKind::Bool,
             span: Span {
@@ -17,16 +23,16 @@ impl FunctionBuilder {
             },
         };
 
-        let left_value = self.build_expr(*left);
+        let left_value = self.build_expr(module_builder, *left);
         let left_type = self.get_value_type(&left_value);
 
-        let right_value = self.build_expr(*right);
+        let right_value = self.build_expr(module_builder, *right);
         let right_type = self.get_value_type(&right_value);
 
         let validation_result = self.check_binary_numeric_operation(&left_type, &right_type);
 
         if let Err(e) = validation_result {
-            return self.report_error_and_get_poison(e);
+            return self.report_error_and_get_poison(module_builder, e);
         };
 
         let destination = self.new_value_id();

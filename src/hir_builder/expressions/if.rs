@@ -4,7 +4,7 @@ use crate::{
     hir_builder::{
         errors::{SemanticError, SemanticErrorKind},
         types::checked_type::{Type, TypeKind},
-        FunctionBuilder,
+        FunctionBuilder, ModuleBuilder,
     },
 };
 
@@ -19,16 +19,20 @@ pub enum IfContext {
 impl FunctionBuilder {
     pub fn build_if(
         &mut self,
+        module_builder: &mut ModuleBuilder,
         branches: Vec<(Box<Expr>, BlockContents)>,
         else_branch: Option<BlockContents>,
         context: IfContext,
     ) -> Value {
         if context == IfContext::Expression && else_branch.is_none() {
             let span = branches.first().unwrap().0.span;
-            return self.report_error_and_get_poison(SemanticError {
-                kind: SemanticErrorKind::IfExpressionMissingElse,
-                span,
-            });
+            return self.report_error_and_get_poison(
+                module_builder,
+                SemanticError {
+                    kind: SemanticErrorKind::IfExpressionMissingElse,
+                    span,
+                },
+            );
         }
 
         let entry_block_id = self.current_block_id;
@@ -45,17 +49,20 @@ impl FunctionBuilder {
 
             self.use_basic_block(current_block_id);
 
-            let condition_value = self.build_expr(*condition);
+            let condition_value = self.build_expr(module_builder, *condition);
             let condition_value_type = self.get_value_type(&condition_value);
 
             if !self.check_is_assignable(&condition_value_type, &expected_condition_type) {
-                return self.report_error_and_get_poison(SemanticError {
-                    span: condition_value_type.span,
-                    kind: SemanticErrorKind::TypeMismatch {
-                        expected: expected_condition_type,
-                        received: condition_value_type,
+                return self.report_error_and_get_poison(
+                    module_builder,
+                    SemanticError {
+                        span: condition_value_type.span,
+                        kind: SemanticErrorKind::TypeMismatch {
+                            expected: expected_condition_type,
+                            received: condition_value_type,
+                        },
                     },
-                });
+                );
             }
 
             let body_block_id = self.new_basic_block();
@@ -68,7 +75,7 @@ impl FunctionBuilder {
             });
 
             self.use_basic_block(body_block_id);
-            let body_value = self.build_codeblock_expr(body);
+            let body_value = self.build_codeblock_expr(module_builder, body);
             let body_type = self.get_value_type(&body_value);
             let body_exit_block_id = self.current_block_id;
             phi_sources.push((body_exit_block_id, body_value, body_type));
@@ -79,7 +86,7 @@ impl FunctionBuilder {
 
         self.use_basic_block(current_block_id);
         if let Some(else_body) = else_branch {
-            let else_value = self.build_codeblock_expr(else_body);
+            let else_value = self.build_codeblock_expr(module_builder, else_body);
             let else_type = self.get_value_type(&else_value);
             let else_exit_block_id = self.current_block_id;
             phi_sources.push((else_exit_block_id, else_value, else_type));
@@ -96,13 +103,16 @@ impl FunctionBuilder {
 
             for branch_type in phi_sources.iter().map(|phi_source| &phi_source.2) {
                 if !self.check_is_assignable(branch_type, first_branch_type) {
-                    return self.report_error_and_get_poison(SemanticError {
-                        kind: SemanticErrorKind::IncompatibleBranchTypes {
-                            first: first_branch_type.clone(),
-                            second: branch_type.clone(),
+                    return self.report_error_and_get_poison(
+                        module_builder,
+                        SemanticError {
+                            kind: SemanticErrorKind::IncompatibleBranchTypes {
+                                first: first_branch_type.clone(),
+                                second: branch_type.clone(),
+                            },
+                            span: branch_type.span,
                         },
-                        span: branch_type.span,
-                    });
+                    );
                 }
             }
 
