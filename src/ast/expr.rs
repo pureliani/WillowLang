@@ -13,10 +13,15 @@ pub struct BlockContents {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub enum MatchPattern {
+    Variant(IdentifierNode),
+    VariantWithValue(IdentifierNode, IdentifierNode),
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct MatchArm {
-    pub evaluate: Expr,
-    pub variant_name: IdentifierNode,
-    pub binding_name: Option<IdentifierNode>,
+    pub pattern: MatchPattern,
+    pub expression: Expr,
 }
 
 #[derive(Clone, Debug, PartialEq)]

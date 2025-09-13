@@ -1,5 +1,5 @@
 use crate::{
-    ast::expr::{Expr, ExprKind, MatchArm},
+    ast::expr::{Expr, ExprKind, MatchArm, MatchPattern},
     parse::{Parser, ParsingError},
     tokenize::{KeywordKind, PunctuationKind, TokenKind},
 };
@@ -15,25 +15,21 @@ impl<'a, 'b> Parser<'a, 'b> {
             |p| {
                 let variant_name = p.consume_identifier()?;
 
-                let binding_name = if p.match_token(0, TokenKind::Punctuation(PunctuationKind::LParen)) {
+                let pattern = if p.match_token(0, TokenKind::Punctuation(PunctuationKind::LParen)) {
                     p.advance();
-                    let id = p.consume_identifier()?;
+                    let binding_name = p.consume_identifier()?;
                     p.consume_punctuation(PunctuationKind::RParen)?;
-                    Some(id)
+                    MatchPattern::VariantWithValue(variant_name, binding_name)
                 } else {
-                    None
+                    MatchPattern::Variant(variant_name)
                 };
 
                 p.consume_punctuation(PunctuationKind::Eq)?;
                 p.consume_punctuation(PunctuationKind::Gt)?;
 
-                let expr = p.parse_expr(0)?;
+                let expression = p.parse_expr(0)?;
 
-                Ok(MatchArm {
-                    variant_name,
-                    binding_name,
-                    evaluate: expr,
-                })
+                Ok(MatchArm { expression, pattern })
             },
             |p| p.match_token(0, TokenKind::Punctuation(PunctuationKind::RBrace)),
         )?;

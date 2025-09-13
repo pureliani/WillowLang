@@ -18,6 +18,7 @@ pub enum SemanticErrorKind {
     IncompatibleBranchTypes { first: Type, second: Type },
     MixedSignedAndUnsigned,
     MixedFloatAndInteger,
+    ExpectedUnionType,
     CannotCompareType { of: Type, to: Type },
     UndeclaredIdentifier(IdentifierNode),
     UndeclaredType(IdentifierNode),

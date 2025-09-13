@@ -80,7 +80,7 @@ impl FunctionBuilder {
             ExprKind::If { branches, else_branch } => self.build_if(module_builder, branches, else_branch, IfContext::Expression),
             ExprKind::ListLiteral(items) => todo!(),
             ExprKind::CodeBlock(block_contents) => self.build_codeblock_expr(module_builder, block_contents),
-            ExprKind::Match { condition, arms } => todo!(),
+            ExprKind::Match { condition, arms } => self.build_match_expr(module_builder, condition, arms),
             ExprKind::StructInit { left, fields } => todo!(),
         }
     }
