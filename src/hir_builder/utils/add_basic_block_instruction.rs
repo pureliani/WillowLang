@@ -2,15 +2,7 @@ use crate::{cfg::Instruction, hir_builder::FunctionBuilder};
 
 impl FunctionBuilder {
     pub fn add_basic_block_instruction(&mut self, instruction: Instruction) {
-        let current_basic_block = self.cfg.blocks.get_mut(&self.current_block_id);
-
-        if let Some(bb) = current_basic_block {
-            bb.instructions.push(instruction);
-        } else {
-            panic!(
-                "INTERNAL COMPILER ERROR: Could not add an instruction to a basic block: basic block with id: {} doesn't exist.",
-                self.current_block_id.0
-            );
-        }
+        let bb = self.get_current_basic_block();
+        bb.instructions.push(instruction);
     }
 }
