@@ -63,7 +63,7 @@ impl FunctionBuilder {
             }
             ExprKind::And { left, right } => self.build_and_expr(module_builder, left, right),
             ExprKind::Or { left, right } => self.build_or_expr(module_builder, left, right),
-            ExprKind::Access { left, field } => todo!(),
+            ExprKind::Access { left, field } => self.build_access_expr(module_builder, left, field),
             ExprKind::StaticAccess { left, field } => todo!(),
             ExprKind::TypeCast { left, target } => todo!(),
             ExprKind::FnCall { left, args } => todo!(),

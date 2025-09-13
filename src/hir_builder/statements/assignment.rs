@@ -63,7 +63,7 @@ impl FunctionBuilder {
                         });
                     }
                 } else {
-                    panic!("Expected base_ptr_id to be of Pointer<T> type");
+                    panic!("INTERNAL COMPILER ERROR: Expected base_ptr_id to be of Pointer<T> type");
                 }
             }
             _ => {
@@ -100,7 +100,7 @@ impl FunctionBuilder {
                 return;
             }
         } else {
-            panic!("Expected destination_ptr_id to be of Pointer<T> type");
+            panic!("INTERNAL COMPILER ERROR: Expected destination_ptr_id to be of Pointer<T> type");
         }
 
         self.add_basic_block_instruction(Instruction::Store {

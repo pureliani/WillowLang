@@ -8,7 +8,7 @@ impl FunctionBuilder {
             bb.instructions.push(instruction);
         } else {
             panic!(
-                "Could not add an instruction to a basic block: basic block with id: {} doesn't exist.",
+                "INTERNAL COMPILER ERROR: Could not add an instruction to a basic block: basic block with id: {} doesn't exist.",
                 self.current_block_id.0
             );
         }

@@ -8,7 +8,7 @@ impl FunctionBuilder {
             bb.terminator = terminator;
         } else {
             panic!(
-                "Could not set basic block terminator: basic block with id: {} doesn't exist.",
+                "INTERNAL COMPILER ERROR: Could not set basic block terminator: basic block with id: {} doesn't exist.",
                 self.current_block_id.0
             );
         }

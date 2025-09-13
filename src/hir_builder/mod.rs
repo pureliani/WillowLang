@@ -88,7 +88,7 @@ impl<'a> ModuleBuilder<'a> {
     pub fn current_function_builder(&mut self) -> &mut FunctionBuilder {
         self.function_builders
             .last_mut()
-            .expect("INTERNAL: Builder stack should never be empty.")
+            .expect("INTERNAL COMPILER ERROR: Builder stack should never be empty.")
     }
 }
 
