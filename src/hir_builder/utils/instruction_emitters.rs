@@ -1,4 +1,5 @@
 use crate::{
+    ast::IdentifierNode,
     cfg::{BasicBlock, Instruction, Value, ValueId},
     hir_builder::{
         errors::{SemanticError, SemanticErrorKind},
@@ -76,18 +77,78 @@ impl FunctionBuilder {
             panic!("INTERNAL COMPILER ERROR: Expected destination_ptr_id to be of Pointer<T> type");
         }
 
-        self.add_basic_block_instruction(Instruction::Store {
+        self.get_current_basic_block().instructions.push(Instruction::Store {
             destination_ptr,
             source_val: value,
         });
     }
 
-    pub fn emit_load(&mut self, module_builder: &mut ModuleBuilder) {
-        todo!()
+    pub fn emit_load(&mut self, source_ptr: ValueId) -> ValueId {
+        let ptr_type = self.get_value_id_type(&source_ptr);
+
+        let destination_type = if let TypeKind::Pointer(t) = ptr_type.kind {
+            *t
+        } else {
+            panic!("INTERNAL COMPILER ERROR: Expected source_ptr to be of Pointer<T> type");
+        };
+
+        let destination = self.new_value_id();
+
+        self.cfg.value_types.insert(destination, destination_type);
+
+        self.get_current_basic_block()
+            .instructions
+            .push(Instruction::Load { destination, source_ptr });
+
+        destination
     }
 
-    pub fn emit_get_field_ptr(&mut self, module_builder: &mut ModuleBuilder) {
-        todo!()
+    pub fn emit_get_field_ptr(&mut self, base_ptr: ValueId, field: IdentifierNode) -> Result<ValueId, SemanticError> {
+        let base_ptr_type = self.get_value_id_type(&base_ptr);
+
+        let struct_decl = if let TypeKind::Pointer(ptr_to) = &base_ptr_type.kind {
+            if let TypeKind::Struct(s) = &ptr_to.kind {
+                s
+            } else {
+                return Err(SemanticError {
+                    kind: SemanticErrorKind::CannotAccess(ptr_to.as_ref().clone()),
+                    span: field.span,
+                });
+            }
+        } else {
+            panic!("INTERNAL COMPILER ERROR: emit_get_field_ptr called on a non-pointer type.");
+        };
+
+        if let Some((field_index, checked_field)) = struct_decl
+            .fields
+            .iter()
+            .enumerate()
+            .find(|(_, f)| f.identifier.name == field.name)
+        {
+            let destination = self.new_value_id();
+            let field_type = &checked_field.constraint;
+
+            self.cfg.value_types.insert(
+                destination,
+                Type {
+                    kind: TypeKind::Pointer(Box::new(field_type.clone())),
+                    span: field.span,
+                },
+            );
+
+            self.get_current_basic_block().instructions.push(Instruction::GetFieldPtr {
+                destination,
+                base_ptr,
+                field_index,
+            });
+
+            Ok(destination)
+        } else {
+            Err(SemanticError {
+                kind: SemanticErrorKind::AccessToUndefinedField { field },
+                span: field.span,
+            })
+        }
     }
 
     pub fn emit_get_element_ptr(&mut self, module_builder: &mut ModuleBuilder) {

@@ -1,9 +1,8 @@
 use crate::{
     ast::expr::{Expr, ExprKind},
-    cfg::{Instruction, ValueId},
+    cfg::ValueId,
     hir_builder::{
         errors::{SemanticError, SemanticErrorKind},
-        types::checked_type::{Type, TypeKind},
         utils::scope::SymbolEntry,
         FunctionBuilder, HIRContext,
     },
@@ -24,47 +23,7 @@ impl FunctionBuilder {
             }
             ExprKind::Access { left, field } => {
                 let base_ptr_id = self.build_lvalue_expr(ctx, *left)?;
-                let base_ptr_type = self.get_value_id_type(&base_ptr_id);
-
-                if let TypeKind::Pointer(ptr_to) = &base_ptr_type.kind {
-                    if let TypeKind::Struct(struct_decl) = &ptr_to.kind {
-                        if let Some((field_index, field)) = struct_decl
-                            .fields
-                            .iter()
-                            .enumerate()
-                            .find(|(_, f)| f.identifier.name == field.name)
-                        {
-                            let field_ptr_id = self.new_value_id();
-                            self.cfg.value_types.insert(
-                                field_ptr_id,
-                                Type {
-                                    kind: TypeKind::Pointer(Box::new(field.constraint.clone())),
-                                    span: expr.span,
-                                },
-                            );
-
-                            self.add_basic_block_instruction(Instruction::GetFieldPtr {
-                                destination: field_ptr_id,
-                                base_ptr: base_ptr_id,
-                                field_index,
-                            });
-
-                            return Ok(field_ptr_id);
-                        } else {
-                            return Err(SemanticError {
-                                kind: SemanticErrorKind::AccessToUndefinedField { field },
-                                span: expr.span,
-                            });
-                        }
-                    } else {
-                        return Err(SemanticError {
-                            kind: SemanticErrorKind::CannotAccess(ptr_to.as_ref().clone()),
-                            span: expr.span,
-                        });
-                    }
-                } else {
-                    panic!("INTERNAL COMPILER ERROR: Expected base_ptr_id to be of Pointer<T> type");
-                }
+                Ok(self.emit_get_field_ptr(base_ptr_id, field)?)
             }
             _ => {
                 return Err(SemanticError {
