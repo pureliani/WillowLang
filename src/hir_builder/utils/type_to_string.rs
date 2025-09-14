@@ -48,7 +48,7 @@ pub fn type_to_string_recursive(ty: &TypeKind, string_interner: &StringInterner)
                 .join(",\n");
 
             format!(
-                "{} {{\n{}\n}}",
+                "struct {} {{\n{}\n}}",
                 identifier_to_string(decl.identifier.name, string_interner),
                 fields
             )
@@ -86,15 +86,30 @@ pub fn type_to_string_recursive(ty: &TypeKind, string_interner: &StringInterner)
             format!("{}[]", type_to_string_recursive(&item_type.kind, string_interner,))
         }
         TypeKind::Pointer(ty) => format!("ptr<{}>", type_to_string_recursive(&ty.kind, string_interner,)),
-        TypeKind::Union(decl) => decl
-            .variants
-            .iter()
-            .map(|t| {
-                format!("{}", )
-                identifier_to_string(t.0, string_interner)
+        TypeKind::Union(decl) => {
+            let variants = decl
+                .variants
+                .iter()
+                .map(|v| match &v.payload {
+                    Some(pt) => {
+                        format!(
+                            "{}({})",
+                            identifier_to_string(v.name.name, string_interner),
+                            type_to_string(&pt.kind, string_interner)
+                        )
+                    }
+                    None => {
+                        format!("{}", identifier_to_string(v.name.name, string_interner))
+                    }
+                })
+                .collect::<Vec<String>>()
+                .join(",\n");
 
-            })
-            .collect::<Vec<String>>()
-            .join(" | "),
+            format!(
+                "union {} {{\n{}\n}}",
+                identifier_to_string(decl.identifier.name, string_interner),
+                variants
+            )
+        }
     }
 }
