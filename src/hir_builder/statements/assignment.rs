@@ -77,35 +77,15 @@ impl FunctionBuilder {
 
     pub fn build_assignment_stmt(&mut self, ctx: &mut HIRContext, target: Expr, value: Expr) {
         let source_val = self.build_expr(ctx, value);
-        let source_type = self.get_value_type(&source_val);
 
-        let destination_ptr_id = match self.build_lvalue_expr(ctx, target) {
+        let destination_ptr = match self.build_lvalue_expr(ctx, target) {
             Ok(value_id) => value_id,
             Err(e) => {
                 ctx.module_builder.errors.push(e);
                 return;
             }
         };
-        let destination_ptr_type = self.get_value_id_type(&destination_ptr_id);
 
-        if let TypeKind::Pointer(target_type) = destination_ptr_type.kind {
-            if !self.check_is_assignable(&source_type, &target_type) {
-                ctx.module_builder.errors.push(SemanticError {
-                    span: source_type.span,
-                    kind: SemanticErrorKind::TypeMismatch {
-                        expected: *target_type,
-                        received: source_type,
-                    },
-                });
-                return;
-            }
-        } else {
-            panic!("INTERNAL COMPILER ERROR: Expected destination_ptr_id to be of Pointer<T> type");
-        }
-
-        self.add_basic_block_instruction(Instruction::Store {
-            destination_ptr: destination_ptr_id,
-            source_val,
-        });
+        self.emit_store(ctx, destination_ptr, source_val);
     }
 }

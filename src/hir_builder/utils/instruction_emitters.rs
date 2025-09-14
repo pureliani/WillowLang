@@ -1,8 +1,9 @@
 use crate::{
-    cfg::{BasicBlock, Instruction, ValueId},
+    cfg::{BasicBlock, Instruction, Value, ValueId},
     hir_builder::{
+        errors::{SemanticError, SemanticErrorKind},
         types::checked_type::{Type, TypeKind},
-        FunctionBuilder, ModuleBuilder,
+        FunctionBuilder, HIRContext, ModuleBuilder,
     },
 };
 
@@ -36,9 +37,9 @@ impl FunctionBuilder {
     }
 
     /// Returns ValueId which holds pointer: TypeKind::Pointer(Box<Type>)
-    pub fn emit_new(&mut self, ty: Type) -> ValueId {
+    pub fn emit_new(&mut self, ctx: &mut HIRContext, ty: Type) -> ValueId {
         let destination = self.new_value_id();
-        let allocation_id = todo!(); // TODO: get globally unique id
+        let allocation_site_id = ctx.program_builder.new_allocation_id();
 
         self.cfg.value_types.insert(
             destination,
@@ -50,14 +51,35 @@ impl FunctionBuilder {
 
         self.get_current_basic_block().instructions.push(Instruction::New {
             destination,
-            allocation_site_id: allocation_id,
+            allocation_site_id,
         });
 
         destination
     }
 
-    pub fn emit_store(&mut self, module_builder: &mut ModuleBuilder) {
-        todo!()
+    pub fn emit_store(&mut self, ctx: &mut HIRContext, destination_ptr: ValueId, value: Value) {
+        let value_type = self.get_value_type(&value);
+        let destination_ptr_type = self.get_value_id_type(&destination_ptr);
+
+        if let TypeKind::Pointer(target_type) = destination_ptr_type.kind {
+            if !self.check_is_assignable(&value_type, &target_type) {
+                ctx.module_builder.errors.push(SemanticError {
+                    span: value_type.span,
+                    kind: SemanticErrorKind::TypeMismatch {
+                        expected: *target_type,
+                        received: value_type,
+                    },
+                });
+                return;
+            }
+        } else {
+            panic!("INTERNAL COMPILER ERROR: Expected destination_ptr_id to be of Pointer<T> type");
+        }
+
+        self.add_basic_block_instruction(Instruction::Store {
+            destination_ptr,
+            source_val: value,
+        });
     }
 
     pub fn emit_load(&mut self, module_builder: &mut ModuleBuilder) {
