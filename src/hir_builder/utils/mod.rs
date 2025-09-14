@@ -10,7 +10,6 @@ pub mod is_integer;
 pub mod is_signed;
 pub mod new_basic_block;
 pub mod new_value_id;
-pub mod report_error_and_get_poison;
 pub mod scope;
 pub mod set_basic_block_terminator;
 pub mod type_to_string;

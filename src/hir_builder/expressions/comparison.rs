@@ -32,7 +32,7 @@ impl FunctionBuilder {
         let validation_result = self.check_binary_numeric_operation(&left_type, &right_type);
 
         if let Err(e) = validation_result {
-            return self.report_error_and_get_poison(ctx, e);
+            return Value::Use(self.report_error_and_get_poison(ctx, e));
         };
 
         let destination = self.new_value_id();

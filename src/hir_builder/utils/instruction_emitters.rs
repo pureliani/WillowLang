@@ -1,14 +1,33 @@
+use std::collections::HashSet;
+
 use crate::{
     ast::IdentifierNode,
-    cfg::{BasicBlock, Instruction, Value, ValueId},
+    cfg::{BasicBlock, Instruction, UnaryOperationKind, Value, ValueId},
     hir_builder::{
         errors::{SemanticError, SemanticErrorKind},
         types::checked_type::{Type, TypeKind},
+        utils::is_signed::is_signed,
         FunctionBuilder, HIRContext, ModuleBuilder,
     },
 };
 
 impl FunctionBuilder {
+    /// Records a semantic error and returns a new "poison" Value of type Unknown.
+    /// The caller is responsible for immediately returning the poison Value.
+    pub fn report_error_and_get_poison(&mut self, ctx: &mut HIRContext, error: SemanticError) -> ValueId {
+        let error_span = error.span;
+        ctx.module_builder.errors.push(error);
+        let unknown_result_id = self.new_value_id();
+        self.cfg.value_types.insert(
+            unknown_result_id,
+            Type {
+                kind: TypeKind::Unknown,
+                span: error_span,
+            },
+        );
+        unknown_result_id
+    }
+
     pub fn get_current_basic_block(&mut self) -> &mut BasicBlock {
         self.cfg.blocks.get_mut(&self.current_block_id).unwrap_or_else(|| {
             panic!(
@@ -155,8 +174,89 @@ impl FunctionBuilder {
         todo!()
     }
 
-    pub fn emit_unary_op(&mut self, module_builder: &mut ModuleBuilder) {
-        todo!()
+    pub fn emit_unary_op(&mut self, ctx: &mut HIRContext, op_kind: UnaryOperationKind, value: Value) -> ValueId {
+        let value_type = self.get_value_type(&value);
+        let span = value_type.span;
+
+        let destination = match op_kind {
+            UnaryOperationKind::Neg => {
+                if !is_signed(&value_type.kind) {
+                    let expected = HashSet::from([
+                        Type {
+                            kind: TypeKind::I8,
+                            span,
+                        },
+                        Type {
+                            kind: TypeKind::I16,
+                            span,
+                        },
+                        Type {
+                            kind: TypeKind::I32,
+                            span,
+                        },
+                        Type {
+                            kind: TypeKind::I64,
+                            span,
+                        },
+                        Type {
+                            kind: TypeKind::ISize,
+                            span,
+                        },
+                        Type {
+                            kind: TypeKind::F32,
+                            span,
+                        },
+                        Type {
+                            kind: TypeKind::F64,
+                            span,
+                        },
+                    ]);
+
+                    return self.report_error_and_get_poison(
+                        ctx,
+                        SemanticError {
+                            kind: SemanticErrorKind::TypeMismatchExpectedOneOf {
+                                expected,
+                                received: value_type.clone(),
+                            },
+                            span,
+                        },
+                    );
+                }
+
+                self.new_value_id()
+            }
+            UnaryOperationKind::Not => {
+                let bool_type = Type {
+                    kind: TypeKind::Bool,
+                    span,
+                };
+
+                if !self.check_is_assignable(&value_type, &bool_type) {
+                    return self.report_error_and_get_poison(
+                        ctx,
+                        SemanticError {
+                            kind: SemanticErrorKind::TypeMismatch {
+                                expected: bool_type.clone(),
+                                received: value_type,
+                            },
+                            span,
+                        },
+                    );
+                }
+
+                self.new_value_id()
+            }
+        };
+
+        self.cfg.value_types.insert(destination, value_type);
+        self.get_current_basic_block().instructions.push(Instruction::UnaryOp {
+            op_kind,
+            destination,
+            operand: value,
+        });
+
+        destination
     }
 
     pub fn emit_binary_op(&mut self, module_builder: &mut ModuleBuilder) {

@@ -26,13 +26,13 @@ impl FunctionBuilder {
     ) -> Value {
         if context == IfContext::Expression && else_branch.is_none() {
             let span = branches.first().unwrap().0.span;
-            return self.report_error_and_get_poison(
+            return Value::Use(self.report_error_and_get_poison(
                 ctx,
                 SemanticError {
                     kind: SemanticErrorKind::IfExpressionMissingElse,
                     span,
                 },
-            );
+            ));
         }
 
         let entry_block_id = self.current_block_id;
@@ -53,7 +53,7 @@ impl FunctionBuilder {
             let condition_value_type = self.get_value_type(&condition_value);
 
             if !self.check_is_assignable(&condition_value_type, &expected_condition_type) {
-                return self.report_error_and_get_poison(
+                return Value::Use(self.report_error_and_get_poison(
                     ctx,
                     SemanticError {
                         span: condition_value_type.span,
@@ -62,7 +62,7 @@ impl FunctionBuilder {
                             received: condition_value_type,
                         },
                     },
-                );
+                ));
             }
 
             let body_block_id = self.new_basic_block();
@@ -103,7 +103,7 @@ impl FunctionBuilder {
 
             for branch_type in phi_sources.iter().map(|phi_source| &phi_source.2) {
                 if !self.check_is_assignable(branch_type, first_branch_type) {
-                    return self.report_error_and_get_poison(
+                    return Value::Use(self.report_error_and_get_poison(
                         ctx,
                         SemanticError {
                             kind: SemanticErrorKind::IncompatibleBranchTypes {
@@ -112,7 +112,7 @@ impl FunctionBuilder {
                             },
                             span: branch_type.span,
                         },
-                    );
+                    ));
                 }
             }
 

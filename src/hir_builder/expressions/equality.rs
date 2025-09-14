@@ -34,7 +34,7 @@ impl FunctionBuilder {
         let right_type = self.get_value_type(&right_value);
 
         if !check_is_equatable(&left_type.kind, &right_type.kind) {
-            return self.report_error_and_get_poison(
+            return Value::Use(self.report_error_and_get_poison(
                 ctx,
                 SemanticError {
                     kind: SemanticErrorKind::CannotCompareType {
@@ -43,7 +43,7 @@ impl FunctionBuilder {
                     },
                     span,
                 },
-            );
+            ));
         }
 
         let destination_id = self.new_value_id();

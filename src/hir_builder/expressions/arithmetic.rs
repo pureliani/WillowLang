@@ -22,7 +22,7 @@ impl FunctionBuilder {
 
         let result_type = match validation_result {
             Ok(t) => t,
-            Err(e) => return self.report_error_and_get_poison(ctx, e),
+            Err(e) => return Value::Use(self.report_error_and_get_poison(ctx, e)),
         };
 
         let destination = self.new_value_id();

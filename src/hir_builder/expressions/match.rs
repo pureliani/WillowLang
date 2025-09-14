@@ -16,13 +16,13 @@ impl FunctionBuilder {
         let union_decl = if let TypeKind::Union(decl) = condition_type.kind {
             decl
         } else {
-            return self.report_error_and_get_poison(
+            return Value::Use(self.report_error_and_get_poison(
                 ctx,
                 SemanticError {
                     kind: SemanticErrorKind::ExpectedUnionType,
                     span: condition_type.span,
                 },
-            );
+            ));
         };
 
         let merge_block_id = self.new_basic_block();
