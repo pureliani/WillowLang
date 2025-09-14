@@ -4,15 +4,15 @@ use crate::{
     hir_builder::{
         errors::{SemanticError, SemanticErrorKind},
         types::checked_type::{Type, TypeKind},
-        FunctionBuilder, ModuleBuilder,
+        FunctionBuilder, HIRContext,
     },
 };
 
 impl FunctionBuilder {
-    pub fn build_access_expr(&mut self, module_builder: &mut ModuleBuilder, left: Box<Expr>, field: IdentifierNode) -> Value {
-        let base_ptr_id = match self.build_lvalue_expr(module_builder, *left) {
+    pub fn build_access_expr(&mut self, ctx: &mut HIRContext, left: Box<Expr>, field: IdentifierNode) -> Value {
+        let base_ptr_id = match self.build_lvalue_expr(ctx, *left) {
             Ok(id) => id,
-            Err(e) => return self.report_error_and_get_poison(module_builder, e),
+            Err(e) => return self.report_error_and_get_poison(ctx, e),
         };
 
         let base_ptr_type = self.get_value_id_type(&base_ptr_id);
@@ -34,7 +34,7 @@ impl FunctionBuilder {
                         },
                     );
 
-                    self.add_basic_block_instruction(Instruction::FieldPtr {
+                    self.add_basic_block_instruction(Instruction::GetFieldPtr {
                         destination: field_ptr_id,
                         base_ptr: base_ptr_id,
                         field_index,
@@ -50,7 +50,7 @@ impl FunctionBuilder {
                     return Value::Use(final_value_id);
                 } else {
                     return self.report_error_and_get_poison(
-                        module_builder,
+                        ctx,
                         SemanticError {
                             kind: SemanticErrorKind::AccessToUndefinedField { field },
                             span: field.span,
@@ -61,7 +61,7 @@ impl FunctionBuilder {
         }
 
         self.report_error_and_get_poison(
-            module_builder,
+            ctx,
             SemanticError {
                 kind: SemanticErrorKind::CannotAccess(base_ptr_type),
                 span: field.span,

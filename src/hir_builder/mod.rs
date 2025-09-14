@@ -1,14 +1,18 @@
 use std::{
     collections::{HashMap, HashSet},
-    vec,
+    path::PathBuf,
+    sync::atomic::{AtomicUsize, Ordering},
 };
 
 use crate::{
     ast::{stmt::Stmt, IdentifierNode},
-    cfg::{BasicBlockId, CheckedModule, ControlFlowGraph, ModuleId, ValueId},
+    cfg::{
+        BasicBlock, BasicBlockId, CheckedModule, ConstantId, ControlFlowGraph, FunctionId, HeapAllocationId, ModuleId,
+        Terminator, ValueId,
+    },
     compile::string_interner::StringInterner,
     hir_builder::{
-        errors::{SemanticError, SemanticErrorKind},
+        errors::SemanticError,
         types::{checked_declaration::CheckedParam, checked_type::Type},
         utils::scope::{Scope, ScopeKind},
     },
@@ -20,104 +24,155 @@ pub mod statements;
 pub mod types;
 pub mod utils;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct CapturedVar {
     pub original_value_id: ValueId,
     pub captured_as_field_ptr_id: ValueId,
     pub identifier: IdentifierNode,
 }
 
+pub struct HIRContext<'a, 'b> {
+    // A mutable reference to the global program builder for services like ID generation.
+    pub program_builder: &'b mut ProgramBuilder<'a>,
+    // A mutable reference to the module builder for module-specific state.
+    pub module_builder: &'b mut ModuleBuilder,
+}
+
+pub struct ProgramBuilder<'a> {
+    pub modules: HashMap<ModuleId, ModuleBuilder>,
+    pub string_interner: &'a StringInterner<'a>,
+    /// Global errors
+    pub errors: Vec<SemanticError>,
+
+    function_id_counter: AtomicUsize,
+    constant_id_counter: AtomicUsize,
+    allocation_id_counter: AtomicUsize,
+}
+
+#[derive(Debug)]
+pub struct ModuleBuilder {
+    pub module: CheckedModule,
+    /// Module-specific errors
+    pub errors: Vec<SemanticError>,
+    /// Stack of closures
+    pub functions: Vec<FunctionBuilder>,
+    pub scopes: Vec<Scope>,
+}
+
 #[derive(Debug)]
 pub struct FunctionBuilder {
     pub cfg: ControlFlowGraph,
     pub return_type: Type,
-    pub params: Vec<CheckedParam>,
     pub captures: HashSet<CapturedVar>,
 
     pub current_block_id: BasicBlockId,
     block_id_counter: usize,
     value_id_counter: usize,
-    allocation_id_counter: usize,
 }
 
-pub struct ModuleBuilder<'a> {
-    pub module: CheckedModule,
-    pub errors: Vec<SemanticError>,
-    pub string_interner: &'a StringInterner<'a>,
-    pub function_builders: Vec<FunctionBuilder>,
-    pub scopes: Vec<Scope>,
-
-    function_id_counter: usize,
-    constant_id_counter: usize,
-}
-
-impl<'a> ModuleBuilder<'a> {
-    pub fn build(
-        module_id: ModuleId,
-        name: &str,
-        string_interner: &'a StringInterner<'a>,
-    ) -> (CheckedModule, Vec<SemanticError>) {
-        let module = CheckedModule {
-            id: module_id,
-            name: name.to_string(),
-            constant_data: HashMap::new(),
-            declarations: HashMap::new(),
-            exports: HashSet::new(),
-            functions: HashMap::new(),
-        };
-
-        let mut builder = ModuleBuilder {
-            module,
-            scopes: vec![Scope::new(ScopeKind::File)],
+impl<'a> ProgramBuilder<'a> {
+    pub fn new(string_interner: &'a StringInterner<'a>) -> Self {
+        ProgramBuilder {
             errors: vec![],
+            modules: HashMap::new(),
             string_interner,
-            function_builders: vec![],
-            function_id_counter: 0,
-            constant_id_counter: 0,
+            function_id_counter: AtomicUsize::new(0),
+            constant_id_counter: AtomicUsize::new(0),
+            allocation_id_counter: AtomicUsize::new(0),
+        }
+    }
+
+    pub fn build_module(&mut self, module_id: ModuleId, path: PathBuf, statements: Vec<Stmt>) {
+        let mut module_builder = ModuleBuilder::new(module_id, path);
+        module_builder.build_top_level_statements(self, statements); // cannot borrow `*ctx.module_builder` as mutable more than once at a time second mutable borrow occurs here
+        self.modules.insert(module_id, module_builder);
+    }
+
+    pub fn finish(self) -> (HashMap<ModuleId, ModuleBuilder>, Vec<SemanticError>) {
+        let mut global_errors = vec![];
+
+        // TODO: Check all imports were resolved.
+        // TODO: Check for a single `main` function in the whole program.
+
+        (self.modules, global_errors)
+    }
+
+    pub fn new_function_id(&self) -> FunctionId {
+        FunctionId(self.function_id_counter.fetch_add(1, Ordering::SeqCst))
+    }
+
+    pub fn new_constant_id(&self) -> ConstantId {
+        ConstantId(self.constant_id_counter.fetch_add(1, Ordering::SeqCst))
+    }
+
+    pub fn new_allocation_id(&self) -> HeapAllocationId {
+        HeapAllocationId(self.allocation_id_counter.fetch_add(1, Ordering::SeqCst))
+    }
+}
+
+impl ModuleBuilder {
+    pub fn new(id: ModuleId, path: PathBuf) -> Self {
+        Self {
+            module: CheckedModule::new(id, path),
+            errors: vec![],
+            functions: vec![],
+            scopes: vec![Scope::new(ScopeKind::File)],
+        }
+    }
+
+    fn build_top_level_statements(&mut self, program_builder: &mut ProgramBuilder, statements: Vec<Stmt>) {
+        let mut ctx = HIRContext {
+            module_builder: self,
+            program_builder,
         };
 
-        builder.build_top_level_statements();
+        // TODO: One pass to add declarations to the scope (handle forward declarations)
+        for stmt in &statements {
+            todo!()
+        }
 
-        (builder.module, builder.errors)
-    }
+        // TODO: Generate HIR
+        for stmt in &statements {
+            todo!()
+        }
 
-    pub fn build_top_level_statements(&mut self) {
         todo!()
-    }
-
-    pub fn current_function_builder(&mut self) -> &mut FunctionBuilder {
-        self.function_builders
-            .last_mut()
-            .expect("INTERNAL COMPILER ERROR: Builder stack should never be empty.")
     }
 }
 
 impl FunctionBuilder {
-    pub fn build(
-        module_builder: &mut ModuleBuilder,
-        params: Vec<CheckedParam>,
-        expected_return_type: Type,
-        body: Vec<Stmt>,
-    ) -> (ControlFlowGraph, HashSet<CapturedVar>) {
+    pub fn new(return_type: Type) -> Self {
+        let entry_block_id = BasicBlockId(0);
         let cfg = ControlFlowGraph {
-            blocks: HashMap::new(),
-            entry_block: BasicBlockId(0),
+            blocks: HashMap::from([(
+                entry_block_id,
+                BasicBlock {
+                    id: entry_block_id,
+                    instructions: vec![],
+                    terminator: Terminator::Unreachable,
+                },
+            )]),
+            entry_block: entry_block_id,
             value_types: HashMap::new(),
         };
 
-        let mut builder = FunctionBuilder {
+        Self {
             cfg,
-            params,
-            return_type: expected_return_type,
+            return_type,
             captures: HashSet::new(),
-            block_id_counter: 0,
-            current_block_id: BasicBlockId(0),
+            current_block_id: entry_block_id,
+            block_id_counter: 1,
             value_id_counter: 0,
-            allocation_id_counter: 0,
-        };
+        }
+    }
 
-        builder.build_statements(module_builder, body);
+    pub fn build_body(&mut self, ctx: &mut HIRContext, params: Vec<CheckedParam>, body: Vec<Stmt>) {
+        for param in params {
+            todo!()
+        }
 
-        (builder.cfg, builder.captures)
+        for stmt in body {
+            todo!()
+        }
     }
 }

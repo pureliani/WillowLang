@@ -5,15 +5,15 @@ use crate::{
         errors::{SemanticError, SemanticErrorKind},
         types::checked_type::{Type, TypeKind},
         utils::scope::SymbolEntry,
-        FunctionBuilder, ModuleBuilder,
+        FunctionBuilder, HIRContext,
     },
 };
 
 impl FunctionBuilder {
-    pub fn build_lvalue_expr(&mut self, module_builder: &mut ModuleBuilder, expr: Expr) -> Result<ValueId, SemanticError> {
+    pub fn build_lvalue_expr(&mut self, ctx: &mut HIRContext, expr: Expr) -> Result<ValueId, SemanticError> {
         match expr.kind {
             ExprKind::Identifier(identifier) => {
-                if let Some(SymbolEntry::VarDecl(decl)) = module_builder.scope_lookup(identifier.name) {
+                if let Some(SymbolEntry::VarDecl(decl)) = ctx.module_builder.scope_lookup(identifier.name) {
                     return Ok(decl.value_id); // ValueId which holds Pointer<T>
                 } else {
                     return Err(SemanticError {
@@ -23,7 +23,7 @@ impl FunctionBuilder {
                 }
             }
             ExprKind::Access { left, field } => {
-                let base_ptr_id = self.build_lvalue_expr(module_builder, *left)?;
+                let base_ptr_id = self.build_lvalue_expr(ctx, *left)?;
                 let base_ptr_type = self.get_value_id_type(&base_ptr_id);
 
                 if let TypeKind::Pointer(ptr_to) = &base_ptr_type.kind {
@@ -43,7 +43,7 @@ impl FunctionBuilder {
                                 },
                             );
 
-                            self.add_basic_block_instruction(Instruction::FieldPtr {
+                            self.add_basic_block_instruction(Instruction::GetFieldPtr {
                                 destination: field_ptr_id,
                                 base_ptr: base_ptr_id,
                                 field_index,
@@ -75,14 +75,14 @@ impl FunctionBuilder {
         }
     }
 
-    pub fn build_assignment_stmt(&mut self, module_builder: &mut ModuleBuilder, target: Expr, value: Expr) {
-        let source_val = self.build_expr(module_builder, value);
+    pub fn build_assignment_stmt(&mut self, ctx: &mut HIRContext, target: Expr, value: Expr) {
+        let source_val = self.build_expr(ctx, value);
         let source_type = self.get_value_type(&source_val);
 
-        let destination_ptr_id = match self.build_lvalue_expr(module_builder, target) {
+        let destination_ptr_id = match self.build_lvalue_expr(ctx, target) {
             Ok(value_id) => value_id,
             Err(e) => {
-                module_builder.errors.push(e);
+                ctx.module_builder.errors.push(e);
                 return;
             }
         };
@@ -90,7 +90,7 @@ impl FunctionBuilder {
 
         if let TypeKind::Pointer(target_type) = destination_ptr_type.kind {
             if !self.check_is_assignable(&source_type, &target_type) {
-                module_builder.errors.push(SemanticError {
+                ctx.module_builder.errors.push(SemanticError {
                     span: source_type.span,
                     kind: SemanticErrorKind::TypeMismatch {
                         expected: *target_type,

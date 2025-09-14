@@ -4,7 +4,7 @@ use crate::{
     hir_builder::{
         errors::{SemanticError, SemanticErrorKind},
         types::checked_type::{Type, TypeKind},
-        FunctionBuilder, ModuleBuilder,
+        FunctionBuilder, HIRContext,
     },
 };
 
@@ -19,7 +19,7 @@ pub enum IfContext {
 impl FunctionBuilder {
     pub fn build_if(
         &mut self,
-        module_builder: &mut ModuleBuilder,
+        ctx: &mut HIRContext,
         branches: Vec<(Box<Expr>, BlockContents)>,
         else_branch: Option<BlockContents>,
         context: IfContext,
@@ -27,7 +27,7 @@ impl FunctionBuilder {
         if context == IfContext::Expression && else_branch.is_none() {
             let span = branches.first().unwrap().0.span;
             return self.report_error_and_get_poison(
-                module_builder,
+                ctx,
                 SemanticError {
                     kind: SemanticErrorKind::IfExpressionMissingElse,
                     span,
@@ -49,12 +49,12 @@ impl FunctionBuilder {
 
             self.use_basic_block(current_block_id);
 
-            let condition_value = self.build_expr(module_builder, *condition);
+            let condition_value = self.build_expr(ctx, *condition);
             let condition_value_type = self.get_value_type(&condition_value);
 
             if !self.check_is_assignable(&condition_value_type, &expected_condition_type) {
                 return self.report_error_and_get_poison(
-                    module_builder,
+                    ctx,
                     SemanticError {
                         span: condition_value_type.span,
                         kind: SemanticErrorKind::TypeMismatch {
@@ -75,7 +75,7 @@ impl FunctionBuilder {
             });
 
             self.use_basic_block(body_block_id);
-            let body_value = self.build_codeblock_expr(module_builder, body);
+            let body_value = self.build_codeblock_expr(ctx, body);
             let body_type = self.get_value_type(&body_value);
             let body_exit_block_id = self.current_block_id;
             phi_sources.push((body_exit_block_id, body_value, body_type));
@@ -86,7 +86,7 @@ impl FunctionBuilder {
 
         self.use_basic_block(current_block_id);
         if let Some(else_body) = else_branch {
-            let else_value = self.build_codeblock_expr(module_builder, else_body);
+            let else_value = self.build_codeblock_expr(ctx, else_body);
             let else_type = self.get_value_type(&else_value);
             let else_exit_block_id = self.current_block_id;
             phi_sources.push((else_exit_block_id, else_value, else_type));
@@ -104,7 +104,7 @@ impl FunctionBuilder {
             for branch_type in phi_sources.iter().map(|phi_source| &phi_source.2) {
                 if !self.check_is_assignable(branch_type, first_branch_type) {
                     return self.report_error_and_get_poison(
-                        module_builder,
+                        ctx,
                         SemanticError {
                             kind: SemanticErrorKind::IncompatibleBranchTypes {
                                 first: first_branch_type.clone(),

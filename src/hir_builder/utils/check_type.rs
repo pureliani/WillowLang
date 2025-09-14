@@ -10,22 +10,22 @@ use crate::{
             checked_type::{Type, TypeKind},
         },
         utils::scope::{ScopeKind, SymbolEntry},
-        FunctionBuilder, ModuleBuilder,
+        FunctionBuilder, HIRContext,
     },
 };
 
 impl FunctionBuilder {
-    pub fn check_params(&mut self, module_builder: &mut ModuleBuilder, params: &Vec<Param>) -> Vec<CheckedParam> {
+    pub fn check_params(&mut self, ctx: &mut HIRContext, params: &Vec<Param>) -> Vec<CheckedParam> {
         params
             .into_iter()
             .map(|p| CheckedParam {
-                constraint: self.check_type_annotation(module_builder, &p.constraint),
+                constraint: self.check_type_annotation(ctx, &p.constraint),
                 identifier: p.identifier,
             })
             .collect()
     }
 
-    pub fn check_type_annotation(&mut self, module_builder: &mut ModuleBuilder, annotation: &TypeAnnotation) -> Type {
+    pub fn check_type_annotation(&mut self, ctx: &mut HIRContext, annotation: &TypeAnnotation) -> Type {
         let kind = match &annotation.kind {
             TypeAnnotationKind::Void => TypeKind::Void,
             TypeAnnotationKind::Bool => TypeKind::Bool,
@@ -42,14 +42,15 @@ impl FunctionBuilder {
             TypeAnnotationKind::F32 => TypeKind::F32,
             TypeAnnotationKind::F64 => TypeKind::F64,
             TypeAnnotationKind::String => TypeKind::String,
-            TypeAnnotationKind::Identifier(id) => module_builder
+            TypeAnnotationKind::Identifier(id) => ctx
+                .module_builder
                 .scope_lookup(id.name)
                 .map(|entry| match entry {
                     SymbolEntry::TypeAliasDecl(decl) => TypeKind::TypeAliasDecl(decl),
                     SymbolEntry::StructDecl(decl) => TypeKind::Struct(decl),
                     SymbolEntry::UnionDecl(decl) => TypeKind::Union(decl),
                     SymbolEntry::VarDecl(_) => {
-                        module_builder.errors.push(SemanticError {
+                        ctx.module_builder.errors.push(SemanticError {
                             kind: SemanticErrorKind::CannotUseVariableDeclarationAsType,
                             span: annotation.span,
                         });
@@ -58,7 +59,7 @@ impl FunctionBuilder {
                     }
                 })
                 .unwrap_or_else(|| {
-                    module_builder.errors.push(SemanticError {
+                    ctx.module_builder.errors.push(SemanticError {
                         kind: SemanticErrorKind::UndeclaredType(*id),
                         span: annotation.span,
                     });
@@ -66,10 +67,10 @@ impl FunctionBuilder {
                     TypeKind::Unknown
                 }),
             TypeAnnotationKind::FnType { params, return_type } => {
-                module_builder.enter_scope(ScopeKind::FnType);
-                let checked_params = self.check_params(module_builder, &params);
-                let checked_return_type = self.check_type_annotation(module_builder, return_type);
-                module_builder.exit_scope();
+                ctx.module_builder.enter_scope(ScopeKind::FnType);
+                let checked_params = self.check_params(ctx, &params);
+                let checked_return_type = self.check_type_annotation(ctx, return_type);
+                ctx.module_builder.exit_scope();
 
                 TypeKind::FnType(CheckedFnType {
                     params: checked_params,
@@ -78,7 +79,7 @@ impl FunctionBuilder {
                 })
             }
             TypeAnnotationKind::List { item_type } => {
-                let checked_item_type = self.check_type_annotation(module_builder, item_type);
+                let checked_item_type = self.check_type_annotation(ctx, item_type);
                 TypeKind::List(Box::new(checked_item_type))
             }
         };

@@ -16,6 +16,7 @@ impl FunctionBuilder {
         })
     }
 
+    /// Returns ValueId which holds pointer: TypeKind::Pointer(Box<Type>)
     pub fn emit_alloc(&mut self, ty: Type) -> ValueId {
         let destination = self.new_value_id();
 
@@ -34,8 +35,25 @@ impl FunctionBuilder {
         destination
     }
 
-    pub fn emit_new(&mut self, module_builder: &mut ModuleBuilder) {
-        todo!()
+    /// Returns ValueId which holds pointer: TypeKind::Pointer(Box<Type>)
+    pub fn emit_new(&mut self, ty: Type) -> ValueId {
+        let destination = self.new_value_id();
+        let allocation_id = todo!(); // TODO: get globally unique id
+
+        self.cfg.value_types.insert(
+            destination,
+            Type {
+                span: ty.span,
+                kind: TypeKind::Pointer(Box::new(ty)),
+            },
+        );
+
+        self.get_current_basic_block().instructions.push(Instruction::New {
+            destination,
+            allocation_site_id: allocation_id,
+        });
+
+        destination
     }
 
     pub fn emit_store(&mut self, module_builder: &mut ModuleBuilder) {

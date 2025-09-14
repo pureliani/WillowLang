@@ -12,24 +12,24 @@ use crate::{
         expr::ExprKind,
         stmt::{Stmt, StmtKind},
     },
-    hir_builder::{expressions::r#if::IfContext, FunctionBuilder, ModuleBuilder},
+    hir_builder::{expressions::r#if::IfContext, FunctionBuilder, HIRContext},
 };
 
 impl FunctionBuilder {
-    pub fn build_statements(&mut self, module_builder: &mut ModuleBuilder, statements: Vec<Stmt>) {
+    pub fn build_statements(&mut self, ctx: &mut HIRContext, statements: Vec<Stmt>) {
         for statement in statements {
             match statement.kind {
                 StmtKind::Expression(expr) => {
                     if let ExprKind::If { branches, else_branch } = expr.kind {
-                        self.build_if(module_builder, branches, else_branch, IfContext::Statement);
+                        self.build_if(ctx, branches, else_branch, IfContext::Statement);
                     } else {
-                        self.build_expr(module_builder, expr);
+                        self.build_expr(ctx, expr);
                     }
                 }
                 StmtKind::TypeAliasDecl(type_alias_decl) => todo!(),
                 StmtKind::VarDecl(var_decl) => todo!(),
                 StmtKind::Return { value } => todo!(),
-                StmtKind::Assignment { target, value } => self.build_assignment_stmt(module_builder, target, value),
+                StmtKind::Assignment { target, value } => self.build_assignment_stmt(ctx, target, value),
                 StmtKind::From { path, identifiers } => todo!(),
                 StmtKind::While { condition, body } => todo!(),
                 StmtKind::Break => todo!(),

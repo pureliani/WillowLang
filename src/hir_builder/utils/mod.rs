@@ -9,7 +9,6 @@ pub mod instruction_emitters;
 pub mod is_float;
 pub mod is_integer;
 pub mod is_signed;
-pub mod new_allocation_id;
 pub mod new_basic_block;
 pub mod new_value_id;
 pub mod report_error_and_get_poison;

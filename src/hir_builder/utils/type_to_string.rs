@@ -33,8 +33,9 @@ pub fn type_to_string_recursive(ty: &TypeKind, string_interner: &StringInterner)
         TypeKind::F64 => String::from("f64"),
         TypeKind::String => String::from("string"),
         TypeKind::Unknown => String::from("unknown"),
-        TypeKind::Struct(params) => {
-            let params_str = params
+        TypeKind::Struct(decl) => {
+            let fields = decl
+                .fields
                 .iter()
                 .map(|p| {
                     format!(
@@ -46,7 +47,11 @@ pub fn type_to_string_recursive(ty: &TypeKind, string_interner: &StringInterner)
                 .collect::<Vec<String>>()
                 .join(",\n");
 
-            format!("{{\n{}\n}}", params_str)
+            format!(
+                "{} {{\n{}\n}}",
+                identifier_to_string(decl.identifier.name, string_interner),
+                fields
+            )
         }
         TypeKind::FnType(CheckedFnType {
             params,
@@ -81,9 +86,14 @@ pub fn type_to_string_recursive(ty: &TypeKind, string_interner: &StringInterner)
             format!("{}[]", type_to_string_recursive(&item_type.kind, string_interner,))
         }
         TypeKind::Pointer(ty) => format!("ptr<{}>", type_to_string_recursive(&ty.kind, string_interner,)),
-        TypeKind::Union(decl) => checked_tags
+        TypeKind::Union(decl) => decl
+            .variants
             .iter()
-            .map(|t| checked_tag_to_string(t, string_interner))
+            .map(|t| {
+                format!("{}", )
+                identifier_to_string(t.0, string_interner)
+
+            })
             .collect::<Vec<String>>()
             .join(" | "),
     }

@@ -46,11 +46,17 @@ impl Hash for CheckedStructDecl {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct CheckedUnionVariant {
+    pub name: IdentifierNode,
+    pub payload: Option<Type>,
+}
+
 #[derive(Clone, Debug)]
 pub struct CheckedUnionDecl {
     pub identifier: IdentifierNode,
     pub documentation: Option<DocAnnotation>,
-    pub variants: Vec<(IdentifierNode, Option<Type>)>,
+    pub variants: Vec<CheckedUnionVariant>,
 }
 
 impl Eq for CheckedUnionDecl {}

@@ -5,9 +5,9 @@ use crate::{
     cfg::BasicBlockId,
     compile::string_interner::InternerId,
     hir_builder::{
-        errors::SemanticError,
+        errors::{SemanticError, SemanticErrorKind},
         types::checked_declaration::{CheckedStructDecl, CheckedTypeAliasDecl, CheckedUnionDecl, CheckedVarDecl},
-        ModuleBuilder, SemanticErrorKind,
+        ModuleBuilder,
     },
 };
 
@@ -47,7 +47,7 @@ impl Scope {
     }
 }
 
-impl<'a> ModuleBuilder<'a> {
+impl ModuleBuilder {
     pub fn enter_scope(&mut self, kind: ScopeKind) {
         self.scopes.push(Scope::new(kind));
     }

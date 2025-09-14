@@ -23,10 +23,16 @@ pub struct StructDecl {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub struct UnionDeclVariant {
+    pub name: IdentifierNode,
+    pub payload: Option<TypeAnnotation>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct UnionDecl {
     pub identifier: IdentifierNode,
     pub documentation: Option<DocAnnotation>,
-    pub variants: Vec<(IdentifierNode, Option<TypeAnnotation>)>,
+    pub variants: Vec<UnionDeclVariant>,
 }
 
 #[derive(Clone, Debug, PartialEq)]

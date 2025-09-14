@@ -1,6 +1,6 @@
 use crate::{
     ast::{
-        decl::UnionDecl,
+        decl::{UnionDecl, UnionDeclVariant},
         stmt::{Stmt, StmtKind},
     },
     parse::{DocAnnotation, Parser, ParsingError},
@@ -17,16 +17,16 @@ impl<'a, 'b> Parser<'a, 'b> {
         let variants = self.comma_separated(
             |p| {
                 let name = p.consume_identifier()?;
-                let ty = if p.match_token(0, TokenKind::Punctuation(PunctuationKind::LParen)) {
+                let payload = if p.match_token(0, TokenKind::Punctuation(PunctuationKind::LParen)) {
                     p.consume_punctuation(PunctuationKind::LParen)?;
                     let ty = p.parse_type_annotation(0)?;
-                    p.consume_punctuation(PunctuationKind::LParen)?;
+                    p.consume_punctuation(PunctuationKind::RParen)?;
                     Some(ty)
                 } else {
                     None
                 };
 
-                Ok((name, ty))
+                Ok(UnionDeclVariant { name, payload })
             },
             |p| p.match_token(0, TokenKind::Punctuation(PunctuationKind::RBrace)),
         )?;

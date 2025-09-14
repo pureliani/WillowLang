@@ -1,4 +1,7 @@
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    path::PathBuf,
+};
 
 use crate::{
     ast::IdentifierNode,
@@ -55,12 +58,12 @@ pub enum Instruction {
         destination: ValueId,
         source_ptr: ValueId,
     },
-    FieldPtr {
+    GetFieldPtr {
         destination: ValueId,
         base_ptr: ValueId,
         field_index: usize,
     },
-    ElementPtr {
+    GetElementPtr {
         destination: ValueId,
         base_ptr: ValueId,
         index: Value,
@@ -154,9 +157,22 @@ pub enum CheckedDeclaration {
 #[derive(Clone, Debug)]
 pub struct CheckedModule {
     pub id: ModuleId,
-    pub name: String,
+    pub name: PathBuf,
     pub functions: HashMap<FunctionId, ControlFlowGraph>,
     pub constant_data: HashMap<ConstantId, Vec<u8>>, // map: id -> bytes
     pub declarations: HashMap<IdentifierNode, CheckedDeclaration>,
     pub exports: HashSet<IdentifierNode>,
+}
+
+impl CheckedModule {
+    pub fn new(id: ModuleId, name: PathBuf) -> Self {
+        Self {
+            id,
+            name,
+            declarations: HashMap::new(),
+            constant_data: HashMap::new(),
+            exports: HashSet::new(),
+            functions: HashMap::new(),
+        }
+    }
 }

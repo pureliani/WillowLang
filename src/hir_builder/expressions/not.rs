@@ -4,12 +4,12 @@ use crate::{
     hir_builder::{
         errors::{SemanticError, SemanticErrorKind},
         types::checked_type::{Type, TypeKind},
-        FunctionBuilder, ModuleBuilder,
+        FunctionBuilder, HIRContext,
     },
 };
 
 impl FunctionBuilder {
-    pub fn build_not_expr(&mut self, module_builder: &mut ModuleBuilder, expr: Box<Expr>) -> Value {
+    pub fn build_not_expr(&mut self, ctx: &mut HIRContext, expr: Box<Expr>) -> Value {
         let span = expr.span;
 
         let bool_type = Type {
@@ -17,12 +17,12 @@ impl FunctionBuilder {
             span,
         };
 
-        let value = self.build_expr(module_builder, *expr);
+        let value = self.build_expr(ctx, *expr);
         let value_type = self.get_value_type(&value);
 
         if !self.check_is_assignable(&value_type, &bool_type) {
             return self.report_error_and_get_poison(
-                module_builder,
+                ctx,
                 SemanticError {
                     kind: SemanticErrorKind::TypeMismatch {
                         expected: bool_type.clone(),
