@@ -38,6 +38,7 @@ pub enum SemanticErrorKind {
     TypeAliasMustBeDeclaredAtTopLevel,
     StructMustBeDeclaredAtTopLevel,
     IfExpressionMissingElse,
+    CannotCastType { source_type: Type, target_type: Type },
 }
 
 #[derive(Debug, Clone)]
@@ -79,6 +80,7 @@ impl SemanticErrorKind {
             SemanticErrorKind::IfExpressionMissingElse => 28,
             SemanticErrorKind::TypeMismatchExpectedOneOf { .. } => 29,
             SemanticErrorKind::ExpectedUnionType => 30,
+            SemanticErrorKind::CannotCastType { .. } => 31,
         }
     }
 }

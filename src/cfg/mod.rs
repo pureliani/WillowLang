@@ -8,7 +8,7 @@ use crate::{
     compile::string_interner::InternerId,
     hir_builder::types::{
         checked_declaration::{CheckedStructDecl, CheckedTypeAliasDecl, CheckedVarDecl},
-        checked_type::{Type, TypeKind},
+        checked_type::Type,
     },
     tokenize::NumberKind,
 };
@@ -82,7 +82,7 @@ pub enum Instruction {
     TypeCast {
         destination: ValueId,
         operand: Value,
-        target_type: TypeKind,
+        target_type: Type,
     },
     FunctionCall {
         destination: Option<ValueId>,

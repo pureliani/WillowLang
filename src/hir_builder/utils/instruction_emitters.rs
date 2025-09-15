@@ -271,8 +271,32 @@ impl FunctionBuilder {
         todo!()
     }
 
-    pub fn emit_type_cast(&mut self, module_builder: &mut ModuleBuilder) {
-        todo!()
+    pub fn emit_type_cast(&mut self, ctx: &mut HIRContext, value: Value, target_type: Type) -> ValueId {
+        let value_type = self.get_value_type(&value);
+
+        if !self.check_is_casting_allowed(&value_type, &target_type) {
+            return self.report_error_and_get_poison(
+                ctx,
+                SemanticError {
+                    span: value_type.span,
+                    kind: SemanticErrorKind::CannotCastType {
+                        source_type: value_type.clone(),
+                        target_type: target_type.clone(),
+                    },
+                },
+            );
+        }
+
+        let destination = self.new_value_id();
+        self.cfg.value_types.insert(destination, target_type.clone());
+
+        self.get_current_basic_block().instructions.push(Instruction::TypeCast {
+            destination,
+            operand: value,
+            target_type,
+        });
+
+        destination
     }
 
     pub fn emit_nop(&mut self, module_builder: &mut ModuleBuilder) {
