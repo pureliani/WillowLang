@@ -1,6 +1,6 @@
 use crate::{
     ast::expr::Expr,
-    cfg::{Instruction, Terminator, Value},
+    cfg::{Terminator, Value},
     hir_builder::{FunctionBuilder, HIRContext},
 };
 
@@ -24,15 +24,15 @@ impl FunctionBuilder {
         self.set_basic_block_terminator(Terminator::Jump { target: merge_block_id });
 
         self.use_basic_block(merge_block_id);
-        let phi_destination = self.new_value_id();
-        let phi_instruction = Instruction::Phi {
-            destination: phi_destination,
-            sources: vec![
-                (left_exit_block_id, Value::BoolLiteral(true)),
-                (right_exit_block_id, right_value),
-            ],
+        let phi_sources = vec![
+            (left_exit_block_id, Value::BoolLiteral(true)),
+            (right_exit_block_id, right_value),
+        ];
+
+        let phi_destination = match self.emit_phi(phi_sources) {
+            Ok(phi_destination) => phi_destination,
+            Err(err) => self.report_error_and_get_poison(ctx, err),
         };
-        self.add_basic_block_instruction(phi_instruction);
 
         Value::Use(phi_destination)
     }
