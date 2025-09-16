@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use crate::{
-    ast::IdentifierNode,
+    ast::{IdentifierNode, Span},
     cfg::{BasicBlock, BasicBlockId, Instruction, UnaryOperationKind, Value, ValueId},
     hir_builder::{
         errors::{SemanticError, SemanticErrorKind},
@@ -338,8 +338,63 @@ impl FunctionBuilder {
         Ok(destination)
     }
 
-    pub fn emit_function_call(&mut self, module_builder: &mut ModuleBuilder) {
-        todo!()
+    pub fn emit_function_call(
+        &mut self,
+        value: Value,
+        args: Vec<Value>,
+        call_span: Span,
+    ) -> Result<Option<ValueId>, SemanticError> {
+        let value_type = self.get_value_type(&value);
+
+        let fn_type_decl = if let TypeKind::FnType(decl) = value_type.kind {
+            decl
+        } else {
+            return Err(SemanticError {
+                kind: SemanticErrorKind::CannotCall(value_type),
+                span: call_span,
+            });
+        };
+
+        if args.len() != fn_type_decl.params.len() {
+            return Err(SemanticError {
+                kind: SemanticErrorKind::FnArgumentCountMismatch {
+                    expected: fn_type_decl.params.len(),
+                    received: args.len(),
+                },
+                span: call_span,
+            });
+        }
+
+        for (arg_value, param_decl) in args.iter().zip(fn_type_decl.params.iter()) {
+            let arg_type = self.get_value_type(arg_value);
+            let param_type = &param_decl.constraint;
+
+            if !self.check_is_assignable(&arg_type, param_type) {
+                return Err(SemanticError {
+                    span: arg_type.span,
+                    kind: SemanticErrorKind::TypeMismatch {
+                        expected: param_type.clone(),
+                        received: arg_type,
+                    },
+                });
+            }
+        }
+
+        let destination_id = if fn_type_decl.return_type.kind != TypeKind::Void {
+            let dest_id = self.new_value_id();
+            self.cfg.value_types.insert(dest_id, *fn_type_decl.return_type);
+            Some(dest_id)
+        } else {
+            None
+        };
+
+        self.get_current_basic_block().instructions.push(Instruction::FunctionCall {
+            destination: destination_id,
+            function_rvalue: value,
+            args,
+        });
+
+        Ok(destination_id)
     }
 
     pub fn emit_type_cast(&mut self, ctx: &mut HIRContext, value: Value, target_type: Type) -> ValueId {
