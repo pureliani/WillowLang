@@ -9,6 +9,7 @@ use crate::{
 #[derive(Debug, Clone)]
 pub enum SemanticErrorKind {
     DuplicateIdentifier(IdentifierNode),
+    CannotIndex(Type),
     VarDeclWithoutInitializer,
     DuplicateStructFieldInitializer(IdentifierNode),
     UnknownStructFieldInitializer(IdentifierNode),

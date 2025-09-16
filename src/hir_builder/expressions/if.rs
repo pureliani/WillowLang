@@ -1,6 +1,6 @@
 use crate::{
     ast::expr::{BlockContents, Expr},
-    cfg::{BasicBlockId, Instruction, Terminator, Value},
+    cfg::{BasicBlockId, Terminator, Value},
     hir_builder::{
         errors::{SemanticError, SemanticErrorKind},
         types::checked_type::{Type, TypeKind},
@@ -96,34 +96,12 @@ impl FunctionBuilder {
         self.use_basic_block(merge_block_id);
 
         if context == IfContext::Expression {
-            let first_branch_type = &phi_sources
-            .first()
-            .expect("INTERNAL COMPILER ERROR: `build_if` was called in Expression context with no branches. This should be prevented by the parser.")
-            .2;
+            let sources_for_phi: Vec<(BasicBlockId, Value)> = phi_sources.into_iter().map(|(id, val, _)| (id, val)).collect();
 
-            for branch_type in phi_sources.iter().map(|phi_source| &phi_source.2) {
-                if !self.check_is_assignable(branch_type, first_branch_type) {
-                    return Value::Use(self.report_error_and_get_poison(
-                        ctx,
-                        SemanticError {
-                            kind: SemanticErrorKind::IncompatibleBranchTypes {
-                                first: first_branch_type.clone(),
-                                second: branch_type.clone(),
-                            },
-                            span: branch_type.span,
-                        },
-                    ));
-                }
-            }
-
-            let phi_destination = self.new_value_id();
-            self.cfg.value_types.insert(phi_destination, first_branch_type.clone());
-
-            let sources_for_phi = phi_sources.into_iter().map(|(id, val, _)| (id, val)).collect();
-            self.add_basic_block_instruction(Instruction::Phi {
-                destination: phi_destination,
-                sources: sources_for_phi,
-            });
+            let phi_destination = match self.emit_phi(sources_for_phi) {
+                Ok(id) => id,
+                Err(e) => return Value::Use(self.report_error_and_get_poison(ctx, e)),
+            };
 
             Value::Use(phi_destination)
         } else {

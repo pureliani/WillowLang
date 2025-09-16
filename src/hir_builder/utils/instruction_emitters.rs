@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use crate::{
     ast::IdentifierNode,
-    cfg::{BasicBlock, Instruction, UnaryOperationKind, Value, ValueId},
+    cfg::{BasicBlock, BasicBlockId, Instruction, UnaryOperationKind, Value, ValueId},
     hir_builder::{
         errors::{SemanticError, SemanticErrorKind},
         types::checked_type::{Type, TypeKind},
@@ -170,8 +170,54 @@ impl FunctionBuilder {
         }
     }
 
-    pub fn emit_get_element_ptr(&mut self, module_builder: &mut ModuleBuilder) {
-        todo!()
+    pub fn emit_get_element_ptr(&mut self, base_ptr: ValueId, index: Value) -> Result<ValueId, SemanticError> {
+        let base_ptr_type = self.get_value_id_type(&base_ptr);
+        let index_type = self.get_value_type(&index);
+
+        let list_item_type = if let TypeKind::Pointer(ptr_to) = &base_ptr_type.kind {
+            if let TypeKind::List(item_type) = &ptr_to.kind {
+                item_type.as_ref().clone()
+            } else {
+                return Err(SemanticError {
+                    kind: SemanticErrorKind::CannotIndex(ptr_to.as_ref().clone()),
+                    span: base_ptr_type.span,
+                });
+            }
+        } else {
+            panic!("INTERNAL COMPILER ERROR: emit_get_element_ptr called on a non-pointer type.");
+        };
+
+        let expected_index_type = Type {
+            kind: TypeKind::USize,
+            span: index_type.span,
+        };
+
+        if !self.check_is_assignable(&index_type, &expected_index_type) {
+            return Err(SemanticError {
+                span: index_type.span,
+                kind: SemanticErrorKind::TypeMismatch {
+                    expected: expected_index_type,
+                    received: index_type,
+                },
+            });
+        }
+
+        let destination = self.new_value_id();
+        self.cfg.value_types.insert(
+            destination,
+            Type {
+                kind: TypeKind::Pointer(Box::new(list_item_type)),
+                span: base_ptr_type.span,
+            },
+        );
+
+        self.get_current_basic_block().instructions.push(Instruction::GetElementPtr {
+            destination,
+            base_ptr,
+            index,
+        });
+
+        Ok(destination)
     }
 
     pub fn emit_unary_op(&mut self, ctx: &mut HIRContext, op_kind: UnaryOperationKind, value: Value) -> ValueId {
@@ -263,8 +309,33 @@ impl FunctionBuilder {
         todo!()
     }
 
-    pub fn emit_phi(&mut self, module_builder: &mut ModuleBuilder) {
-        todo!()
+    pub fn emit_phi(&mut self, sources: Vec<(BasicBlockId, Value)>) -> Result<ValueId, SemanticError> {
+        if sources.is_empty() {
+            panic!("INTERNAL COMPILER ERROR: emit_phi called with no sources.");
+        }
+
+        let first_type = self.get_value_type(&sources[0].1);
+
+        for (_, other_value) in sources.iter().skip(1) {
+            let other_type = self.get_value_type(other_value);
+            if !self.check_is_assignable(&other_type, &first_type) {
+                return Err(SemanticError {
+                    span: other_type.span,
+                    kind: SemanticErrorKind::IncompatibleBranchTypes {
+                        first: first_type,
+                        second: other_type,
+                    },
+                });
+            }
+        }
+
+        let destination = self.new_value_id();
+        self.cfg.value_types.insert(destination, first_type);
+        self.get_current_basic_block()
+            .instructions
+            .push(Instruction::Phi { destination, sources });
+
+        Ok(destination)
     }
 
     pub fn emit_function_call(&mut self, module_builder: &mut ModuleBuilder) {
