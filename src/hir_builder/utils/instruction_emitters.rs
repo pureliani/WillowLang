@@ -2,11 +2,11 @@ use std::collections::HashSet;
 
 use crate::{
     ast::{IdentifierNode, Span},
-    cfg::{BasicBlock, BasicBlockId, Instruction, UnaryOperationKind, Value, ValueId},
+    cfg::{BasicBlock, BasicBlockId, BinaryOperationKind, Instruction, UnaryOperationKind, Value, ValueId},
     hir_builder::{
         errors::{SemanticError, SemanticErrorKind},
         types::checked_type::{Type, TypeKind},
-        utils::is_signed::is_signed,
+        utils::{check_is_equatable::check_is_equatable, is_signed::is_signed},
         FunctionBuilder, HIRContext, ModuleBuilder,
     },
 };
@@ -305,8 +305,67 @@ impl FunctionBuilder {
         destination
     }
 
-    pub fn emit_binary_op(&mut self, module_builder: &mut ModuleBuilder) {
-        todo!()
+    pub fn emit_binary_op(&mut self, op_kind: BinaryOperationKind, left: Value, right: Value) -> Result<ValueId, SemanticError> {
+        let left_type = self.get_value_type(&left);
+        let right_type = self.get_value_type(&right);
+        let combined_span = Span {
+            start: left_type.span.start,
+            end: right_type.span.end,
+        };
+
+        let destination_type = match op_kind {
+            BinaryOperationKind::Add
+            | BinaryOperationKind::Subtract
+            | BinaryOperationKind::Multiply
+            | BinaryOperationKind::Divide
+            | BinaryOperationKind::Modulo => {
+                let result_type = self.check_binary_numeric_operation(&left_type, &right_type)?;
+                result_type
+            }
+
+            BinaryOperationKind::LessThan
+            | BinaryOperationKind::LessThanOrEqual
+            | BinaryOperationKind::GreaterThan
+            | BinaryOperationKind::GreaterThanOrEqual => {
+                self.check_binary_numeric_operation(&left_type, &right_type)?;
+
+                Type {
+                    kind: TypeKind::Bool,
+                    span: combined_span,
+                }
+            }
+
+            BinaryOperationKind::Equal | BinaryOperationKind::NotEqual => {
+                if !check_is_equatable(&left_type.kind, &right_type.kind) {
+                    return Err(SemanticError {
+                        span: Span {
+                            start: left_type.span.start,
+                            end: right_type.span.end,
+                        },
+                        kind: SemanticErrorKind::CannotCompareType {
+                            of: left_type,
+                            to: right_type,
+                        },
+                    });
+                }
+
+                Type {
+                    kind: TypeKind::Bool,
+                    span: combined_span,
+                }
+            }
+        };
+
+        let destination = self.new_value_id();
+        self.cfg.value_types.insert(destination, destination_type);
+        self.get_current_basic_block().instructions.push(Instruction::BinaryOp {
+            op_kind,
+            destination,
+            left,
+            right,
+        });
+
+        Ok(destination)
     }
 
     pub fn emit_phi(&mut self, sources: Vec<(BasicBlockId, Value)>) -> Result<ValueId, SemanticError> {
