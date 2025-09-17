@@ -19,7 +19,7 @@ pub mod or;
 pub mod static_access;
 pub mod string;
 pub mod struct_literal;
-pub mod type_cast;
+pub mod typecast;
 
 use crate::{
     ast::expr::{Expr, ExprKind},
@@ -53,7 +53,7 @@ impl FunctionBuilder {
             ExprKind::Or { left, right } => self.build_or_expr(ctx, left, right),
             ExprKind::Access { left, field } => self.build_access_expr(ctx, left, field),
             ExprKind::StaticAccess { left, field } => todo!(),
-            ExprKind::TypeCast { left, target } => todo!(),
+            ExprKind::TypeCast { left, target } => self.build_typecast_expr(ctx, left, target),
             ExprKind::FnCall { left, args } => self.build_fn_call_expr(ctx, left, args, expr.span),
             ExprKind::BoolLiteral(value) => self.build_bool_literal(value),
             ExprKind::Number(value) => self.build_number_literal(value),
