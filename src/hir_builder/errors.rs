@@ -82,6 +82,7 @@ impl SemanticErrorKind {
             SemanticErrorKind::TypeMismatchExpectedOneOf { .. } => 29,
             SemanticErrorKind::ExpectedUnionType => 30,
             SemanticErrorKind::CannotCastType { .. } => 31,
+            SemanticErrorKind::CannotIndex { .. } => 32,
         }
     }
 }

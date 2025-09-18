@@ -1,10 +1,8 @@
 pub mod access;
 pub mod and;
-pub mod arithmetic;
+pub mod binary_op;
 pub mod bool_literal;
 pub mod codeblock;
-pub mod comparison;
-pub mod equality;
 pub mod r#fn;
 pub mod fn_call;
 pub mod generic_apply;
@@ -32,23 +30,23 @@ impl FunctionBuilder {
         match expr.kind {
             ExprKind::Not { right } => self.build_not_expr(ctx, right),
             ExprKind::Neg { right } => self.build_airthmetic_negation_expr(ctx, right),
-            ExprKind::Add { left, right } => self.build_arithmetic_expr(ctx, left, right, BinaryOperationKind::Add),
-            ExprKind::Subtract { left, right } => self.build_arithmetic_expr(ctx, left, right, BinaryOperationKind::Subtract),
-            ExprKind::Multiply { left, right } => self.build_arithmetic_expr(ctx, left, right, BinaryOperationKind::Multiply),
-            ExprKind::Divide { left, right } => self.build_arithmetic_expr(ctx, left, right, BinaryOperationKind::Divide),
-            ExprKind::Modulo { left, right } => self.build_arithmetic_expr(ctx, left, right, BinaryOperationKind::Modulo),
-            ExprKind::LessThan { left, right } => self.build_comparison_expr(ctx, left, right, BinaryOperationKind::LessThan),
+            ExprKind::Add { left, right } => self.build_binary_op_expr(ctx, left, right, BinaryOperationKind::Add),
+            ExprKind::Subtract { left, right } => self.build_binary_op_expr(ctx, left, right, BinaryOperationKind::Subtract),
+            ExprKind::Multiply { left, right } => self.build_binary_op_expr(ctx, left, right, BinaryOperationKind::Multiply),
+            ExprKind::Divide { left, right } => self.build_binary_op_expr(ctx, left, right, BinaryOperationKind::Divide),
+            ExprKind::Modulo { left, right } => self.build_binary_op_expr(ctx, left, right, BinaryOperationKind::Modulo),
+            ExprKind::LessThan { left, right } => self.build_binary_op_expr(ctx, left, right, BinaryOperationKind::LessThan),
             ExprKind::LessThanOrEqual { left, right } => {
-                self.build_comparison_expr(ctx, left, right, BinaryOperationKind::LessThanOrEqual)
+                self.build_binary_op_expr(ctx, left, right, BinaryOperationKind::LessThanOrEqual)
             }
             ExprKind::GreaterThan { left, right } => {
-                self.build_comparison_expr(ctx, left, right, BinaryOperationKind::GreaterThan)
+                self.build_binary_op_expr(ctx, left, right, BinaryOperationKind::GreaterThan)
             }
             ExprKind::GreaterThanOrEqual { left, right } => {
-                self.build_comparison_expr(ctx, left, right, BinaryOperationKind::GreaterThanOrEqual)
+                self.build_binary_op_expr(ctx, left, right, BinaryOperationKind::GreaterThanOrEqual)
             }
-            ExprKind::Equal { left, right } => self.build_equality_expr(ctx, left, right, BinaryOperationKind::Equal),
-            ExprKind::NotEqual { left, right } => self.build_equality_expr(ctx, left, right, BinaryOperationKind::NotEqual),
+            ExprKind::Equal { left, right } => self.build_binary_op_expr(ctx, left, right, BinaryOperationKind::Equal),
+            ExprKind::NotEqual { left, right } => self.build_binary_op_expr(ctx, left, right, BinaryOperationKind::NotEqual),
             ExprKind::And { left, right } => self.build_and_expr(ctx, left, right),
             ExprKind::Or { left, right } => self.build_or_expr(ctx, left, right),
             ExprKind::Access { left, field } => self.build_access_expr(ctx, left, field),
