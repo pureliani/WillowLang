@@ -32,6 +32,9 @@ pub enum SemanticErrorKind {
     ReturnNotLastStatement,
     ReturnTypeMismatch { expected: Type, received: Type },
     CannotAccess(Type),
+    CannotStaticAccess(Type),
+    ExpectedAType,
+    AccessToUndefinedStaticField(IdentifierNode),
     CannotCall(Type),
     FnArgumentCountMismatch { expected: usize, received: usize },
     CannotUseVariableDeclarationAsType,
@@ -83,6 +86,9 @@ impl SemanticErrorKind {
             SemanticErrorKind::ExpectedUnionType => 30,
             SemanticErrorKind::CannotCastType { .. } => 31,
             SemanticErrorKind::CannotIndex { .. } => 32,
+            SemanticErrorKind::CannotStaticAccess { .. } => 33,
+            SemanticErrorKind::ExpectedAType => 34,
+            SemanticErrorKind::AccessToUndefinedField { .. } => 35,
         }
     }
 }

@@ -14,13 +14,13 @@ pub struct BlockContents {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum MatchPattern {
-    Variant(IdentifierNode),
-    VariantWithValue(IdentifierNode, IdentifierNode),
+    VariantWithValue(IdentifierNode, IdentifierNode), // e.g: match ... { Some(v) => .. }
+    Variant(IdentifierNode),                          // e.g match ... { None => .. }
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct MatchArm {
-    pub pattern: MatchPattern,
+    pub pattern: Vec<MatchPattern>, // e.g match x, y, z { Foo(x), Bar, Baz(y) => {} }
     pub expression: Expr,
 }
 
@@ -115,7 +115,7 @@ pub enum ExprKind {
         body: BlockContents,
     },
     Match {
-        condition: Box<Expr>,
+        conditions: Vec<Expr>,
         arms: Vec<MatchArm>,
     },
     If {

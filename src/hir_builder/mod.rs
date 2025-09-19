@@ -40,7 +40,7 @@ pub struct HIRContext<'a, 'b> {
 
 pub struct ProgramBuilder<'a> {
     pub modules: HashMap<ModuleId, ModuleBuilder>,
-    pub string_interner: &'a StringInterner<'a>,
+    pub string_interner: &'a mut StringInterner<'a>,
     /// Global errors
     pub errors: Vec<SemanticError>,
 
@@ -71,7 +71,7 @@ pub struct FunctionBuilder {
 }
 
 impl<'a> ProgramBuilder<'a> {
-    pub fn new(string_interner: &'a StringInterner<'a>) -> Self {
+    pub fn new(string_interner: &'a mut StringInterner<'a>) -> Self {
         ProgramBuilder {
             errors: vec![],
             modules: HashMap::new(),
@@ -84,7 +84,7 @@ impl<'a> ProgramBuilder<'a> {
 
     pub fn build_module(&mut self, module_id: ModuleId, path: PathBuf, statements: Vec<Stmt>) {
         let mut module_builder = ModuleBuilder::new(module_id, path);
-        module_builder.build_top_level_statements(self, statements); // cannot borrow `*ctx.module_builder` as mutable more than once at a time second mutable borrow occurs here
+        module_builder.build_top_level_statements(self, statements);
         self.modules.insert(module_id, module_builder);
     }
 

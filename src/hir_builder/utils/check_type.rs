@@ -2,6 +2,7 @@ use crate::{
     ast::{
         decl::Param,
         type_annotation::{TypeAnnotation, TypeAnnotationKind},
+        IdentifierNode, Span,
     },
     hir_builder::{
         errors::{SemanticError, SemanticErrorKind},
@@ -25,6 +26,31 @@ impl FunctionBuilder {
             .collect()
     }
 
+    pub fn check_type_identifier_annotation(
+        &mut self,
+        ctx: &mut HIRContext,
+        id: IdentifierNode,
+        span: Span,
+    ) -> Result<TypeKind, SemanticError> {
+        ctx.module_builder
+            .scope_lookup(id.name)
+            .map(|entry| match entry {
+                SymbolEntry::TypeAliasDecl(decl) => Ok(TypeKind::TypeAliasDecl(decl)),
+                SymbolEntry::StructDecl(decl) => Ok(TypeKind::Struct(decl)),
+                SymbolEntry::UnionDecl(decl) => Ok(TypeKind::Union(decl)),
+                SymbolEntry::VarDecl(_) => Err(SemanticError {
+                    kind: SemanticErrorKind::CannotUseVariableDeclarationAsType,
+                    span,
+                }),
+            })
+            .unwrap_or_else(|| {
+                Err(SemanticError {
+                    kind: SemanticErrorKind::UndeclaredType(id),
+                    span,
+                })
+            })
+    }
+
     pub fn check_type_annotation(&mut self, ctx: &mut HIRContext, annotation: &TypeAnnotation) -> Type {
         let kind = match &annotation.kind {
             TypeAnnotationKind::Void => TypeKind::Void,
@@ -42,30 +68,13 @@ impl FunctionBuilder {
             TypeAnnotationKind::F32 => TypeKind::F32,
             TypeAnnotationKind::F64 => TypeKind::F64,
             TypeAnnotationKind::String => TypeKind::String,
-            TypeAnnotationKind::Identifier(id) => ctx
-                .module_builder
-                .scope_lookup(id.name)
-                .map(|entry| match entry {
-                    SymbolEntry::TypeAliasDecl(decl) => TypeKind::TypeAliasDecl(decl),
-                    SymbolEntry::StructDecl(decl) => TypeKind::Struct(decl),
-                    SymbolEntry::UnionDecl(decl) => TypeKind::Union(decl),
-                    SymbolEntry::VarDecl(_) => {
-                        ctx.module_builder.errors.push(SemanticError {
-                            kind: SemanticErrorKind::CannotUseVariableDeclarationAsType,
-                            span: annotation.span,
-                        });
-
-                        TypeKind::Unknown
-                    }
-                })
-                .unwrap_or_else(|| {
-                    ctx.module_builder.errors.push(SemanticError {
-                        kind: SemanticErrorKind::UndeclaredType(*id),
-                        span: annotation.span,
-                    });
-
+            TypeAnnotationKind::Identifier(id) => match self.check_type_identifier_annotation(ctx, *id, annotation.span) {
+                Ok(t) => t,
+                Err(error) => {
+                    ctx.module_builder.errors.push(error);
                     TypeKind::Unknown
-                }),
+                }
+            },
             TypeAnnotationKind::FnType { params, return_type } => {
                 ctx.module_builder.enter_scope(ScopeKind::FnType);
                 let checked_params = self.check_params(ctx, &params);

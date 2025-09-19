@@ -16,7 +16,7 @@ pub mod number_literal;
 pub mod or;
 pub mod static_access;
 pub mod string;
-pub mod struct_literal;
+pub mod struct_init;
 pub mod typecast;
 
 use crate::{
@@ -66,8 +66,8 @@ impl FunctionBuilder {
             ExprKind::If { branches, else_branch } => self.build_if(ctx, branches, else_branch, IfContext::Expression),
             ExprKind::ListLiteral(items) => todo!(),
             ExprKind::CodeBlock(block_contents) => self.build_codeblock_expr(ctx, block_contents),
-            ExprKind::Match { condition, arms } => self.build_match_expr(ctx, condition, arms),
-            ExprKind::StructInit { left, fields } => todo!(),
+            ExprKind::Match { conditions, arms } => self.build_match_expr(ctx, conditions, arms),
+            ExprKind::StructInit { left, fields } => self.build_struct_init_expr(ctx, left, fields),
         }
     }
 }
