@@ -164,7 +164,7 @@ impl FunctionBuilder {
             Ok(destination)
         } else {
             Err(SemanticError {
-                kind: SemanticErrorKind::AccessToUndefinedField { field },
+                kind: SemanticErrorKind::AccessToUndefinedField(field),
                 span: field.span,
             })
         }
@@ -220,7 +220,7 @@ impl FunctionBuilder {
         Ok(destination)
     }
 
-    pub fn emit_unary_op(&mut self, ctx: &mut HIRContext, op_kind: UnaryOperationKind, value: Value) -> ValueId {
+    pub fn emit_unary_op(&mut self, op_kind: UnaryOperationKind, value: Value) -> Result<ValueId, SemanticError> {
         let value_type = self.get_value_type(&value);
         let span = value_type.span;
 
@@ -258,16 +258,13 @@ impl FunctionBuilder {
                         },
                     ]);
 
-                    return self.report_error_and_get_poison(
-                        ctx,
-                        SemanticError {
-                            kind: SemanticErrorKind::TypeMismatchExpectedOneOf {
-                                expected,
-                                received: value_type.clone(),
-                            },
-                            span,
+                    return Err(SemanticError {
+                        kind: SemanticErrorKind::TypeMismatchExpectedOneOf {
+                            expected,
+                            received: value_type.clone(),
                         },
-                    );
+                        span,
+                    });
                 }
 
                 self.new_value_id()
@@ -279,16 +276,13 @@ impl FunctionBuilder {
                 };
 
                 if !self.check_is_assignable(&value_type, &bool_type) {
-                    return self.report_error_and_get_poison(
-                        ctx,
-                        SemanticError {
-                            kind: SemanticErrorKind::TypeMismatch {
-                                expected: bool_type.clone(),
-                                received: value_type,
-                            },
-                            span,
+                    return Err(SemanticError {
+                        kind: SemanticErrorKind::TypeMismatch {
+                            expected: bool_type.clone(),
+                            received: value_type,
                         },
-                    );
+                        span,
+                    });
                 }
 
                 self.new_value_id()
@@ -302,7 +296,7 @@ impl FunctionBuilder {
             operand: value,
         });
 
-        destination
+        Ok(destination)
     }
 
     pub fn emit_binary_op(&mut self, op_kind: BinaryOperationKind, left: Value, right: Value) -> Result<ValueId, SemanticError> {

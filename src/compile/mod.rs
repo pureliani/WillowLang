@@ -231,11 +231,10 @@ pub fn compile_file<'a, 'b>(
                         received.to_string()
                     )))
             }
-
             SemanticErrorKind::CannotUseVariableDeclarationAsType { .. } => err
                 .with_message("Cannot use variable declaration as a type")
                 .with_label(label.with_message("Cannot use variable declaration as a type")),
-            SemanticErrorKind::AccessToUndefinedField { field } => {
+            SemanticErrorKind::AccessToUndefinedField(field) => {
                 let name = string_interner.resolve(field.name);
                 err.with_message("Access to an undefined field")
                     .with_label(label.with_message(format!("Field {} is not defined", name)))
@@ -256,8 +255,8 @@ pub fn compile_file<'a, 'b>(
                 err.with_message("Unknown field in the struct initializer")
                     .with_label(label.with_message(format!("Unknown struct field \"{}\"", name)))
             }
-            SemanticErrorKind::MissingStructFieldInitializer { missing_fields, .. } => {
-                let field_names: Vec<&'a str> = missing_fields.into_iter().map(|f| string_interner.resolve(*f)).collect();
+            SemanticErrorKind::MissingStructFieldInitializers(missing_fields) => {
+                let field_names: Vec<&'a str> = missing_fields.into_iter().map(|f| string_interner.resolve(f)).collect();
                 let joined = field_names
                     .iter()
                     .map(|n| format!("\"{}\"", n))
@@ -277,6 +276,18 @@ pub fn compile_file<'a, 'b>(
                 err.with_message("Duplicate identifier")
                     .with_label(label.with_message(format!("Duplicate identifier declaration \"{}\"", identifier_name)))
             }
+            SemanticErrorKind::CannotIndex(_) => todo!(),
+            SemanticErrorKind::IncompatibleBranchTypes { first, second } => todo!(),
+            SemanticErrorKind::ExpectedUnionType => todo!(),
+            SemanticErrorKind::TypeMismatchExpectedOneOf { expected, received } => todo!(),
+            SemanticErrorKind::CannotStaticAccess(_) => todo!(),
+            SemanticErrorKind::ExpectedAType => todo!(),
+            SemanticErrorKind::AccessToUndefinedStaticField(identifier_node) => todo!(),
+            SemanticErrorKind::IfExpressionMissingElse => todo!(),
+            SemanticErrorKind::CannotCastType {
+                source_type,
+                target_type,
+            } => todo!(),
         };
 
         errors.push(diagnostic);

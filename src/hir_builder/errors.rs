@@ -14,6 +14,7 @@ pub enum SemanticErrorKind {
     DuplicateStructFieldInitializer(IdentifierNode),
     UnknownStructFieldInitializer(IdentifierNode),
     MissingStructFieldInitializers(HashSet<InternerId>),
+    CannotCall(Type),
     CannotApplyStructInitializer,
     ExpectedANumericOperand,
     IncompatibleBranchTypes { first: Type, second: Type },
@@ -33,12 +34,11 @@ pub enum SemanticErrorKind {
     ReturnTypeMismatch { expected: Type, received: Type },
     CannotAccess(Type),
     CannotStaticAccess(Type),
-    ExpectedAType,
+    AccessToUndefinedField(IdentifierNode),
     AccessToUndefinedStaticField(IdentifierNode),
-    CannotCall(Type),
+    ExpectedAType,
     FnArgumentCountMismatch { expected: usize, received: usize },
     CannotUseVariableDeclarationAsType,
-    AccessToUndefinedField { field: IdentifierNode },
     TypeAliasMustBeDeclaredAtTopLevel,
     StructMustBeDeclaredAtTopLevel,
     IfExpressionMissingElse,
@@ -88,7 +88,7 @@ impl SemanticErrorKind {
             SemanticErrorKind::CannotIndex { .. } => 32,
             SemanticErrorKind::CannotStaticAccess { .. } => 33,
             SemanticErrorKind::ExpectedAType => 34,
-            SemanticErrorKind::AccessToUndefinedField { .. } => 35,
+            SemanticErrorKind::AccessToUndefinedStaticField { .. } => 35,
         }
     }
 }
