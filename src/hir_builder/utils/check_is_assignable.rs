@@ -47,9 +47,6 @@ impl FunctionBuilder {
             (Union(source_decl), Union(target_decl)) => {
                 todo!()
             }
-            (List(source_item_type), List(target_item_type)) => {
-                self.check_is_assignable_recursive(source_item_type, target_item_type, visited_declarations)
-            }
             (
                 FnType(CheckedFnType {
                     params: source_params,

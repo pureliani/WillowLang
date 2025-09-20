@@ -7,7 +7,7 @@ use crate::{
     hir_builder::{
         errors::{SemanticError, SemanticErrorKind},
         types::{
-            checked_declaration::{CheckedFnType, CheckedParam},
+            checked_declaration::{CheckedFnType, CheckedParam, StructKind},
             checked_type::{Type, TypeKind},
         },
         utils::scope::{ScopeKind, SymbolEntry},
@@ -36,7 +36,7 @@ impl FunctionBuilder {
             .scope_lookup(id.name)
             .map(|entry| match entry {
                 SymbolEntry::TypeAliasDecl(decl) => Ok(TypeKind::TypeAliasDecl(decl)),
-                SymbolEntry::StructDecl(decl) => Ok(TypeKind::Struct(decl)),
+                SymbolEntry::StructDecl(decl) => Ok(TypeKind::Struct(StructKind::Nominal(decl))),
                 SymbolEntry::UnionDecl(decl) => Ok(TypeKind::Union(decl)),
                 SymbolEntry::VarDecl(_) => Err(SemanticError {
                     kind: SemanticErrorKind::CannotUseVariableDeclarationAsType,
@@ -89,7 +89,42 @@ impl FunctionBuilder {
             }
             TypeAnnotationKind::List { item_type } => {
                 let checked_item_type = self.check_type_annotation(ctx, item_type);
-                TypeKind::List(Box::new(checked_item_type))
+                let span = Span::default();
+
+                let length_param = CheckedParam {
+                    identifier: IdentifierNode {
+                        name: ctx.program_builder.string_interner.intern("length"),
+                        span,
+                    },
+                    constraint: Type {
+                        kind: TypeKind::USize,
+                        span,
+                    },
+                };
+
+                let capacity_param = CheckedParam {
+                    identifier: IdentifierNode {
+                        name: ctx.program_builder.string_interner.intern("capacity"),
+                        span,
+                    },
+                    constraint: Type {
+                        kind: TypeKind::USize,
+                        span,
+                    },
+                };
+
+                let pointer_param = CheckedParam {
+                    identifier: IdentifierNode {
+                        name: ctx.program_builder.string_interner.intern("pointer"),
+                        span,
+                    },
+                    constraint: Type {
+                        kind: TypeKind::Pointer(Box::new(checked_item_type)),
+                        span,
+                    },
+                };
+
+                TypeKind::Struct(StructKind::Anonymous(vec![length_param, capacity_param, pointer_param]))
             }
         };
 

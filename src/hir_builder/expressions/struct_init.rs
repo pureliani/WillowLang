@@ -76,7 +76,7 @@ impl FunctionBuilder {
         if let TypeKind::Struct(struct_decl) = &left_type.kind {
             let mut initialized_fields: HashSet<IdentifierNode> = HashSet::new();
 
-            let struct_ptr = self.emit_alloc(left_type.clone());
+            let struct_ptr = self.emit_stack_alloc(left_type.clone(), 1);
 
             for (field_name, field_expr) in field_initializers {
                 if !initialized_fields.insert(field_name) {
@@ -121,7 +121,7 @@ impl FunctionBuilder {
             }
 
             let mut missing_initializers: HashSet<InternerId> = HashSet::new();
-            for required_field in &struct_decl.fields {
+            for required_field in struct_decl.fields() {
                 if !initialized_fields.contains(&required_field.identifier) {
                     missing_initializers.insert(required_field.identifier.name);
                 }

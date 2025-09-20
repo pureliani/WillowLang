@@ -2,7 +2,7 @@ use std::hash::{Hash, Hasher};
 
 use crate::{
     ast::Span,
-    hir_builder::types::checked_declaration::{CheckedFnType, CheckedStructDecl, CheckedTypeAliasDecl, CheckedUnionDecl},
+    hir_builder::types::checked_declaration::{CheckedFnType, CheckedTypeAliasDecl, CheckedUnionDecl, StructKind},
 };
 
 #[derive(Clone, Debug)]
@@ -23,8 +23,7 @@ pub enum TypeKind {
     F64,
     String,
     Union(CheckedUnionDecl),
-    Struct(CheckedStructDecl),
-    List(Box<Type>),
+    Struct(StructKind),
     TypeAliasDecl(CheckedTypeAliasDecl),
     FnType(CheckedFnType),
     Pointer(Box<Type>),
@@ -55,7 +54,6 @@ impl PartialEq for TypeKind {
             (TypeKind::Struct(a), TypeKind::Struct(b)) => a == b,
             (TypeKind::FnType(a), TypeKind::FnType(b)) => a == b,
             (TypeKind::Pointer(a), TypeKind::Pointer(b)) => a == b,
-            (TypeKind::List(t1), TypeKind::List(t2)) => t1 == t2,
             (TypeKind::Union(u1), TypeKind::Union(u2)) => u1.identifier == u2.identifier,
             _ => false,
         }
@@ -87,9 +85,6 @@ impl Hash for TypeKind {
             TypeKind::TypeAliasDecl(decl) => decl.hash(state),
             TypeKind::FnType(decl) => decl.hash(state),
             TypeKind::Pointer(inner) => inner.hash(state),
-            TypeKind::List(item_type) => {
-                item_type.hash(state);
-            }
             TypeKind::Union(decl) => decl.hash(state),
         }
     }

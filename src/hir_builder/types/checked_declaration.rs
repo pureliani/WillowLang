@@ -27,6 +27,40 @@ impl Hash for CheckedParam {
 }
 
 #[derive(Clone, Debug)]
+pub enum StructKind {
+    Nominal(CheckedStructDecl),
+    Anonymous(Vec<CheckedParam>),
+}
+impl StructKind {
+    pub fn fields(&self) -> &[CheckedParam] {
+        match self {
+            StructKind::Nominal(checked_struct_decl) => checked_struct_decl.fields.as_slice(),
+            StructKind::Anonymous(checked_params) => checked_params.as_slice(),
+        }
+    }
+}
+
+impl Eq for StructKind {}
+impl PartialEq for StructKind {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (StructKind::Nominal(left), StructKind::Nominal(right)) => left == right,
+            (StructKind::Anonymous(left), StructKind::Anonymous(right)) => left == right,
+            _ => false,
+        }
+    }
+}
+impl Hash for StructKind {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        std::mem::discriminant(self).hash(state);
+        match self {
+            StructKind::Nominal(checked_struct_decl) => checked_struct_decl.hash(state),
+            StructKind::Anonymous(checked_params) => checked_params.hash(state),
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
 pub struct CheckedStructDecl {
     pub identifier: IdentifierNode,
     pub documentation: Option<DocAnnotation>,

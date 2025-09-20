@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use crate::{
     ast::{IdentifierNode, Span},
-    cfg::{BasicBlock, BasicBlockId, BinaryOperationKind, Instruction, UnaryOperationKind, Value, ValueId},
+    cfg::{BasicBlock, BasicBlockId, BinaryOperationKind, Instruction, PtrOffset, UnaryOperationKind, Value, ValueId},
     hir_builder::{
         errors::{SemanticError, SemanticErrorKind},
         types::checked_type::{Type, TypeKind},
@@ -38,7 +38,7 @@ impl FunctionBuilder {
     }
 
     /// Returns ValueId which holds pointer: TypeKind::Pointer(Box<Type>)
-    pub fn emit_alloc(&mut self, ty: Type) -> ValueId {
+    pub fn emit_stack_alloc(&mut self, ty: Type, count: usize) -> ValueId {
         let destination = self.new_value_id();
 
         self.cfg.value_types.insert(
@@ -51,13 +51,31 @@ impl FunctionBuilder {
 
         self.get_current_basic_block()
             .instructions
-            .push(Instruction::Alloc { destination });
+            .push(Instruction::StackAlloc { destination, count });
 
         destination
     }
 
     /// Returns ValueId which holds pointer: TypeKind::Pointer(Box<Type>)
-    pub fn emit_new(&mut self, ctx: &mut HIRContext, ty: Type) -> ValueId {
+    pub fn emit_heap_alloc(&mut self, ctx: &mut HIRContext, ty: Type, count: Value) -> Result<ValueId, SemanticError> {
+        let count_type = self.get_value_type(&count);
+        let expected_count_type = Type {
+            kind: TypeKind::USize,
+            span: count_type.span,
+        };
+        if !self.check_is_assignable(&count_type, &expected_count_type) {
+            return Err(SemanticError {
+                span: count_type.span,
+                kind: SemanticErrorKind::TypeMismatch {
+                    expected: Type {
+                        kind: TypeKind::USize,
+                        span: count_type.span,
+                    },
+                    received: count_type,
+                },
+            });
+        }
+
         let destination = self.new_value_id();
         let allocation_site_id = ctx.program_builder.new_allocation_id();
 
@@ -69,12 +87,13 @@ impl FunctionBuilder {
             },
         );
 
-        self.get_current_basic_block().instructions.push(Instruction::New {
+        self.get_current_basic_block().instructions.push(Instruction::HeapAlloc {
             destination,
             allocation_site_id,
+            count,
         });
 
-        destination
+        Ok(destination)
     }
 
     pub fn emit_store(&mut self, ctx: &mut HIRContext, destination_ptr: ValueId, value: Value) {
@@ -139,7 +158,7 @@ impl FunctionBuilder {
         };
 
         if let Some((field_index, checked_field)) = struct_decl
-            .fields
+            .fields()
             .iter()
             .enumerate()
             .find(|(_, f)| f.identifier.name == field.name)
@@ -170,51 +189,36 @@ impl FunctionBuilder {
         }
     }
 
-    pub fn emit_get_element_ptr(&mut self, base_ptr: ValueId, index: Value) -> Result<ValueId, SemanticError> {
+    pub fn emit_ptr_add(&mut self, base_ptr: ValueId, offset: PtrOffset) -> Result<ValueId, SemanticError> {
         let base_ptr_type = self.get_value_id_type(&base_ptr);
-        let index_type = self.get_value_type(&index);
+        if !matches!(base_ptr_type.kind, TypeKind::Pointer(_)) {
+            panic!("INTERNAL COMPILER ERROR: emit_ptr_add called on a non-pointer type.");
+        }
 
-        let list_item_type = if let TypeKind::Pointer(ptr_to) = &base_ptr_type.kind {
-            if let TypeKind::List(item_type) = &ptr_to.kind {
-                item_type.as_ref().clone()
-            } else {
+        if let PtrOffset::Dynamic(value) = &offset {
+            let index_type = self.get_value_type(value);
+            let expected_index_type = Type {
+                kind: TypeKind::USize,
+                span: index_type.span,
+            };
+            if !self.check_is_assignable(&index_type, &expected_index_type) {
                 return Err(SemanticError {
-                    kind: SemanticErrorKind::CannotIndex(ptr_to.as_ref().clone()),
-                    span: base_ptr_type.span,
+                    span: index_type.span,
+                    kind: SemanticErrorKind::TypeMismatch {
+                        expected: expected_index_type,
+                        received: index_type,
+                    },
                 });
             }
-        } else {
-            panic!("INTERNAL COMPILER ERROR: emit_get_element_ptr called on a non-pointer type.");
-        };
-
-        let expected_index_type = Type {
-            kind: TypeKind::USize,
-            span: index_type.span,
-        };
-
-        if !self.check_is_assignable(&index_type, &expected_index_type) {
-            return Err(SemanticError {
-                span: index_type.span,
-                kind: SemanticErrorKind::TypeMismatch {
-                    expected: expected_index_type,
-                    received: index_type,
-                },
-            });
         }
 
         let destination = self.new_value_id();
-        self.cfg.value_types.insert(
-            destination,
-            Type {
-                kind: TypeKind::Pointer(Box::new(list_item_type)),
-                span: base_ptr_type.span,
-            },
-        );
 
-        self.get_current_basic_block().instructions.push(Instruction::GetElementPtr {
+        self.cfg.value_types.insert(destination, base_ptr_type);
+        self.get_current_basic_block().instructions.push(Instruction::PtrAdd {
             destination,
             base_ptr,
-            index,
+            offset,
         });
 
         Ok(destination)

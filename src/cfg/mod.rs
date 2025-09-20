@@ -42,13 +42,23 @@ pub enum Value {
 }
 
 #[derive(Clone, Debug)]
+pub enum PtrOffset {
+    // A dynamic offset, calculated at runtime.
+    Dynamic(Value),
+    // A constant offset, known at compile time.
+    Constant(usize),
+}
+
+#[derive(Clone, Debug)]
 pub enum Instruction {
-    Alloc {
+    StackAlloc {
         destination: ValueId,
+        count: usize,
     },
-    New {
+    HeapAlloc {
         destination: ValueId,
         allocation_site_id: HeapAllocationId,
+        count: Value,
     },
     Store {
         destination_ptr: ValueId,
@@ -63,10 +73,11 @@ pub enum Instruction {
         base_ptr: ValueId,
         field_index: usize,
     },
-    GetElementPtr {
+    PtrAdd {
         destination: ValueId,
         base_ptr: ValueId,
-        index: Value,
+        // The index is now this more explicit enum.
+        offset: PtrOffset,
     },
     UnaryOp {
         op_kind: UnaryOperationKind,

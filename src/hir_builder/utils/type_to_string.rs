@@ -1,6 +1,9 @@
 use crate::{
     compile::string_interner::{InternerId, StringInterner},
-    hir_builder::types::{checked_declaration::CheckedFnType, checked_type::TypeKind},
+    hir_builder::types::{
+        checked_declaration::{CheckedFnType, StructKind},
+        checked_type::TypeKind,
+    },
 };
 
 fn identifier_to_string(id: InternerId, string_interner: &StringInterner) -> String {
@@ -33,9 +36,15 @@ pub fn type_to_string_recursive(ty: &TypeKind, string_interner: &StringInterner)
         TypeKind::F64 => String::from("f64"),
         TypeKind::String => String::from("string"),
         TypeKind::Unknown => String::from("unknown"),
-        TypeKind::Struct(decl) => {
-            let fields = decl
-                .fields
+        TypeKind::Struct(struct_kind) => {
+            let name = match struct_kind {
+                StructKind::Nominal(checked_struct_decl) => {
+                    identifier_to_string(checked_struct_decl.identifier.name, string_interner)
+                }
+                StructKind::Anonymous(_) => "".to_string(),
+            };
+            let fields = struct_kind
+                .fields()
                 .iter()
                 .map(|p| {
                     format!(
@@ -47,11 +56,7 @@ pub fn type_to_string_recursive(ty: &TypeKind, string_interner: &StringInterner)
                 .collect::<Vec<String>>()
                 .join(",\n");
 
-            format!(
-                "struct {} {{\n{}\n}}",
-                identifier_to_string(decl.identifier.name, string_interner),
-                fields
-            )
+            format!("struct {} {{\n{}\n}}", name, fields)
         }
         TypeKind::FnType(CheckedFnType {
             params,
@@ -81,9 +86,6 @@ pub fn type_to_string_recursive(ty: &TypeKind, string_interner: &StringInterner)
             let value = type_to_string_recursive(&decl.value.kind, string_interner);
 
             format!("type {} = {};", name, value)
-        }
-        TypeKind::List(item_type) => {
-            format!("{}[]", type_to_string_recursive(&item_type.kind, string_interner,))
         }
         TypeKind::Pointer(ty) => format!("ptr<{}>", type_to_string_recursive(&ty.kind, string_interner,)),
         TypeKind::Union(decl) => {
