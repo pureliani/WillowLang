@@ -76,7 +76,7 @@ impl FunctionBuilder {
         if let TypeKind::Struct(struct_decl) = &left_type.kind {
             let mut initialized_fields: HashSet<IdentifierNode> = HashSet::new();
 
-            let struct_ptr = self.emit_stack_alloc(left_type.clone(), 1);
+            let struct_ptr = self.emit_stack_alloc(ctx, left_type.clone(), 1);
 
             for (field_name, field_expr) in field_initializers {
                 if !initialized_fields.insert(field_name) {
@@ -91,14 +91,14 @@ impl FunctionBuilder {
 
                 let field_expr_span = field_expr.span;
 
-                let field_ptr = match self.emit_get_field_ptr(struct_ptr, field_name) {
+                let field_ptr = match self.emit_get_field_ptr(ctx, struct_ptr, field_name) {
                     Ok(ptr) => ptr,
                     Err(error) => return Value::Use(self.report_error_and_get_poison(ctx, error)),
                 };
-                let field_ptr_type = self.get_value_id_type(&field_ptr);
+                let field_ptr_type = ctx.program_builder.get_value_id_type(&field_ptr);
 
                 let field_value = self.build_expr(ctx, field_expr);
-                let field_value_type = self.get_value_type(&field_value);
+                let field_value_type = ctx.program_builder.get_value_type(&field_value);
 
                 if let TypeKind::Pointer(expected_field_type) = field_ptr_type.kind {
                     if !self.check_is_assignable(&field_value_type, &expected_field_type) {
@@ -136,7 +136,7 @@ impl FunctionBuilder {
                 ));
             }
 
-            let final_struct_value_id = self.emit_load(struct_ptr);
+            let final_struct_value_id = self.emit_load(ctx, struct_ptr);
             return Value::Use(final_struct_value_id);
         } else {
             return Value::Use(self.report_error_and_get_poison(

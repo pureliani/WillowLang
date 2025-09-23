@@ -155,7 +155,6 @@ pub struct BasicBlock {
 pub struct ControlFlowGraph {
     pub entry_block: BasicBlockId,
     pub blocks: HashMap<BasicBlockId, BasicBlock>,
-    pub value_types: HashMap<ValueId, Type>,
 }
 
 #[derive(Clone, Debug)]

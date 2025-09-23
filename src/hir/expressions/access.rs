@@ -10,12 +10,12 @@ impl FunctionBuilder {
             Err(e) => return Value::Use(self.report_error_and_get_poison(ctx, e)),
         };
 
-        let field_ptr_id = match self.emit_get_field_ptr(base_ptr_id, field) {
+        let field_ptr_id = match self.emit_get_field_ptr(ctx, base_ptr_id, field) {
             Ok(id) => id,
             Err(e) => return Value::Use(self.report_error_and_get_poison(ctx, e)),
         };
 
-        let final_value_id = self.emit_load(field_ptr_id);
+        let final_value_id = self.emit_load(ctx, field_ptr_id);
 
         Value::Use(final_value_id)
     }

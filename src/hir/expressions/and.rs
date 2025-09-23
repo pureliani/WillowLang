@@ -31,7 +31,7 @@ impl FunctionBuilder {
             (right_exit_block_id, right_value),
         ];
 
-        let phi_destination = match self.emit_phi(phi_sources) {
+        let phi_destination = match self.emit_phi(ctx, phi_sources) {
             Ok(phi_destination) => phi_destination,
             Err(err) => self.report_error_and_get_poison(ctx, err),
         };

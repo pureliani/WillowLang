@@ -23,7 +23,7 @@ impl FunctionBuilder {
             }
             ExprKind::Access { left, field } => {
                 let base_ptr_id = self.build_lvalue_expr(ctx, *left)?;
-                Ok(self.emit_get_field_ptr(base_ptr_id, field)?)
+                Ok(self.emit_get_field_ptr(ctx, base_ptr_id, field)?)
             }
             _ => {
                 return Err(SemanticError {

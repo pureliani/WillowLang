@@ -10,12 +10,16 @@ use crate::{
     hir::{
         cfg::{
             BasicBlock, BasicBlockId, CheckedModule, ConstantId, ControlFlowGraph, FunctionId, HeapAllocationId, ModuleId,
-            Terminator, ValueId,
+            Terminator, Value, ValueId,
         },
         errors::SemanticError,
-        types::{checked_declaration::CheckedParam, checked_type::Type},
+        types::{
+            checked_declaration::CheckedParam,
+            checked_type::{Type, TypeKind},
+        },
         utils::scope::{Scope, ScopeKind},
     },
+    tokenize::NumberKind,
 };
 
 pub mod cfg;
@@ -41,10 +45,12 @@ pub struct HIRContext<'a, 'b> {
 
 pub struct ProgramBuilder<'a> {
     pub modules: HashMap<ModuleId, ModuleBuilder>,
+    pub value_types: HashMap<ValueId, Type>,
     pub string_interner: &'a mut StringInterner<'a>,
     /// Global errors
     pub errors: Vec<SemanticError>,
 
+    value_id_counter: AtomicUsize,
     function_id_counter: AtomicUsize,
     constant_id_counter: AtomicUsize,
     allocation_id_counter: AtomicUsize,
@@ -76,10 +82,12 @@ impl<'a> ProgramBuilder<'a> {
         ProgramBuilder {
             errors: vec![],
             modules: HashMap::new(),
+            value_types: HashMap::new(),
             string_interner,
             function_id_counter: AtomicUsize::new(0),
             constant_id_counter: AtomicUsize::new(0),
             allocation_id_counter: AtomicUsize::new(0),
+            value_id_counter: AtomicUsize::new(0),
         }
     }
 
@@ -108,6 +116,58 @@ impl<'a> ProgramBuilder<'a> {
 
     pub fn new_allocation_id(&self) -> HeapAllocationId {
         HeapAllocationId(self.allocation_id_counter.fetch_add(1, Ordering::SeqCst))
+    }
+
+    pub fn new_value_id(&self) -> ValueId {
+        ValueId(self.value_id_counter.fetch_add(1, Ordering::SeqCst))
+    }
+
+    pub fn get_value_id_type(&self, value_id: &ValueId) -> Type {
+        self.value_types
+            .get(value_id)
+            .expect("INTERNAL COMPILER ERROR: All ValueIds must have a corresponding type")
+            .clone()
+    }
+
+    pub fn get_value_type(&self, value: &Value) -> Type {
+        match value {
+            Value::VoidLiteral => Type {
+                kind: TypeKind::Void,
+                span: Default::default(),
+            },
+            Value::BoolLiteral(_) => Type {
+                kind: TypeKind::Bool,
+                // TODO: fix this later
+                span: Default::default(),
+            },
+            Value::NumberLiteral(kind) => {
+                let kind = match kind {
+                    NumberKind::I64(_) => TypeKind::I64,
+                    NumberKind::I32(_) => TypeKind::I32,
+                    NumberKind::I16(_) => TypeKind::I16,
+                    NumberKind::I8(_) => TypeKind::I8,
+                    NumberKind::F32(_) => TypeKind::F32,
+                    NumberKind::F64(_) => TypeKind::F64,
+                    NumberKind::U64(_) => TypeKind::U64,
+                    NumberKind::U32(_) => TypeKind::U32,
+                    NumberKind::U16(_) => TypeKind::U16,
+                    NumberKind::U8(_) => TypeKind::U8,
+                    NumberKind::USize(_) => TypeKind::USize,
+                    NumberKind::ISize(_) => TypeKind::ISize,
+                };
+
+                Type {
+                    kind,
+                    span: Default::default(),
+                }
+            }
+            Value::StringLiteral(_) => Type {
+                kind: TypeKind::String,
+                span: Default::default(),
+            },
+            Value::FunctionAddr { ty, .. } => ty.clone(),
+            Value::Use(value_id) => self.get_value_id_type(value_id),
+        }
     }
 }
 
@@ -154,7 +214,6 @@ impl FunctionBuilder {
                 },
             )]),
             entry_block: entry_block_id,
-            value_types: HashMap::new(),
         };
 
         Self {
