@@ -69,6 +69,7 @@ pub fn is_start_of_expr(token_kind: &TokenKind) -> bool {
         | TokenKind::Keyword(KeywordKind::True)
         | TokenKind::Keyword(KeywordKind::False)
         | TokenKind::Keyword(KeywordKind::If)
+        | TokenKind::Keyword(KeywordKind::Match)
         | TokenKind::Punctuation(PunctuationKind::LParen)   // Parenthesized expr
         | TokenKind::Punctuation(PunctuationKind::LBrace)   // Codeblock expr
         | TokenKind::Punctuation(PunctuationKind::LBracket) // List literal

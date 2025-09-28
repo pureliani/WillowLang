@@ -169,8 +169,8 @@ impl KeywordKind {
             KeywordKind::U16 => "u16",
             KeywordKind::U32 => "u32",
             KeywordKind::U64 => "u64",
-            KeywordKind::USize => "uSize",
-            KeywordKind::ISize => "iSize",
+            KeywordKind::USize => "usize",
+            KeywordKind::ISize => "isize",
             KeywordKind::F32 => "f32",
             KeywordKind::F64 => "f64",
             KeywordKind::Fn => "fn",
@@ -544,7 +544,7 @@ fn is_keyword(identifier: &str) -> Option<KeywordKind> {
         "isize" => Some(KeywordKind::ISize),
         "match" => Some(KeywordKind::Match),
         "union" => Some(KeywordKind::Union),
-        "Struct" => Some(KeywordKind::Struct),
+        "struct" => Some(KeywordKind::Struct),
         _ => None,
     }
 }
