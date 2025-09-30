@@ -1,6 +1,6 @@
 use crate::{
     ast::{
-        decl::{UnionDecl, UnionDeclVariant},
+        decl::{EnumDecl, EnumDeclVariant},
         stmt::{Stmt, StmtKind},
     },
     parse::{DocAnnotation, Parser, ParsingError},
@@ -8,10 +8,10 @@ use crate::{
 };
 
 impl<'a, 'b> Parser<'a, 'b> {
-    pub fn parse_union_decl(&mut self, documentation: Option<DocAnnotation>) -> Result<Stmt, ParsingError<'a>> {
+    pub fn parse_enum_decl(&mut self, documentation: Option<DocAnnotation>) -> Result<Stmt, ParsingError<'a>> {
         let start_offset = self.offset;
 
-        self.consume_keyword(KeywordKind::Union)?;
+        self.consume_keyword(KeywordKind::Enum)?;
         let identifier = self.consume_identifier()?;
         self.consume_punctuation(PunctuationKind::LBrace)?;
         let variants = self.comma_separated(
@@ -26,7 +26,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                     None
                 };
 
-                Ok(UnionDeclVariant { name, payload })
+                Ok(EnumDeclVariant { name, payload })
             },
             |p| p.match_token(0, TokenKind::Punctuation(PunctuationKind::RBrace)),
         )?;
@@ -35,7 +35,7 @@ impl<'a, 'b> Parser<'a, 'b> {
         let span = self.get_span(start_offset, self.offset - 1)?;
 
         Ok(Stmt {
-            kind: StmtKind::UnionDecl(UnionDecl {
+            kind: StmtKind::EnumDecl(EnumDecl {
                 documentation,
                 identifier,
                 variants,

@@ -278,7 +278,7 @@ pub fn compile_file<'a, 'b>(
             }
             SemanticErrorKind::CannotIndex(_) => todo!(),
             SemanticErrorKind::IncompatibleBranchTypes { first, second } => todo!(),
-            SemanticErrorKind::ExpectedUnionType => todo!(),
+            SemanticErrorKind::ExpectedEnumType => todo!(),
             SemanticErrorKind::TypeMismatchExpectedOneOf { expected, received } => todo!(),
             SemanticErrorKind::CannotStaticAccess(_) => todo!(),
             SemanticErrorKind::ExpectedAType => todo!(),

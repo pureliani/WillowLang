@@ -1,5 +1,5 @@
 use crate::ast::{
-    decl::{StructDecl, UnionDecl},
+    decl::{EnumDecl, StructDecl},
     IdentifierNode, Span, StringNode,
 };
 
@@ -14,7 +14,7 @@ pub enum StmtKind {
     TypeAliasDecl(TypeAliasDecl),
     VarDecl(VarDecl),
     StructDecl(StructDecl),
-    UnionDecl(UnionDecl),
+    EnumDecl(EnumDecl),
     Break,
     Continue,
     Return {

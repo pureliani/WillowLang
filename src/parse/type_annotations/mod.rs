@@ -3,7 +3,10 @@ pub mod parse_parenthesized_type_annotation;
 
 use super::{Parser, ParsingError, ParsingErrorKind};
 use crate::{
-    ast::type_annotation::{TypeAnnotation, TypeAnnotationKind},
+    ast::{
+        expr::BorrowKind,
+        type_annotation::{TypeAnnotation, TypeAnnotationKind},
+    },
     tokenize::{KeywordKind, PunctuationKind, TokenKind},
 };
 
@@ -164,16 +167,6 @@ impl<'a, 'b> Parser<'a, 'b> {
                     span,
                 }
             }
-            TokenKind::Keyword(KeywordKind::String) => {
-                let start_offset = self.offset;
-
-                self.consume_keyword(KeywordKind::String)?;
-                let span = self.get_span(start_offset, self.offset - 1)?;
-                TypeAnnotation {
-                    kind: TypeAnnotationKind::String,
-                    span,
-                }
-            }
             TokenKind::Punctuation(PunctuationKind::LParen) => self.parse_parenthesized_type_annotation()?,
             TokenKind::Keyword(KeywordKind::Fn) => self.parse_fn_type_annotation()?,
             TokenKind::Identifier(_) => {
@@ -183,6 +176,24 @@ impl<'a, 'b> Parser<'a, 'b> {
                     kind: TypeAnnotationKind::Identifier(identifier),
                 }
             }
+            TokenKind::Punctuation(PunctuationKind::And) => {
+                let start_offset = self.offset;
+
+                self.advance();
+                let kind = if self.match_token(0, TokenKind::Keyword(KeywordKind::Mut)) {
+                    self.advance();
+                    BorrowKind::Mutable
+                } else {
+                    BorrowKind::Shared
+                };
+
+                let value = Box::new(self.parse_type_annotation(0)?);
+
+                TypeAnnotation {
+                    kind: TypeAnnotationKind::Borrow { kind, value },
+                    span: self.get_span(start_offset, self.offset - 1)?,
+                }
+            }
             _ => {
                 return Err(ParsingError {
                     kind: ParsingErrorKind::ExpectedATypeButFound(token.clone()),
@@ -190,41 +201,6 @@ impl<'a, 'b> Parser<'a, 'b> {
                 })
             }
         };
-
-        loop {
-            let op = match self.current() {
-                Some(o) => o,
-                None => break,
-            };
-
-            if let Some((left_prec, ())) = suffix_bp(&op.kind) {
-                if left_prec < min_prec {
-                    break;
-                }
-
-                lhs = match op.kind {
-                    TokenKind::Punctuation(PunctuationKind::LBracket) => {
-                        self.consume_punctuation(PunctuationKind::LBracket)?;
-                        self.consume_punctuation(PunctuationKind::RBracket)?;
-
-                        let span = self.get_span(lhs.span.start.byte_offset, self.offset - 1)?;
-                        TypeAnnotation {
-                            kind: TypeAnnotationKind::List {
-                                item_type: Box::new(lhs.clone()),
-                            },
-                            span,
-                        }
-                    }
-                    _ => {
-                        panic!("INTERNAL COMPILER ERROR: Unexpected suffix type-annotation operator")
-                    }
-                };
-
-                continue;
-            }
-
-            break;
-        }
 
         Ok(lhs)
     }

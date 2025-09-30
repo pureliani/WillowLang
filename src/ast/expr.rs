@@ -1,3 +1,5 @@
+use std::hash::Hash;
+
 use crate::{
     ast::{IdentifierNode, Span, StringNode},
     tokenize::NumberKind,
@@ -22,6 +24,18 @@ pub enum MatchPattern {
 pub struct MatchArm {
     pub pattern: Vec<MatchPattern>, // e.g match x, y, z { Foo(x), Bar, Baz(y) => {} }
     pub expression: Expr,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum BorrowKind {
+    Mutable,
+    Shared,
+}
+
+impl Hash for BorrowKind {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        std::mem::discriminant(self).hash(state);
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -103,6 +117,10 @@ pub enum ExprKind {
     FnCall {
         left: Box<Expr>,
         args: Vec<Expr>,
+    },
+    Borrow {
+        kind: BorrowKind,
+        value: Box<Expr>,
     },
     BoolLiteral(bool),
     Number(NumberKind),

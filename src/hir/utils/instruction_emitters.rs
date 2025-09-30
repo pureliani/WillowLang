@@ -163,7 +163,7 @@ impl FunctionBuilder {
         };
 
         if let Some((field_index, checked_field)) = struct_decl
-            .fields()
+            .fields
             .iter()
             .enumerate()
             .find(|(_, f)| f.identifier.name == field.name)

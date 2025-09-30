@@ -121,7 +121,7 @@ impl FunctionBuilder {
             }
 
             let mut missing_initializers: HashSet<InternerId> = HashSet::new();
-            for required_field in struct_decl.fields() {
+            for required_field in &struct_decl.fields {
                 if !initialized_fields.contains(&required_field.identifier) {
                     missing_initializers.insert(required_field.identifier.name);
                 }

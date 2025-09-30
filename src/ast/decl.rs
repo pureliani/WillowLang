@@ -10,35 +10,35 @@ pub struct Param {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct TypeAliasDecl {
-    pub identifier: IdentifierNode,
     pub documentation: Option<DocAnnotation>,
+    pub identifier: IdentifierNode,
     pub value: TypeAnnotation,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct StructDecl {
-    pub identifier: IdentifierNode,
     pub documentation: Option<DocAnnotation>,
+    pub identifier: IdentifierNode,
     pub fields: Vec<Param>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct UnionDeclVariant {
+pub struct EnumDeclVariant {
     pub name: IdentifierNode,
     pub payload: Option<TypeAnnotation>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct UnionDecl {
-    pub identifier: IdentifierNode,
+pub struct EnumDecl {
     pub documentation: Option<DocAnnotation>,
-    pub variants: Vec<UnionDeclVariant>,
+    pub identifier: IdentifierNode,
+    pub variants: Vec<EnumDeclVariant>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct VarDecl {
-    pub identifier: IdentifierNode,
     pub documentation: Option<DocAnnotation>,
+    pub identifier: IdentifierNode,
     pub constraint: Option<TypeAnnotation>,
     pub value: Option<Expr>,
 }

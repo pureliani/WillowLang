@@ -123,7 +123,6 @@ pub enum KeywordKind {
     True,
     False,
     Pub,
-    String,
     Bool,
     I8,
     I16,
@@ -139,8 +138,9 @@ pub enum KeywordKind {
     F64,
     Fn,
     Match,
-    Union,
+    Enum,
     Struct,
+    Mut,
 }
 
 impl KeywordKind {
@@ -159,7 +159,6 @@ impl KeywordKind {
             KeywordKind::True => "true",
             KeywordKind::False => "false",
             KeywordKind::Pub => "pub",
-            KeywordKind::String => "string",
             KeywordKind::Bool => "bool",
             KeywordKind::I8 => "i8",
             KeywordKind::I16 => "i16",
@@ -175,8 +174,9 @@ impl KeywordKind {
             KeywordKind::F64 => "f64",
             KeywordKind::Fn => "fn",
             KeywordKind::Match => "match",
-            KeywordKind::Union => "union",
+            KeywordKind::Enum => "enum",
             KeywordKind::Struct => "struct",
+            KeywordKind::Mut => "mut",
         })
     }
 }
@@ -528,7 +528,6 @@ fn is_keyword(identifier: &str) -> Option<KeywordKind> {
         "true" => Some(KeywordKind::True),
         "false" => Some(KeywordKind::False),
         "pub" => Some(KeywordKind::Pub),
-        "string" => Some(KeywordKind::String),
         "bool" => Some(KeywordKind::Bool),
         "i8" => Some(KeywordKind::I8),
         "i16" => Some(KeywordKind::I16),
@@ -543,8 +542,9 @@ fn is_keyword(identifier: &str) -> Option<KeywordKind> {
         "usize" => Some(KeywordKind::USize),
         "isize" => Some(KeywordKind::ISize),
         "match" => Some(KeywordKind::Match),
-        "union" => Some(KeywordKind::Union),
+        "enum" => Some(KeywordKind::Enum),
         "struct" => Some(KeywordKind::Struct),
+        "mut" => Some(KeywordKind::Mut),
         _ => None,
     }
 }

@@ -69,6 +69,7 @@ impl FunctionBuilder {
             ExprKind::CodeBlock(block_contents) => self.build_codeblock_expr(ctx, block_contents),
             ExprKind::Match { conditions, arms } => self.build_match_expr(ctx, conditions, arms),
             ExprKind::StructInit { left, fields } => self.build_struct_init_expr(ctx, left, fields),
+            ExprKind::Borrow { kind, value } => todo!(),
         }
     }
 }

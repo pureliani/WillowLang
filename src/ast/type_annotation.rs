@@ -1,4 +1,4 @@
-use crate::ast::{IdentifierNode, Span};
+use crate::ast::{expr::BorrowKind, IdentifierNode, Span};
 
 use super::decl::Param;
 
@@ -20,8 +20,9 @@ pub enum TypeAnnotationKind {
     F64,
     String,
     Identifier(IdentifierNode),
-    List {
-        item_type: Box<TypeAnnotation>,
+    Borrow {
+        kind: BorrowKind,
+        value: Box<TypeAnnotation>,
     },
     FnType {
         params: Vec<Param>,

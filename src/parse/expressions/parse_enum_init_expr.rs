@@ -5,7 +5,7 @@ use crate::{
 };
 
 impl<'a, 'b> Parser<'a, 'b> {
-    pub fn parse_union_init_expr(&mut self) -> Result<Expr, ParsingError<'a>> {
+    pub fn parse_enum_init_expr(&mut self) -> Result<Expr, ParsingError<'a>> {
         todo!()
     }
 }

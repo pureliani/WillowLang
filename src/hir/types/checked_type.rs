@@ -1,8 +1,8 @@
 use std::hash::{Hash, Hasher};
 
 use crate::{
-    ast::Span,
-    hir::types::checked_declaration::{CheckedFnType, CheckedTypeAliasDecl, CheckedUnionDecl, StructKind},
+    ast::{expr::BorrowKind, Span},
+    hir::types::checked_declaration::{CheckedEnumDecl, CheckedFnType, CheckedStructDecl, CheckedTypeAliasDecl},
 };
 
 #[derive(Clone, Debug)]
@@ -22,10 +22,11 @@ pub enum TypeKind {
     F32,
     F64,
     String,
-    Union(CheckedUnionDecl),
-    Struct(StructKind),
+    Enum(CheckedEnumDecl),
+    Struct(CheckedStructDecl),
     TypeAliasDecl(CheckedTypeAliasDecl),
     FnType(CheckedFnType),
+    Borrow { kind: BorrowKind, value_type: Box<Type> },
     Pointer(Box<Type>),
     Unknown,
 }
@@ -54,7 +55,17 @@ impl PartialEq for TypeKind {
             (TypeKind::Struct(a), TypeKind::Struct(b)) => a == b,
             (TypeKind::FnType(a), TypeKind::FnType(b)) => a == b,
             (TypeKind::Pointer(a), TypeKind::Pointer(b)) => a == b,
-            (TypeKind::Union(u1), TypeKind::Union(u2)) => u1.identifier == u2.identifier,
+            (TypeKind::Enum(u1), TypeKind::Enum(u2)) => u1.identifier == u2.identifier,
+            (
+                TypeKind::Borrow {
+                    kind: kind_a,
+                    value_type: type_a,
+                },
+                TypeKind::Borrow {
+                    kind: kind_b,
+                    value_type: type_b,
+                },
+            ) => kind_a == kind_b && type_a.kind == type_b.kind,
             _ => false,
         }
     }
@@ -85,7 +96,11 @@ impl Hash for TypeKind {
             TypeKind::TypeAliasDecl(decl) => decl.hash(state),
             TypeKind::FnType(decl) => decl.hash(state),
             TypeKind::Pointer(inner) => inner.hash(state),
-            TypeKind::Union(decl) => decl.hash(state),
+            TypeKind::Enum(decl) => decl.hash(state),
+            TypeKind::Borrow { kind, value_type } => {
+                kind.hash(state);
+                value_type.hash(state);
+            }
         }
     }
 }

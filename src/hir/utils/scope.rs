@@ -6,7 +6,7 @@ use crate::{
     hir::{
         cfg::BasicBlockId,
         errors::{SemanticError, SemanticErrorKind},
-        types::checked_declaration::{CheckedStructDecl, CheckedTypeAliasDecl, CheckedUnionDecl, CheckedVarDecl},
+        types::checked_declaration::{CheckedEnumDecl, CheckedStructDecl, CheckedTypeAliasDecl, CheckedVarDecl},
         ModuleBuilder,
     },
 };
@@ -29,7 +29,7 @@ pub enum SymbolEntry {
     VarDecl(CheckedVarDecl),
     TypeAliasDecl(CheckedTypeAliasDecl),
     StructDecl(CheckedStructDecl),
-    UnionDecl(CheckedUnionDecl),
+    EnumDecl(CheckedEnumDecl),
 }
 
 #[derive(Debug)]

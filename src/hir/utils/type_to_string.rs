@@ -1,9 +1,9 @@
+use std::collections::HashSet;
+
 use crate::{
+    ast::expr::BorrowKind,
     compile::string_interner::{InternerId, StringInterner},
-    hir::types::{
-        checked_declaration::{CheckedFnType, StructKind},
-        checked_type::TypeKind,
-    },
+    hir::types::{checked_declaration::CheckedFnType, checked_type::TypeKind},
 };
 
 fn identifier_to_string(id: InternerId, string_interner: &StringInterner) -> String {
@@ -13,10 +13,11 @@ fn identifier_to_string(id: InternerId, string_interner: &StringInterner) -> Str
 }
 
 pub fn type_to_string(ty: &TypeKind, string_interner: &StringInterner) -> String {
-    type_to_string_recursive(ty, string_interner)
+    let mut visited_set = HashSet::new();
+    type_to_string_recursive(ty, string_interner, &mut visited_set)
 }
 
-pub fn type_to_string_recursive(ty: &TypeKind, string_interner: &StringInterner) -> String {
+pub fn type_to_string_recursive(ty: &TypeKind, string_interner: &StringInterner, visited_set: &mut HashSet<TypeKind>) -> String {
     // TODO: add recursion detection and handling
 
     match ty {
@@ -36,21 +37,16 @@ pub fn type_to_string_recursive(ty: &TypeKind, string_interner: &StringInterner)
         TypeKind::F64 => String::from("f64"),
         TypeKind::String => String::from("string"),
         TypeKind::Unknown => String::from("unknown"),
-        TypeKind::Struct(struct_kind) => {
-            let name = match struct_kind {
-                StructKind::Nominal(checked_struct_decl) => {
-                    identifier_to_string(checked_struct_decl.identifier.name, string_interner)
-                }
-                StructKind::Anonymous(_) => "".to_string(),
-            };
-            let fields = struct_kind
-                .fields()
+        TypeKind::Struct(decl) => {
+            let name = identifier_to_string(decl.identifier.name, string_interner);
+            let fields = decl
+                .fields
                 .iter()
                 .map(|p| {
                     format!(
                         "{}: {}",
                         identifier_to_string(p.identifier.name, string_interner),
-                        type_to_string_recursive(&p.constraint.kind, string_interner)
+                        type_to_string_recursive(&p.constraint.kind, string_interner, visited_set)
                     )
                 })
                 .collect::<Vec<String>>()
@@ -69,13 +65,13 @@ pub fn type_to_string_recursive(ty: &TypeKind, string_interner: &StringInterner)
                     format!(
                         "{}: {}",
                         identifier_to_string(p.identifier.name, string_interner),
-                        type_to_string_recursive(&p.constraint.kind, string_interner)
+                        type_to_string_recursive(&p.constraint.kind, string_interner, visited_set)
                     )
                 })
                 .collect::<Vec<String>>()
                 .join(", ");
 
-            let return_type_str = type_to_string_recursive(&return_type.kind, string_interner);
+            let return_type_str = type_to_string_recursive(&return_type.kind, string_interner, visited_set);
             let fn_str = format!("fn ({}): {}", params_str, return_type_str);
 
             fn_str
@@ -83,12 +79,12 @@ pub fn type_to_string_recursive(ty: &TypeKind, string_interner: &StringInterner)
         TypeKind::TypeAliasDecl(decl) => {
             let name = identifier_to_string(decl.identifier.name, string_interner);
 
-            let value = type_to_string_recursive(&decl.value.kind, string_interner);
+            let value = type_to_string_recursive(&decl.value.kind, string_interner, visited_set);
 
             format!("type {} = {};", name, value)
         }
-        TypeKind::Pointer(ty) => format!("ptr<{}>", type_to_string_recursive(&ty.kind, string_interner,)),
-        TypeKind::Union(decl) => {
+        TypeKind::Pointer(ty) => format!("ptr<{}>", type_to_string_recursive(&ty.kind, string_interner, visited_set)),
+        TypeKind::Enum(decl) => {
             let variants = decl
                 .variants
                 .iter()
@@ -108,9 +104,21 @@ pub fn type_to_string_recursive(ty: &TypeKind, string_interner: &StringInterner)
                 .join(",\n");
 
             format!(
-                "union {} {{\n{}\n}}",
+                "enum {} {{\n{}\n}}",
                 identifier_to_string(decl.identifier.name, string_interner),
                 variants
+            )
+        }
+        TypeKind::Borrow { kind, value_type } => {
+            let prefix = match kind {
+                BorrowKind::Shared => "&".to_string(),
+                BorrowKind::Mutable => "&mut".to_string(),
+            };
+
+            format!(
+                "{} {}",
+                prefix,
+                type_to_string_recursive(&value_type.kind, string_interner, visited_set)
             )
         }
     }

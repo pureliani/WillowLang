@@ -44,7 +44,7 @@ impl FunctionBuilder {
             (Struct(source_decl), Struct(target_decl)) => {
                 todo!()
             }
-            (Union(source_decl), Union(target_decl)) => {
+            (Enum(source_decl), Enum(target_decl)) => {
                 todo!()
             }
             (
