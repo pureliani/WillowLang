@@ -43,6 +43,8 @@ pub enum SemanticErrorKind {
     StructMustBeDeclaredAtTopLevel,
     IfExpressionMissingElse,
     CannotCastType { source_type: Type, target_type: Type },
+    CannotBorrow(Type),
+    CannotAssignToImmutableBorrow,
 }
 
 #[derive(Debug, Clone)]
@@ -89,6 +91,8 @@ impl SemanticErrorKind {
             SemanticErrorKind::CannotStaticAccess { .. } => 33,
             SemanticErrorKind::ExpectedAType => 34,
             SemanticErrorKind::AccessToUndefinedStaticField { .. } => 35,
+            SemanticErrorKind::CannotBorrow { .. } => 36,
+            SemanticErrorKind::CannotAssignToImmutableBorrow => 37,
         }
     }
 }

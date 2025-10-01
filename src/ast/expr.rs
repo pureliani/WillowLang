@@ -1,5 +1,3 @@
-use std::hash::Hash;
-
 use crate::{
     ast::{IdentifierNode, Span, StringNode},
     tokenize::NumberKind,
@@ -30,12 +28,6 @@ pub struct MatchArm {
 pub enum BorrowKind {
     Mutable,
     Shared,
-}
-
-impl Hash for BorrowKind {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        std::mem::discriminant(self).hash(state);
-    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -140,7 +132,7 @@ pub enum ExprKind {
         branches: Vec<(Box<Expr>, BlockContents)>,
         else_branch: Option<BlockContents>,
     },
-    ListLiteral(Vec<Expr>),
+    ArrayLiteral(Vec<Expr>),
     CodeBlock(BlockContents),
 }
 

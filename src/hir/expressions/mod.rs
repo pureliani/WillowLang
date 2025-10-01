@@ -1,13 +1,14 @@
 pub mod access;
 pub mod and;
+pub mod array_literal;
 pub mod binary_op;
 pub mod bool_literal;
+pub mod borrow;
 pub mod codeblock;
 pub mod r#fn;
 pub mod fn_call;
 pub mod identifier;
 pub mod r#if;
-pub mod list_literal;
 pub mod r#match;
 pub mod number_literal;
 pub mod or;
@@ -65,11 +66,11 @@ impl FunctionBuilder {
                 name,
             } => todo!(),
             ExprKind::If { branches, else_branch } => self.build_if(ctx, branches, else_branch, IfContext::Expression),
-            ExprKind::ListLiteral(items) => self.build_list_literal_expr(ctx, items),
+            ExprKind::ArrayLiteral(items) => self.build_array_literal_expr(ctx, items),
             ExprKind::CodeBlock(block_contents) => self.build_codeblock_expr(ctx, block_contents),
             ExprKind::Match { conditions, arms } => self.build_match_expr(ctx, conditions, arms),
             ExprKind::StructInit { left, fields } => self.build_struct_init_expr(ctx, left, fields),
-            ExprKind::Borrow { kind, value } => todo!(),
+            ExprKind::Borrow { kind, value } => self.build_borrow_expr(ctx, kind, value),
         }
     }
 }

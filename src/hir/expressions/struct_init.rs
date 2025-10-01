@@ -100,7 +100,11 @@ impl FunctionBuilder {
                 let field_value = self.build_expr(ctx, field_expr);
                 let field_value_type = ctx.program_builder.get_value_type(&field_value);
 
-                if let TypeKind::Pointer(expected_field_type) = field_ptr_type.kind {
+                if let TypeKind::Pointer {
+                    value_type: expected_field_type,
+                    ..
+                } = field_ptr_type.kind
+                {
                     if !self.check_is_assignable(&field_value_type, &expected_field_type) {
                         return Value::Use(self.report_error_and_get_poison(
                             ctx,

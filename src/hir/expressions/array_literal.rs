@@ -4,7 +4,7 @@ use crate::{
 };
 
 impl FunctionBuilder {
-    pub fn build_list_literal_expr(&mut self, ctx: &mut HIRContext, items: Vec<Expr>) -> Value {
+    pub fn build_array_literal_expr(&mut self, ctx: &mut HIRContext, items: Vec<Expr>) -> Value {
         todo!()
     }
 }

@@ -1,9 +1,22 @@
 use std::hash::{Hash, Hasher};
 
 use crate::{
-    ast::{expr::BorrowKind, Span},
+    ast::Span,
     hir::types::checked_declaration::{CheckedEnumDecl, CheckedFnType, CheckedStructDecl, CheckedTypeAliasDecl},
 };
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PointerKind {
+    SharedBorrow,  // Represents a user-level `&T`
+    MutableBorrow, // Represents a user-level `&mut T`
+    Raw,           // Represents a compiler-internal pointer (e.g to stack)
+}
+
+impl Hash for PointerKind {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        std::mem::discriminant(self).hash(state);
+    }
+}
 
 #[derive(Clone, Debug)]
 pub enum TypeKind {
@@ -26,8 +39,7 @@ pub enum TypeKind {
     Struct(CheckedStructDecl),
     TypeAliasDecl(CheckedTypeAliasDecl),
     FnType(CheckedFnType),
-    Borrow { kind: BorrowKind, value_type: Box<Type> },
-    Pointer(Box<Type>),
+    Pointer { kind: PointerKind, value_type: Box<Type> },
     Unknown,
 }
 
@@ -54,14 +66,13 @@ impl PartialEq for TypeKind {
             (TypeKind::TypeAliasDecl(a), TypeKind::TypeAliasDecl(b)) => a == b,
             (TypeKind::Struct(a), TypeKind::Struct(b)) => a == b,
             (TypeKind::FnType(a), TypeKind::FnType(b)) => a == b,
-            (TypeKind::Pointer(a), TypeKind::Pointer(b)) => a == b,
             (TypeKind::Enum(u1), TypeKind::Enum(u2)) => u1.identifier == u2.identifier,
             (
-                TypeKind::Borrow {
+                TypeKind::Pointer {
                     kind: kind_a,
                     value_type: type_a,
                 },
-                TypeKind::Borrow {
+                TypeKind::Pointer {
                     kind: kind_b,
                     value_type: type_b,
                 },
@@ -95,11 +106,13 @@ impl Hash for TypeKind {
             TypeKind::Struct(decl) => decl.hash(state),
             TypeKind::TypeAliasDecl(decl) => decl.hash(state),
             TypeKind::FnType(decl) => decl.hash(state),
-            TypeKind::Pointer(inner) => inner.hash(state),
             TypeKind::Enum(decl) => decl.hash(state),
-            TypeKind::Borrow { kind, value_type } => {
+            TypeKind::Pointer {
+                kind,
+                value_type: target_type,
+            } => {
                 kind.hash(state);
-                value_type.hash(state);
+                target_type.hash(state);
             }
         }
     }

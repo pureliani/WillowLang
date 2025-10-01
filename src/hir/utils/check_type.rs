@@ -1,6 +1,7 @@
 use crate::{
     ast::{
         decl::Param,
+        expr::BorrowKind,
         type_annotation::{TypeAnnotation, TypeAnnotationKind},
         IdentifierNode, Span,
     },
@@ -8,7 +9,7 @@ use crate::{
         errors::{SemanticError, SemanticErrorKind},
         types::{
             checked_declaration::{CheckedFnType, CheckedParam},
-            checked_type::{Type, TypeKind},
+            checked_type::{PointerKind, Type, TypeKind},
         },
         utils::scope::{ScopeKind, SymbolEntry},
         FunctionBuilder, HIRContext,
@@ -90,8 +91,13 @@ impl FunctionBuilder {
             TypeAnnotationKind::Borrow { kind, value } => {
                 let checked_value_type = self.check_type_annotation(ctx, &value);
 
-                TypeKind::Borrow {
-                    kind: *kind,
+                let pointer_kind = match kind {
+                    BorrowKind::Mutable => PointerKind::MutableBorrow,
+                    BorrowKind::Shared => PointerKind::SharedBorrow,
+                };
+
+                TypeKind::Pointer {
+                    kind: pointer_kind,
                     value_type: Box::new(checked_value_type),
                 }
             }
