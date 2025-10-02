@@ -13,7 +13,7 @@ impl FunctionBuilder {
         match expr.kind {
             ExprKind::Identifier(identifier) => {
                 if let Some(SymbolEntry::VarDecl(decl)) = ctx.module_builder.scope_lookup(identifier.name) {
-                    return Ok(decl.value_id); // ValueId which holds Pointer<T>
+                    return Ok(decl.ptr_value_id); // ValueId which holds Pointer<T>
                 } else {
                     return Err(SemanticError {
                         kind: SemanticErrorKind::UndeclaredIdentifier(identifier),

@@ -39,6 +39,7 @@ pub enum SemanticErrorKind {
     ExpectedAType,
     FnArgumentCountMismatch { expected: usize, received: usize },
     CannotUseVariableDeclarationAsType,
+    CannotUseTypeDeclarationAsValue,
     TypeAliasMustBeDeclaredAtTopLevel,
     StructMustBeDeclaredAtTopLevel,
     IfExpressionMissingElse,
@@ -93,6 +94,7 @@ impl SemanticErrorKind {
             SemanticErrorKind::AccessToUndefinedStaticField { .. } => 35,
             SemanticErrorKind::CannotBorrow { .. } => 36,
             SemanticErrorKind::CannotAssignToImmutableBorrow => 37,
+            SemanticErrorKind::CannotUseTypeDeclarationAsValue => 38,
         }
     }
 }

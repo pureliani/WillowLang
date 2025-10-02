@@ -58,7 +58,7 @@ impl FunctionBuilder {
             ExprKind::BoolLiteral(value) => self.build_bool_literal(value),
             ExprKind::Number(value) => self.build_number_literal(value),
             ExprKind::String(value) => todo!(),
-            ExprKind::Identifier(identifier) => todo!(),
+            ExprKind::Identifier(identifier) => self.build_identifier_expr(ctx, identifier),
             ExprKind::Fn {
                 params,
                 body,
