@@ -1,6 +1,5 @@
 pub mod assignment;
 pub mod enum_decl;
-pub mod expression;
 pub mod from;
 pub mod r#return;
 pub mod type_alias_decl;
@@ -26,7 +25,9 @@ impl FunctionBuilder {
                         self.build_expr(ctx, expr);
                     }
                 }
-                StmtKind::TypeAliasDecl(type_alias_decl) => todo!(),
+                StmtKind::TypeAliasDecl(type_alias_decl) => {
+                    self.build_type_alias_decl(ctx, type_alias_decl, statement.span);
+                }
                 StmtKind::VarDecl(var_decl) => todo!(),
                 StmtKind::Return { value } => todo!(),
                 StmtKind::Assignment { target, value } => self.build_assignment_stmt(ctx, target, value),
