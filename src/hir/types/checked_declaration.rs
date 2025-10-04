@@ -25,26 +25,6 @@ impl Hash for CheckedParam {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct CheckedStructDecl {
-    pub identifier: IdentifierNode,
-    pub documentation: Option<DocAnnotation>,
-    pub fields: Vec<CheckedParam>,
-    pub span: Span,
-}
-
-impl Eq for CheckedStructDecl {}
-impl PartialEq for CheckedStructDecl {
-    fn eq(&self, other: &Self) -> bool {
-        self.identifier == other.identifier
-    }
-}
-impl Hash for CheckedStructDecl {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.identifier.hash(state);
-    }
-}
-
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct CheckedEnumVariant {
     pub name: IdentifierNode,

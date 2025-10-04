@@ -71,7 +71,7 @@ pub fn is_start_of_expr(token_kind: &TokenKind) -> bool {
         | TokenKind::Keyword(KeywordKind::If)
         | TokenKind::Keyword(KeywordKind::Match)
         | TokenKind::Punctuation(PunctuationKind::LParen)   // Parenthesized expr
-        | TokenKind::Punctuation(PunctuationKind::LBrace)   // Codeblock expr
+        | TokenKind::Punctuation(PunctuationKind::LBrace)   // Codeblock or Struct expr
         | TokenKind::Punctuation(PunctuationKind::LBracket) // List literal
         | TokenKind::Punctuation(PunctuationKind::Minus)    // Negation
         | TokenKind::Punctuation(PunctuationKind::Not)      // Logical NOT
@@ -132,12 +132,26 @@ impl<'a, 'b> Parser<'a, 'b> {
                 Expr { kind: result.kind, span }
             }
             TokenKind::Punctuation(PunctuationKind::LBrace) => {
-                let block_contents = self.parse_codeblock_expr()?;
+                self.place_checkpoint();
+                let result = self.parse_struct_init_expr().or_else(|struct_parsing_error| {
+                    let struct_parsing_error_offset = self.offset;
+                    self.goto_checkpoint();
+                    self.parse_codeblock_expr()
+                        .map(|codeblock| Expr {
+                            span: codeblock.span,
+                            kind: ExprKind::CodeBlock(codeblock),
+                        })
+                        .or_else(|codeblock_parsing_error| {
+                            let codeblock_parsing_error_offset = self.offset;
+                            if codeblock_parsing_error_offset > struct_parsing_error_offset {
+                                Err(codeblock_parsing_error)
+                            } else {
+                                Err(struct_parsing_error)
+                            }
+                        })
+                })?;
 
-                Expr {
-                    span: block_contents.span,
-                    kind: ExprKind::CodeBlock(block_contents),
-                }
+                result
             }
             TokenKind::Punctuation(PunctuationKind::LBracket) => self.parse_list_literal_expr()?,
             TokenKind::Punctuation(PunctuationKind::Minus) => {
@@ -259,15 +273,6 @@ impl<'a, 'b> Parser<'a, 'b> {
                             }
                         } else {
                             Some(self.parse_fn_call_expr(lhs_clone)?)
-                        }
-                    }
-                    TokenKind::Punctuation(PunctuationKind::LBrace) => {
-                        let allow_lhs_kind = matches!(&lhs_clone.kind, ExprKind::Identifier(_));
-
-                        if allow_lhs_kind {
-                            Some(self.parse_struct_init_expr(lhs_clone)?)
-                        } else {
-                            None
                         }
                     }
                     _ => {

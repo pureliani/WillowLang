@@ -1,18 +1,18 @@
 use crate::{
-    ast::expr::{Expr, ExprKind},
+    ast::type_annotation::{TypeAnnotation, TypeAnnotationKind},
     parse::{Parser, ParsingError},
     tokenize::{PunctuationKind, TokenKind},
 };
 
 impl<'a, 'b> Parser<'a, 'b> {
-    pub fn parse_struct_init_expr(&mut self) -> Result<Expr, ParsingError<'a>> {
+    pub fn parse_struct_type_annotation(&mut self) -> Result<TypeAnnotation, ParsingError<'a>> {
         let start_offset = self.offset;
         self.consume_punctuation(PunctuationKind::LBrace)?;
         let fields = self.comma_separated(
             |p| {
                 let name = p.consume_identifier()?;
                 p.consume_punctuation(PunctuationKind::Col)?;
-                let value = p.parse_expr(0)?;
+                let value = p.parse_type_annotation(0)?;
                 Ok((name, value))
             },
             |p| p.match_token(0, TokenKind::Punctuation(PunctuationKind::RBrace)),
@@ -21,8 +21,8 @@ impl<'a, 'b> Parser<'a, 'b> {
 
         let span = self.get_span(start_offset, self.offset - 1)?;
 
-        Ok(Expr {
-            kind: ExprKind::StructInit(fields),
+        Ok(TypeAnnotation {
+            kind: TypeAnnotationKind::Struct(fields),
             span,
         })
     }

@@ -170,7 +170,7 @@ impl FunctionBuilder {
     ) -> Result<ValueId, SemanticError> {
         let base_ptr_type = ctx.program_builder.get_value_id_type(&base_ptr);
 
-        let struct_decl = if let TypeKind::Pointer { value_type: ptr_to, .. } = &base_ptr_type.kind {
+        let struct_fields = if let TypeKind::Pointer { value_type: ptr_to, .. } = &base_ptr_type.kind {
             if let TypeKind::Struct(s) = &ptr_to.kind {
                 s
             } else {
@@ -183,14 +183,12 @@ impl FunctionBuilder {
             panic!("INTERNAL COMPILER ERROR: emit_get_field_ptr called on a non-pointer type.");
         };
 
-        if let Some((field_index, checked_field)) = struct_decl
-            .fields
-            .iter()
+        if let Some((field_index, (_field_identifier, field_type))) = struct_fields
+            .into_iter()
             .enumerate()
-            .find(|(_, f)| f.identifier.name == field.name)
+            .find(|(_, (field_identifier, _field_type))| field_identifier.name == field.name)
         {
             let destination = ctx.program_builder.new_value_id();
-            let field_type = &checked_field.constraint;
 
             ctx.program_builder.value_types.insert(
                 destination,

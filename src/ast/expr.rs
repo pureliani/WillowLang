@@ -90,10 +90,7 @@ pub enum ExprKind {
         left: Box<Expr>,
         right: Box<Expr>,
     },
-    StructInit {
-        left: Box<Expr>,
-        fields: Vec<(IdentifierNode, Expr)>,
-    },
+    StructInit(Vec<(IdentifierNode, Expr)>),
     Access {
         left: Box<Expr>,
         field: IdentifierNode,

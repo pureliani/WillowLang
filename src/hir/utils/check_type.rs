@@ -37,7 +37,6 @@ impl FunctionBuilder {
             .scope_lookup(id.name)
             .map(|entry| match entry {
                 SymbolEntry::TypeAliasDecl(decl) => Ok(TypeKind::TypeAliasDecl(decl)),
-                SymbolEntry::StructDecl(decl) => Ok(TypeKind::Struct(decl)),
                 SymbolEntry::EnumDecl(decl) => Ok(TypeKind::Enum(decl)),
                 SymbolEntry::VarDecl(_) => Err(SemanticError {
                     kind: SemanticErrorKind::CannotUseVariableDeclarationAsType,
@@ -100,6 +99,17 @@ impl FunctionBuilder {
                     kind: pointer_kind,
                     value_type: Box::new(checked_value_type),
                 }
+            }
+            TypeAnnotationKind::Struct(items) => {
+                let checked_field_types: Vec<(IdentifierNode, Type)> = items
+                    .into_iter()
+                    .map(|(identifier, ty)| {
+                        let checked_type = self.check_type_annotation(ctx, &ty);
+                        (*identifier, checked_type)
+                    })
+                    .collect();
+
+                TypeKind::Struct(checked_field_types)
             }
         };
 

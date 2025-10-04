@@ -24,6 +24,7 @@ pub enum TypeAnnotationKind {
         kind: BorrowKind,
         value: Box<TypeAnnotation>,
     },
+    Struct(Vec<(IdentifierNode, TypeAnnotation)>),
     FnType {
         params: Vec<Param>,
         return_type: Box<TypeAnnotation>,

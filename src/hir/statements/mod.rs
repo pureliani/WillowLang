@@ -35,7 +35,6 @@ impl FunctionBuilder {
                 StmtKind::While { condition, body } => todo!(),
                 StmtKind::Break => todo!(),
                 StmtKind::Continue => todo!(),
-                StmtKind::StructDecl(struct_decl) => todo!(),
                 StmtKind::EnumDecl(enum_decl) => todo!(),
             }
         }

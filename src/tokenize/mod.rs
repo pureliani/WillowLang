@@ -139,7 +139,6 @@ pub enum KeywordKind {
     Fn,
     Match,
     Enum,
-    Struct,
     Mut,
 }
 
@@ -175,7 +174,6 @@ impl KeywordKind {
             KeywordKind::Fn => "fn",
             KeywordKind::Match => "match",
             KeywordKind::Enum => "enum",
-            KeywordKind::Struct => "struct",
             KeywordKind::Mut => "mut",
         })
     }
@@ -543,7 +541,6 @@ fn is_keyword(identifier: &str) -> Option<KeywordKind> {
         "isize" => Some(KeywordKind::ISize),
         "match" => Some(KeywordKind::Match),
         "enum" => Some(KeywordKind::Enum),
-        "struct" => Some(KeywordKind::Struct),
         "mut" => Some(KeywordKind::Mut),
         _ => None,
     }

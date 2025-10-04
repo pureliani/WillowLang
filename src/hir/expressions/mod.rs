@@ -19,7 +19,10 @@ pub mod typecast;
 pub mod unary_op;
 
 use crate::{
-    ast::expr::{Expr, ExprKind},
+    ast::{
+        expr::{Expr, ExprKind},
+        Span,
+    },
     hir::{
         cfg::{BinaryOperationKind, UnaryOperationKind, Value},
         expressions::r#if::IfContext,
@@ -69,7 +72,7 @@ impl FunctionBuilder {
             ExprKind::ArrayLiteral(items) => self.build_array_literal_expr(ctx, items),
             ExprKind::CodeBlock(block_contents) => self.build_codeblock_expr(ctx, block_contents),
             ExprKind::Match { conditions, arms } => self.build_match_expr(ctx, conditions, arms),
-            ExprKind::StructInit { left, fields } => self.build_struct_init_expr(ctx, left, fields),
+            ExprKind::StructInit(fields) => self.build_struct_init_expr(ctx, fields, expr.span),
             ExprKind::Borrow { kind, value } => self.build_borrow_expr(ctx, kind, value),
         }
     }

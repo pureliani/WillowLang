@@ -3,7 +3,7 @@ use crate::{
     hir::{
         cfg::Value,
         errors::{SemanticError, SemanticErrorKind},
-        types::checked_declaration::{CheckedEnumDecl, CheckedStructDecl, CheckedTypeAliasDecl},
+        types::checked_declaration::{CheckedEnumDecl, CheckedTypeAliasDecl},
         utils::scope::SymbolEntry,
         FunctionBuilder, HIRContext,
     },
@@ -18,8 +18,7 @@ impl FunctionBuilder {
                     let loaded_value_id = self.emit_load(ctx, var_ptr_id);
                     Value::Use(loaded_value_id)
                 }
-                SymbolEntry::StructDecl(CheckedStructDecl { identifier, .. })
-                | SymbolEntry::TypeAliasDecl(CheckedTypeAliasDecl { identifier, .. })
+                SymbolEntry::TypeAliasDecl(CheckedTypeAliasDecl { identifier, .. })
                 | SymbolEntry::EnumDecl(CheckedEnumDecl { identifier, .. }) => Value::Use(self.report_error_and_get_poison(
                     ctx,
                     SemanticError {

@@ -1,8 +1,8 @@
 use std::hash::{Hash, Hasher};
 
 use crate::{
-    ast::Span,
-    hir::types::checked_declaration::{CheckedEnumDecl, CheckedFnType, CheckedStructDecl, CheckedTypeAliasDecl},
+    ast::{IdentifierNode, Span},
+    hir::types::checked_declaration::{CheckedEnumDecl, CheckedFnType, CheckedTypeAliasDecl},
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -36,7 +36,7 @@ pub enum TypeKind {
     F64,
     String,
     Enum(CheckedEnumDecl),
-    Struct(CheckedStructDecl),
+    Struct(Vec<(IdentifierNode, Type)>),
     TypeAliasDecl(CheckedTypeAliasDecl),
     FnType(CheckedFnType),
     Pointer { kind: PointerKind, value_type: Box<Type> },
