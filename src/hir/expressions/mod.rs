@@ -3,7 +3,6 @@ pub mod and;
 pub mod array_literal;
 pub mod binary_op;
 pub mod bool_literal;
-pub mod borrow;
 pub mod codeblock;
 pub mod r#fn;
 pub mod fn_call;
@@ -19,10 +18,7 @@ pub mod typecast;
 pub mod unary_op;
 
 use crate::{
-    ast::{
-        expr::{Expr, ExprKind},
-        Span,
-    },
+    ast::expr::{Expr, ExprKind},
     hir::{
         cfg::{BinaryOperationKind, UnaryOperationKind, Value},
         expressions::r#if::IfContext,
@@ -73,7 +69,6 @@ impl FunctionBuilder {
             ExprKind::CodeBlock(block_contents) => self.build_codeblock_expr(ctx, block_contents),
             ExprKind::Match { conditions, arms } => self.build_match_expr(ctx, conditions, arms),
             ExprKind::StructInit(fields) => self.build_struct_init_expr(ctx, fields, expr.span),
-            ExprKind::Borrow { kind, value } => self.build_borrow_expr(ctx, kind, value),
         }
     }
 }

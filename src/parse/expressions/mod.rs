@@ -10,7 +10,7 @@ pub mod parse_struct_init_expr;
 
 use crate::{
     ast::{
-        expr::{BorrowKind, Expr, ExprKind},
+        expr::{Expr, ExprKind},
         Span,
     },
     tokenize::{KeywordKind, PunctuationKind, TokenKind},
@@ -23,7 +23,7 @@ fn prefix_bp(token_kind: &TokenKind) -> Option<((), u8)> {
     use TokenKind::*;
 
     let priority = match token_kind {
-        Punctuation(Minus) | Punctuation(Not) | Punctuation(And) => ((), 13),
+        Punctuation(Minus) | Punctuation(Not) => ((), 13),
         _ => return None,
     };
 
@@ -99,27 +99,6 @@ impl<'a, 'b> Parser<'a, 'b> {
                 Expr {
                     kind: ExprKind::Number(number),
                     span: token_span,
-                }
-            }
-            TokenKind::Punctuation(PunctuationKind::And) => {
-                let ((), r_bp) = prefix_bp(&TokenKind::Punctuation(PunctuationKind::And)).expect(
-                    "INTERNAL COMPILER ERROR: expected the minus \'-\' symbol to have a corresponding prefix binding power",
-                );
-                let start_offset = self.offset;
-
-                self.advance();
-                let kind = if self.match_token(0, TokenKind::Keyword(KeywordKind::Mut)) {
-                    self.advance();
-                    BorrowKind::Mutable
-                } else {
-                    BorrowKind::Shared
-                };
-
-                let value = Box::new(self.parse_expr(r_bp)?);
-
-                Expr {
-                    kind: ExprKind::Borrow { kind, value },
-                    span: self.get_span(start_offset, self.offset - 1)?,
                 }
             }
             TokenKind::Keyword(KeywordKind::Match) => self.parse_match_expr()?,

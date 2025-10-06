@@ -4,10 +4,7 @@ pub mod parse_struct_type_annotation;
 
 use super::{Parser, ParsingError, ParsingErrorKind};
 use crate::{
-    ast::{
-        expr::BorrowKind,
-        type_annotation::{TypeAnnotation, TypeAnnotationKind},
-    },
+    ast::type_annotation::{TypeAnnotation, TypeAnnotationKind},
     tokenize::{KeywordKind, PunctuationKind, TokenKind},
 };
 
@@ -27,7 +24,7 @@ impl<'a, 'b> Parser<'a, 'b> {
     pub fn parse_type_annotation(&mut self, min_prec: u8) -> Result<TypeAnnotation, ParsingError<'a>> {
         let token = self.current().ok_or(self.unexpected_end_of_input())?;
 
-        let mut lhs = match token.kind {
+        let lhs = match token.kind {
             TokenKind::Keyword(KeywordKind::Void) => {
                 let start_offset = self.offset;
 
@@ -176,24 +173,6 @@ impl<'a, 'b> Parser<'a, 'b> {
                 TypeAnnotation {
                     span: identifier.span,
                     kind: TypeAnnotationKind::Identifier(identifier),
-                }
-            }
-            TokenKind::Punctuation(PunctuationKind::And) => {
-                let start_offset = self.offset;
-
-                self.advance();
-                let kind = if self.match_token(0, TokenKind::Keyword(KeywordKind::Mut)) {
-                    self.advance();
-                    BorrowKind::Mutable
-                } else {
-                    BorrowKind::Shared
-                };
-
-                let value = Box::new(self.parse_type_annotation(0)?);
-
-                TypeAnnotation {
-                    kind: TypeAnnotationKind::Borrow { kind, value },
-                    span: self.get_span(start_offset, self.offset - 1)?,
                 }
             }
             _ => {

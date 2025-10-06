@@ -5,19 +5,6 @@ use crate::{
     hir::types::checked_declaration::{CheckedEnumDecl, CheckedFnType, CheckedTypeAliasDecl},
 };
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum PointerKind {
-    SharedBorrow,  // Represents a user-level `&T`
-    MutableBorrow, // Represents a user-level `&mut T`
-    Raw,           // Represents a compiler-internal pointer (e.g to stack)
-}
-
-impl Hash for PointerKind {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        std::mem::discriminant(self).hash(state);
-    }
-}
-
 #[derive(Clone, Debug)]
 pub enum TypeKind {
     Void,
@@ -39,7 +26,7 @@ pub enum TypeKind {
     Struct(Vec<(IdentifierNode, Type)>),
     TypeAliasDecl(CheckedTypeAliasDecl),
     FnType(CheckedFnType),
-    Pointer { kind: PointerKind, value_type: Box<Type> },
+    Pointer(Box<Type>),
     Unknown,
 }
 
@@ -67,16 +54,7 @@ impl PartialEq for TypeKind {
             (TypeKind::Struct(a), TypeKind::Struct(b)) => a == b,
             (TypeKind::FnType(a), TypeKind::FnType(b)) => a == b,
             (TypeKind::Enum(u1), TypeKind::Enum(u2)) => u1.identifier == u2.identifier,
-            (
-                TypeKind::Pointer {
-                    kind: kind_a,
-                    value_type: type_a,
-                },
-                TypeKind::Pointer {
-                    kind: kind_b,
-                    value_type: type_b,
-                },
-            ) => kind_a == kind_b && type_a.kind == type_b.kind,
+            (TypeKind::Pointer(type_a), TypeKind::Pointer(type_b)) => type_a.kind == type_b.kind,
             _ => false,
         }
     }
@@ -107,13 +85,7 @@ impl Hash for TypeKind {
             TypeKind::TypeAliasDecl(decl) => decl.hash(state),
             TypeKind::FnType(decl) => decl.hash(state),
             TypeKind::Enum(decl) => decl.hash(state),
-            TypeKind::Pointer {
-                kind,
-                value_type: target_type,
-            } => {
-                kind.hash(state);
-                target_type.hash(state);
-            }
+            TypeKind::Pointer(ty) => ty.hash(state),
         }
     }
 }

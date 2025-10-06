@@ -5,7 +5,7 @@ use crate::{
     hir::{
         cfg::{BasicBlock, BasicBlockId, BinaryOperationKind, Instruction, PtrOffset, UnaryOperationKind, Value, ValueId},
         errors::{SemanticError, SemanticErrorKind},
-        types::checked_type::{PointerKind, Type, TypeKind},
+        types::checked_type::{Type, TypeKind},
         utils::{check_is_equatable::check_is_equatable, is_signed::is_signed},
         FunctionBuilder, HIRContext, ModuleBuilder,
     },
@@ -45,10 +45,7 @@ impl FunctionBuilder {
             destination,
             Type {
                 span: ty.span,
-                kind: TypeKind::Pointer {
-                    kind: PointerKind::Raw,
-                    value_type: Box::new(ty),
-                },
+                kind: TypeKind::Pointer(Box::new(ty)),
             },
         );
 
@@ -70,10 +67,7 @@ impl FunctionBuilder {
             return Err(SemanticError {
                 span: count_type.span,
                 kind: SemanticErrorKind::TypeMismatch {
-                    expected: Type {
-                        kind: TypeKind::USize,
-                        span: count_type.span,
-                    },
+                    expected: expected_count_type,
                     received: count_type,
                 },
             });
@@ -86,10 +80,7 @@ impl FunctionBuilder {
             destination,
             Type {
                 span: ty.span,
-                kind: TypeKind::Pointer {
-                    kind: PointerKind::Raw,
-                    value_type: Box::new(ty),
-                },
+                kind: TypeKind::Pointer(Box::new(ty)),
             },
         );
 
@@ -106,19 +97,7 @@ impl FunctionBuilder {
         let value_type = ctx.program_builder.get_value_type(&value);
         let destination_ptr_type = ctx.program_builder.get_value_id_type(&destination_ptr);
 
-        if let TypeKind::Pointer {
-            kind,
-            value_type: target_type,
-        } = destination_ptr_type.kind
-        {
-            if kind == PointerKind::SharedBorrow {
-                ctx.module_builder.errors.push(SemanticError {
-                    span: value_type.span,
-                    kind: SemanticErrorKind::CannotAssignToImmutableBorrow,
-                });
-                return;
-            }
-
+        if let TypeKind::Pointer(target_type) = destination_ptr_type.kind {
             if !self.check_is_assignable(&value_type, &target_type) {
                 ctx.module_builder.errors.push(SemanticError {
                     span: value_type.span,
@@ -142,10 +121,7 @@ impl FunctionBuilder {
     pub fn emit_load(&mut self, ctx: &mut HIRContext, source_ptr: ValueId) -> ValueId {
         let ptr_type = ctx.program_builder.get_value_id_type(&source_ptr);
 
-        let destination_type = if let TypeKind::Pointer {
-            value_type: target_type, ..
-        } = ptr_type.kind
-        {
+        let destination_type = if let TypeKind::Pointer(target_type) = ptr_type.kind {
             *target_type
         } else {
             panic!("INTERNAL COMPILER ERROR: Expected source_ptr to be of Pointer<T> type");
@@ -170,7 +146,7 @@ impl FunctionBuilder {
     ) -> Result<ValueId, SemanticError> {
         let base_ptr_type = ctx.program_builder.get_value_id_type(&base_ptr);
 
-        let struct_fields = if let TypeKind::Pointer { value_type: ptr_to, .. } = &base_ptr_type.kind {
+        let struct_fields = if let TypeKind::Pointer(ptr_to) = &base_ptr_type.kind {
             if let TypeKind::Struct(s) = &ptr_to.kind {
                 s
             } else {
@@ -193,10 +169,7 @@ impl FunctionBuilder {
             ctx.program_builder.value_types.insert(
                 destination,
                 Type {
-                    kind: TypeKind::Pointer {
-                        kind: PointerKind::Raw,
-                        value_type: Box::new(field_type.clone()),
-                    },
+                    kind: TypeKind::Pointer(Box::new(field_type.clone())),
                     span: field.span,
                 },
             );

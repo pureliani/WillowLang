@@ -24,12 +24,6 @@ pub struct MatchArm {
     pub expression: Expr,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum BorrowKind {
-    Mutable,
-    Shared,
-}
-
 #[derive(Clone, Debug, PartialEq)]
 pub enum ExprKind {
     Not {
@@ -106,10 +100,6 @@ pub enum ExprKind {
     FnCall {
         left: Box<Expr>,
         args: Vec<Expr>,
-    },
-    Borrow {
-        kind: BorrowKind,
-        value: Box<Expr>,
     },
     BoolLiteral(bool),
     Number(NumberKind),

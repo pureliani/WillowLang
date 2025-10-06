@@ -1,7 +1,6 @@
 use std::collections::HashSet;
 
 use crate::{
-    ast::expr::BorrowKind,
     compile::string_interner::{InternerId, StringInterner},
     hir::types::{checked_declaration::CheckedFnType, checked_type::TypeKind},
 };
@@ -37,22 +36,20 @@ pub fn type_to_string_recursive(ty: &TypeKind, string_interner: &StringInterner,
         TypeKind::F64 => String::from("f64"),
         TypeKind::String => String::from("string"),
         TypeKind::Unknown => String::from("unknown"),
-        TypeKind::Struct(decl) => {
-            let name = identifier_to_string(decl.identifier.name, string_interner);
-            let fields = decl
-                .fields
+        TypeKind::Struct(fields) => {
+            let fields = fields
                 .iter()
-                .map(|p| {
+                .map(|(identifier, constraint)| {
                     format!(
                         "{}: {}",
-                        identifier_to_string(p.identifier.name, string_interner),
-                        type_to_string_recursive(&p.constraint.kind, string_interner, visited_set)
+                        identifier_to_string(identifier.name, string_interner),
+                        type_to_string_recursive(&constraint.kind, string_interner, visited_set)
                     )
                 })
                 .collect::<Vec<String>>()
                 .join(",\n");
 
-            format!("struct {} {{\n{}\n}}", name, fields)
+            format!("{{\n{}\n}}", fields)
         }
         TypeKind::FnType(CheckedFnType {
             params,
@@ -107,18 +104,6 @@ pub fn type_to_string_recursive(ty: &TypeKind, string_interner: &StringInterner,
                 "enum {} {{\n{}\n}}",
                 identifier_to_string(decl.identifier.name, string_interner),
                 variants
-            )
-        }
-        TypeKind::Borrow { kind, value_type } => {
-            let prefix = match kind {
-                BorrowKind::Shared => "&".to_string(),
-                BorrowKind::Mutable => "&mut".to_string(),
-            };
-
-            format!(
-                "{} {}",
-                prefix,
-                type_to_string_recursive(&value_type.kind, string_interner, visited_set)
             )
         }
     }
