@@ -3,7 +3,10 @@ use std::collections::HashSet;
 use crate::{
     ast::{IdentifierNode, Span},
     hir::{
-        cfg::{BasicBlock, BasicBlockId, BinaryOperationKind, Instruction, PtrOffset, UnaryOperationKind, Value, ValueId},
+        cfg::{
+            BasicBlock, BasicBlockId, BinaryOperationKind, Instruction, IntrinsicField, IntrinsicFunction, PtrOffset,
+            UnaryOperationKind, Value, ValueId,
+        },
         errors::{SemanticError, SemanticErrorKind},
         types::checked_type::{Type, TypeKind},
         utils::{check_is_equatable::check_is_equatable, is_signed::is_signed},
@@ -223,6 +226,46 @@ impl FunctionBuilder {
 
         Ok(destination)
     }
+
+    pub fn emit_intrinsic_function_call(
+        &mut self,
+        ctx: &mut HIRContext,
+        function_kind: IntrinsicFunction,
+    ) -> Result<Option<ValueId>, SemanticError> {
+        match function_kind {
+            IntrinsicFunction::ListSet {
+                list_base_ptr,
+                index,
+                item,
+            } => {
+                let index_type = ctx.program_builder.get_value_type(&index);
+                let expected_index_type = &Type {
+                    kind: TypeKind::USize,
+                    span: index_type.span,
+                };
+                if !self.check_is_assignable(&index_type, expected_index_type) {
+                    return Err(SemanticError {
+                        span: index_type.span,
+                        kind: SemanticErrorKind::TypeMismatch {
+                            expected: expected_index_type.clone(),
+                            received: index_type,
+                        },
+                    });
+                }
+
+                let item_type = ctx.program_builder.get_value_type(&item);
+                let list_type = ctx.program_builder.get_value_id_type(&list_base_ptr);
+
+                todo!()
+            }
+            IntrinsicFunction::ListGet {
+                list_base_ptr,
+                index,
+                destination,
+            } => todo!(),
+        }
+    }
+    pub fn emit_intrinsic_field_access(&mut self, ctx: &mut HIRContext, function_kind: IntrinsicField) {}
 
     pub fn emit_unary_op(
         &mut self,

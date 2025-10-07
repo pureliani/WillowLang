@@ -22,6 +22,7 @@ pub enum TypeKind {
     F32,
     F64,
     String,
+    List(Box<Type>),
     Enum(CheckedEnumDecl),
     Struct(Vec<(IdentifierNode, Type)>),
     TypeAliasDecl(CheckedTypeAliasDecl),
@@ -86,6 +87,7 @@ impl Hash for TypeKind {
             TypeKind::FnType(decl) => decl.hash(state),
             TypeKind::Enum(decl) => decl.hash(state),
             TypeKind::Pointer(ty) => ty.hash(state),
+            TypeKind::List(_) => todo!(),
         }
     }
 }

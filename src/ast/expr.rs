@@ -84,7 +84,7 @@ pub enum ExprKind {
         left: Box<Expr>,
         right: Box<Expr>,
     },
-    StructInit(Vec<(IdentifierNode, Expr)>),
+    Struct(Vec<(IdentifierNode, Expr)>),
     Access {
         left: Box<Expr>,
         field: IdentifierNode,
@@ -119,7 +119,7 @@ pub enum ExprKind {
         branches: Vec<(Box<Expr>, BlockContents)>,
         else_branch: Option<BlockContents>,
     },
-    ArrayLiteral(Vec<Expr>),
+    List(Vec<Expr>),
     CodeBlock(BlockContents),
 }
 

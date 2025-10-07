@@ -21,6 +21,7 @@ pub enum TypeAnnotationKind {
     String,
     Identifier(IdentifierNode),
     Struct(Vec<(IdentifierNode, TypeAnnotation)>),
+    List(Box<TypeAnnotation>),
     FnType {
         params: Vec<Param>,
         return_type: Box<TypeAnnotation>,

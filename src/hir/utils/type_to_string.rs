@@ -90,7 +90,7 @@ pub fn type_to_string_recursive(ty: &TypeKind, string_interner: &StringInterner,
                         format!(
                             "{}({})",
                             identifier_to_string(v.name.name, string_interner),
-                            type_to_string(&pt.kind, string_interner)
+                            type_to_string_recursive(&pt.kind, string_interner, visited_set)
                         )
                     }
                     None => {
@@ -105,6 +105,11 @@ pub fn type_to_string_recursive(ty: &TypeKind, string_interner: &StringInterner,
                 identifier_to_string(decl.identifier.name, string_interner),
                 variants
             )
+        }
+        TypeKind::List(item_type) => {
+            let result = type_to_string_recursive(&item_type.kind, string_interner, visited_set);
+
+            format!("{}[]", result)
         }
     }
 }

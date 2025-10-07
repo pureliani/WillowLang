@@ -97,6 +97,11 @@ impl FunctionBuilder {
 
                 TypeKind::Struct(checked_field_types)
             }
+            TypeAnnotationKind::List(item_type) => {
+                let checked_item_type = self.check_type_annotation(ctx, item_type);
+
+                TypeKind::List(Box::new(checked_item_type))
+            }
         };
 
         Type {

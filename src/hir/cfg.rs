@@ -32,6 +32,25 @@ pub struct ValueId(pub usize);
 pub struct ConstantId(pub usize);
 
 #[derive(Clone, Debug)]
+pub enum IntrinsicFunction {
+    ListSet {
+        list_base_ptr: ValueId,
+        index: Value,
+        item: Value,
+    },
+    ListGet {
+        list_base_ptr: ValueId,
+        index: Value,
+        destination: ValueId,
+    },
+}
+
+#[derive(Clone, Debug)]
+pub enum IntrinsicField {
+    ListLen { list_base_ptr: ValueId, destination: ValueId },
+}
+
+#[derive(Clone, Debug)]
 pub enum Value {
     VoidLiteral,
     BoolLiteral(bool),
@@ -100,6 +119,8 @@ pub enum Instruction {
         function_rvalue: Value,
         args: Vec<Value>,
     },
+    IntrinsicFunctionCall(IntrinsicFunction),
+    IntrinsicFieldAccess(IntrinsicField),
     Phi {
         destination: ValueId,
         sources: Vec<(BasicBlockId, Value)>,

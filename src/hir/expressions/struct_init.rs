@@ -20,7 +20,7 @@ pub fn get_alignment_of(type_kind: &TypeKind) -> usize {
         TypeKind::U16 | TypeKind::I16 => 2,
         TypeKind::U8 | TypeKind::I8 | TypeKind::Bool => 1,
         TypeKind::Pointer(_) | TypeKind::USize | TypeKind::ISize | TypeKind::FnType(_) => align_of::<usize>(),
-        TypeKind::Struct(_) | TypeKind::String => align_of::<usize>(),
+        TypeKind::Struct(_) | TypeKind::List(_) | TypeKind::String => align_of::<usize>(),
         TypeKind::Enum(_) => align_of::<isize>(),
         TypeKind::Void => 1,
         TypeKind::Unknown => 1,

@@ -22,7 +22,7 @@ impl<'a, 'b> Parser<'a, 'b> {
         let span = self.get_span(start_offset, self.offset - 1)?;
 
         Ok(Expr {
-            kind: ExprKind::StructInit(fields),
+            kind: ExprKind::Struct(fields),
             span,
         })
     }

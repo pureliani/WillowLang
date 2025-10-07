@@ -24,7 +24,7 @@ impl<'a, 'b> Parser<'a, 'b> {
     pub fn parse_type_annotation(&mut self, min_prec: u8) -> Result<TypeAnnotation, ParsingError<'a>> {
         let token = self.current().ok_or(self.unexpected_end_of_input())?;
 
-        let lhs = match token.kind {
+        let mut lhs = match token.kind {
             TokenKind::Keyword(KeywordKind::Void) => {
                 let start_offset = self.offset;
 
@@ -182,6 +182,39 @@ impl<'a, 'b> Parser<'a, 'b> {
                 })
             }
         };
+
+        loop {
+            let op = match self.current() {
+                Some(o) => o,
+                None => break,
+            };
+
+            if let Some((left_prec, ())) = suffix_bp(&op.kind) {
+                if left_prec < min_prec {
+                    break;
+                }
+
+                lhs = match op.kind {
+                    TokenKind::Punctuation(PunctuationKind::LBracket) => {
+                        self.consume_punctuation(PunctuationKind::LBracket)?;
+                        self.consume_punctuation(PunctuationKind::RBracket)?;
+
+                        let span = self.get_span(lhs.span.start.byte_offset, self.offset - 1)?;
+                        TypeAnnotation {
+                            kind: TypeAnnotationKind::List(Box::new(lhs.clone())),
+                            span,
+                        }
+                    }
+                    _ => {
+                        panic!("INTERNAL COMPILER ERROR: Unexpected suffix type-annotation operator")
+                    }
+                };
+
+                continue;
+            }
+
+            break;
+        }
 
         Ok(lhs)
     }
