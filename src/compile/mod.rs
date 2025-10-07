@@ -265,9 +265,6 @@ pub fn compile_file<'a, 'b>(
                 err.with_message("Missing field initializers")
                     .with_label(label.with_message(format!("Missing initializers for the following struct fields {}", joined)))
             }
-            SemanticErrorKind::CannotApplyStructInitializer { .. } => err
-                .with_message("Cannot apply struct initializer")
-                .with_label(label.with_message("Cannot apply struct initializer to this expression")),
             SemanticErrorKind::VarDeclWithoutInitializer { .. } => err
                 .with_message("Variable declarations must have an initializer")
                 .with_label(label.with_message("This variable declaration must have an initializer")),
@@ -288,6 +285,7 @@ pub fn compile_file<'a, 'b>(
                 source_type,
                 target_type,
             } => todo!(),
+            SemanticErrorKind::CannotUseTypeDeclarationAsValue => todo!(),
         };
 
         errors.push(diagnostic);

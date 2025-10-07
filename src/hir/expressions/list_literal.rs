@@ -73,12 +73,8 @@ impl FunctionBuilder {
                     item,
                 },
             );
-
-            match result {
-                Ok(optional_value) => {
-                    todo!()
-                }
-                Err(error) => return Value::Use(self.report_error_and_get_poison(ctx, error)),
+            if let Err(error) = result {
+                return Value::Use(self.report_error_and_get_poison(ctx, error));
             }
         }
 

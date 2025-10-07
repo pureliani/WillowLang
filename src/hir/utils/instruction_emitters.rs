@@ -256,7 +256,25 @@ impl FunctionBuilder {
                 let item_type = ctx.program_builder.get_value_type(&item);
                 let list_type = ctx.program_builder.get_value_id_type(&list_base_ptr);
 
-                todo!()
+                if let TypeKind::Pointer(ptr_to) = &list_type.kind {
+                    if let TypeKind::List(expected_list_item_type) = &ptr_to.kind {
+                        if !self.check_is_assignable(&item_type, expected_list_item_type) {
+                            return Err(SemanticError {
+                                span: item_type.span,
+                                kind: SemanticErrorKind::TypeMismatch {
+                                    expected: *expected_list_item_type.clone(),
+                                    received: item_type,
+                                },
+                            });
+                        }
+                    } else {
+                        panic!("INTERNAL COMPILER ERROR: Called ListSet intrinsic function on a pointer to a non-list type");
+                    }
+                } else {
+                    panic!("INTERNAL COMPILER ERROR: Called ListSet intrinsic function on a non-pointer type");
+                }
+
+                Ok(None)
             }
             IntrinsicFunction::ListGet {
                 list_base_ptr,

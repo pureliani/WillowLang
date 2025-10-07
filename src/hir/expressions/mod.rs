@@ -65,7 +65,7 @@ impl FunctionBuilder {
                 name,
             } => todo!(),
             ExprKind::If { branches, else_branch } => self.build_if(ctx, branches, else_branch, IfContext::Expression),
-            ExprKind::List(items) => self.build_list_literal_expr(ctx, items),
+            ExprKind::List(items) => self.build_list_literal_expr(ctx, items, expr.span),
             ExprKind::CodeBlock(block_contents) => self.build_codeblock_expr(ctx, block_contents),
             ExprKind::Match { conditions, arms } => self.build_match_expr(ctx, conditions, arms),
             ExprKind::Struct(fields) => self.build_struct_init_expr(ctx, fields, expr.span),
