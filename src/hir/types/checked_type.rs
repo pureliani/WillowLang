@@ -2,7 +2,9 @@ use std::hash::{Hash, Hasher};
 
 use crate::{
     ast::{IdentifierNode, Span},
-    hir::types::checked_declaration::{CheckedEnumDecl, CheckedFnType, CheckedTypeAliasDecl},
+    hir::types::checked_declaration::{
+        CheckedEnumDecl, CheckedFnType, CheckedTypeAliasDecl,
+    },
 };
 
 #[derive(Clone, Debug)]
@@ -55,7 +57,9 @@ impl PartialEq for TypeKind {
             (TypeKind::Struct(a), TypeKind::Struct(b)) => a == b,
             (TypeKind::FnType(a), TypeKind::FnType(b)) => a == b,
             (TypeKind::Enum(u1), TypeKind::Enum(u2)) => u1.identifier == u2.identifier,
-            (TypeKind::Pointer(type_a), TypeKind::Pointer(type_b)) => type_a.kind == type_b.kind,
+            (TypeKind::Pointer(type_a), TypeKind::Pointer(type_b)) => {
+                type_a.kind == type_b.kind
+            }
             _ => false,
         }
     }

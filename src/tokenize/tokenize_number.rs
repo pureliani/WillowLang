@@ -44,7 +44,8 @@ const SUFFIX_INFOS: [(&str, bool); 12] = [
 fn parse_number(full_number_str: &str) -> Result<NumberKind, TokenizationErrorKind> {
     for (suffix_str, is_float_suffix) in SUFFIX_INFOS {
         if full_number_str.ends_with(suffix_str) {
-            let numeric_part = &full_number_str[..full_number_str.len() - suffix_str.len()];
+            let numeric_part =
+                &full_number_str[..full_number_str.len() - suffix_str.len()];
 
             if !is_float_suffix && numeric_part.contains('.') {
                 // e.g. "1.0u8"

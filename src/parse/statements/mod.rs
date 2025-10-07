@@ -66,15 +66,22 @@ impl<'a, 'b> Parser<'a, 'b> {
 
                 match lhs {
                     Ok(lhs) => {
-                        if self.match_token(0, TokenKind::Punctuation(PunctuationKind::Eq))
-                            && !self.match_token(1, TokenKind::Punctuation(PunctuationKind::Eq))
+                        if self
+                            .match_token(0, TokenKind::Punctuation(PunctuationKind::Eq))
+                            && !self.match_token(
+                                1,
+                                TokenKind::Punctuation(PunctuationKind::Eq),
+                            )
                         {
                             // It's an assignment statement
                             self.parse_assignment_stmt(lhs)
                         } else {
                             // It's a standalone expression statement
                             let mut end_span = lhs.span;
-                            if self.match_token(0, TokenKind::Punctuation(PunctuationKind::SemiCol)) {
+                            if self.match_token(
+                                0,
+                                TokenKind::Punctuation(PunctuationKind::SemiCol),
+                            ) {
                                 end_span = self.current().unwrap().span;
                                 self.advance();
                             }

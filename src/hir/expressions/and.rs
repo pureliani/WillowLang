@@ -7,7 +7,12 @@ use crate::{
 };
 
 impl FunctionBuilder {
-    pub fn build_and_expr(&mut self, ctx: &mut HIRContext, left: Box<Expr>, right: Box<Expr>) -> Value {
+    pub fn build_and_expr(
+        &mut self,
+        ctx: &mut HIRContext,
+        left: Box<Expr>,
+        right: Box<Expr>,
+    ) -> Value {
         let right_entry_block_id = self.new_basic_block();
         let merge_block_id = self.new_basic_block();
 
@@ -23,7 +28,9 @@ impl FunctionBuilder {
         self.use_basic_block(right_entry_block_id);
         let right_value = self.build_expr(ctx, *right);
         let right_exit_block_id = self.current_block_id;
-        self.set_basic_block_terminator(Terminator::Jump { target: merge_block_id });
+        self.set_basic_block_terminator(Terminator::Jump {
+            target: merge_block_id,
+        });
 
         self.use_basic_block(merge_block_id);
         let phi_sources = vec![

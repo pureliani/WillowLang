@@ -10,7 +10,9 @@ use crate::{
 use super::Parser;
 
 impl<'a, 'b> Parser<'a, 'b> {
-    pub fn parse_fn_type_annotation(&mut self) -> Result<TypeAnnotation, ParsingError<'a>> {
+    pub fn parse_fn_type_annotation(
+        &mut self,
+    ) -> Result<TypeAnnotation, ParsingError<'a>> {
         let start_offset = self.offset;
 
         self.consume_keyword(KeywordKind::Fn)?;
@@ -21,7 +23,10 @@ impl<'a, 'b> Parser<'a, 'b> {
                 p.consume_punctuation(PunctuationKind::Col)?;
                 let constraint = p.parse_type_annotation(0)?;
 
-                Ok(Param { constraint, identifier })
+                Ok(Param {
+                    constraint,
+                    identifier,
+                })
             },
             |p| p.match_token(0, TokenKind::Punctuation(PunctuationKind::RParen)),
         )?;

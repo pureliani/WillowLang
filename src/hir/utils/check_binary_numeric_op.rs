@@ -3,13 +3,20 @@ use crate::{
     hir::{
         errors::{SemanticError, SemanticErrorKind},
         types::checked_type::Type,
-        utils::{get_numeric_type_rank::get_numeric_type_rank, is_float::is_float, is_integer::is_integer, is_signed::is_signed},
+        utils::{
+            get_numeric_type_rank::get_numeric_type_rank, is_float::is_float,
+            is_integer::is_integer, is_signed::is_signed,
+        },
         FunctionBuilder,
     },
 };
 
 impl FunctionBuilder {
-    pub fn check_binary_numeric_operation(&mut self, left: &Type, right: &Type) -> Result<Type, SemanticError> {
+    pub fn check_binary_numeric_operation(
+        &mut self,
+        left: &Type,
+        right: &Type,
+    ) -> Result<Type, SemanticError> {
         let span = Span {
             start: left.span.start,
             end: right.span.end,

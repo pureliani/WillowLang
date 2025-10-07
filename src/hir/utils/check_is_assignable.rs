@@ -11,7 +11,11 @@ use crate::hir::{
 impl FunctionBuilder {
     pub fn check_is_assignable(&self, source_type: &Type, target_type: &Type) -> bool {
         let mut visited_declarations: HashSet<(usize, usize)> = HashSet::new();
-        self.check_is_assignable_recursive(source_type, target_type, &mut visited_declarations)
+        self.check_is_assignable_recursive(
+            source_type,
+            target_type,
+            &mut visited_declarations,
+        )
     }
 
     pub fn check_is_assignable_recursive(
@@ -40,7 +44,9 @@ impl FunctionBuilder {
             | (Bool, Bool)
             | (Void, Void)
             | (Unknown, _) => true,
-            (Pointer(source), Pointer(target)) => self.check_is_assignable_recursive(source, target, visited_declarations),
+            (Pointer(source), Pointer(target)) => {
+                self.check_is_assignable_recursive(source, target, visited_declarations)
+            }
             (Struct(source_decl), Struct(target_decl)) => {
                 todo!()
             }
@@ -66,19 +72,36 @@ impl FunctionBuilder {
                 let params_compatible = source_params
                     .iter()
                     .zip(target_params.iter())
-                    .all(|(sp, tp)| self.check_is_assignable_recursive(&sp.constraint, &tp.constraint, visited_declarations));
+                    .all(|(sp, tp)| {
+                        self.check_is_assignable_recursive(
+                            &sp.constraint,
+                            &tp.constraint,
+                            visited_declarations,
+                        )
+                    });
 
                 if !params_compatible {
                     return false;
                 }
 
-                let returns_compatible =
-                    self.check_is_assignable_recursive(&source_return_type, &target_return_type, visited_declarations);
+                let returns_compatible = self.check_is_assignable_recursive(
+                    &source_return_type,
+                    &target_return_type,
+                    visited_declarations,
+                );
 
                 returns_compatible
             }
-            (TypeAliasDecl(source), _) => self.check_is_assignable_recursive(&source.value, target_type, visited_declarations),
-            (_, TypeAliasDecl(target)) => self.check_is_assignable_recursive(source_type, &target.value, visited_declarations),
+            (TypeAliasDecl(source), _) => self.check_is_assignable_recursive(
+                &source.value,
+                target_type,
+                visited_declarations,
+            ),
+            (_, TypeAliasDecl(target)) => self.check_is_assignable_recursive(
+                source_type,
+                &target.value,
+                visited_declarations,
+            ),
             _ => false,
         };
 

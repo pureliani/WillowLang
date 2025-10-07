@@ -6,7 +6,9 @@ use crate::{
     hir::{
         cfg::BasicBlockId,
         errors::{SemanticError, SemanticErrorKind},
-        types::checked_declaration::{CheckedEnumDecl, CheckedTypeAliasDecl, CheckedVarDecl},
+        types::checked_declaration::{
+            CheckedEnumDecl, CheckedTypeAliasDecl, CheckedVarDecl,
+        },
         ModuleBuilder,
     },
 };

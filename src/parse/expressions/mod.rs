@@ -108,31 +108,40 @@ impl<'a, 'b> Parser<'a, 'b> {
                 let result = self.parse_parenthesized_expr()?;
                 let span = self.get_span(start_offset, self.offset - 1)?;
 
-                Expr { kind: result.kind, span }
+                Expr {
+                    kind: result.kind,
+                    span,
+                }
             }
             TokenKind::Punctuation(PunctuationKind::LBrace) => {
                 self.place_checkpoint();
-                let result = self.parse_struct_init_expr().or_else(|struct_parsing_error| {
-                    let struct_parsing_error_offset = self.offset;
-                    self.goto_checkpoint();
-                    self.parse_codeblock_expr()
-                        .map(|codeblock| Expr {
-                            span: codeblock.span,
-                            kind: ExprKind::CodeBlock(codeblock),
-                        })
-                        .or_else(|codeblock_parsing_error| {
-                            let codeblock_parsing_error_offset = self.offset;
-                            if codeblock_parsing_error_offset > struct_parsing_error_offset {
-                                Err(codeblock_parsing_error)
-                            } else {
-                                Err(struct_parsing_error)
-                            }
-                        })
-                })?;
+                let result =
+                    self.parse_struct_init_expr()
+                        .or_else(|struct_parsing_error| {
+                            let struct_parsing_error_offset = self.offset;
+                            self.goto_checkpoint();
+                            self.parse_codeblock_expr()
+                                .map(|codeblock| Expr {
+                                    span: codeblock.span,
+                                    kind: ExprKind::CodeBlock(codeblock),
+                                })
+                                .or_else(|codeblock_parsing_error| {
+                                    let codeblock_parsing_error_offset = self.offset;
+                                    if codeblock_parsing_error_offset
+                                        > struct_parsing_error_offset
+                                    {
+                                        Err(codeblock_parsing_error)
+                                    } else {
+                                        Err(struct_parsing_error)
+                                    }
+                                })
+                        })?;
 
                 result
             }
-            TokenKind::Punctuation(PunctuationKind::LBracket) => self.parse_list_literal_expr()?,
+            TokenKind::Punctuation(PunctuationKind::LBracket) => {
+                self.parse_list_literal_expr()?
+            }
             TokenKind::Punctuation(PunctuationKind::Minus) => {
                 let ((), r_bp) = prefix_bp(&TokenKind::Punctuation(PunctuationKind::Minus)).expect(
                     "INTERNAL COMPILER ERROR: expected the minus \'-\' symbol to have a corresponding prefix binding power",
@@ -142,7 +151,9 @@ impl<'a, 'b> Parser<'a, 'b> {
                 self.consume_punctuation(PunctuationKind::Minus)?;
                 let expr = self.parse_expr(r_bp)?;
                 Expr {
-                    kind: ExprKind::Neg { right: Box::new(expr) },
+                    kind: ExprKind::Neg {
+                        right: Box::new(expr),
+                    },
                     span: self.get_span(start_offset, self.offset - 1)?,
                 }
             }
@@ -155,12 +166,16 @@ impl<'a, 'b> Parser<'a, 'b> {
                 self.consume_punctuation(PunctuationKind::Not)?;
                 let expr = self.parse_expr(r_bp)?;
                 Expr {
-                    kind: ExprKind::Not { right: Box::new(expr) },
+                    kind: ExprKind::Not {
+                        right: Box::new(expr),
+                    },
                     span: self.get_span(start_offset, self.offset - 1)?,
                 }
             }
             TokenKind::Keyword(KeywordKind::If) => self.parse_if_expr()?,
-            TokenKind::Keyword(variant @ KeywordKind::True | variant @ KeywordKind::False) => {
+            TokenKind::Keyword(
+                variant @ KeywordKind::True | variant @ KeywordKind::False,
+            ) => {
                 let start_offset = self.offset;
                 self.consume_keyword(variant)?;
                 let is_true = matches!(variant, KeywordKind::True);
@@ -232,7 +247,8 @@ impl<'a, 'b> Parser<'a, 'b> {
                                 self.consume_punctuation(PunctuationKind::LParen)?;
                                 let target_type = self.parse_type_annotation(0)?;
                                 self.consume_punctuation(PunctuationKind::RParen)?;
-                                let span_end = self.get_span(start_offset, self.offset - 1)?;
+                                let span_end =
+                                    self.get_span(start_offset, self.offset - 1)?;
 
                                 Some(Expr {
                                     kind: ExprKind::TypeCast {
@@ -286,10 +302,12 @@ impl<'a, 'b> Parser<'a, 'b> {
                         left: Box::new(lhs),
                         right: Box::new(rhs),
                     },
-                    TokenKind::Punctuation(PunctuationKind::Minus) => ExprKind::Subtract {
-                        left: Box::new(lhs),
-                        right: Box::new(rhs),
-                    },
+                    TokenKind::Punctuation(PunctuationKind::Minus) => {
+                        ExprKind::Subtract {
+                            left: Box::new(lhs),
+                            right: Box::new(rhs),
+                        }
+                    }
                     TokenKind::Punctuation(PunctuationKind::Star) => ExprKind::Multiply {
                         left: Box::new(lhs),
                         right: Box::new(rhs),
@@ -298,34 +316,46 @@ impl<'a, 'b> Parser<'a, 'b> {
                         left: Box::new(lhs),
                         right: Box::new(rhs),
                     },
-                    TokenKind::Punctuation(PunctuationKind::Percent) => ExprKind::Modulo {
-                        left: Box::new(lhs),
-                        right: Box::new(rhs),
-                    },
+                    TokenKind::Punctuation(PunctuationKind::Percent) => {
+                        ExprKind::Modulo {
+                            left: Box::new(lhs),
+                            right: Box::new(rhs),
+                        }
+                    }
                     TokenKind::Punctuation(PunctuationKind::Lt) => ExprKind::LessThan {
                         left: Box::new(lhs),
                         right: Box::new(rhs),
                     },
-                    TokenKind::Punctuation(PunctuationKind::Lte) => ExprKind::LessThanOrEqual {
-                        left: Box::new(lhs),
-                        right: Box::new(rhs),
-                    },
-                    TokenKind::Punctuation(PunctuationKind::Gt) => ExprKind::GreaterThan {
-                        left: Box::new(lhs),
-                        right: Box::new(rhs),
-                    },
-                    TokenKind::Punctuation(PunctuationKind::Gte) => ExprKind::GreaterThanOrEqual {
-                        left: Box::new(lhs),
-                        right: Box::new(rhs),
-                    },
-                    TokenKind::Punctuation(PunctuationKind::DoubleEq) => ExprKind::Equal {
-                        left: Box::new(lhs),
-                        right: Box::new(rhs),
-                    },
-                    TokenKind::Punctuation(PunctuationKind::NotEq) => ExprKind::NotEqual {
-                        left: Box::new(lhs),
-                        right: Box::new(rhs),
-                    },
+                    TokenKind::Punctuation(PunctuationKind::Lte) => {
+                        ExprKind::LessThanOrEqual {
+                            left: Box::new(lhs),
+                            right: Box::new(rhs),
+                        }
+                    }
+                    TokenKind::Punctuation(PunctuationKind::Gt) => {
+                        ExprKind::GreaterThan {
+                            left: Box::new(lhs),
+                            right: Box::new(rhs),
+                        }
+                    }
+                    TokenKind::Punctuation(PunctuationKind::Gte) => {
+                        ExprKind::GreaterThanOrEqual {
+                            left: Box::new(lhs),
+                            right: Box::new(rhs),
+                        }
+                    }
+                    TokenKind::Punctuation(PunctuationKind::DoubleEq) => {
+                        ExprKind::Equal {
+                            left: Box::new(lhs),
+                            right: Box::new(rhs),
+                        }
+                    }
+                    TokenKind::Punctuation(PunctuationKind::NotEq) => {
+                        ExprKind::NotEqual {
+                            left: Box::new(lhs),
+                            right: Box::new(rhs),
+                        }
+                    }
                     TokenKind::Punctuation(PunctuationKind::DoubleAnd) => ExprKind::And {
                         left: Box::new(lhs),
                         right: Box::new(rhs),

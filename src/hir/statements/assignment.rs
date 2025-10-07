@@ -9,10 +9,16 @@ use crate::{
 };
 
 impl FunctionBuilder {
-    pub fn build_lvalue_expr(&mut self, ctx: &mut HIRContext, expr: Expr) -> Result<ValueId, SemanticError> {
+    pub fn build_lvalue_expr(
+        &mut self,
+        ctx: &mut HIRContext,
+        expr: Expr,
+    ) -> Result<ValueId, SemanticError> {
         match expr.kind {
             ExprKind::Identifier(identifier) => {
-                if let Some(SymbolEntry::VarDecl(decl)) = ctx.module_builder.scope_lookup(identifier.name) {
+                if let Some(SymbolEntry::VarDecl(decl)) =
+                    ctx.module_builder.scope_lookup(identifier.name)
+                {
                     return Ok(decl.ptr_value_id); // ValueId which holds Pointer<T>
                 } else {
                     return Err(SemanticError {
@@ -34,7 +40,12 @@ impl FunctionBuilder {
         }
     }
 
-    pub fn build_assignment_stmt(&mut self, ctx: &mut HIRContext, target: Expr, value: Expr) {
+    pub fn build_assignment_stmt(
+        &mut self,
+        ctx: &mut HIRContext,
+        target: Expr,
+        value: Expr,
+    ) {
         let source_val = self.build_expr(ctx, value);
 
         let destination_ptr = match self.build_lvalue_expr(ctx, target) {

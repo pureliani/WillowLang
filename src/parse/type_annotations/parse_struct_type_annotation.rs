@@ -5,7 +5,9 @@ use crate::{
 };
 
 impl<'a, 'b> Parser<'a, 'b> {
-    pub fn parse_struct_type_annotation(&mut self) -> Result<TypeAnnotation, ParsingError<'a>> {
+    pub fn parse_struct_type_annotation(
+        &mut self,
+    ) -> Result<TypeAnnotation, ParsingError<'a>> {
         let start_offset = self.offset;
         self.consume_punctuation(PunctuationKind::LBrace)?;
         let fields = self.comma_separated(

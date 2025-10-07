@@ -4,7 +4,12 @@ use crate::{
 };
 
 impl FunctionBuilder {
-    pub fn build_match_expr(&mut self, ctx: &mut HIRContext, conditions: Vec<Expr>, arms: Vec<MatchArm>) -> Value {
+    pub fn build_match_expr(
+        &mut self,
+        ctx: &mut HIRContext,
+        conditions: Vec<Expr>,
+        arms: Vec<MatchArm>,
+    ) -> Value {
         todo!()
     }
 }

@@ -4,8 +4,8 @@ use crate::{
     ast::{IdentifierNode, Span},
     hir::{
         cfg::{
-            BasicBlock, BasicBlockId, BinaryOperationKind, Instruction, IntrinsicField, IntrinsicFunction, PtrOffset,
-            UnaryOperationKind, Value, ValueId,
+            BasicBlock, BasicBlockId, BinaryOperationKind, Instruction, IntrinsicField,
+            IntrinsicFunction, PtrOffset, UnaryOperationKind, Value, ValueId,
         },
         errors::{SemanticError, SemanticErrorKind},
         types::checked_type::{Type, TypeKind},
@@ -17,7 +17,11 @@ use crate::{
 impl FunctionBuilder {
     /// Records a semantic error and returns a new "poison" Value of type Unknown.
     /// The caller is responsible for immediately returning the poison Value.
-    pub fn report_error_and_get_poison(&mut self, ctx: &mut HIRContext, error: SemanticError) -> ValueId {
+    pub fn report_error_and_get_poison(
+        &mut self,
+        ctx: &mut HIRContext,
+        error: SemanticError,
+    ) -> ValueId {
         let error_span = error.span;
         ctx.module_builder.errors.push(error);
         let unknown_result_id = ctx.program_builder.new_value_id();
@@ -32,16 +36,24 @@ impl FunctionBuilder {
     }
 
     pub fn get_current_basic_block(&mut self) -> &mut BasicBlock {
-        self.cfg.blocks.get_mut(&self.current_block_id).unwrap_or_else(|| {
-            panic!(
-                "INTERNAL COMPILER ERROR: Basic block with id '{}' does not exist.",
-                self.current_block_id.0
-            )
-        })
+        self.cfg
+            .blocks
+            .get_mut(&self.current_block_id)
+            .unwrap_or_else(|| {
+                panic!(
+                    "INTERNAL COMPILER ERROR: Basic block with id '{}' does not exist.",
+                    self.current_block_id.0
+                )
+            })
     }
 
     /// Returns ValueId which holds pointer: TypeKind::Pointer(Box<Type>)
-    pub fn emit_stack_alloc(&mut self, ctx: &mut HIRContext, ty: Type, count: usize) -> ValueId {
+    pub fn emit_stack_alloc(
+        &mut self,
+        ctx: &mut HIRContext,
+        ty: Type,
+        count: usize,
+    ) -> ValueId {
         let destination = ctx.program_builder.new_value_id();
 
         ctx.program_builder.value_types.insert(
@@ -60,7 +72,12 @@ impl FunctionBuilder {
     }
 
     /// Returns ValueId which holds pointer: TypeKind::Pointer(Box<Type>)
-    pub fn emit_heap_alloc(&mut self, ctx: &mut HIRContext, ty: Type, count: Value) -> Result<ValueId, SemanticError> {
+    pub fn emit_heap_alloc(
+        &mut self,
+        ctx: &mut HIRContext,
+        ty: Type,
+        count: Value,
+    ) -> Result<ValueId, SemanticError> {
         let count_type = ctx.program_builder.get_value_type(&count);
         let expected_count_type = Type {
             kind: TypeKind::USize,
@@ -87,18 +104,26 @@ impl FunctionBuilder {
             },
         );
 
-        self.get_current_basic_block().instructions.push(Instruction::HeapAlloc {
-            destination,
-            allocation_site_id,
-            count,
-        });
+        self.get_current_basic_block()
+            .instructions
+            .push(Instruction::HeapAlloc {
+                destination,
+                allocation_site_id,
+                count,
+            });
 
         Ok(destination)
     }
 
-    pub fn emit_store(&mut self, ctx: &mut HIRContext, destination_ptr: ValueId, value: Value) {
+    pub fn emit_store(
+        &mut self,
+        ctx: &mut HIRContext,
+        destination_ptr: ValueId,
+        value: Value,
+    ) {
         let value_type = ctx.program_builder.get_value_type(&value);
-        let destination_ptr_type = ctx.program_builder.get_value_id_type(&destination_ptr);
+        let destination_ptr_type =
+            ctx.program_builder.get_value_id_type(&destination_ptr);
 
         if let TypeKind::Pointer(target_type) = destination_ptr_type.kind {
             if !self.check_is_assignable(&value_type, &target_type) {
@@ -115,10 +140,12 @@ impl FunctionBuilder {
             panic!("INTERNAL COMPILER ERROR: Expected destination_ptr_id to be of Pointer<T> type");
         }
 
-        self.get_current_basic_block().instructions.push(Instruction::Store {
-            destination_ptr,
-            source_val: value,
-        });
+        self.get_current_basic_block()
+            .instructions
+            .push(Instruction::Store {
+                destination_ptr,
+                source_val: value,
+            });
     }
 
     pub fn emit_load(&mut self, ctx: &mut HIRContext, source_ptr: ValueId) -> ValueId {
@@ -127,16 +154,23 @@ impl FunctionBuilder {
         let destination_type = if let TypeKind::Pointer(target_type) = ptr_type.kind {
             *target_type
         } else {
-            panic!("INTERNAL COMPILER ERROR: Expected source_ptr to be of Pointer<T> type");
+            panic!(
+                "INTERNAL COMPILER ERROR: Expected source_ptr to be of Pointer<T> type"
+            );
         };
 
         let destination = ctx.program_builder.new_value_id();
 
-        ctx.program_builder.value_types.insert(destination, destination_type);
+        ctx.program_builder
+            .value_types
+            .insert(destination, destination_type);
 
         self.get_current_basic_block()
             .instructions
-            .push(Instruction::Load { destination, source_ptr });
+            .push(Instruction::Load {
+                destination,
+                source_ptr,
+            });
 
         destination
     }
@@ -165,7 +199,9 @@ impl FunctionBuilder {
         if let Some((field_index, (_field_identifier, field_type))) = struct_fields
             .into_iter()
             .enumerate()
-            .find(|(_, (field_identifier, _field_type))| field_identifier.name == field.name)
+            .find(|(_, (field_identifier, _field_type))| {
+                field_identifier.name == field.name
+            })
         {
             let destination = ctx.program_builder.new_value_id();
 
@@ -177,11 +213,13 @@ impl FunctionBuilder {
                 },
             );
 
-            self.get_current_basic_block().instructions.push(Instruction::GetFieldPtr {
-                destination,
-                base_ptr,
-                field_index,
-            });
+            self.get_current_basic_block()
+                .instructions
+                .push(Instruction::GetFieldPtr {
+                    destination,
+                    base_ptr,
+                    field_index,
+                });
 
             Ok(destination)
         } else {
@@ -192,7 +230,12 @@ impl FunctionBuilder {
         }
     }
 
-    pub fn emit_ptr_add(&mut self, ctx: &mut HIRContext, base_ptr: ValueId, offset: PtrOffset) -> Result<ValueId, SemanticError> {
+    pub fn emit_ptr_add(
+        &mut self,
+        ctx: &mut HIRContext,
+        base_ptr: ValueId,
+        offset: PtrOffset,
+    ) -> Result<ValueId, SemanticError> {
         let base_ptr_type = ctx.program_builder.get_value_id_type(&base_ptr);
         if !matches!(base_ptr_type.kind, TypeKind::Pointer { .. }) {
             panic!("INTERNAL COMPILER ERROR: emit_ptr_add called on a non-pointer type.");
@@ -217,12 +260,16 @@ impl FunctionBuilder {
 
         let destination = ctx.program_builder.new_value_id();
 
-        ctx.program_builder.value_types.insert(destination, base_ptr_type);
-        self.get_current_basic_block().instructions.push(Instruction::PtrAdd {
-            destination,
-            base_ptr,
-            offset,
-        });
+        ctx.program_builder
+            .value_types
+            .insert(destination, base_ptr_type);
+        self.get_current_basic_block()
+            .instructions
+            .push(Instruction::PtrAdd {
+                destination,
+                base_ptr,
+                offset,
+            });
 
         Ok(destination)
     }
@@ -258,7 +305,8 @@ impl FunctionBuilder {
 
                 if let TypeKind::Pointer(ptr_to) = &list_type.kind {
                     if let TypeKind::List(expected_list_item_type) = &ptr_to.kind {
-                        if !self.check_is_assignable(&item_type, expected_list_item_type) {
+                        if !self.check_is_assignable(&item_type, expected_list_item_type)
+                        {
                             return Err(SemanticError {
                                 span: item_type.span,
                                 kind: SemanticErrorKind::TypeMismatch {
@@ -283,7 +331,12 @@ impl FunctionBuilder {
             } => todo!(),
         }
     }
-    pub fn emit_intrinsic_field_access(&mut self, ctx: &mut HIRContext, function_kind: IntrinsicField) {}
+    pub fn emit_intrinsic_field_access(
+        &mut self,
+        ctx: &mut HIRContext,
+        function_kind: IntrinsicField,
+    ) {
+    }
 
     pub fn emit_unary_op(
         &mut self,
@@ -359,12 +412,16 @@ impl FunctionBuilder {
             }
         };
 
-        ctx.program_builder.value_types.insert(destination, value_type);
-        self.get_current_basic_block().instructions.push(Instruction::UnaryOp {
-            op_kind,
-            destination,
-            operand: value,
-        });
+        ctx.program_builder
+            .value_types
+            .insert(destination, value_type);
+        self.get_current_basic_block()
+            .instructions
+            .push(Instruction::UnaryOp {
+                op_kind,
+                destination,
+                operand: value,
+            });
 
         Ok(destination)
     }
@@ -389,7 +446,8 @@ impl FunctionBuilder {
             | BinaryOperationKind::Multiply
             | BinaryOperationKind::Divide
             | BinaryOperationKind::Modulo => {
-                let result_type = self.check_binary_numeric_operation(&left_type, &right_type)?;
+                let result_type =
+                    self.check_binary_numeric_operation(&left_type, &right_type)?;
                 result_type
             }
 
@@ -427,18 +485,26 @@ impl FunctionBuilder {
         };
 
         let destination = ctx.program_builder.new_value_id();
-        ctx.program_builder.value_types.insert(destination, destination_type);
-        self.get_current_basic_block().instructions.push(Instruction::BinaryOp {
-            op_kind,
-            destination,
-            left,
-            right,
-        });
+        ctx.program_builder
+            .value_types
+            .insert(destination, destination_type);
+        self.get_current_basic_block()
+            .instructions
+            .push(Instruction::BinaryOp {
+                op_kind,
+                destination,
+                left,
+                right,
+            });
 
         Ok(destination)
     }
 
-    pub fn emit_phi(&mut self, ctx: &mut HIRContext, sources: Vec<(BasicBlockId, Value)>) -> Result<ValueId, SemanticError> {
+    pub fn emit_phi(
+        &mut self,
+        ctx: &mut HIRContext,
+        sources: Vec<(BasicBlockId, Value)>,
+    ) -> Result<ValueId, SemanticError> {
         if sources.is_empty() {
             panic!("INTERNAL COMPILER ERROR: emit_phi called with no sources.");
         }
@@ -459,10 +525,15 @@ impl FunctionBuilder {
         }
 
         let destination = ctx.program_builder.new_value_id();
-        ctx.program_builder.value_types.insert(destination, first_type);
+        ctx.program_builder
+            .value_types
+            .insert(destination, first_type);
         self.get_current_basic_block()
             .instructions
-            .push(Instruction::Phi { destination, sources });
+            .push(Instruction::Phi {
+                destination,
+                sources,
+            });
 
         Ok(destination)
     }
@@ -512,22 +583,31 @@ impl FunctionBuilder {
 
         let destination_id = if fn_type_decl.return_type.kind != TypeKind::Void {
             let dest_id = ctx.program_builder.new_value_id();
-            ctx.program_builder.value_types.insert(dest_id, *fn_type_decl.return_type);
+            ctx.program_builder
+                .value_types
+                .insert(dest_id, *fn_type_decl.return_type);
             Some(dest_id)
         } else {
             None
         };
 
-        self.get_current_basic_block().instructions.push(Instruction::FunctionCall {
-            destination: destination_id,
-            function_rvalue: value,
-            args,
-        });
+        self.get_current_basic_block()
+            .instructions
+            .push(Instruction::FunctionCall {
+                destination: destination_id,
+                function_rvalue: value,
+                args,
+            });
 
         Ok(destination_id)
     }
 
-    pub fn emit_type_cast(&mut self, ctx: &mut HIRContext, value: Value, target_type: Type) -> ValueId {
+    pub fn emit_type_cast(
+        &mut self,
+        ctx: &mut HIRContext,
+        value: Value,
+        target_type: Type,
+    ) -> ValueId {
         let value_type = ctx.program_builder.get_value_type(&value);
 
         if !self.check_is_casting_allowed(&value_type, &target_type) {
@@ -544,13 +624,17 @@ impl FunctionBuilder {
         }
 
         let destination = ctx.program_builder.new_value_id();
-        ctx.program_builder.value_types.insert(destination, target_type.clone());
+        ctx.program_builder
+            .value_types
+            .insert(destination, target_type.clone());
 
-        self.get_current_basic_block().instructions.push(Instruction::TypeCast {
-            destination,
-            operand: value,
-            target_type,
-        });
+        self.get_current_basic_block()
+            .instructions
+            .push(Instruction::TypeCast {
+                destination,
+                operand: value,
+                target_type,
+            });
 
         destination
     }

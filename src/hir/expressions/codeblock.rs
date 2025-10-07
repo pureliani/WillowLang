@@ -4,7 +4,11 @@ use crate::{
 };
 
 impl FunctionBuilder {
-    pub fn build_codeblock_expr(&mut self, ctx: &mut HIRContext, codeblock: BlockContents) -> Value {
+    pub fn build_codeblock_expr(
+        &mut self,
+        ctx: &mut HIRContext,
+        codeblock: BlockContents,
+    ) -> Value {
         ctx.module_builder.enter_scope(ScopeKind::CodeBlock);
         self.build_statements(ctx, codeblock.statements);
 

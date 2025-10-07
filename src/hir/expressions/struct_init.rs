@@ -19,7 +19,10 @@ pub fn get_alignment_of(type_kind: &TypeKind) -> usize {
         TypeKind::U32 | TypeKind::I32 | TypeKind::F32 => 4,
         TypeKind::U16 | TypeKind::I16 => 2,
         TypeKind::U8 | TypeKind::I8 | TypeKind::Bool => 1,
-        TypeKind::Pointer(_) | TypeKind::USize | TypeKind::ISize | TypeKind::FnType(_) => align_of::<usize>(),
+        TypeKind::Pointer(_)
+        | TypeKind::USize
+        | TypeKind::ISize
+        | TypeKind::FnType(_) => align_of::<usize>(),
         TypeKind::Struct(_) | TypeKind::List(_) | TypeKind::String => align_of::<usize>(),
         TypeKind::Enum(_) => align_of::<isize>(),
         TypeKind::Void => 1,
@@ -29,9 +32,16 @@ pub fn get_alignment_of(type_kind: &TypeKind) -> usize {
 }
 
 impl FunctionBuilder {
-    pub fn build_struct_init_expr(&mut self, ctx: &mut HIRContext, fields: Vec<(IdentifierNode, Expr)>, span: Span) -> Value {
-        let mut resolved_fields: Vec<(IdentifierNode, Type)> = Vec::with_capacity(fields.len());
-        let mut field_values: HashMap<IdentifierNode, Value> = HashMap::with_capacity(fields.len());
+    pub fn build_struct_init_expr(
+        &mut self,
+        ctx: &mut HIRContext,
+        fields: Vec<(IdentifierNode, Expr)>,
+        span: Span,
+    ) -> Value {
+        let mut resolved_fields: Vec<(IdentifierNode, Type)> =
+            Vec::with_capacity(fields.len());
+        let mut field_values: HashMap<IdentifierNode, Value> =
+            HashMap::with_capacity(fields.len());
         let mut initialized_fields: HashSet<IdentifierNode> = HashSet::new();
 
         for (field_name, field_expr) in fields {
@@ -39,7 +49,9 @@ impl FunctionBuilder {
                 return Value::Use(self.report_error_and_get_poison(
                     ctx,
                     SemanticError {
-                        kind: SemanticErrorKind::DuplicateStructFieldInitializer(field_name),
+                        kind: SemanticErrorKind::DuplicateStructFieldInitializer(
+                            field_name,
+                        ),
                         span: field_name.span,
                     },
                 ));
@@ -57,8 +69,14 @@ impl FunctionBuilder {
             let align_b = get_alignment_of(&type_b.kind);
 
             align_b.cmp(&align_a).then_with(|| {
-                let name_a = ctx.program_builder.string_interner.resolve(identifier_a.name);
-                let name_b = ctx.program_builder.string_interner.resolve(identifier_b.name);
+                let name_a = ctx
+                    .program_builder
+                    .string_interner
+                    .resolve(identifier_a.name);
+                let name_b = ctx
+                    .program_builder
+                    .string_interner
+                    .resolve(identifier_b.name);
 
                 name_a.cmp(name_b)
             })
@@ -70,15 +88,24 @@ impl FunctionBuilder {
         };
 
         let struct_ptr = self
-            .emit_heap_alloc(ctx, struct_type.clone(), Value::NumberLiteral(NumberKind::USize(1)))
+            .emit_heap_alloc(
+                ctx,
+                struct_type.clone(),
+                Value::NumberLiteral(NumberKind::USize(1)),
+            )
             .expect("INTERNAL COMPILER ERROR: failed to allocate struct on heap");
 
         if let TypeKind::Struct(canonical_fields) = &struct_type.kind {
             for (field_name, _) in canonical_fields {
-                let field_ptr = match self.emit_get_field_ptr(ctx, struct_ptr, *field_name) {
-                    Ok(ptr) => ptr,
-                    Err(error) => return Value::Use(self.report_error_and_get_poison(ctx, error)),
-                };
+                let field_ptr =
+                    match self.emit_get_field_ptr(ctx, struct_ptr, *field_name) {
+                        Ok(ptr) => ptr,
+                        Err(error) => {
+                            return Value::Use(
+                                self.report_error_and_get_poison(ctx, error),
+                            )
+                        }
+                    };
 
                 let field_value = field_values.get(field_name).unwrap();
 

@@ -8,7 +8,10 @@ use crate::{
 };
 
 impl<'a, 'b> Parser<'a, 'b> {
-    pub fn parse_enum_decl(&mut self, documentation: Option<DocAnnotation>) -> Result<Stmt, ParsingError<'a>> {
+    pub fn parse_enum_decl(
+        &mut self,
+        documentation: Option<DocAnnotation>,
+    ) -> Result<Stmt, ParsingError<'a>> {
         let start_offset = self.offset;
 
         self.consume_keyword(KeywordKind::Enum)?;
@@ -17,7 +20,9 @@ impl<'a, 'b> Parser<'a, 'b> {
         let variants = self.comma_separated(
             |p| {
                 let name = p.consume_identifier()?;
-                let payload = if p.match_token(0, TokenKind::Punctuation(PunctuationKind::LParen)) {
+                let payload = if p
+                    .match_token(0, TokenKind::Punctuation(PunctuationKind::LParen))
+                {
                     p.consume_punctuation(PunctuationKind::LParen)?;
                     let ty = p.parse_type_annotation(0)?;
                     p.consume_punctuation(PunctuationKind::RParen)?;

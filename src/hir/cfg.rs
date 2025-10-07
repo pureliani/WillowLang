@@ -47,7 +47,10 @@ pub enum IntrinsicFunction {
 
 #[derive(Clone, Debug)]
 pub enum IntrinsicField {
-    ListLen { list_base_ptr: ValueId, destination: ValueId },
+    ListLen {
+        list_base_ptr: ValueId,
+        destination: ValueId,
+    },
 }
 
 #[derive(Clone, Debug)]

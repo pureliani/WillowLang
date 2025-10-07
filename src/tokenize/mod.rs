@@ -274,7 +274,8 @@ impl<'a> Tokenizer<'a> {
     }
 
     fn slice(&self, start: usize, end: usize) -> &'a str {
-        let grapheme_indices: Vec<(usize, &str)> = self.input.grapheme_indices(true).collect();
+        let grapheme_indices: Vec<(usize, &str)> =
+            self.input.grapheme_indices(true).collect();
 
         let start_idx = grapheme_indices[start].0;
         let end_idx = if end < grapheme_indices.len() {
@@ -428,37 +429,39 @@ impl<'a> Tokenizer<'a> {
                         state.synchronize();
                     }
                 },
-                Some("-") if state.peek(1) == Some("-") && state.peek(2) == Some("-") => match state.tokenize_documentation() {
-                    Ok(content) => {
-                        let end_pos = Position {
-                            line: state.line,
-                            col: state.col,
-                            byte_offset: state.byte_offset,
-                        };
-                        tokens.push(Token {
-                            kind: TokenKind::Doc(content),
-                            span: Span {
-                                start: start_pos,
-                                end: end_pos,
-                            },
-                        })
+                Some("-") if state.peek(1) == Some("-") && state.peek(2) == Some("-") => {
+                    match state.tokenize_documentation() {
+                        Ok(content) => {
+                            let end_pos = Position {
+                                line: state.line,
+                                col: state.col,
+                                byte_offset: state.byte_offset,
+                            };
+                            tokens.push(Token {
+                                kind: TokenKind::Doc(content),
+                                span: Span {
+                                    start: start_pos,
+                                    end: end_pos,
+                                },
+                            })
+                        }
+                        Err(kind) => {
+                            let end_pos = Position {
+                                line: state.line,
+                                col: state.col,
+                                byte_offset: state.byte_offset,
+                            };
+                            errors.push(TokenizationError {
+                                kind,
+                                span: Span {
+                                    start: start_pos,
+                                    end: end_pos,
+                                },
+                            });
+                            state.synchronize();
+                        }
                     }
-                    Err(kind) => {
-                        let end_pos = Position {
-                            line: state.line,
-                            col: state.col,
-                            byte_offset: state.byte_offset,
-                        };
-                        errors.push(TokenizationError {
-                            kind,
-                            span: Span {
-                                start: start_pos,
-                                end: end_pos,
-                            },
-                        });
-                        state.synchronize();
-                    }
-                },
+                }
                 Some(punct) => match state.tokenize_punctuation(punct) {
                     Some(kind) => {
                         let end_pos = Position {
@@ -550,7 +553,9 @@ fn is_keyword(identifier: &str) -> Option<KeywordKind> {
 mod tests {
     use crate::{
         ast::{Position, Span},
-        tokenize::{KeywordKind, NumberKind, PunctuationKind, Token, TokenKind, Tokenizer},
+        tokenize::{
+            KeywordKind, NumberKind, PunctuationKind, Token, TokenKind, Tokenizer,
+        },
     };
     use pretty_assertions::assert_eq;
 

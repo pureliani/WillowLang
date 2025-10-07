@@ -19,7 +19,11 @@ impl FunctionBuilder {
         for statement in statements {
             match statement.kind {
                 StmtKind::Expression(expr) => {
-                    if let ExprKind::If { branches, else_branch } = expr.kind {
+                    if let ExprKind::If {
+                        branches,
+                        else_branch,
+                    } = expr.kind
+                    {
                         self.build_if(ctx, branches, else_branch, IfContext::Statement);
                     } else {
                         self.build_expr(ctx, expr);
@@ -30,7 +34,9 @@ impl FunctionBuilder {
                 }
                 StmtKind::VarDecl(var_decl) => todo!(),
                 StmtKind::Return { value } => todo!(),
-                StmtKind::Assignment { target, value } => self.build_assignment_stmt(ctx, target, value),
+                StmtKind::Assignment { target, value } => {
+                    self.build_assignment_stmt(ctx, target, value)
+                }
                 StmtKind::From { path, identifiers } => todo!(),
                 StmtKind::While { condition, body } => todo!(),
                 StmtKind::Break => todo!(),

@@ -9,8 +9,8 @@ use crate::{
     compile::string_interner::StringInterner,
     hir::{
         cfg::{
-            BasicBlock, BasicBlockId, CheckedModule, ConstantId, ControlFlowGraph, FunctionId, HeapAllocationId, ModuleId,
-            Terminator, Value, ValueId,
+            BasicBlock, BasicBlockId, CheckedModule, ConstantId, ControlFlowGraph,
+            FunctionId, HeapAllocationId, ModuleId, Terminator, Value, ValueId,
         },
         errors::SemanticError,
         types::{
@@ -91,7 +91,12 @@ impl<'a> ProgramBuilder<'a> {
         }
     }
 
-    pub fn build_module(&mut self, module_id: ModuleId, path: PathBuf, statements: Vec<Stmt>) {
+    pub fn build_module(
+        &mut self,
+        module_id: ModuleId,
+        path: PathBuf,
+        statements: Vec<Stmt>,
+    ) {
         let mut module_builder = ModuleBuilder::new(module_id, path);
         module_builder.build_top_level_statements(self, statements);
         self.modules.insert(module_id, module_builder);
@@ -125,7 +130,9 @@ impl<'a> ProgramBuilder<'a> {
     pub fn get_value_id_type(&self, value_id: &ValueId) -> Type {
         self.value_types
             .get(value_id)
-            .expect("INTERNAL COMPILER ERROR: All ValueIds must have a corresponding type")
+            .expect(
+                "INTERNAL COMPILER ERROR: All ValueIds must have a corresponding type",
+            )
             .clone()
     }
 
@@ -181,7 +188,11 @@ impl ModuleBuilder {
         }
     }
 
-    fn build_top_level_statements(&mut self, program_builder: &mut ProgramBuilder, statements: Vec<Stmt>) {
+    fn build_top_level_statements(
+        &mut self,
+        program_builder: &mut ProgramBuilder,
+        statements: Vec<Stmt>,
+    ) {
         let mut ctx = HIRContext {
             module_builder: self,
             program_builder,
@@ -226,7 +237,12 @@ impl FunctionBuilder {
         }
     }
 
-    pub fn build_body(&mut self, ctx: &mut HIRContext, params: Vec<CheckedParam>, body: Vec<Stmt>) {
+    pub fn build_body(
+        &mut self,
+        ctx: &mut HIRContext,
+        params: Vec<CheckedParam>,
+        body: Vec<Stmt>,
+    ) {
         for param in params {
             todo!()
         }

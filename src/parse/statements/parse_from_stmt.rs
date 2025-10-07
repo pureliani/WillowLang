@@ -15,12 +15,13 @@ impl<'a, 'b> Parser<'a, 'b> {
         let identifiers = self.comma_separated(
             |p| {
                 let identifier = p.consume_identifier()?;
-                let alias = if p.match_token(0, TokenKind::Punctuation(PunctuationKind::Col)) {
-                    p.advance();
-                    Some(p.consume_identifier()?)
-                } else {
-                    None
-                };
+                let alias =
+                    if p.match_token(0, TokenKind::Punctuation(PunctuationKind::Col)) {
+                        p.advance();
+                        Some(p.consume_identifier()?)
+                    } else {
+                        None
+                    };
 
                 Ok((identifier, alias))
             },

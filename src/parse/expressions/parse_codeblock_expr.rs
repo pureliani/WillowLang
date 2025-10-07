@@ -23,7 +23,9 @@ impl<'a, 'b> Parser<'a, 'b> {
                 break;
             }
 
-            let current_token = self.current().ok_or_else(|| self.unexpected_end_of_input())?;
+            let current_token = self
+                .current()
+                .ok_or_else(|| self.unexpected_end_of_input())?;
 
             if is_start_of_stmt(&current_token.kind) {
                 if let Some(old_expr) = final_expr.take() {
@@ -49,7 +51,9 @@ impl<'a, 'b> Parser<'a, 'b> {
                 {
                     let stmt = self.parse_assignment_stmt(expr)?;
                     statements.push(stmt);
-                } else if self.match_token(0, TokenKind::Punctuation(PunctuationKind::SemiCol)) {
+                } else if self
+                    .match_token(0, TokenKind::Punctuation(PunctuationKind::SemiCol))
+                {
                     let semi_token = self.current().unwrap();
                     let stmt = Stmt {
                         span: Span {

@@ -8,19 +8,23 @@ use crate::{
 };
 
 impl<'a, 'b> Parser<'a, 'b> {
-    pub fn parse_var_decl(&mut self, documentation: Option<DocAnnotation>) -> Result<Stmt, ParsingError<'a>> {
+    pub fn parse_var_decl(
+        &mut self,
+        documentation: Option<DocAnnotation>,
+    ) -> Result<Stmt, ParsingError<'a>> {
         let start_offset = self.offset;
 
         self.consume_keyword(KeywordKind::Let)?;
 
         let name = self.consume_identifier()?;
 
-        let constraint = if self.match_token(0, TokenKind::Punctuation(PunctuationKind::Col)) {
-            self.advance();
-            Some(self.parse_type_annotation(0)?)
-        } else {
-            None
-        };
+        let constraint =
+            if self.match_token(0, TokenKind::Punctuation(PunctuationKind::Col)) {
+                self.advance();
+                Some(self.parse_type_annotation(0)?)
+            } else {
+                None
+            };
 
         let value = if self.match_token(0, TokenKind::Punctuation(PunctuationKind::Eq)) {
             self.consume_punctuation(PunctuationKind::Eq)?;

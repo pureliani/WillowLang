@@ -10,8 +10,16 @@ use crate::{
 };
 
 impl FunctionBuilder {
-    pub fn build_list_literal_expr(&mut self, ctx: &mut HIRContext, items: Vec<Expr>, expr_span: Span) -> Value {
-        let item_values: Vec<Value> = items.into_iter().map(|item| self.build_expr(ctx, item)).collect();
+    pub fn build_list_literal_expr(
+        &mut self,
+        ctx: &mut HIRContext,
+        items: Vec<Expr>,
+        expr_span: Span,
+    ) -> Value {
+        let item_values: Vec<Value> = items
+            .into_iter()
+            .map(|item| self.build_expr(ctx, item))
+            .collect();
 
         if item_values.is_empty() {
             let element_type = Type {
@@ -23,12 +31,20 @@ impl FunctionBuilder {
                 span: expr_span,
             };
 
-            let list_ptr_value_id = match self.emit_heap_alloc(ctx, element_type, Value::NumberLiteral(NumberKind::USize(0))) {
+            let list_ptr_value_id = match self.emit_heap_alloc(
+                ctx,
+                element_type,
+                Value::NumberLiteral(NumberKind::USize(0)),
+            ) {
                 Ok(destination) => destination,
-                Err(error) => return Value::Use(self.report_error_and_get_poison(ctx, error)),
+                Err(error) => {
+                    return Value::Use(self.report_error_and_get_poison(ctx, error))
+                }
             };
 
-            ctx.program_builder.value_types.insert(list_ptr_value_id, list_type);
+            ctx.program_builder
+                .value_types
+                .insert(list_ptr_value_id, list_type);
 
             return Value::Use(list_ptr_value_id);
         }
@@ -58,11 +74,16 @@ impl FunctionBuilder {
             span: expr_span,
         };
         let initial_capacity = Value::NumberLiteral(NumberKind::USize(item_values.len()));
-        let list_ptr_value_id = match self.emit_heap_alloc(ctx, element_type, initial_capacity) {
-            Ok(destination) => destination,
-            Err(error) => return Value::Use(self.report_error_and_get_poison(ctx, error)),
-        };
-        ctx.program_builder.value_types.insert(list_ptr_value_id, list_type);
+        let list_ptr_value_id =
+            match self.emit_heap_alloc(ctx, element_type, initial_capacity) {
+                Ok(destination) => destination,
+                Err(error) => {
+                    return Value::Use(self.report_error_and_get_poison(ctx, error))
+                }
+            };
+        ctx.program_builder
+            .value_types
+            .insert(list_ptr_value_id, list_type);
 
         for (index, item) in item_values.into_iter().enumerate() {
             let result = self.emit_intrinsic_function_call(

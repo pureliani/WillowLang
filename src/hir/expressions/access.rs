@@ -4,7 +4,12 @@ use crate::{
 };
 
 impl FunctionBuilder {
-    pub fn build_access_expr(&mut self, ctx: &mut HIRContext, left: Box<Expr>, field: IdentifierNode) -> Value {
+    pub fn build_access_expr(
+        &mut self,
+        ctx: &mut HIRContext,
+        left: Box<Expr>,
+        field: IdentifierNode,
+    ) -> Value {
         let base_ptr_id = match self.build_lvalue_expr(ctx, *left) {
             Ok(id) => id,
             Err(e) => return Value::Use(self.report_error_and_get_poison(ctx, e)),

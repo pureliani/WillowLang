@@ -21,7 +21,10 @@ fn suffix_bp(token_kind: &TokenKind) -> Option<(u8, ())> {
 }
 
 impl<'a, 'b> Parser<'a, 'b> {
-    pub fn parse_type_annotation(&mut self, min_prec: u8) -> Result<TypeAnnotation, ParsingError<'a>> {
+    pub fn parse_type_annotation(
+        &mut self,
+        min_prec: u8,
+    ) -> Result<TypeAnnotation, ParsingError<'a>> {
         let token = self.current().ok_or(self.unexpected_end_of_input())?;
 
         let mut lhs = match token.kind {
@@ -165,8 +168,12 @@ impl<'a, 'b> Parser<'a, 'b> {
                     span,
                 }
             }
-            TokenKind::Punctuation(PunctuationKind::LParen) => self.parse_parenthesized_type_annotation()?,
-            TokenKind::Punctuation(PunctuationKind::LBrace) => self.parse_struct_type_annotation()?,
+            TokenKind::Punctuation(PunctuationKind::LParen) => {
+                self.parse_parenthesized_type_annotation()?
+            }
+            TokenKind::Punctuation(PunctuationKind::LBrace) => {
+                self.parse_struct_type_annotation()?
+            }
             TokenKind::Keyword(KeywordKind::Fn) => self.parse_fn_type_annotation()?,
             TokenKind::Identifier(_) => {
                 let identifier = self.consume_identifier()?;
@@ -199,7 +206,8 @@ impl<'a, 'b> Parser<'a, 'b> {
                         self.consume_punctuation(PunctuationKind::LBracket)?;
                         self.consume_punctuation(PunctuationKind::RBracket)?;
 
-                        let span = self.get_span(lhs.span.start.byte_offset, self.offset - 1)?;
+                        let span =
+                            self.get_span(lhs.span.start.byte_offset, self.offset - 1)?;
                         TypeAnnotation {
                             kind: TypeAnnotationKind::List(Box::new(lhs.clone())),
                             span,

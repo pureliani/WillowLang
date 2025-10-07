@@ -4,10 +4,19 @@ use crate::{
 };
 
 impl FunctionBuilder {
-    pub fn build_fn_call_expr(&mut self, ctx: &mut HIRContext, left: Box<Expr>, args: Vec<Expr>, span: Span) -> Value {
+    pub fn build_fn_call_expr(
+        &mut self,
+        ctx: &mut HIRContext,
+        left: Box<Expr>,
+        args: Vec<Expr>,
+        span: Span,
+    ) -> Value {
         let function_value = self.build_expr(ctx, *left);
 
-        let arg_values: Vec<Value> = args.into_iter().map(|arg_expr| self.build_expr(ctx, arg_expr)).collect();
+        let arg_values: Vec<Value> = args
+            .into_iter()
+            .map(|arg_expr| self.build_expr(ctx, arg_expr))
+            .collect();
 
         match self.emit_function_call(ctx, function_value, arg_values, span) {
             Ok(Some(return_value_id)) => Value::Use(return_value_id),

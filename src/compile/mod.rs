@@ -11,7 +11,9 @@ use string_interner::StringInterner;
 pub mod string_interner;
 
 use crate::{
-    hir::{errors::SemanticErrorKind, utils::type_to_string::type_to_string, ModuleBuilder},
+    hir::{
+        errors::SemanticErrorKind, utils::type_to_string::type_to_string, ModuleBuilder,
+    },
     parse::{Parser, ParsingErrorKind},
     tokenize::{token_kind_to_string, TokenizationErrorKind, Tokenizer},
 };
@@ -27,7 +29,8 @@ pub fn compile_file<'a, 'b>(
 
     let (tokens, tokenization_errors) = Tokenizer::tokenize(source_code);
     let (ast, parsing_errors) = Parser::parse(tokens, string_interner);
-    let (analyzed_tree, semantic_errors) = ModuleBuilder::build(ast, file_path, string_interner);
+    let (analyzed_tree, semantic_errors) =
+        ModuleBuilder::build(ast, file_path, string_interner);
 
     let mut errors: Vec<Diagnostic<usize>> = vec![];
 
@@ -48,13 +51,17 @@ pub fn compile_file<'a, 'b>(
                 .with_label(label.with_message("The escape sequence here is invalid")),
             TokenizationErrorKind::InvalidFloatingNumber => err
                 .with_message("Invalid floating-point number")
-                .with_label(label.with_message("This is not a valid floating-point number")),
+                .with_label(
+                    label.with_message("This is not a valid floating-point number"),
+                ),
             TokenizationErrorKind::InvalidIntegerNumber => err
                 .with_message("Invalid integer number")
                 .with_label(label.with_message("This is not a valid integer number")),
-            TokenizationErrorKind::UnterminatedDoc => err
-                .with_message("Unterminated documentation")
-                .with_label(label.with_message("This documentation block is not terminated")),
+            TokenizationErrorKind::UnterminatedDoc => {
+                err.with_message("Unterminated documentation").with_label(
+                    label.with_message("This documentation block is not terminated"),
+                )
+            }
         };
 
         errors.push(diagnostic);
@@ -305,6 +312,9 @@ pub fn compile_file<'a, 'b>(
             let _ = term::emit(&mut writer.lock(), &config, files, &diagnostic);
         }
     } else {
-        println!("Compilation successful for {} (no errors found).", file_path);
+        println!(
+            "Compilation successful for {} (no errors found).",
+            file_path
+        );
     }
 }

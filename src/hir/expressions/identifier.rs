@@ -10,7 +10,11 @@ use crate::{
 };
 
 impl FunctionBuilder {
-    pub fn build_identifier_expr(&mut self, ctx: &mut HIRContext, identifier: IdentifierNode) -> Value {
+    pub fn build_identifier_expr(
+        &mut self,
+        ctx: &mut HIRContext,
+        identifier: IdentifierNode,
+    ) -> Value {
         match ctx.module_builder.scope_lookup(identifier.name) {
             Some(symbol_entry) => match symbol_entry {
                 SymbolEntry::VarDecl(checked_var_decl) => {
@@ -18,14 +22,18 @@ impl FunctionBuilder {
                     let loaded_value_id = self.emit_load(ctx, var_ptr_id);
                     Value::Use(loaded_value_id)
                 }
-                SymbolEntry::TypeAliasDecl(CheckedTypeAliasDecl { identifier, .. })
-                | SymbolEntry::EnumDecl(CheckedEnumDecl { identifier, .. }) => Value::Use(self.report_error_and_get_poison(
-                    ctx,
-                    SemanticError {
-                        kind: SemanticErrorKind::CannotUseTypeDeclarationAsValue,
-                        span: identifier.span,
-                    },
-                )),
+                SymbolEntry::TypeAliasDecl(CheckedTypeAliasDecl {
+                    identifier, ..
+                })
+                | SymbolEntry::EnumDecl(CheckedEnumDecl { identifier, .. }) => {
+                    Value::Use(self.report_error_and_get_poison(
+                        ctx,
+                        SemanticError {
+                            kind: SemanticErrorKind::CannotUseTypeDeclarationAsValue,
+                            span: identifier.span,
+                        },
+                    ))
+                }
             },
             None => Value::Use(self.report_error_and_get_poison(
                 ctx,

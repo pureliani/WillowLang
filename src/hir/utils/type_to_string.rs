@@ -16,7 +16,11 @@ pub fn type_to_string(ty: &TypeKind, string_interner: &StringInterner) -> String
     type_to_string_recursive(ty, string_interner, &mut visited_set)
 }
 
-pub fn type_to_string_recursive(ty: &TypeKind, string_interner: &StringInterner, visited_set: &mut HashSet<TypeKind>) -> String {
+pub fn type_to_string_recursive(
+    ty: &TypeKind,
+    string_interner: &StringInterner,
+    visited_set: &mut HashSet<TypeKind>,
+) -> String {
     // TODO: add recursion detection and handling
 
     match ty {
@@ -43,7 +47,11 @@ pub fn type_to_string_recursive(ty: &TypeKind, string_interner: &StringInterner,
                     format!(
                         "{}: {}",
                         identifier_to_string(identifier.name, string_interner),
-                        type_to_string_recursive(&constraint.kind, string_interner, visited_set)
+                        type_to_string_recursive(
+                            &constraint.kind,
+                            string_interner,
+                            visited_set
+                        )
                     )
                 })
                 .collect::<Vec<String>>()
@@ -62,13 +70,18 @@ pub fn type_to_string_recursive(ty: &TypeKind, string_interner: &StringInterner,
                     format!(
                         "{}: {}",
                         identifier_to_string(p.identifier.name, string_interner),
-                        type_to_string_recursive(&p.constraint.kind, string_interner, visited_set)
+                        type_to_string_recursive(
+                            &p.constraint.kind,
+                            string_interner,
+                            visited_set
+                        )
                     )
                 })
                 .collect::<Vec<String>>()
                 .join(", ");
 
-            let return_type_str = type_to_string_recursive(&return_type.kind, string_interner, visited_set);
+            let return_type_str =
+                type_to_string_recursive(&return_type.kind, string_interner, visited_set);
             let fn_str = format!("fn ({}): {}", params_str, return_type_str);
 
             fn_str
@@ -76,11 +89,15 @@ pub fn type_to_string_recursive(ty: &TypeKind, string_interner: &StringInterner,
         TypeKind::TypeAliasDecl(decl) => {
             let name = identifier_to_string(decl.identifier.name, string_interner);
 
-            let value = type_to_string_recursive(&decl.value.kind, string_interner, visited_set);
+            let value =
+                type_to_string_recursive(&decl.value.kind, string_interner, visited_set);
 
             format!("type {} = {};", name, value)
         }
-        TypeKind::Pointer(ty) => format!("ptr<{}>", type_to_string_recursive(&ty.kind, string_interner, visited_set)),
+        TypeKind::Pointer(ty) => format!(
+            "ptr<{}>",
+            type_to_string_recursive(&ty.kind, string_interner, visited_set)
+        ),
         TypeKind::Enum(decl) => {
             let variants = decl
                 .variants
@@ -90,7 +107,11 @@ pub fn type_to_string_recursive(ty: &TypeKind, string_interner: &StringInterner,
                         format!(
                             "{}({})",
                             identifier_to_string(v.name.name, string_interner),
-                            type_to_string_recursive(&pt.kind, string_interner, visited_set)
+                            type_to_string_recursive(
+                                &pt.kind,
+                                string_interner,
+                                visited_set
+                            )
                         )
                     }
                     None => {
@@ -107,7 +128,8 @@ pub fn type_to_string_recursive(ty: &TypeKind, string_interner: &StringInterner,
             )
         }
         TypeKind::List(item_type) => {
-            let result = type_to_string_recursive(&item_type.kind, string_interner, visited_set);
+            let result =
+                type_to_string_recursive(&item_type.kind, string_interner, visited_set);
 
             format!("{}[]", result)
         }

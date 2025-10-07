@@ -20,16 +20,23 @@ impl<'a, 'b> Parser<'a, 'b> {
                 let patterns = p.comma_separated(
                     |pattern_parser| {
                         let variant_name = pattern_parser.consume_identifier()?;
-                        if pattern_parser.match_token(0, TokenKind::Punctuation(PunctuationKind::LParen)) {
+                        if pattern_parser.match_token(
+                            0,
+                            TokenKind::Punctuation(PunctuationKind::LParen),
+                        ) {
                             pattern_parser.advance();
                             let binding_name = pattern_parser.consume_identifier()?;
-                            pattern_parser.consume_punctuation(PunctuationKind::RParen)?;
+                            pattern_parser
+                                .consume_punctuation(PunctuationKind::RParen)?;
                             Ok(MatchPattern::VariantWithValue(variant_name, binding_name))
                         } else {
                             Ok(MatchPattern::Variant(variant_name))
                         }
                     },
-                    |pattern_parser| pattern_parser.match_token(0, TokenKind::Punctuation(PunctuationKind::Eq)),
+                    |pattern_parser| {
+                        pattern_parser
+                            .match_token(0, TokenKind::Punctuation(PunctuationKind::Eq))
+                    },
                 )?;
 
                 p.consume_punctuation(PunctuationKind::Eq)?;

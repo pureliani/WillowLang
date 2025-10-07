@@ -35,7 +35,10 @@ impl<'a, 'b> Parser<'a, 'b> {
         };
 
         Ok(Expr {
-            kind: ExprKind::If { branches, else_branch },
+            kind: ExprKind::If {
+                branches,
+                else_branch,
+            },
             span: self.get_span(start_offset, self.offset - 1)?,
         })
     }

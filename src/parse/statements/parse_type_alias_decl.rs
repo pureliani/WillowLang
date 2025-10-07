@@ -8,7 +8,10 @@ use crate::{
 };
 
 impl<'a, 'b> Parser<'a, 'b> {
-    pub fn parse_type_alias_decl(&mut self, documentation: Option<DocAnnotation>) -> Result<Stmt, ParsingError<'a>> {
+    pub fn parse_type_alias_decl(
+        &mut self,
+        documentation: Option<DocAnnotation>,
+    ) -> Result<Stmt, ParsingError<'a>> {
         let start_offset = self.offset;
 
         self.consume_keyword(KeywordKind::Type)?;

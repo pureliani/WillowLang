@@ -16,7 +16,11 @@ use crate::{
 };
 
 impl FunctionBuilder {
-    pub fn check_params(&mut self, ctx: &mut HIRContext, params: &Vec<Param>) -> Vec<CheckedParam> {
+    pub fn check_params(
+        &mut self,
+        ctx: &mut HIRContext,
+        params: &Vec<Param>,
+    ) -> Vec<CheckedParam> {
         params
             .into_iter()
             .map(|p| CheckedParam {
@@ -50,7 +54,11 @@ impl FunctionBuilder {
             })
     }
 
-    pub fn check_type_annotation(&mut self, ctx: &mut HIRContext, annotation: &TypeAnnotation) -> Type {
+    pub fn check_type_annotation(
+        &mut self,
+        ctx: &mut HIRContext,
+        annotation: &TypeAnnotation,
+    ) -> Type {
         let kind = match &annotation.kind {
             TypeAnnotationKind::Void => TypeKind::Void,
             TypeAnnotationKind::Bool => TypeKind::Bool,
@@ -67,14 +75,19 @@ impl FunctionBuilder {
             TypeAnnotationKind::F32 => TypeKind::F32,
             TypeAnnotationKind::F64 => TypeKind::F64,
             TypeAnnotationKind::String => TypeKind::String,
-            TypeAnnotationKind::Identifier(id) => match self.check_type_identifier_annotation(ctx, *id, annotation.span) {
-                Ok(t) => t,
-                Err(error) => {
-                    ctx.module_builder.errors.push(error);
-                    TypeKind::Unknown
+            TypeAnnotationKind::Identifier(id) => {
+                match self.check_type_identifier_annotation(ctx, *id, annotation.span) {
+                    Ok(t) => t,
+                    Err(error) => {
+                        ctx.module_builder.errors.push(error);
+                        TypeKind::Unknown
+                    }
                 }
-            },
-            TypeAnnotationKind::FnType { params, return_type } => {
+            }
+            TypeAnnotationKind::FnType {
+                params,
+                return_type,
+            } => {
                 ctx.module_builder.enter_scope(ScopeKind::FnType);
                 let checked_params = self.check_params(ctx, &params);
                 let checked_return_type = self.check_type_annotation(ctx, return_type);
