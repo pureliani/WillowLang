@@ -10,7 +10,8 @@ use crate::{
 pub enum SemanticErrorKind {
     DuplicateIdentifier(IdentifierNode),
     CannotIndex(Type),
-    VarDeclWithoutInitializer,
+    VarDeclWithoutConstraintOrInitializer,
+    CannotDeclareGlobalVariable,
     DuplicateStructFieldInitializer(IdentifierNode),
     UnknownStructFieldInitializer(IdentifierNode),
     MissingStructFieldInitializers(HashSet<InternerId>),
@@ -91,7 +92,7 @@ impl SemanticErrorKind {
             SemanticErrorKind::CannotAccess { .. } => 14,
             SemanticErrorKind::CannotCall { .. } => 15,
             SemanticErrorKind::CannotUseVariableDeclarationAsType { .. } => 16,
-            SemanticErrorKind::VarDeclWithoutInitializer { .. } => 17,
+            SemanticErrorKind::VarDeclWithoutConstraintOrInitializer { .. } => 17,
             SemanticErrorKind::AccessToUndefinedField { .. } => 18,
             SemanticErrorKind::FnArgumentCountMismatch { .. } => 19,
             SemanticErrorKind::TypeAliasMustBeDeclaredAtTopLevel { .. } => 20,

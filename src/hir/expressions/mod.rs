@@ -98,7 +98,7 @@ impl FunctionBuilder {
                 body,
                 return_type,
                 name,
-            } => todo!(),
+            } => self.build_fn_expr(ctx, params, body, return_type, name),
             ExprKind::If {
                 branches,
                 else_branch,

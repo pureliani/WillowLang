@@ -32,7 +32,9 @@ impl FunctionBuilder {
                 StmtKind::TypeAliasDecl(type_alias_decl) => {
                     self.build_type_alias_decl(ctx, type_alias_decl, statement.span);
                 }
-                StmtKind::VarDecl(var_decl) => todo!(),
+                StmtKind::VarDecl(var_decl) => {
+                    self.build_var_decl(ctx, var_decl, statement.span)
+                }
                 StmtKind::Return { value } => todo!(),
                 StmtKind::Assignment { target, value } => {
                     self.build_assignment_stmt(ctx, target, value)

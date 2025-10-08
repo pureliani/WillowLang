@@ -92,7 +92,7 @@ impl Hash for CheckedTypeAliasDecl {
 
 #[derive(Clone, Debug)]
 pub struct CheckedVarDecl {
-    pub ptr_value_id: ValueId,
+    pub stack_ptr: ValueId,
     pub identifier: IdentifierNode,
     pub documentation: Option<DocAnnotation>,
     pub constraint: Type,

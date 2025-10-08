@@ -19,7 +19,7 @@ impl FunctionBuilder {
                 if let Some(SymbolEntry::VarDecl(decl)) =
                     ctx.module_builder.scope_lookup(identifier.name)
                 {
-                    return Ok(decl.ptr_value_id); // ValueId which holds Pointer<T>
+                    return Ok(decl.stack_ptr); // ValueId which holds Pointer<T>
                 } else {
                     return Err(SemanticError {
                         kind: SemanticErrorKind::UndeclaredIdentifier(identifier),
