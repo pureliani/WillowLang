@@ -110,7 +110,8 @@ impl SemanticErrorKind {
             SemanticErrorKind::CannotStaticAccess { .. } => 33,
             SemanticErrorKind::ExpectedAType => 34,
             SemanticErrorKind::AccessToUndefinedStaticField { .. } => 35,
-            SemanticErrorKind::CannotUseTypeDeclarationAsValue => 38,
+            SemanticErrorKind::CannotUseTypeDeclarationAsValue => 36,
+            SemanticErrorKind::CannotDeclareGlobalVariable => 37,
         }
     }
 }
