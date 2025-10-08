@@ -40,7 +40,9 @@ impl FunctionBuilder {
                     self.build_assignment_stmt(ctx, target, value)
                 }
                 StmtKind::From { path, identifiers } => todo!(),
-                StmtKind::While { condition, body } => todo!(),
+                StmtKind::While { condition, body } => {
+                    self.build_while_stmt(ctx, condition, body);
+                }
                 StmtKind::Break => todo!(),
                 StmtKind::Continue => todo!(),
                 StmtKind::EnumDecl(enum_decl) => todo!(),

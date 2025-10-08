@@ -98,7 +98,6 @@ pub enum Instruction {
     PtrAdd {
         destination: ValueId,
         base_ptr: ValueId,
-        // The index is now this more explicit enum.
         offset: PtrOffset,
     },
     UnaryOp {
@@ -193,7 +192,7 @@ pub struct CheckedModule {
     pub id: ModuleId,
     pub name: PathBuf,
     pub functions: HashMap<FunctionId, ControlFlowGraph>,
-    pub constant_data: HashMap<ConstantId, Vec<u8>>, // map: id -> bytes
+    pub constant_data: HashMap<ConstantId, Vec<u8>>, // map id -> bytes
     pub declarations: HashMap<IdentifierNode, CheckedDeclaration>,
     pub exports: HashSet<IdentifierNode>,
 }

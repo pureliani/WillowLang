@@ -10,9 +10,9 @@ use crate::{
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum IfContext {
-    /// The `if` is used to produce a value.
+    /// The `if` is used to produce a value
     Expression,
-    /// The `if` is used for control flow; its value is discarded.
+    /// The `if` is used for control flow, its value is discarded
     Statement,
 }
 
@@ -35,23 +35,21 @@ impl FunctionBuilder {
             ));
         }
 
-        let entry_block_id = self.current_block_id;
         let merge_block_id = self.new_basic_block();
+        let mut last_condition_block_id = self.current_block_id;
 
-        let mut phi_sources: Vec<(BasicBlockId, Value, Type)> = Vec::new();
-        let mut current_block_id = entry_block_id;
+        let mut phi_sources: Vec<(BasicBlockId, Value)> = Vec::new();
 
         for (condition, body) in branches {
-            let expected_condition_type = Type {
-                kind: TypeKind::Bool,
-                span: condition.span,
-            };
-
-            self.use_basic_block(current_block_id);
+            self.use_basic_block(last_condition_block_id);
 
             let condition_value = self.build_expr(ctx, *condition);
             let condition_value_type =
                 ctx.program_builder.get_value_type(&condition_value);
+            let expected_condition_type = Type {
+                kind: TypeKind::Bool,
+                span: condition_value_type.span,
+            };
 
             if !self.check_is_assignable(&condition_value_type, &expected_condition_type)
             {
@@ -78,23 +76,23 @@ impl FunctionBuilder {
 
             self.use_basic_block(body_block_id);
             let body_value = self.build_codeblock_expr(ctx, body);
-            let body_type = ctx.program_builder.get_value_type(&body_value);
             let body_exit_block_id = self.current_block_id;
-            phi_sources.push((body_exit_block_id, body_value, body_type));
+            phi_sources.push((body_exit_block_id, body_value));
             self.set_basic_block_terminator(Terminator::Jump {
                 target: merge_block_id,
             });
 
-            current_block_id = next_condition_block_id;
+            last_condition_block_id = next_condition_block_id;
         }
 
-        self.use_basic_block(current_block_id);
+        self.use_basic_block(last_condition_block_id);
+
         if let Some(else_body) = else_branch {
             let else_value = self.build_codeblock_expr(ctx, else_body);
-            let else_type = ctx.program_builder.get_value_type(&else_value);
             let else_exit_block_id = self.current_block_id;
-            phi_sources.push((else_exit_block_id, else_value, else_type));
+            phi_sources.push((else_exit_block_id, else_value));
         }
+
         self.set_basic_block_terminator(Terminator::Jump {
             target: merge_block_id,
         });
@@ -102,16 +100,10 @@ impl FunctionBuilder {
         self.use_basic_block(merge_block_id);
 
         if context == IfContext::Expression {
-            let sources_for_phi: Vec<(BasicBlockId, Value)> = phi_sources
-                .into_iter()
-                .map(|(id, val, _)| (id, val))
-                .collect();
-
-            let phi_destination = match self.emit_phi(ctx, sources_for_phi) {
+            let phi_destination = match self.emit_phi(ctx, phi_sources) {
                 Ok(id) => id,
                 Err(e) => return Value::Use(self.report_error_and_get_poison(ctx, e)),
             };
-
             Value::Use(phi_destination)
         } else {
             Value::VoidLiteral

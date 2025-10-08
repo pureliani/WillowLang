@@ -37,9 +37,7 @@ pub struct CapturedVar {
 }
 
 pub struct HIRContext<'a, 'b> {
-    // A mutable reference to the global program builder for services like ID generation.
     pub program_builder: &'b mut ProgramBuilder<'a>,
-    // A mutable reference to the module builder for module-specific state.
     pub module_builder: &'b mut ModuleBuilder,
 }
 
