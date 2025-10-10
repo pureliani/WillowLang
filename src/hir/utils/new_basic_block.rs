@@ -1,5 +1,5 @@
 use crate::hir::{
-    cfg::{BasicBlock, BasicBlockId, Terminator},
+    cfg::{BasicBlock, BasicBlockId},
     FunctionBuilder,
 };
 
@@ -12,7 +12,7 @@ impl FunctionBuilder {
             BasicBlock {
                 id: block_id,
                 instructions: vec![],
-                terminator: Terminator::Unreachable,
+                terminator: None,
             },
         );
 

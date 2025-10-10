@@ -64,14 +64,6 @@ pub enum Value {
 }
 
 #[derive(Clone, Debug)]
-pub enum PtrOffset {
-    // A dynamic offset, calculated at runtime.
-    Dynamic(Value),
-    // A constant offset, known at compile time.
-    Constant(usize),
-}
-
-#[derive(Clone, Debug)]
 pub enum Instruction {
     StackAlloc {
         destination: ValueId,
@@ -94,11 +86,6 @@ pub enum Instruction {
         destination: ValueId,
         base_ptr: ValueId,
         field_index: usize,
-    },
-    PtrAdd {
-        destination: ValueId,
-        base_ptr: ValueId,
-        offset: PtrOffset,
     },
     UnaryOp {
         op_kind: UnaryOperationKind,
@@ -171,7 +158,7 @@ pub enum Terminator {
 pub struct BasicBlock {
     pub id: BasicBlockId,
     pub instructions: Vec<Instruction>,
-    pub terminator: Terminator,
+    pub terminator: Option<Terminator>,
 }
 
 #[derive(Clone, Debug)]

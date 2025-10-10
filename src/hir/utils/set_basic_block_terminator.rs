@@ -5,7 +5,7 @@ impl FunctionBuilder {
         let current_basic_block = self.cfg.blocks.get_mut(&self.current_block_id);
 
         if let Some(bb) = current_basic_block {
-            bb.terminator = terminator;
+            bb.terminator = Some(terminator);
         } else {
             panic!(
                 "INTERNAL COMPILER ERROR: Could not set basic block terminator: basic block with id: {} doesn't exist.",

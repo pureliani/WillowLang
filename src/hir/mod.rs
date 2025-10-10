@@ -219,7 +219,7 @@ impl FunctionBuilder {
                 BasicBlock {
                     id: entry_block_id,
                     instructions: vec![],
-                    terminator: Terminator::Unreachable,
+                    terminator: None,
                 },
             )]),
             entry_block: entry_block_id,
