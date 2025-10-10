@@ -11,12 +11,25 @@ use crate::{
         expr::ExprKind,
         stmt::{Stmt, StmtKind},
     },
-    hir::{expressions::r#if::IfContext, FunctionBuilder, HIRContext},
+    hir::{
+        cfg::Terminator,
+        errors::{SemanticError, SemanticErrorKind},
+        expressions::r#if::IfContext,
+        FunctionBuilder, HIRContext,
+    },
 };
 
 impl FunctionBuilder {
     pub fn build_statements(&mut self, ctx: &mut HIRContext, statements: Vec<Stmt>) {
         for statement in statements {
+            if self.get_current_basic_block().terminator.is_some() {
+                ctx.module_builder.errors.push(SemanticError {
+                    kind: SemanticErrorKind::UnreachableCode,
+                    span: statement.span,
+                });
+                break;
+            }
+
             match statement.kind {
                 StmtKind::Expression(expr) => {
                     if let ExprKind::If {
@@ -43,8 +56,34 @@ impl FunctionBuilder {
                 StmtKind::While { condition, body } => {
                     self.build_while_stmt(ctx, condition, body);
                 }
-                StmtKind::Break => todo!(),
-                StmtKind::Continue => todo!(),
+                StmtKind::Break => {
+                    if let Some((_, break_target)) =
+                        ctx.module_builder.within_loop_scope()
+                    {
+                        self.set_basic_block_terminator(Terminator::Jump {
+                            target: break_target,
+                        });
+                    } else {
+                        ctx.module_builder.errors.push(SemanticError {
+                            kind: SemanticErrorKind::BreakKeywordOutsideLoop,
+                            span: statement.span,
+                        });
+                    }
+                }
+                StmtKind::Continue => {
+                    if let Some((continue_target, _)) =
+                        ctx.module_builder.within_loop_scope()
+                    {
+                        self.set_basic_block_terminator(Terminator::Jump {
+                            target: continue_target,
+                        });
+                    } else {
+                        ctx.module_builder.errors.push(SemanticError {
+                            kind: SemanticErrorKind::ContinueKeywordOutsideLoop,
+                            span: statement.span,
+                        });
+                    }
+                }
                 StmtKind::EnumDecl(enum_decl) => todo!(),
             }
         }

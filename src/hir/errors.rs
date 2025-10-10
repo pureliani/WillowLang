@@ -8,6 +8,7 @@ use crate::{
 
 #[derive(Debug, Clone)]
 pub enum SemanticErrorKind {
+    UnreachableCode,
     DuplicateIdentifier(IdentifierNode),
     CannotIndex(Type),
     VarDeclWithoutConstraintOrInitializer,
@@ -112,6 +113,7 @@ impl SemanticErrorKind {
             SemanticErrorKind::AccessToUndefinedStaticField { .. } => 35,
             SemanticErrorKind::CannotUseTypeDeclarationAsValue => 36,
             SemanticErrorKind::CannotDeclareGlobalVariable => 37,
+            SemanticErrorKind::UnreachableCode => 38,
         }
     }
 }
