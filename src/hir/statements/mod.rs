@@ -52,7 +52,9 @@ impl FunctionBuilder {
                 StmtKind::Assignment { target, value } => {
                     self.build_assignment_stmt(ctx, target, value)
                 }
-                StmtKind::From { path, identifiers } => todo!(),
+                StmtKind::From { path, identifiers } => {
+                    self.build_from_stmt(ctx, path, identifiers, statement.span)
+                }
                 StmtKind::While { condition, body } => {
                     self.build_while_stmt(ctx, condition, body);
                 }

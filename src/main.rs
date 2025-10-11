@@ -1,7 +1,10 @@
 use std::fs;
 
 use codespan_reporting::files::SimpleFiles;
-use willow::compile::{compile_file, string_interner::StringInterner};
+use willow::{
+    compile::{compile_file, string_interner::StringInterner},
+    hir::ProgramBuilder,
+};
 
 fn main() {
     let file_path = match std::env::args().nth(1) {
@@ -19,8 +22,8 @@ fn main() {
             return;
         }
     };
-
     let mut string_interner = StringInterner::new();
+    let program_builder = ProgramBuilder::new(string_interner);
     let mut files = SimpleFiles::new();
 
     compile_file(&file_path, &source_code, &mut string_interner, &mut files);

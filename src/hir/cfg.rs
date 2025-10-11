@@ -14,9 +14,6 @@ use crate::{
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub struct ModuleId(pub usize);
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct FunctionId(pub usize);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -73,6 +70,9 @@ pub enum Instruction {
         destination: ValueId,
         allocation_site_id: HeapAllocationId,
         count: Value,
+    },
+    Free {
+        pointer: ValueId,
     },
     Store {
         destination_ptr: ValueId,
@@ -176,8 +176,7 @@ pub enum CheckedDeclaration {
 
 #[derive(Clone, Debug)]
 pub struct CheckedModule {
-    pub id: ModuleId,
-    pub name: PathBuf,
+    pub path: PathBuf,
     pub functions: HashMap<FunctionId, ControlFlowGraph>,
     pub constant_data: HashMap<ConstantId, Vec<u8>>, // map id -> bytes
     pub declarations: HashMap<IdentifierNode, CheckedDeclaration>,
@@ -185,10 +184,9 @@ pub struct CheckedModule {
 }
 
 impl CheckedModule {
-    pub fn new(id: ModuleId, name: PathBuf) -> Self {
+    pub fn new(path: PathBuf) -> Self {
         Self {
-            id,
-            name,
+            path,
             declarations: HashMap::new(),
             constant_data: HashMap::new(),
             exports: HashSet::new(),

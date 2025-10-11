@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use codespan_reporting::{
     diagnostic::{Diagnostic, Label},
     files::SimpleFiles,
@@ -6,13 +8,12 @@ use codespan_reporting::{
         termcolor::{ColorChoice, StandardStream},
     },
 };
-use string_interner::StringInterner;
 
 pub mod string_interner;
 
 use crate::{
     hir::{
-        errors::SemanticErrorKind, utils::type_to_string::type_to_string, ModuleBuilder,
+        errors::SemanticErrorKind, utils::type_to_string::type_to_string, ProgramBuilder,
     },
     parse::{Parser, ParsingErrorKind},
     tokenize::{token_kind_to_string, TokenizationErrorKind, Tokenizer},
@@ -21,16 +22,16 @@ use crate::{
 pub fn compile_file<'a, 'b>(
     file_path: &'a str,
     source_code: &'a str,
-    string_interner: &'b mut StringInterner<'a>,
+    program_builder: &'b mut ProgramBuilder<'b>,
     files: &mut SimpleFiles<usize, String>,
 ) {
-    let interned_fp = string_interner.intern(file_path).0;
+    let interned_fp = program_builder.string_interner.intern(file_path).0;
     files.add(interned_fp, source_code.to_string());
 
     let (tokens, tokenization_errors) = Tokenizer::tokenize(source_code);
-    let (ast, parsing_errors) = Parser::parse(tokens, string_interner);
-    let (analyzed_tree, semantic_errors) =
-        ModuleBuilder::build(ast, file_path, string_interner);
+    let (ast, parsing_errors) = Parser::parse(tokens, program_builder.string_interner);
+    let path_buf = PathBuf::from(file_path);
+    program_builder.build_module(path_buf, ast);
 
     let mut errors: Vec<Diagnostic<usize>> = vec![];
 

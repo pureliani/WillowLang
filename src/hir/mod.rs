@@ -10,7 +10,7 @@ use crate::{
     hir::{
         cfg::{
             BasicBlock, BasicBlockId, CheckedModule, ConstantId, ControlFlowGraph,
-            FunctionId, HeapAllocationId, ModuleId, Terminator, Value, ValueId,
+            FunctionId, HeapAllocationId, Value, ValueId,
         },
         errors::SemanticError,
         types::{
@@ -42,7 +42,7 @@ pub struct HIRContext<'a, 'b> {
 }
 
 pub struct ProgramBuilder<'a> {
-    pub modules: HashMap<ModuleId, ModuleBuilder>,
+    pub modules: HashMap<PathBuf, ModuleBuilder>,
     pub value_types: HashMap<ValueId, Type>,
     pub string_interner: &'a mut StringInterner<'a>,
     /// Global errors
@@ -89,18 +89,13 @@ impl<'a> ProgramBuilder<'a> {
         }
     }
 
-    pub fn build_module(
-        &mut self,
-        module_id: ModuleId,
-        path: PathBuf,
-        statements: Vec<Stmt>,
-    ) {
-        let mut module_builder = ModuleBuilder::new(module_id, path);
+    pub fn build_module(&mut self, path: PathBuf, statements: Vec<Stmt>) {
+        let mut module_builder = ModuleBuilder::new(path.clone());
         module_builder.build_top_level_statements(self, statements);
-        self.modules.insert(module_id, module_builder);
+        self.modules.insert(path, module_builder);
     }
 
-    pub fn finish(self) -> (HashMap<ModuleId, ModuleBuilder>, Vec<SemanticError>) {
+    pub fn finish(self) -> (HashMap<PathBuf, ModuleBuilder>, Vec<SemanticError>) {
         let mut global_errors = vec![];
 
         // TODO: Check all imports were resolved.
@@ -177,9 +172,9 @@ impl<'a> ProgramBuilder<'a> {
 }
 
 impl ModuleBuilder {
-    pub fn new(id: ModuleId, path: PathBuf) -> Self {
+    pub fn new(path: PathBuf) -> Self {
         Self {
-            module: CheckedModule::new(id, path),
+            module: CheckedModule::new(path),
             errors: vec![],
             functions: vec![],
             scopes: vec![Scope::new(ScopeKind::File)],

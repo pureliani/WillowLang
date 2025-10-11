@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, path::PathBuf};
 
 use crate::{
     ast::{IdentifierNode, Span},
@@ -11,6 +11,8 @@ pub enum SemanticErrorKind {
     UnreachableCode,
     DuplicateIdentifier(IdentifierNode),
     CannotIndex(Type),
+    FromStatementMustBeDeclaredAtFileLevel,
+    ModuleNotFound(PathBuf),
     VarDeclWithoutConstraintOrInitializer,
     CannotDeclareGlobalVariable,
     DuplicateStructFieldInitializer(IdentifierNode),
@@ -114,6 +116,8 @@ impl SemanticErrorKind {
             SemanticErrorKind::CannotUseTypeDeclarationAsValue => 36,
             SemanticErrorKind::CannotDeclareGlobalVariable => 37,
             SemanticErrorKind::UnreachableCode => 38,
+            SemanticErrorKind::FromStatementMustBeDeclaredAtFileLevel => 39,
+            SemanticErrorKind::ModuleNotFound { .. } => 40,
         }
     }
 }
