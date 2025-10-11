@@ -27,18 +27,9 @@ impl FunctionBuilder {
         target_path.pop();
         target_path.push(relative_path_str);
 
-        let canonical_path = match target_path.canonicalize() {
-            Ok(p) => p,
-            Err(_) => {
-                ctx.module_builder.errors.push(SemanticError {
-                    kind: SemanticErrorKind::ModuleNotFound(target_path),
-                    span: path_node.span,
-                });
-                return;
-            }
-        };
+        let canonical_path = target_path.canonicalize().unwrap();
 
-        let module = ctx.program_builder.modules.get(&target_module_path);
+        let module = ctx.program_builder.modules.get(&canonical_path);
 
         match module {
             Some(m) => {
@@ -46,7 +37,7 @@ impl FunctionBuilder {
             }
             None => {
                 ctx.module_builder.errors.push(SemanticError {
-                    kind: SemanticErrorKind::ModuleNotFound(target_module_path.clone()),
+                    kind: SemanticErrorKind::ModuleNotFound(target_path),
                     span: path.span,
                 });
                 return;
