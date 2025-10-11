@@ -11,7 +11,7 @@ pub enum SemanticErrorKind {
     UnreachableCode,
     DuplicateIdentifier(IdentifierNode),
     CannotIndex(Type),
-    FromStatementMustBeDeclaredAtFileLevel,
+    FromStatementMustBeDeclaredAtTopLevel,
     ModuleNotFound(PathBuf),
     VarDeclWithoutConstraintOrInitializer,
     CannotDeclareGlobalVariable,
@@ -116,7 +116,7 @@ impl SemanticErrorKind {
             SemanticErrorKind::CannotUseTypeDeclarationAsValue => 36,
             SemanticErrorKind::CannotDeclareGlobalVariable => 37,
             SemanticErrorKind::UnreachableCode => 38,
-            SemanticErrorKind::FromStatementMustBeDeclaredAtFileLevel => 39,
+            SemanticErrorKind::FromStatementMustBeDeclaredAtTopLevel => 39,
             SemanticErrorKind::ModuleNotFound { .. } => 40,
         }
     }

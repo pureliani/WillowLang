@@ -16,16 +16,27 @@ impl FunctionBuilder {
     ) {
         if !ctx.module_builder.is_file_scope() {
             ctx.module_builder.errors.push(SemanticError {
-                kind: SemanticErrorKind::FromStatementMustBeDeclaredAtFileLevel,
+                kind: SemanticErrorKind::FromStatementMustBeDeclaredAtTopLevel,
                 span,
             });
             return;
         }
 
-        let current_module_path_str =
-            ctx.program_builder.string_interner.resolve(path.value);
-        let target_module_path =
-            ctx.module_builder.module.path.join(current_module_path_str);
+        let relative_path_str = ctx.program_builder.string_interner.resolve(path.value);
+        let mut target_path = ctx.module_builder.module.path.clone();
+        target_path.pop();
+        target_path.push(relative_path_str);
+
+        let canonical_path = match target_path.canonicalize() {
+            Ok(p) => p,
+            Err(_) => {
+                ctx.module_builder.errors.push(SemanticError {
+                    kind: SemanticErrorKind::ModuleNotFound(target_path),
+                    span: path_node.span,
+                });
+                return;
+            }
+        };
 
         let module = ctx.program_builder.modules.get(&target_module_path);
 
