@@ -1,6 +1,6 @@
 use crate::hir::types::checked_type::TypeKind;
 
-use super::is_integer::is_integer;
+use super::numeric::is_integer;
 
 pub fn check_is_equatable(left: &TypeKind, right: &TypeKind) -> bool {
     match (left, right) {

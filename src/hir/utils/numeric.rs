@@ -12,3 +12,21 @@ pub fn get_numeric_type_rank(ty: &TypeKind) -> i32 {
         _ => 0,
     }
 }
+
+pub fn is_float(ty: &TypeKind) -> bool {
+    use TypeKind::*;
+    matches!(ty, F32 | F64)
+}
+
+pub fn is_integer(ty: &TypeKind) -> bool {
+    use TypeKind::*;
+    matches!(
+        ty,
+        I8 | I16 | I32 | I64 | U8 | U16 | U32 | U64 | ISize | USize
+    )
+}
+
+pub fn is_signed(ty: &TypeKind) -> bool {
+    use TypeKind::*;
+    matches!(ty, I8 | I16 | I32 | I64 | ISize | F32 | F64)
+}

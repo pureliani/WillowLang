@@ -3,10 +3,7 @@ use crate::{
     hir::{
         errors::{SemanticError, SemanticErrorKind},
         types::checked_type::Type,
-        utils::{
-            get_numeric_type_rank::get_numeric_type_rank, is_float::is_float,
-            is_integer::is_integer, is_signed::is_signed,
-        },
+        utils::numeric::{get_numeric_type_rank, is_float, is_integer, is_signed},
         FunctionBuilder,
     },
 };

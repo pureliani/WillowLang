@@ -5,16 +5,40 @@ use crate::{
     hir::{
         cfg::{
             BasicBlock, BasicBlockId, BinaryOperationKind, Instruction, IntrinsicField,
-            IntrinsicFunction, UnaryOperationKind, Value, ValueId,
+            IntrinsicFunction, Terminator, UnaryOperationKind, Value, ValueId,
         },
         errors::{SemanticError, SemanticErrorKind},
         types::checked_type::{Type, TypeKind},
-        utils::{check_is_equatable::check_is_equatable, is_signed::is_signed},
+        utils::{check_is_equatable::check_is_equatable, numeric::is_signed},
         FunctionBuilder, HIRContext, ModuleBuilder,
     },
 };
 
 impl FunctionBuilder {
+    pub fn use_basic_block(&mut self, id: BasicBlockId) {
+        if let Some(_) = self.cfg.blocks.get(&id) {
+            self.current_block_id = id;
+        } else {
+            panic!(
+                "INTERNAL COMPILER ERROR: Could not use basic block with id {} as it doesn't exist",
+                id.0
+            );
+        }
+    }
+
+    pub fn set_basic_block_terminator(&mut self, terminator: Terminator) {
+        let current_basic_block = self.cfg.blocks.get_mut(&self.current_block_id);
+
+        if let Some(bb) = current_basic_block {
+            bb.terminator = Some(terminator);
+        } else {
+            panic!(
+                "INTERNAL COMPILER ERROR: Could not set basic block terminator: basic block with id: {} doesn't exist.",
+                self.current_block_id.0
+            );
+        }
+    }
+
     /// Records a semantic error and returns a new "poison" Value of type Unknown.
     /// The caller is responsible for immediately returning the poison Value.
     pub fn report_error_and_get_poison(
@@ -295,6 +319,7 @@ impl FunctionBuilder {
         ctx: &mut HIRContext,
         function_kind: IntrinsicField,
     ) {
+        todo!()
     }
 
     pub fn emit_unary_op(
