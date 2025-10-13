@@ -4,8 +4,8 @@ use crate::{
     tokenize::{PunctuationKind, TokenKind},
 };
 
-impl<'a, 'b> Parser<'a, 'b> {
-    pub fn parse_list_literal_expr(&mut self) -> Result<Expr, ParsingError<'a>> {
+impl<'a> Parser<'a> {
+    pub fn parse_list_literal_expr(&mut self) -> Result<Expr, ParsingError> {
         let start_offset = self.offset;
         self.consume_punctuation(PunctuationKind::LBracket)?;
         let items: Vec<Expr> = self.comma_separated(

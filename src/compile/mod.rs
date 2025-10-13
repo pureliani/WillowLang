@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{collections::HashMap, fs, path::PathBuf};
 
 use codespan_reporting::{
     diagnostic::{Diagnostic, Label},
@@ -12,6 +12,8 @@ use codespan_reporting::{
 pub mod string_interner;
 
 use crate::{
+    ast::stmt::Stmt,
+    compile::string_interner::StringInterner,
     hir::{
         errors::SemanticErrorKind, utils::type_to_string::type_to_string, ProgramBuilder,
     },
@@ -317,5 +319,32 @@ pub fn compile_file<'a, 'b>(
             "Compilation successful for {} (no errors found).",
             file_path
         );
+    }
+}
+
+pub struct Compiler;
+
+impl Compiler {
+    pub fn compile(&mut self, main_path: PathBuf) {
+        let modules = self.parse_all_modules(main_path);
+    }
+
+    pub fn parse_all_modules(&mut self, main: PathBuf) -> HashMap<PathBuf, Vec<Stmt>> {
+        let mut interner = StringInterner::new();
+        let modules: HashMap<PathBuf, Vec<Stmt>> = HashMap::new();
+        let mut work_queue: Vec<PathBuf> = vec![main];
+
+        while let Some(source_path) = work_queue.pop() {
+            let source_code = fs::read_to_string(&source_path).expect(&format!(
+                "\n{}{}\n",
+                "Could not read file at path: ",
+                source_path.display().to_string()
+            ));
+            let (tokens, tokenization_errors) =
+                Tokenizer::tokenize(&source_code, &mut interner);
+            let (statements, parsing_errors) = Parser::parse(tokens, &mut interner);
+        }
+
+        todo!()
     }
 }

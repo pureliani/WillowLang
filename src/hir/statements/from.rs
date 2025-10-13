@@ -22,10 +22,9 @@ impl FunctionBuilder {
             return;
         }
 
-        let relative_path_str = ctx.program_builder.string_interner.resolve(path.value);
         let mut target_path = ctx.module_builder.module.path.clone();
         target_path.pop();
-        target_path.push(relative_path_str);
+        target_path.push(path.value);
 
         let canonical_path = target_path.canonicalize().unwrap();
 

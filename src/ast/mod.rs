@@ -25,9 +25,9 @@ impl Hash for IdentifierNode {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct StringNode {
-    pub value: InternerId,
+    pub value: String,
     pub len: usize,
     pub span: Span,
 }

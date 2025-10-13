@@ -79,7 +79,7 @@ impl FunctionBuilder {
                 match self.check_type_identifier_annotation(ctx, *id, annotation.span) {
                     Ok(t) => t,
                     Err(error) => {
-                        ctx.module_builder.errors.push(error);
+                        ctx.program_builder.errors.push(error);
                         TypeKind::Unknown
                     }
                 }

@@ -20,11 +20,11 @@ fn suffix_bp(token_kind: &TokenKind) -> Option<(u8, ())> {
     Some(priority)
 }
 
-impl<'a, 'b> Parser<'a, 'b> {
+impl<'a> Parser<'a> {
     pub fn parse_type_annotation(
         &mut self,
         min_prec: u8,
-    ) -> Result<TypeAnnotation, ParsingError<'a>> {
+    ) -> Result<TypeAnnotation, ParsingError> {
         let token = self.current().ok_or(self.unexpected_end_of_input())?;
 
         let mut lhs = match token.kind {
@@ -501,7 +501,8 @@ mod tests {
         ];
 
         for (input, expected) in test_cases {
-            let (tokens, _) = Tokenizer::tokenize(input);
+            let mut interner = StringInterner::new();
+            let (tokens, _) = Tokenizer::tokenize(input, &mut interner);
             let mut parser = Parser {
                 offset: 0,
                 checkpoint_offset: 0,

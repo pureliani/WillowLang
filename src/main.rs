@@ -15,13 +15,6 @@ fn main() {
         }
     };
 
-    let source_code = match fs::read_to_string(&file_path) {
-        Ok(source) => source,
-        Err(_) => {
-            eprintln!("\n{}{}\n", "Could not read file at path:\n", file_path);
-            return;
-        }
-    };
     let mut string_interner = StringInterner::new();
     let program_builder = ProgramBuilder::new(string_interner);
     let mut files = SimpleFiles::new();

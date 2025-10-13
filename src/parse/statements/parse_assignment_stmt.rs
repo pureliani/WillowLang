@@ -8,8 +8,8 @@ use crate::{
     tokenize::PunctuationKind,
 };
 
-impl<'a, 'b> Parser<'a, 'b> {
-    pub fn parse_assignment_stmt(&mut self, lhs: Expr) -> Result<Stmt, ParsingError<'a>> {
+impl<'a> Parser<'a> {
+    pub fn parse_assignment_stmt(&mut self, lhs: Expr) -> Result<Stmt, ParsingError> {
         let start_offset = self.offset;
         self.consume_punctuation(PunctuationKind::Eq)?;
         let value = self.parse_expr(0)?;

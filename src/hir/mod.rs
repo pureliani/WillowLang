@@ -44,7 +44,7 @@ pub struct HIRContext<'a, 'b> {
 pub struct ProgramBuilder<'a> {
     pub modules: HashMap<PathBuf, ModuleBuilder>,
     pub value_types: HashMap<ValueId, Type>,
-    pub string_interner: &'a mut StringInterner<'a>,
+    pub string_interner: &'a mut StringInterner,
     /// Global errors
     pub errors: Vec<SemanticError>,
 
@@ -76,7 +76,7 @@ pub struct FunctionBuilder {
 }
 
 impl<'a> ProgramBuilder<'a> {
-    pub fn new(string_interner: &'a mut StringInterner<'a>) -> Self {
+    pub fn new(string_interner: &'a mut StringInterner) -> Self {
         ProgramBuilder {
             errors: vec![],
             modules: HashMap::new(),

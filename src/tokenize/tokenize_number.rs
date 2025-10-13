@@ -129,6 +129,7 @@ fn parse_number(full_number_str: &str) -> Result<NumberKind, TokenizationErrorKi
 mod tests {
     use crate::{
         ast::{Position, Span},
+        compile::string_interner::StringInterner,
         tokenize::{NumberKind, Token, TokenKind, Tokenizer},
     };
     use pretty_assertions::assert_eq;
@@ -379,11 +380,8 @@ mod tests {
         ];
 
         for (input, expected_kind, span) in test_cases {
-            let (tokens, errors) = Tokenizer::tokenize(input);
-
-            if errors.len() > 0 {
-                dbg!("re", input);
-            }
+            let mut interner = StringInterner::new();
+            let (tokens, errors) = Tokenizer::tokenize(input, &mut interner);
 
             assert_eq!(errors, vec![]);
 

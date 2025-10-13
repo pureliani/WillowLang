@@ -19,18 +19,21 @@ impl<'a> Tokenizer<'a> {
 mod tests {
     use crate::{
         ast::{Position, Span},
+        compile::string_interner::StringInterner,
         tokenize::{Token, TokenKind, Tokenizer},
     };
     use pretty_assertions::assert_eq;
 
     #[test]
     fn tokenizes_simple_identifiers() {
-        let (tokens, _) = Tokenizer::tokenize("hello");
+        let mut interner = StringInterner::new();
+        let hello_id = interner.intern("hello");
+        let (tokens, _) = Tokenizer::tokenize("hello", &mut interner);
 
         assert_eq!(
             tokens,
             vec![Token {
-                kind: TokenKind::Identifier("hello"),
+                kind: TokenKind::Identifier(hello_id),
                 span: Span {
                     start: Position {
                         line: 1,
@@ -49,12 +52,14 @@ mod tests {
 
     #[test]
     fn tokenizes_sequence_as_identifier() {
-        let (tokens, _) = Tokenizer::tokenize("\nstructhello");
+        let mut interner = StringInterner::new();
+        let structhello_id = interner.intern("structhello");
+        let (tokens, _) = Tokenizer::tokenize("\nstructhello", &mut interner);
 
         assert_eq!(
             tokens,
             vec![Token {
-                kind: TokenKind::Identifier("structhello"),
+                kind: TokenKind::Identifier(structhello_id),
                 span: Span {
                     start: Position {
                         line: 2,

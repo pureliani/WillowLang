@@ -47,7 +47,7 @@ impl FunctionBuilder {
         error: SemanticError,
     ) -> ValueId {
         let error_span = error.span;
-        ctx.module_builder.errors.push(error);
+        ctx.program_builder.errors.push(error);
         let unknown_result_id = ctx.program_builder.new_value_id();
         ctx.program_builder.value_types.insert(
             unknown_result_id,
@@ -160,7 +160,7 @@ impl FunctionBuilder {
 
         if let TypeKind::Pointer(target_type) = destination_ptr_type.kind {
             if !self.check_is_assignable(&value_type, &target_type) {
-                ctx.module_builder.errors.push(SemanticError {
+                ctx.program_builder.errors.push(SemanticError {
                     span: value_type.span,
                     kind: SemanticErrorKind::TypeMismatch {
                         expected: *target_type,

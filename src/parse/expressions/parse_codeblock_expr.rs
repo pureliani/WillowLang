@@ -10,8 +10,8 @@ use crate::{
 
 use super::is_start_of_expr;
 
-impl<'a, 'b> Parser<'a, 'b> {
-    pub fn parse_codeblock_expr(&mut self) -> Result<BlockContents, ParsingError<'a>> {
+impl<'a> Parser<'a> {
+    pub fn parse_codeblock_expr(&mut self) -> Result<BlockContents, ParsingError> {
         let start_offset = self.offset;
         self.consume_punctuation(PunctuationKind::LBrace)?;
 
@@ -70,7 +70,7 @@ impl<'a, 'b> Parser<'a, 'b> {
             } else {
                 return Err(ParsingError {
                     kind: ParsingErrorKind::ExpectedStatementOrExpression {
-                        found: current_token.kind.clone(),
+                        found: current_token.clone(),
                     },
                     span: current_token.span,
                 });

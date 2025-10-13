@@ -4,8 +4,8 @@ use crate::{
     tokenize::{KeywordKind, PunctuationKind, TokenKind},
 };
 
-impl<'a, 'b> Parser<'a, 'b> {
-    pub fn parse_from_stmt(&mut self) -> Result<Stmt, ParsingError<'a>> {
+impl<'a> Parser<'a> {
+    pub fn parse_from_stmt(&mut self) -> Result<Stmt, ParsingError> {
         let start_offset = self.offset;
 
         self.consume_keyword(KeywordKind::From)?;

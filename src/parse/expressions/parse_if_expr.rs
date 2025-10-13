@@ -4,8 +4,8 @@ use crate::{
     tokenize::{KeywordKind, TokenKind},
 };
 
-impl<'a, 'b> Parser<'a, 'b> {
-    pub fn parse_if_expr(&mut self) -> Result<Expr, ParsingError<'a>> {
+impl<'a> Parser<'a> {
+    pub fn parse_if_expr(&mut self) -> Result<Expr, ParsingError> {
         let start_offset = self.offset;
         let mut branches: Vec<(Box<Expr>, BlockContents)> = Vec::new();
 

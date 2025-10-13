@@ -4,10 +4,10 @@ use crate::{
     tokenize::{PunctuationKind, TokenKind},
 };
 
-impl<'a, 'b> Parser<'a, 'b> {
+impl<'a> Parser<'a> {
     pub fn parse_struct_type_annotation(
         &mut self,
-    ) -> Result<TypeAnnotation, ParsingError<'a>> {
+    ) -> Result<TypeAnnotation, ParsingError> {
         let start_offset = self.offset;
         self.consume_punctuation(PunctuationKind::LBrace)?;
         let fields = self.comma_separated(

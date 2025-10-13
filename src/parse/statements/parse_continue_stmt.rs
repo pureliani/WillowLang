@@ -4,8 +4,8 @@ use crate::{
     tokenize::KeywordKind,
 };
 
-impl<'a, 'b> Parser<'a, 'b> {
-    pub fn parse_continue_stmt(&mut self) -> Result<Stmt, ParsingError<'a>> {
+impl<'a> Parser<'a> {
+    pub fn parse_continue_stmt(&mut self) -> Result<Stmt, ParsingError> {
         let start_offset = self.offset;
         self.consume_keyword(KeywordKind::Continue)?;
         let span = self.get_span(start_offset, self.offset - 1)?;

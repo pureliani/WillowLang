@@ -6,7 +6,10 @@ pub mod tokenize_number;
 pub mod tokenize_punctuation;
 pub mod tokenize_string;
 
-use crate::ast::{Position, Span};
+use crate::{
+    ast::{Position, Span},
+    compile::string_interner::{InternerId, StringInterner},
+};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TokenizationErrorKind {
@@ -215,18 +218,18 @@ impl NumberKind {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum TokenKind<'a> {
-    Identifier(&'a str),
+pub enum TokenKind {
+    Identifier(InternerId),
     Punctuation(PunctuationKind),
     Keyword(KeywordKind),
-    String(&'a str),
+    String(String),
     Number(NumberKind),
-    Doc(&'a str),
+    Doc(String),
 }
 
-pub fn token_kind_to_string(kind: &TokenKind) -> String {
-    match *kind {
-        TokenKind::Identifier(id) => id.to_owned(),
+pub fn token_kind_to_string(kind: &TokenKind, interner: &mut StringInterner) -> String {
+    match kind {
+        TokenKind::Identifier(id) => interner.resolve(*id).to_string(),
         TokenKind::Punctuation(punctuation_kind) => punctuation_kind.to_string(),
         TokenKind::Keyword(keyword_kind) => keyword_kind.to_string(),
         TokenKind::String(value) => value.to_owned(),
@@ -236,9 +239,9 @@ pub fn token_kind_to_string(kind: &TokenKind) -> String {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct Token<'a> {
+pub struct Token {
     pub span: Span,
-    pub kind: TokenKind<'a>,
+    pub kind: TokenKind,
 }
 
 #[derive(Debug)]
@@ -323,7 +326,10 @@ impl<'a> Tokenizer<'a> {
         }
     }
 
-    pub fn tokenize(input: &'a str) -> (Vec<Token<'a>>, Vec<TokenizationError>) {
+    pub fn tokenize(
+        input: &'a str,
+        interner: &mut StringInterner,
+    ) -> (Vec<Token>, Vec<TokenizationError>) {
         let mut state = Tokenizer {
             input,
             byte_offset: 0,
@@ -331,7 +337,7 @@ impl<'a> Tokenizer<'a> {
             line: 1,
             col: 1,
         };
-        let mut tokens: Vec<Token<'a>> = vec![];
+        let mut tokens: Vec<Token> = vec![];
         let mut errors: Vec<TokenizationError> = vec![];
 
         loop {
@@ -347,11 +353,12 @@ impl<'a> Tokenizer<'a> {
             match state.current() {
                 Some(letter) if is_letter(letter) => {
                     let identifier = state.tokenize_identifier();
-                    let keyword = is_keyword(&identifier);
+                    let keyword = is_keyword(identifier);
                     let kind = if let Some(keyword_kind) = keyword {
                         TokenKind::Keyword(keyword_kind)
                     } else {
-                        TokenKind::Identifier(identifier)
+                        let id = interner.intern(identifier);
+                        TokenKind::Identifier(id)
                     };
                     let end_pos = Position {
                         line: state.line,
@@ -379,7 +386,7 @@ impl<'a> Tokenizer<'a> {
                                 start: start_pos,
                                 end: end_pos,
                             },
-                            kind: TokenKind::String(value),
+                            kind: TokenKind::String(value.to_string()),
                         })
                     }
                     Err(kind) => {
@@ -438,7 +445,7 @@ impl<'a> Tokenizer<'a> {
                                 byte_offset: state.byte_offset,
                             };
                             tokens.push(Token {
-                                kind: TokenKind::Doc(content),
+                                kind: TokenKind::Doc(content.to_string()),
                                 span: Span {
                                     start: start_pos,
                                     end: end_pos,
@@ -553,6 +560,7 @@ fn is_keyword(identifier: &str) -> Option<KeywordKind> {
 mod tests {
     use crate::{
         ast::{Position, Span},
+        compile::string_interner::StringInterner,
         tokenize::{
             KeywordKind, NumberKind, PunctuationKind, Token, TokenKind, Tokenizer,
         },
@@ -562,7 +570,9 @@ mod tests {
     #[test]
     fn test_skip_single_line_comment() {
         let input = "// This is a comment\nlet x = 10;";
-        let (tokens, _) = Tokenizer::tokenize(input);
+        let mut interner = StringInterner::new();
+        let x_id = interner.intern("x");
+        let (tokens, _) = Tokenizer::tokenize(input, &mut interner);
 
         assert_eq!(
             tokens,
@@ -583,7 +593,7 @@ mod tests {
                     }
                 },
                 Token {
-                    kind: TokenKind::Identifier("x"),
+                    kind: TokenKind::Identifier(x_id),
                     span: Span {
                         start: Position {
                             line: 2,
@@ -649,7 +659,8 @@ mod tests {
     #[test]
     fn test_skip_multiple_single_line_comments() {
         let input = "// Comment 1\n// Comment 2\nlet x = 10;";
-        let (tokens, _) = Tokenizer::tokenize(input);
+        let mut interner = StringInterner::new();
+        let (tokens, _) = Tokenizer::tokenize(input, &mut interner);
 
         assert_eq!(tokens.len(), 5);
         assert_eq!(tokens[0].kind, TokenKind::Keyword(KeywordKind::Let));
@@ -658,7 +669,8 @@ mod tests {
     #[test]
     fn test_comment_at_end_of_input() {
         let input = "let x = 10; // Comment at the end";
-        let (tokens, _) = Tokenizer::tokenize(input);
+        let mut interner = StringInterner::new();
+        let (tokens, _) = Tokenizer::tokenize(input, &mut interner);
 
         assert_eq!(tokens.len(), 5);
         assert_eq!(tokens[0].kind, TokenKind::Keyword(KeywordKind::Let));
@@ -667,7 +679,8 @@ mod tests {
     #[test]
     fn test_no_comments() {
         let input = "let x = 10;";
-        let (tokens, _) = Tokenizer::tokenize(input);
+        let mut interner = StringInterner::new();
+        let (tokens, _) = Tokenizer::tokenize(input, &mut interner);
 
         assert_eq!(tokens.len(), 5);
         assert_eq!(tokens[0].kind, TokenKind::Keyword(KeywordKind::Let));
@@ -676,7 +689,8 @@ mod tests {
     #[test]
     fn test_only_comments() {
         let input = "// Only a comment";
-        let (tokens, _) = Tokenizer::tokenize(input);
+        let mut interner = StringInterner::new();
+        let (tokens, _) = Tokenizer::tokenize(input, &mut interner);
         assert_eq!(tokens.len(), 0);
     }
 }

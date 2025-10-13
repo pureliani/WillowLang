@@ -4,10 +4,10 @@ use crate::{
 
 use super::Parser;
 
-impl<'a, 'b> Parser<'a, 'b> {
+impl<'a> Parser<'a> {
     pub fn parse_parenthesized_type_annotation(
         &mut self,
-    ) -> Result<TypeAnnotation, ParsingError<'a>> {
+    ) -> Result<TypeAnnotation, ParsingError> {
         self.consume_punctuation(PunctuationKind::LParen)?;
         let item = self.parse_type_annotation(0)?;
         self.consume_punctuation(PunctuationKind::RParen)?;
