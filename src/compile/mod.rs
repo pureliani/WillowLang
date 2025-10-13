@@ -1,4 +1,8 @@
-use std::{collections::HashMap, fs, path::PathBuf};
+use std::{
+    collections::{HashMap, HashSet, VecDeque},
+    fs,
+    path::{Path, PathBuf},
+};
 
 use codespan_reporting::{
     diagnostic::{Diagnostic, Label},
@@ -12,13 +16,20 @@ use codespan_reporting::{
 pub mod string_interner;
 
 use crate::{
-    ast::stmt::Stmt,
+    ast::{
+        stmt::{Stmt, StmtKind},
+        Span, StringNode,
+    },
     compile::string_interner::StringInterner,
     hir::{
-        errors::SemanticErrorKind, utils::type_to_string::type_to_string, ProgramBuilder,
+        errors::{SemanticError, SemanticErrorKind},
+        utils::type_to_string::type_to_string,
+        ProgramBuilder,
     },
-    parse::{Parser, ParsingErrorKind},
-    tokenize::{token_kind_to_string, TokenizationErrorKind, Tokenizer},
+    parse::{Parser, ParsingError, ParsingErrorKind},
+    tokenize::{
+        token_kind_to_string, TokenizationError, TokenizationErrorKind, Tokenizer,
+    },
 };
 
 pub fn compile_file<'a, 'b>(
@@ -322,7 +333,39 @@ pub fn compile_file<'a, 'b>(
     }
 }
 
-pub struct Compiler;
+pub struct Compiler {
+    errors: Vec<CompilationError>,
+}
+
+pub enum CompilationError {
+    CouldNotReadFile {
+        path: PathBuf,
+        error: std::io::Error,
+    },
+    ModuleNotFound {
+        importing_module: PathBuf,
+        target_path: PathBuf,
+        error: std::io::Error,
+    },
+    Tokenization {
+        path: PathBuf,
+        error: TokenizationError,
+    },
+    Parsing {
+        path: PathBuf,
+        error: ParsingError,
+    },
+    Semantic {
+        path: PathBuf,
+        error: SemanticError,
+    },
+}
+
+struct ParsingResult {
+    tokenization_errors: Vec<TokenizationError>,
+    parsing_errors: Vec<ParsingError>,
+    statements: Vec<Stmt>,
+}
 
 impl Compiler {
     pub fn compile(&mut self, main_path: PathBuf) {
@@ -331,20 +374,88 @@ impl Compiler {
 
     pub fn parse_all_modules(&mut self, main: PathBuf) -> HashMap<PathBuf, Vec<Stmt>> {
         let mut interner = StringInterner::new();
-        let modules: HashMap<PathBuf, Vec<Stmt>> = HashMap::new();
-        let mut work_queue: Vec<PathBuf> = vec![main];
+        let mut modules: HashMap<PathBuf, Vec<Stmt>> = HashMap::new();
+        let mut work_queue: VecDeque<PathBuf> = VecDeque::new();
+        let mut visited: HashSet<PathBuf> = HashSet::new();
 
-        while let Some(source_path) = work_queue.pop() {
-            let source_code = fs::read_to_string(&source_path).expect(&format!(
-                "\n{}{}\n",
-                "Could not read file at path: ",
-                source_path.display().to_string()
-            ));
+        let canonical_main =
+            fs::canonicalize(main).expect("Could not find the main module");
+        work_queue.push_back(canonical_main.clone());
+        visited.insert(canonical_main);
+
+        while let Some(source_path) = work_queue.pop_front() {
+            let source_code = match fs::read_to_string(&source_path) {
+                Ok(source_code) => source_code,
+                Err(e) => {
+                    self.errors.push(CompilationError::CouldNotReadFile {
+                        path: source_path,
+                        error: e,
+                    });
+                    continue;
+                }
+            };
             let (tokens, tokenization_errors) =
                 Tokenizer::tokenize(&source_code, &mut interner);
+            for e in tokenization_errors {
+                self.errors.push(CompilationError::Tokenization {
+                    path: source_path.clone(),
+                    error: e,
+                })
+            }
+
             let (statements, parsing_errors) = Parser::parse(tokens, &mut interner);
+            for e in parsing_errors {
+                self.errors.push(CompilationError::Parsing {
+                    path: source_path.clone(),
+                    error: e,
+                })
+            }
+
+            let dependency_modules =
+                self.find_dependency_modules(&source_path, &statements);
+
+            for module_path in dependency_modules {
+                if visited.insert(module_path.clone()) {
+                    work_queue.push_back(module_path);
+                }
+            }
+
+            modules.entry(source_path).or_insert(statements);
         }
 
-        todo!()
+        modules
+    }
+
+    pub fn find_dependency_modules(
+        &mut self,
+        current_module_path: &Path,
+        statements: &[Stmt],
+    ) -> HashSet<PathBuf> {
+        let mut dependencies: HashSet<PathBuf> = HashSet::new();
+
+        for stmt in statements {
+            if let StmtKind::From { path, .. } = &stmt.kind {
+                let relative_path_str = &path.value;
+
+                let mut target_path = current_module_path.to_path_buf();
+                target_path.pop();
+                target_path.push(relative_path_str);
+
+                match fs::canonicalize(target_path.clone()) {
+                    Ok(canonical_path) => {
+                        dependencies.insert(canonical_path);
+                    }
+                    Err(e) => {
+                        self.errors.push(CompilationError::ModuleNotFound {
+                            importing_module: current_module_path.to_path_buf(),
+                            target_path,
+                            error: e,
+                        });
+                    }
+                }
+            };
+        }
+
+        dependencies
     }
 }
