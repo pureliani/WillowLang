@@ -1,5 +1,4 @@
 pub mod parse_codeblock_expr;
-pub mod parse_enum_init_expr;
 pub mod parse_fn_call_expr;
 pub mod parse_fn_expr;
 pub mod parse_if_expr;
@@ -7,6 +6,7 @@ pub mod parse_list_literal_expr;
 pub mod parse_match_expr;
 pub mod parse_parenthesized_expr;
 pub mod parse_struct_init_expr;
+pub mod parse_tag_expr;
 
 use crate::{
     ast::{
@@ -70,6 +70,7 @@ pub fn is_start_of_expr(token_kind: &TokenKind) -> bool {
         | TokenKind::Keyword(KeywordKind::False)
         | TokenKind::Keyword(KeywordKind::If)
         | TokenKind::Keyword(KeywordKind::Match)
+        | TokenKind::Punctuation(PunctuationKind::Hash)   // Tag expr
         | TokenKind::Punctuation(PunctuationKind::LParen)   // Parenthesized expr
         | TokenKind::Punctuation(PunctuationKind::LBrace)   // Codeblock or Struct expr
         | TokenKind::Punctuation(PunctuationKind::LBracket) // List literal
@@ -103,6 +104,7 @@ impl<'a> Parser<'a> {
             }
             TokenKind::Keyword(KeywordKind::Match) => self.parse_match_expr()?,
             TokenKind::Keyword(KeywordKind::Fn) => self.parse_fn_expr()?,
+            TokenKind::Punctuation(PunctuationKind::Hash) => self.parse_tag_expr()?,
             TokenKind::Punctuation(PunctuationKind::LParen) => {
                 let start_offset = self.offset;
                 let result = self.parse_parenthesized_expr()?;

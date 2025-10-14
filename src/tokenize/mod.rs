@@ -72,6 +72,7 @@ pub enum PunctuationKind {
     Comma,
     Dollar,
     Question,
+    Hash,
 }
 
 impl PunctuationKind {
@@ -107,6 +108,7 @@ impl PunctuationKind {
             PunctuationKind::Comma => ",",
             PunctuationKind::Dollar => "$",
             PunctuationKind::Question => "?",
+            PunctuationKind::Hash => "#",
         })
     }
 }

@@ -97,6 +97,10 @@ pub enum ExprKind {
         left: Box<Expr>,
         target: TypeAnnotation,
     },
+    Tag {
+        name: IdentifierNode,
+        value: Option<Box<Expr>>,
+    },
     FnCall {
         left: Box<Expr>,
         args: Vec<Expr>,
