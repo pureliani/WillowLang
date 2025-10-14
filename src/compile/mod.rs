@@ -349,15 +349,15 @@ pub enum CompilationError {
     },
     Tokenization {
         path: PathBuf,
-        error: TokenizationError,
+        errors: Vec<TokenizationError>,
     },
     Parsing {
         path: PathBuf,
-        error: ParsingError,
+        errors: Vec<ParsingError>,
     },
     Semantic {
         path: PathBuf,
-        error: SemanticError,
+        errors: Vec<SemanticError>,
     },
 }
 
@@ -396,18 +396,18 @@ impl Compiler {
             };
             let (tokens, tokenization_errors) =
                 Tokenizer::tokenize(&source_code, &mut interner);
-            for e in tokenization_errors {
+            if tokenization_errors.len() > 0 {
                 self.errors.push(CompilationError::Tokenization {
                     path: source_path.clone(),
-                    error: e,
+                    errors: tokenization_errors,
                 })
             }
 
             let (statements, parsing_errors) = Parser::parse(tokens, &mut interner);
-            for e in parsing_errors {
+            if parsing_errors.len() > 0 {
                 self.errors.push(CompilationError::Parsing {
                     path: source_path.clone(),
-                    error: e,
+                    errors: parsing_errors,
                 })
             }
 
