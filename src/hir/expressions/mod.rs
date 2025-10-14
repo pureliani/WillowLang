@@ -113,6 +113,7 @@ impl FunctionBuilder {
             ExprKind::Struct(fields) => {
                 self.build_struct_init_expr(ctx, fields, expr.span)
             }
+            ExprKind::Tag { name, value } => todo!(),
         }
     }
 }

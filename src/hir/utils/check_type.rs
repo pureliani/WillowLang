@@ -7,7 +7,7 @@ use crate::{
     hir::{
         errors::{SemanticError, SemanticErrorKind},
         types::{
-            checked_declaration::{CheckedFnType, CheckedParam},
+            checked_declaration::{CheckedFnType, CheckedParam, CheckedTagType},
             checked_type::{Type, TypeKind},
         },
         utils::scope::{ScopeKind, SymbolEntry},
@@ -40,7 +40,6 @@ impl FunctionBuilder {
             .scope_lookup(id.name)
             .map(|entry| match entry {
                 SymbolEntry::TypeAliasDecl(decl) => Ok(TypeKind::TypeAliasDecl(decl)),
-                SymbolEntry::EnumDecl(decl) => Ok(TypeKind::Enum(decl)),
                 SymbolEntry::VarDecl(_) => Err(SemanticError {
                     kind: SemanticErrorKind::CannotUseVariableDeclarationAsType,
                     span,
@@ -96,7 +95,6 @@ impl FunctionBuilder {
                 TypeKind::FnType(CheckedFnType {
                     params: checked_params,
                     return_type: Box::new(checked_return_type),
-                    span: annotation.span,
                 })
             }
             TypeAnnotationKind::Struct(items) => {
@@ -114,6 +112,16 @@ impl FunctionBuilder {
                 let checked_item_type = self.check_type_annotation(ctx, item_type);
 
                 TypeKind::List(Box::new(checked_item_type))
+            }
+            TypeAnnotationKind::Tag { name, value } => {
+                let checked_value_type = value
+                    .as_ref()
+                    .map(|v| Box::new(self.check_type_annotation(ctx, v)));
+
+                TypeKind::Tag(CheckedTagType {
+                    identifier: *name,
+                    value: checked_value_type,
+                })
             }
         };
 

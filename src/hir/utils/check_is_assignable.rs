@@ -47,10 +47,13 @@ impl FunctionBuilder {
             (Pointer(source), Pointer(target)) => {
                 self.check_is_assignable_recursive(source, target, visited_declarations)
             }
-            (Struct(source_decl), Struct(target_decl)) => {
+            (Tag(source), Tag(target)) => {
                 todo!()
             }
-            (Enum(source_decl), Enum(target_decl)) => {
+            (Struct(source), Struct(target)) => {
+                todo!()
+            }
+            (Union(source_checked_tag_types), Union(target_checked_tag_types)) => {
                 todo!()
             }
             (

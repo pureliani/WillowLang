@@ -6,10 +6,7 @@ use std::{
 use crate::{
     ast::IdentifierNode,
     compile::string_interner::InternerId,
-    hir::types::{
-        checked_declaration::{CheckedEnumDecl, CheckedTypeAliasDecl, CheckedVarDecl},
-        checked_type::Type,
-    },
+    hir::types::{checked_declaration::CheckedTypeAliasDecl, checked_type::Type},
     tokenize::NumberKind,
 };
 
@@ -170,8 +167,6 @@ pub struct ControlFlowGraph {
 #[derive(Clone, Debug)]
 pub enum CheckedDeclaration {
     TypeAliasDecl(CheckedTypeAliasDecl),
-    VarDecl(CheckedVarDecl),
-    EnumDecl(CheckedEnumDecl),
 }
 
 #[derive(Clone, Debug)]

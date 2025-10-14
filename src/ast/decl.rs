@@ -16,19 +16,6 @@ pub struct TypeAliasDecl {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct EnumDeclVariant {
-    pub name: IdentifierNode,
-    pub payload: Option<TypeAnnotation>,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct EnumDecl {
-    pub documentation: Option<DocAnnotation>,
-    pub identifier: IdentifierNode,
-    pub variants: Vec<EnumDeclVariant>,
-}
-
-#[derive(Clone, Debug, PartialEq)]
 pub struct VarDecl {
     pub documentation: Option<DocAnnotation>,
     pub identifier: IdentifierNode,

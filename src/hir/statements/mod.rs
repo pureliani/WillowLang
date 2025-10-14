@@ -86,7 +86,6 @@ impl FunctionBuilder {
                         });
                     }
                 }
-                StmtKind::EnumDecl(enum_decl) => todo!(),
             }
         }
     }

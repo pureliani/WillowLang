@@ -2,13 +2,39 @@ use std::collections::HashSet;
 
 use crate::{
     compile::string_interner::{InternerId, StringInterner},
-    hir::types::{checked_declaration::CheckedFnType, checked_type::TypeKind},
+    hir::types::{
+        checked_declaration::{CheckedFnType, CheckedTagType},
+        checked_type::TypeKind,
+    },
 };
 
 fn identifier_to_string(id: InternerId, string_interner: &StringInterner) -> String {
     let identifier_name = string_interner.resolve(id);
 
     identifier_name.to_owned()
+}
+
+fn tag_type_to_string(
+    tag: &CheckedTagType,
+    string_interner: &StringInterner,
+    visited_set: &mut HashSet<TypeKind>,
+) -> String {
+    let value_type = tag
+        .value
+        .as_ref()
+        .map(|t| {
+            format!(
+                "({})",
+                type_to_string_recursive(&t.kind, string_interner, visited_set)
+            )
+        })
+        .unwrap_or("".to_string());
+
+    format!(
+        "#{}{}",
+        identifier_to_string(tag.identifier.name, string_interner),
+        value_type
+    )
 }
 
 pub fn type_to_string(ty: &TypeKind, string_interner: &StringInterner) -> String {
@@ -62,7 +88,6 @@ pub fn type_to_string_recursive(
         TypeKind::FnType(CheckedFnType {
             params,
             return_type,
-            span: _,
         }) => {
             let params_str = params
                 .iter()
@@ -98,40 +123,23 @@ pub fn type_to_string_recursive(
             "ptr<{}>",
             type_to_string_recursive(&ty.kind, string_interner, visited_set)
         ),
-        TypeKind::Enum(decl) => {
-            let variants = decl
-                .variants
+        TypeKind::Union(checked_tag_types) => {
+            let variants = checked_tag_types
                 .iter()
-                .map(|v| match &v.payload {
-                    Some(pt) => {
-                        format!(
-                            "{}({})",
-                            identifier_to_string(v.name.name, string_interner),
-                            type_to_string_recursive(
-                                &pt.kind,
-                                string_interner,
-                                visited_set
-                            )
-                        )
-                    }
-                    None => {
-                        format!("{}", identifier_to_string(v.name.name, string_interner))
-                    }
-                })
+                .map(|tag| tag_type_to_string(tag, string_interner, visited_set))
                 .collect::<Vec<String>>()
-                .join(",\n");
+                .join(" | ");
 
-            format!(
-                "enum {} {{\n{}\n}}",
-                identifier_to_string(decl.identifier.name, string_interner),
-                variants
-            )
+            variants
         }
         TypeKind::List(item_type) => {
             let result =
                 type_to_string_recursive(&item_type.kind, string_interner, visited_set);
 
             format!("{}[]", result)
+        }
+        TypeKind::Tag(checked_tag_type) => {
+            tag_type_to_string(checked_tag_type, string_interner, visited_set)
         }
     }
 }

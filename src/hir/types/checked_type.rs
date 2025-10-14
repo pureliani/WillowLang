@@ -3,7 +3,7 @@ use std::hash::{Hash, Hasher};
 use crate::{
     ast::{IdentifierNode, Span},
     hir::types::checked_declaration::{
-        CheckedEnumDecl, CheckedFnType, CheckedTypeAliasDecl,
+        CheckedFnType, CheckedTagType, CheckedTypeAliasDecl,
     },
 };
 
@@ -25,7 +25,8 @@ pub enum TypeKind {
     F64,
     String,
     List(Box<Type>),
-    Enum(CheckedEnumDecl),
+    Tag(CheckedTagType),
+    Union(Vec<CheckedTagType>),
     Struct(Vec<(IdentifierNode, Type)>),
     TypeAliasDecl(CheckedTypeAliasDecl),
     FnType(CheckedFnType),
@@ -56,7 +57,9 @@ impl PartialEq for TypeKind {
             (TypeKind::TypeAliasDecl(a), TypeKind::TypeAliasDecl(b)) => a == b,
             (TypeKind::Struct(a), TypeKind::Struct(b)) => a == b,
             (TypeKind::FnType(a), TypeKind::FnType(b)) => a == b,
-            (TypeKind::Enum(u1), TypeKind::Enum(u2)) => u1.identifier == u2.identifier,
+            (TypeKind::Tag(t1), TypeKind::Tag(t2)) => {
+                t1.identifier == t2.identifier && t1.value == t2.value
+            }
             (TypeKind::Pointer(type_a), TypeKind::Pointer(type_b)) => {
                 type_a.kind == type_b.kind
             }
@@ -89,9 +92,10 @@ impl Hash for TypeKind {
             TypeKind::Struct(decl) => decl.hash(state),
             TypeKind::TypeAliasDecl(decl) => decl.hash(state),
             TypeKind::FnType(decl) => decl.hash(state),
-            TypeKind::Enum(decl) => decl.hash(state),
-            TypeKind::Pointer(ty) => ty.hash(state),
+            TypeKind::Tag(tag) => tag.hash(state),
+            TypeKind::Pointer(t) => t.hash(state),
             TypeKind::List(_) => todo!(),
+            TypeKind::Union(checked_tag_types) => todo!(),
         }
     }
 }

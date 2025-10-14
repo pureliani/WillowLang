@@ -24,10 +24,13 @@ pub fn get_alignment_of(type_kind: &TypeKind) -> usize {
         | TypeKind::ISize
         | TypeKind::FnType(_) => align_of::<usize>(),
         TypeKind::Struct(_) | TypeKind::List(_) | TypeKind::String => align_of::<usize>(),
-        TypeKind::Enum(_) => align_of::<isize>(),
+        TypeKind::Union(checked_tag_type) => {
+            todo!()
+        }
         TypeKind::Void => 1,
         TypeKind::Unknown => 1,
         TypeKind::TypeAliasDecl(decl) => get_alignment_of(&decl.value.kind),
+        TypeKind::Tag(checked_tag_type) => todo!(),
     }
 }
 

@@ -3,7 +3,7 @@ use crate::{
     hir::{
         cfg::Value,
         errors::{SemanticError, SemanticErrorKind},
-        types::checked_declaration::{CheckedEnumDecl, CheckedTypeAliasDecl},
+        types::checked_declaration::CheckedTypeAliasDecl,
         utils::scope::SymbolEntry,
         FunctionBuilder, HIRContext,
     },
@@ -23,16 +23,13 @@ impl FunctionBuilder {
                 }
                 SymbolEntry::TypeAliasDecl(CheckedTypeAliasDecl {
                     identifier, ..
-                })
-                | SymbolEntry::EnumDecl(CheckedEnumDecl { identifier, .. }) => {
-                    Value::Use(self.report_error_and_get_poison(
-                        ctx,
-                        SemanticError {
-                            kind: SemanticErrorKind::CannotUseTypeDeclarationAsValue,
-                            span: identifier.span,
-                        },
-                    ))
-                }
+                }) => Value::Use(self.report_error_and_get_poison(
+                    ctx,
+                    SemanticError {
+                        kind: SemanticErrorKind::CannotUseTypeDeclarationAsValue,
+                        span: identifier.span,
+                    },
+                )),
             },
             None => Value::Use(self.report_error_and_get_poison(
                 ctx,
