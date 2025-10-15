@@ -9,13 +9,27 @@ use crate::{
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct CheckedParam {
     pub identifier: IdentifierNode,
-    pub constraint: Type,
+    pub ty: Type,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug)]
 pub struct CheckedTagType {
     pub identifier: IdentifierNode,
-    pub value: Option<Box<Type>>,
+    pub value_type: Option<Box<Type>>,
+    pub span: Span,
+}
+
+impl Eq for CheckedTagType {}
+impl PartialEq for CheckedTagType {
+    fn eq(&self, other: &Self) -> bool {
+        self.identifier == other.identifier && self.value_type == other.value_type
+    }
+}
+impl Hash for CheckedTagType {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.identifier.hash(state);
+        self.value_type.hash(state);
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -35,12 +49,13 @@ pub struct CheckedTypeAliasDecl {
 impl Eq for CheckedTypeAliasDecl {}
 impl PartialEq for CheckedTypeAliasDecl {
     fn eq(&self, other: &Self) -> bool {
-        self.identifier == other.identifier
+        self.identifier == other.identifier && self.value == other.value
     }
 }
 impl Hash for CheckedTypeAliasDecl {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.identifier.hash(state);
+        self.value.hash(state);
     }
 }
 

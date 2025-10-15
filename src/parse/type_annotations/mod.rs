@@ -1,7 +1,7 @@
 pub mod parse_fn_type_annotation;
 pub mod parse_parenthesized_type_annotation;
 pub mod parse_struct_type_annotation;
-pub mod parse_union_type_annotation;
+pub mod parse_tag_type_annotation;
 
 use super::{Parser, ParsingError, ParsingErrorKind};
 use crate::{
@@ -168,6 +168,9 @@ impl<'a> Parser<'a> {
                     kind: TypeAnnotationKind::F64,
                     span,
                 }
+            }
+            TokenKind::Punctuation(PunctuationKind::Hash) => {
+                self.parse_tag_type_annotation()?
             }
             TokenKind::Punctuation(PunctuationKind::LParen) => {
                 self.parse_parenthesized_type_annotation()?

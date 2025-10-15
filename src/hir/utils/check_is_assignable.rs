@@ -2,13 +2,58 @@ use std::collections::HashSet;
 
 use crate::hir::{
     types::{
-        checked_declaration::CheckedFnType,
+        checked_declaration::{CheckedFnType, CheckedTagType},
         checked_type::{Type, TypeKind},
     },
     FunctionBuilder,
 };
 
 impl FunctionBuilder {
+    pub fn check_is_tag_assignable(
+        &mut self,
+        source_tag: &CheckedTagType,
+        target_tag: &CheckedTagType,
+        visited_declarations: &mut HashSet<(usize, usize)>,
+    ) -> bool {
+        match (source_tag, target_tag) {
+            (
+                CheckedTagType {
+                    identifier: id_a,
+                    value_type: Some(value_type_a),
+                },
+                CheckedTagType {
+                    identifier: id_b,
+                    value_type: Some(value_type_b),
+                },
+            ) => {
+                if id_a != id_b {
+                    return false;
+                }
+
+                self.check_is_assignable_recursive(
+                    value_type_a,
+                    value_type_b,
+                    visited_declarations,
+                ) && self.check_is_assignable_recursive(
+                    value_type_b,
+                    value_type_a,
+                    visited_declarations,
+                )
+            }
+            (
+                CheckedTagType {
+                    identifier: id_a,
+                    value_type: None,
+                },
+                CheckedTagType {
+                    identifier: id_b,
+                    value_type: None,
+                },
+            ) => id_a == id_b,
+            _ => false,
+        }
+    }
+
     pub fn check_is_assignable(&self, source_type: &Type, target_type: &Type) -> bool {
         let mut visited_declarations: HashSet<(usize, usize)> = HashSet::new();
         self.check_is_assignable_recursive(
@@ -44,17 +89,51 @@ impl FunctionBuilder {
             | (Bool, Bool)
             | (Void, Void)
             | (Unknown, _) => true,
+            (Union(source), Union(target)) => source.iter().all(|source_item| {
+                target.iter().any(|target_item| {
+                    self.check_is_tag_assignable(
+                        source_item,
+                        target_item,
+                        visited_declarations,
+                    )
+                })
+            }),
+            (Tag(source_item), Union(target_union)) => {
+                target_union.iter().any(|target_item| {
+                    self.check_is_tag_assignable(
+                        source_item,
+                        target_item,
+                        visited_declarations,
+                    )
+                })
+            }
+            (Tag(t1), Tag(t2)) => {
+                self.check_is_tag_assignable(t1, t2, visited_declarations)
+            }
             (Pointer(source), Pointer(target)) => {
                 self.check_is_assignable_recursive(source, target, visited_declarations)
             }
-            (Tag(source), Tag(target)) => {
-                todo!()
-            }
-            (Struct(source), Struct(target)) => {
-                todo!()
-            }
-            (Union(source_checked_tag_types), Union(target_checked_tag_types)) => {
-                todo!()
+            (Struct(source_fields), Struct(target_fields)) => {
+                if source_fields.len() != target_fields.len() {
+                    return false;
+                }
+
+                let is_assignable =
+                    source_fields
+                        .iter()
+                        .zip(target_fields.iter())
+                        .all(|(sp, tp)| {
+                            let same_name = sp.identifier.name == tp.identifier.name;
+                            let assignable = self.check_is_assignable_recursive(
+                                &sp.ty,
+                                &tp.ty,
+                                visited_declarations,
+                            );
+
+                            same_name && assignable
+                        });
+
+                is_assignable
             }
             (
                 FnType(CheckedFnType {
@@ -77,8 +156,8 @@ impl FunctionBuilder {
                     .zip(target_params.iter())
                     .all(|(sp, tp)| {
                         self.check_is_assignable_recursive(
-                            &sp.constraint,
-                            &tp.constraint,
+                            &sp.ty,
+                            &tp.ty,
                             visited_declarations,
                         )
                     });

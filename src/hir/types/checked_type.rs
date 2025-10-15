@@ -1,9 +1,9 @@
 use std::hash::{Hash, Hasher};
 
 use crate::{
-    ast::{IdentifierNode, Span},
+    ast::Span,
     hir::types::checked_declaration::{
-        CheckedFnType, CheckedTagType, CheckedTypeAliasDecl,
+        CheckedFnType, CheckedParam, CheckedTagType, CheckedTypeAliasDecl,
     },
 };
 
@@ -27,7 +27,7 @@ pub enum TypeKind {
     List(Box<Type>),
     Tag(CheckedTagType),
     Union(Vec<CheckedTagType>),
-    Struct(Vec<(IdentifierNode, Type)>),
+    Struct(Vec<CheckedParam>),
     TypeAliasDecl(CheckedTypeAliasDecl),
     FnType(CheckedFnType),
     Pointer(Box<Type>),
@@ -57,12 +57,8 @@ impl PartialEq for TypeKind {
             (TypeKind::TypeAliasDecl(a), TypeKind::TypeAliasDecl(b)) => a == b,
             (TypeKind::Struct(a), TypeKind::Struct(b)) => a == b,
             (TypeKind::FnType(a), TypeKind::FnType(b)) => a == b,
-            (TypeKind::Tag(t1), TypeKind::Tag(t2)) => {
-                t1.identifier == t2.identifier && t1.value == t2.value
-            }
-            (TypeKind::Pointer(type_a), TypeKind::Pointer(type_b)) => {
-                type_a.kind == type_b.kind
-            }
+            (TypeKind::Tag(t1), TypeKind::Tag(t2)) => t1 == t2,
+            (TypeKind::Pointer(a), TypeKind::Pointer(b)) => a == b,
             _ => false,
         }
     }

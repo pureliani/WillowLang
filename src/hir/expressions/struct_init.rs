@@ -5,7 +5,10 @@ use crate::{
     hir::{
         cfg::Value,
         errors::{SemanticError, SemanticErrorKind},
-        types::checked_type::{Type, TypeKind},
+        types::{
+            checked_declaration::CheckedParam,
+            checked_type::{Type, TypeKind},
+        },
         FunctionBuilder, HIRContext,
     },
     tokenize::NumberKind,
@@ -41,8 +44,7 @@ impl FunctionBuilder {
         fields: Vec<(IdentifierNode, Expr)>,
         span: Span,
     ) -> Value {
-        let mut resolved_fields: Vec<(IdentifierNode, Type)> =
-            Vec::with_capacity(fields.len());
+        let mut resolved_fields: Vec<CheckedParam> = Vec::with_capacity(fields.len());
         let mut field_values: HashMap<IdentifierNode, Value> =
             HashMap::with_capacity(fields.len());
         let mut initialized_fields: HashSet<IdentifierNode> = HashSet::new();
@@ -63,23 +65,26 @@ impl FunctionBuilder {
             let value = self.build_expr(ctx, field_expr);
             let value_type = ctx.program_builder.get_value_type(&value);
 
-            resolved_fields.push((field_name, value_type));
+            resolved_fields.push(CheckedParam {
+                identifier: field_name,
+                ty: value_type,
+            });
             field_values.insert(field_name, value);
         }
 
-        resolved_fields.sort_by(|(identifier_a, type_a), (identifier_b, type_b)| {
-            let align_a = get_alignment_of(&type_a.kind);
-            let align_b = get_alignment_of(&type_b.kind);
+        resolved_fields.sort_by(|field_a, field_b| {
+            let align_a = get_alignment_of(&field_a.ty.kind);
+            let align_b = get_alignment_of(&field_b.ty.kind);
 
             align_b.cmp(&align_a).then_with(|| {
                 let name_a = ctx
                     .program_builder
                     .string_interner
-                    .resolve(identifier_a.name);
+                    .resolve(field_a.identifier.name);
                 let name_b = ctx
                     .program_builder
                     .string_interner
-                    .resolve(identifier_b.name);
+                    .resolve(field_b.identifier.name);
 
                 name_a.cmp(name_b)
             })
@@ -99,9 +104,9 @@ impl FunctionBuilder {
             .expect("INTERNAL COMPILER ERROR: failed to allocate struct on heap");
 
         if let TypeKind::Struct(canonical_fields) = &struct_type.kind {
-            for (field_name, _) in canonical_fields {
+            for field in canonical_fields {
                 let field_ptr =
-                    match self.emit_get_field_ptr(ctx, struct_ptr, *field_name) {
+                    match self.emit_get_field_ptr(ctx, struct_ptr, field.identifier) {
                         Ok(ptr) => ptr,
                         Err(error) => {
                             return Value::Use(
@@ -110,7 +115,7 @@ impl FunctionBuilder {
                         }
                     };
 
-                let field_value = field_values.get(field_name).unwrap();
+                let field_value = field_values.get(&field.identifier).unwrap();
 
                 self.emit_store(ctx, field_ptr, field_value.clone());
             }

@@ -20,7 +20,7 @@ fn tag_type_to_string(
     visited_set: &mut HashSet<TypeKind>,
 ) -> String {
     let value_type = tag
-        .value
+        .value_type
         .as_ref()
         .map(|t| {
             format!(
@@ -69,12 +69,12 @@ pub fn type_to_string_recursive(
         TypeKind::Struct(fields) => {
             let fields = fields
                 .iter()
-                .map(|(identifier, constraint)| {
+                .map(|field| {
                     format!(
                         "{}: {}",
-                        identifier_to_string(identifier.name, string_interner),
+                        identifier_to_string(field.identifier.name, string_interner),
                         type_to_string_recursive(
-                            &constraint.kind,
+                            &field.ty.kind,
                             string_interner,
                             visited_set
                         )
@@ -96,7 +96,7 @@ pub fn type_to_string_recursive(
                         "{}: {}",
                         identifier_to_string(p.identifier.name, string_interner),
                         type_to_string_recursive(
-                            &p.constraint.kind,
+                            &p.ty.kind,
                             string_interner,
                             visited_set
                         )

@@ -225,19 +225,17 @@ impl FunctionBuilder {
             panic!("INTERNAL COMPILER ERROR: emit_get_field_ptr called on a non-pointer type.");
         };
 
-        if let Some((field_index, (_field_identifier, field_type))) = struct_fields
+        if let Some((field_index, target_field)) = struct_fields
             .into_iter()
             .enumerate()
-            .find(|(_, (field_identifier, _field_type))| {
-                field_identifier.name == field.name
-            })
+            .find(|(_, p)| p.identifier.name == field.name)
         {
             let destination = ctx.program_builder.new_value_id();
 
             ctx.program_builder.value_types.insert(
                 destination,
                 Type {
-                    kind: TypeKind::Pointer(Box::new(field_type.clone())),
+                    kind: TypeKind::Pointer(Box::new(target_field.ty.clone())),
                     span: field.span,
                 },
             );
@@ -547,7 +545,7 @@ impl FunctionBuilder {
 
         for (arg_value, param_decl) in args.iter().zip(fn_type_decl.params.iter()) {
             let arg_type = ctx.program_builder.get_value_type(arg_value);
-            let param_type = &param_decl.constraint;
+            let param_type = &param_decl.ty;
 
             if !self.check_is_assignable(&arg_type, param_type) {
                 return Err(SemanticError {
