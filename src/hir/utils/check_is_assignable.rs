@@ -10,7 +10,7 @@ use crate::hir::{
 
 impl FunctionBuilder {
     pub fn check_is_tag_assignable(
-        &mut self,
+        &self,
         source_tag: &CheckedTagType,
         target_tag: &CheckedTagType,
         visited_declarations: &mut HashSet<(usize, usize)>,
