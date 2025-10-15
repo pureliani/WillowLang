@@ -15,7 +15,10 @@ impl FunctionBuilder {
         ctx: &mut HIRContext,
         identifier: IdentifierNode,
     ) -> Value {
-        match ctx.module_builder.scope_lookup(identifier.name) {
+        match ctx
+            .module_builder
+            .scope_lookup(identifier.name, &ctx.program_builder)
+        {
             Some(symbol_entry) => match symbol_entry {
                 SymbolEntry::VarDecl(checked_var_decl) => {
                     let data = self.emit_load(ctx, checked_var_decl.stack_ptr);

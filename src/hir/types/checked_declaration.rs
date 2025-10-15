@@ -2,7 +2,10 @@ use std::hash::{Hash, Hasher};
 
 use crate::{
     ast::{IdentifierNode, Span},
-    hir::{cfg::ValueId, types::checked_type::Type},
+    hir::{
+        cfg::{ControlFlowGraph, DeclarationId, ValueId},
+        types::checked_type::Type,
+    },
     parse::DocAnnotation,
 };
 
@@ -40,6 +43,7 @@ pub struct CheckedFnType {
 
 #[derive(Clone, Debug)]
 pub struct CheckedTypeAliasDecl {
+    pub id: DeclarationId,
     pub identifier: IdentifierNode,
     pub documentation: Option<DocAnnotation>,
     pub value: Box<Type>,
@@ -49,14 +53,24 @@ pub struct CheckedTypeAliasDecl {
 impl Eq for CheckedTypeAliasDecl {}
 impl PartialEq for CheckedTypeAliasDecl {
     fn eq(&self, other: &Self) -> bool {
-        self.identifier == other.identifier && self.value == other.value
+        self.id == other.id
     }
 }
 impl Hash for CheckedTypeAliasDecl {
     fn hash<H: Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
         self.identifier.hash(state);
         self.value.hash(state);
     }
+}
+
+#[derive(Clone, Debug)]
+pub struct CheckedFnDecl {
+    pub id: DeclarationId,
+    pub identifier: IdentifierNode,
+    pub params: Vec<CheckedParam>,
+    pub return_type: Type,
+    pub body: Option<ControlFlowGraph>,
 }
 
 #[derive(Clone, Debug)]

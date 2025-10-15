@@ -1,7 +1,10 @@
 use std::{
     collections::{HashMap, HashSet},
     path::PathBuf,
-    sync::atomic::{AtomicUsize, Ordering},
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        Mutex,
+    },
 };
 
 use crate::{
@@ -9,8 +12,9 @@ use crate::{
     compile::string_interner::StringInterner,
     hir::{
         cfg::{
-            BasicBlock, BasicBlockId, CheckedModule, ConstantId, ControlFlowGraph,
-            FunctionId, HeapAllocationId, Value, ValueId,
+            BasicBlock, BasicBlockId, CheckedDeclaration, CheckedModule, ConstantId,
+            ControlFlowGraph, DeclarationId, FunctionId, HeapAllocationId, Value,
+            ValueId,
         },
         errors::SemanticError,
         types::{
@@ -43,6 +47,7 @@ pub struct HIRContext<'a, 'b> {
 
 pub struct ProgramBuilder<'a> {
     pub modules: HashMap<PathBuf, ModuleBuilder>,
+    pub declarations: HashMap<DeclarationId, CheckedDeclaration>,
     pub value_types: HashMap<ValueId, Type>,
     pub string_interner: &'a mut StringInterner,
     /// Global errors
@@ -52,6 +57,7 @@ pub struct ProgramBuilder<'a> {
     function_id_counter: AtomicUsize,
     constant_id_counter: AtomicUsize,
     allocation_id_counter: AtomicUsize,
+    declaration_id_counter: AtomicUsize,
 }
 
 #[derive(Debug)]
@@ -81,11 +87,13 @@ impl<'a> ProgramBuilder<'a> {
             errors: vec![],
             modules: HashMap::new(),
             value_types: HashMap::new(),
+            declarations: HashMap::new(),
             string_interner,
             function_id_counter: AtomicUsize::new(0),
             constant_id_counter: AtomicUsize::new(0),
             allocation_id_counter: AtomicUsize::new(0),
             value_id_counter: AtomicUsize::new(0),
+            declaration_id_counter: AtomicUsize::new(0),
         }
     }
 
@@ -102,6 +110,10 @@ impl<'a> ProgramBuilder<'a> {
         // TODO: Check for a single `main` function in the whole program.
 
         (self.modules, global_errors)
+    }
+
+    pub fn new_declaration_id(&self) -> DeclarationId {
+        DeclarationId(self.declaration_id_counter.fetch_add(1, Ordering::SeqCst))
     }
 
     pub fn new_function_id(&self) -> FunctionId {

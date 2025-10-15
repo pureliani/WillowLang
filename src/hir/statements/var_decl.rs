@@ -3,7 +3,6 @@ use crate::{
     hir::{
         errors::{SemanticError, SemanticErrorKind},
         types::checked_declaration::CheckedVarDecl,
-        utils::scope::SymbolEntry,
         FunctionBuilder, HIRContext,
     },
 };

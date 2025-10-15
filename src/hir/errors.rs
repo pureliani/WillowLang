@@ -60,6 +60,7 @@ pub enum SemanticErrorKind {
         received: usize,
     },
     CannotUseVariableDeclarationAsType,
+    CannotUseFunctionDeclarationAsType,
     CannotUseTypeDeclarationAsValue,
     TypeAliasMustBeDeclaredAtTopLevel,
     StructMustBeDeclaredAtTopLevel,
@@ -118,6 +119,7 @@ impl SemanticErrorKind {
             SemanticErrorKind::UnreachableCode => 38,
             SemanticErrorKind::FromStatementMustBeDeclaredAtTopLevel => 39,
             SemanticErrorKind::ModuleNotFound { .. } => 40,
+            SemanticErrorKind::CannotUseFunctionDeclarationAsType => 41,
         }
     }
 }

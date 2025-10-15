@@ -1,4 +1,8 @@
-use std::hash::{Hash, Hasher};
+use std::{
+    cell::RefCell,
+    hash::{Hash, Hasher},
+    rc::Rc,
+};
 
 use crate::{
     ast::Span,
@@ -28,7 +32,7 @@ pub enum TypeKind {
     Tag(CheckedTagType),
     Union(Vec<CheckedTagType>),
     Struct(Vec<CheckedParam>),
-    TypeAliasDecl(CheckedTypeAliasDecl),
+    TypeAliasDecl(Rc<RefCell<CheckedTypeAliasDecl>>),
     FnType(CheckedFnType),
     Pointer(Box<Type>),
     Unknown,
@@ -86,7 +90,7 @@ impl Hash for TypeKind {
             TypeKind::String => {}
             TypeKind::Unknown => {}
             TypeKind::Struct(decl) => decl.hash(state),
-            TypeKind::TypeAliasDecl(decl) => decl.hash(state),
+            TypeKind::TypeAliasDecl(decl) => decl.borrow().hash(state),
             TypeKind::FnType(decl) => decl.hash(state),
             TypeKind::Tag(tag) => tag.hash(state),
             TypeKind::Pointer(t) => t.hash(state),

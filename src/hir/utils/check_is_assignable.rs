@@ -20,10 +20,12 @@ impl FunctionBuilder {
                 CheckedTagType {
                     identifier: id_a,
                     value_type: Some(value_type_a),
+                    ..
                 },
                 CheckedTagType {
                     identifier: id_b,
                     value_type: Some(value_type_b),
+                    ..
                 },
             ) => {
                 if id_a != id_b {
@@ -44,10 +46,12 @@ impl FunctionBuilder {
                 CheckedTagType {
                     identifier: id_a,
                     value_type: None,
+                    ..
                 },
                 CheckedTagType {
                     identifier: id_b,
                     value_type: None,
+                    ..
                 },
             ) => id_a == id_b,
             _ => false,
@@ -175,13 +179,13 @@ impl FunctionBuilder {
                 returns_compatible
             }
             (TypeAliasDecl(source), _) => self.check_is_assignable_recursive(
-                &source.value,
+                &source.borrow().value,
                 target_type,
                 visited_declarations,
             ),
             (_, TypeAliasDecl(target)) => self.check_is_assignable_recursive(
                 source_type,
-                &target.value,
+                &target.borrow().value,
                 visited_declarations,
             ),
             _ => false,

@@ -1,9 +1,8 @@
 use crate::{
     ast::expr::{Expr, ExprKind},
     hir::{
-        cfg::ValueId,
+        cfg::{CheckedDeclaration, ValueId},
         errors::{SemanticError, SemanticErrorKind},
-        utils::scope::SymbolEntry,
         FunctionBuilder, HIRContext,
     },
 };
@@ -16,8 +15,9 @@ impl FunctionBuilder {
     ) -> Result<ValueId, SemanticError> {
         match expr.kind {
             ExprKind::Identifier(identifier) => {
-                if let Some(SymbolEntry::VarDecl(decl)) =
-                    ctx.module_builder.scope_lookup(identifier.name)
+                if let Some(CheckedDeclaration::Var(decl)) = ctx
+                    .module_builder
+                    .scope_lookup(identifier.name, &ctx.program_builder)
                 {
                     return Ok(decl.stack_ptr); // ValueId which holds Pointer<T>
                 } else {

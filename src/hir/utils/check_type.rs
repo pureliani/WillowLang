@@ -5,12 +5,13 @@ use crate::{
         IdentifierNode, Span,
     },
     hir::{
+        cfg::CheckedDeclaration,
         errors::{SemanticError, SemanticErrorKind},
         types::{
             checked_declaration::{CheckedFnType, CheckedParam, CheckedTagType},
             checked_type::{Type, TypeKind},
         },
-        utils::scope::{ScopeKind, SymbolEntry},
+        utils::scope::ScopeKind,
         FunctionBuilder, HIRContext,
     },
 };
@@ -37,10 +38,16 @@ impl FunctionBuilder {
         span: Span,
     ) -> Result<TypeKind, SemanticError> {
         ctx.module_builder
-            .scope_lookup(id.name)
+            .scope_lookup(id.name, &ctx.program_builder)
             .map(|entry| match entry {
-                SymbolEntry::TypeAliasDecl(decl) => Ok(TypeKind::TypeAliasDecl(decl)),
-                SymbolEntry::VarDecl(_) => Err(SemanticError {
+                CheckedDeclaration::TypeAlias(decl) => {
+                    Ok(TypeKind::TypeAliasDecl(decl.clone()))
+                }
+                CheckedDeclaration::Function(_) => Err(SemanticError {
+                    kind: SemanticErrorKind::CannotUseFunctionDeclarationAsType,
+                    span,
+                }),
+                CheckedDeclaration::Var(_) => Err(SemanticError {
                     kind: SemanticErrorKind::CannotUseVariableDeclarationAsType,
                     span,
                 }),

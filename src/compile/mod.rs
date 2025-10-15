@@ -17,11 +17,12 @@ pub mod string_interner;
 
 use crate::{
     ast::{
+        expr::{Expr, ExprKind},
         stmt::{Stmt, StmtKind},
-        Span, StringNode,
     },
     compile::string_interner::StringInterner,
     hir::{
+        cfg::CheckedDeclaration,
         errors::{SemanticError, SemanticErrorKind},
         utils::type_to_string::type_to_string,
         ProgramBuilder,
@@ -369,11 +370,16 @@ struct ParsingResult {
 
 impl Compiler {
     pub fn compile(&mut self, main_path: PathBuf) {
-        let modules = self.parse_all_modules(main_path);
+        let mut interner = StringInterner::new();
+        let mut program_builder = ProgramBuilder::new(&mut interner);
+        let modules = self.parse_all_modules(main_path, &mut program_builder);
     }
 
-    pub fn parse_all_modules(&mut self, main: PathBuf) -> HashMap<PathBuf, Vec<Stmt>> {
-        let mut interner = StringInterner::new();
+    pub fn parse_all_modules(
+        &mut self,
+        main: PathBuf,
+        program_builder: &mut ProgramBuilder,
+    ) -> HashMap<PathBuf, Vec<Stmt>> {
         let mut modules: HashMap<PathBuf, Vec<Stmt>> = HashMap::new();
         let mut work_queue: VecDeque<PathBuf> = VecDeque::new();
         let mut visited: HashSet<PathBuf> = HashSet::new();
@@ -395,7 +401,7 @@ impl Compiler {
                 }
             };
             let (tokens, tokenization_errors) =
-                Tokenizer::tokenize(&source_code, &mut interner);
+                Tokenizer::tokenize(&source_code, program_builder.string_interner);
             if tokenization_errors.len() > 0 {
                 self.errors.push(CompilationError::Tokenization {
                     path: source_path.clone(),
@@ -403,7 +409,8 @@ impl Compiler {
                 })
             }
 
-            let (statements, parsing_errors) = Parser::parse(tokens, &mut interner);
+            let (statements, parsing_errors) =
+                Parser::parse(tokens, program_builder.string_interner);
             if parsing_errors.len() > 0 {
                 self.errors.push(CompilationError::Parsing {
                     path: source_path.clone(),
@@ -412,7 +419,7 @@ impl Compiler {
             }
 
             let dependency_modules =
-                self.find_dependency_modules(&source_path, &statements);
+                self.find_dependency_modules(program_builder, &source_path, &statements);
 
             for module_path in dependency_modules {
                 if visited.insert(module_path.clone()) {
@@ -428,32 +435,68 @@ impl Compiler {
 
     pub fn find_dependency_modules(
         &mut self,
+        program_builder: &mut ProgramBuilder,
         current_module_path: &Path,
         statements: &[Stmt],
     ) -> HashSet<PathBuf> {
         let mut dependencies: HashSet<PathBuf> = HashSet::new();
 
+        // TODO: fix the following expression, currently it panics
+        let current_module_builder = program_builder
+            .modules
+            .get_mut(current_module_path)
+            .expect(&format!(
+                "INTERNAL COMPILER ERROR: Expected the module {} to exist",
+                current_module_path.display(),
+            ));
+
         for stmt in statements {
-            if let StmtKind::From { path, .. } = &stmt.kind {
-                let relative_path_str = &path.value;
+            match &stmt.kind {
+                StmtKind::From { path, .. } => {
+                    let relative_path_str = &path.value;
 
-                let mut target_path = current_module_path.to_path_buf();
-                target_path.pop();
-                target_path.push(relative_path_str);
+                    let mut target_path = current_module_path.to_path_buf();
+                    target_path.pop();
+                    target_path.push(relative_path_str);
 
-                match fs::canonicalize(target_path.clone()) {
-                    Ok(canonical_path) => {
-                        dependencies.insert(canonical_path);
-                    }
-                    Err(e) => {
-                        self.errors.push(CompilationError::ModuleNotFound {
-                            importing_module: current_module_path.to_path_buf(),
-                            target_path,
-                            error: e,
-                        });
+                    match fs::canonicalize(target_path.clone()) {
+                        Ok(canonical_path) => {
+                            dependencies.insert(canonical_path);
+                        }
+                        Err(e) => {
+                            self.errors.push(CompilationError::ModuleNotFound {
+                                importing_module: current_module_path.to_path_buf(),
+                                target_path,
+                                error: e,
+                            });
+                        }
                     }
                 }
-            };
+                StmtKind::TypeAliasDecl(decl) => {
+                    let id = program_builder.new_declaration_id();
+                    // TODO: add new method -> current_module_builder.file_scope_insert(decl.identifier.name, id);
+
+                    let checked_decl = todo!();
+
+                    program_builder
+                        .declarations
+                        .insert(id, CheckedDeclaration::TypeAlias(checked_decl));
+                }
+                StmtKind::Expression(Expr {
+                    kind: ExprKind::Fn { name, .. },
+                    ..
+                }) => {
+                    let id = program_builder.new_declaration_id();
+                    // TODO: add new method -> current_module_builder.file_scope_insert(name.name, id);
+
+                    let checked_fn_placeholder = todo!();
+
+                    program_builder
+                        .declarations
+                        .insert(id, CheckedDeclaration::Function(checked_fn_placeholder));
+                }
+                _ => {}
+            }
         }
 
         dependencies

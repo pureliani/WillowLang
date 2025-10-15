@@ -32,7 +32,7 @@ pub fn get_alignment_of(type_kind: &TypeKind) -> usize {
         }
         TypeKind::Void => 1,
         TypeKind::Unknown => 1,
-        TypeKind::TypeAliasDecl(decl) => get_alignment_of(&decl.value.kind),
+        TypeKind::TypeAliasDecl(decl) => get_alignment_of(&decl.borrow().value.kind),
         TypeKind::Tag(checked_tag_type) => todo!(),
     }
 }

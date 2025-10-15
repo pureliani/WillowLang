@@ -4,10 +4,9 @@ use crate::{
     ast::{IdentifierNode, Span},
     compile::string_interner::InternerId,
     hir::{
-        cfg::BasicBlockId,
+        cfg::{BasicBlockId, CheckedDeclaration, DeclarationId},
         errors::{SemanticError, SemanticErrorKind},
-        types::checked_declaration::{CheckedTypeAliasDecl, CheckedVarDecl},
-        ModuleBuilder,
+        ModuleBuilder, ProgramBuilder,
     },
 };
 
@@ -24,16 +23,10 @@ pub enum ScopeKind {
     FnType,
 }
 
-#[derive(Debug, Clone)]
-pub enum SymbolEntry {
-    VarDecl(CheckedVarDecl),
-    TypeAliasDecl(CheckedTypeAliasDecl),
-}
-
 #[derive(Debug)]
 pub struct Scope {
     pub kind: ScopeKind,
-    symbols: HashMap<InternerId, SymbolEntry>,
+    symbols: HashMap<InternerId, DeclarationId>,
 }
 
 impl Scope {
@@ -68,10 +61,15 @@ impl ModuleBuilder {
             .expect("INTERNAL COMPILER ERROR: Expected to find the last mutable scope")
     }
 
-    pub fn scope_insert(&mut self, id: IdentifierNode, value: SymbolEntry, span: Span) {
+    pub fn scope_insert(
+        &mut self,
+        id: IdentifierNode,
+        declaration_id: DeclarationId,
+        span: Span,
+    ) {
         let last_scope = self.last_scope_mut();
 
-        if let Some(_) = last_scope.symbols.insert(id.name, value) {
+        if let Some(_) = last_scope.symbols.insert(id.name, declaration_id) {
             self.errors.push(SemanticError {
                 kind: SemanticErrorKind::DuplicateIdentifier(id),
                 span,
@@ -79,11 +77,14 @@ impl ModuleBuilder {
         }
     }
 
-    pub fn scope_lookup(&self, key: InternerId) -> Option<SymbolEntry> {
+    pub fn scope_lookup<'a, 'b>(
+        &'a self,
+        key: InternerId,
+        program_builder: &'b ProgramBuilder,
+    ) -> Option<&'b CheckedDeclaration> {
         for scope in self.scopes.iter().rev() {
             if let Some(declaration) = scope.symbols.get(&key) {
-                let cloned = declaration.to_owned();
-                return Some(cloned);
+                todo!()
             }
         }
 
