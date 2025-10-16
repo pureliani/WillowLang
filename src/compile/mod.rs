@@ -264,9 +264,6 @@ pub fn compile_file<'a, 'b>(
             SemanticErrorKind::TypeAliasMustBeDeclaredAtTopLevel { .. } => err
                 .with_message("Type aliases must be declared in the file scope")
                 .with_label(label.with_message("Type aliases must be declared in the file scope")),
-            SemanticErrorKind::StructMustBeDeclaredAtTopLevel { .. } => err
-                .with_message("Structs must be declared in the file scope")
-                .with_label(label.with_message("Structs must be declared in the file scope")),
             SemanticErrorKind::DuplicateStructFieldInitializer(id) => {
                 let name = string_interner.resolve(id.name);
                 err.with_message("Duplicate initializer for a struct field")
@@ -297,10 +294,8 @@ pub fn compile_file<'a, 'b>(
             }
             SemanticErrorKind::CannotIndex(_) => todo!(),
             SemanticErrorKind::IncompatibleBranchTypes { first, second } => todo!(),
-            SemanticErrorKind::ExpectedEnumType => todo!(),
             SemanticErrorKind::TypeMismatchExpectedOneOf { expected, received } => todo!(),
             SemanticErrorKind::CannotStaticAccess(_) => todo!(),
-            SemanticErrorKind::ExpectedAType => todo!(),
             SemanticErrorKind::AccessToUndefinedStaticField(identifier_node) => todo!(),
             SemanticErrorKind::IfExpressionMissingElse => todo!(),
             SemanticErrorKind::CannotCastType {
