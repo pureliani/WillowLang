@@ -2,6 +2,7 @@ use std::{
     collections::{HashMap, HashSet, VecDeque},
     fs,
     path::{Path, PathBuf},
+    sync::Mutex,
 };
 
 use codespan_reporting::{
@@ -22,7 +23,7 @@ use crate::{
     },
     compile::string_interner::StringInterner,
     hir::{
-        cfg::CheckedDeclaration,
+        cfg::{CheckedDeclaration, DeclarationId},
         errors::{SemanticError, SemanticErrorKind},
         utils::type_to_string::type_to_string,
         ProgramBuilder,
@@ -333,11 +334,13 @@ pub struct Compiler {
     errors: Vec<CompilationError>,
 }
 
+pub struct FileReadingError {
+    path: PathBuf,
+    error: std::io::Error,
+}
+
 pub enum CompilationError {
-    CouldNotReadFile {
-        path: PathBuf,
-        error: std::io::Error,
-    },
+    CouldNotReadFile(FileReadingError),
     ModuleNotFound {
         importing_module: PathBuf,
         target_path: PathBuf,
@@ -356,144 +359,154 @@ pub enum CompilationError {
         errors: Vec<SemanticError>,
     },
 }
-
-struct ParsingResult {
+struct ParallelParseResult {
+    path: PathBuf,
+    statements: Vec<Stmt>,
+    local_interner: StringInterner,
     tokenization_errors: Vec<TokenizationError>,
     parsing_errors: Vec<ParsingError>,
-    statements: Vec<Stmt>,
 }
 
 impl Compiler {
     pub fn compile(&mut self, main_path: PathBuf) {
-        let mut interner = StringInterner::new();
-        let mut program_builder = ProgramBuilder::new(&mut interner);
-        let modules = self.parse_all_modules(main_path, &mut program_builder);
+        let parsed_modules = self.parallel_parse_modules(main_path);
+
+        let (mut merged_interner, merged_declarations, modules) =
+            self.merge_interners_and_declarations(parsed_modules);
+
+        let mut program_builder = ProgramBuilder::new(&mut merged_interner);
+        // TODO: generate hir
     }
 
-    pub fn parse_all_modules(
-        &mut self,
-        main: PathBuf,
-        program_builder: &mut ProgramBuilder,
-    ) -> HashMap<PathBuf, Vec<Stmt>> {
-        let mut modules: HashMap<PathBuf, Vec<Stmt>> = HashMap::new();
-        let mut work_queue: VecDeque<PathBuf> = VecDeque::new();
-        let mut visited: HashSet<PathBuf> = HashSet::new();
-
+    pub fn parallel_parse_modules(
+        &self,
+        main_path: PathBuf,
+    ) -> Vec<Result<ParallelParseResult, FileReadingError>> {
         let canonical_main =
-            fs::canonicalize(main).expect("Could not find the main module");
-        work_queue.push_back(canonical_main.clone());
-        visited.insert(canonical_main);
+            fs::canonicalize(main_path).expect("Could not find the main module");
 
-        while let Some(source_path) = work_queue.pop_front() {
-            let source_code = match fs::read_to_string(&source_path) {
-                Ok(source_code) => source_code,
-                Err(e) => {
-                    self.errors.push(CompilationError::CouldNotReadFile {
-                        path: source_path,
-                        error: e,
-                    });
-                    continue;
-                }
-            };
-            let (tokens, tokenization_errors) =
-                Tokenizer::tokenize(&source_code, program_builder.string_interner);
-            if tokenization_errors.len() > 0 {
-                self.errors.push(CompilationError::Tokenization {
-                    path: source_path.clone(),
-                    errors: tokenization_errors,
-                })
-            }
+        let work_queue = Mutex::new(VecDeque::from([canonical_main.clone()]));
+        let visited = Mutex::new(HashSet::from([canonical_main]));
+        let all_results = Mutex::new(Vec::new());
 
-            let (statements, parsing_errors) =
-                Parser::parse(tokens, program_builder.string_interner);
-            if parsing_errors.len() > 0 {
-                self.errors.push(CompilationError::Parsing {
-                    path: source_path.clone(),
-                    errors: parsing_errors,
-                })
-            }
+        rayon::scope(|s| {
+            while let Some(source_path) = work_queue.lock().unwrap().pop_front() {
+                s.spawn(|_| {
+                    let mut local_interner = StringInterner::new();
 
-            let dependency_modules =
-                self.find_dependency_modules(program_builder, &source_path, &statements);
-
-            for module_path in dependency_modules {
-                if visited.insert(module_path.clone()) {
-                    work_queue.push_back(module_path);
-                }
-            }
-
-            modules.entry(source_path).or_insert(statements);
-        }
-
-        modules
-    }
-
-    pub fn find_dependency_modules(
-        &mut self,
-        program_builder: &mut ProgramBuilder,
-        current_module_path: &Path,
-        statements: &[Stmt],
-    ) -> HashSet<PathBuf> {
-        let mut dependencies: HashSet<PathBuf> = HashSet::new();
-
-        // TODO: fix the following expression, currently it panics
-        let current_module_builder = program_builder
-            .modules
-            .get_mut(current_module_path)
-            .expect(&format!(
-                "INTERNAL COMPILER ERROR: Expected the module {} to exist",
-                current_module_path.display(),
-            ));
-
-        for stmt in statements {
-            match &stmt.kind {
-                StmtKind::From { path, .. } => {
-                    let relative_path_str = &path.value;
-
-                    let mut target_path = current_module_path.to_path_buf();
-                    target_path.pop();
-                    target_path.push(relative_path_str);
-
-                    match fs::canonicalize(target_path.clone()) {
-                        Ok(canonical_path) => {
-                            dependencies.insert(canonical_path);
-                        }
+                    let source_code = match fs::read_to_string(&source_path) {
+                        Ok(sc) => sc,
                         Err(e) => {
-                            self.errors.push(CompilationError::ModuleNotFound {
-                                importing_module: current_module_path.to_path_buf(),
-                                target_path,
+                            all_results.lock().unwrap().push(Err(FileReadingError {
+                                path: source_path,
                                 error: e,
-                            });
+                            }));
+                            return;
+                        }
+                    };
+
+                    let (tokens, tokenization_errors) =
+                        Tokenizer::tokenize(&source_code, &mut local_interner);
+                    let (statements, parsing_errors) =
+                        Parser::parse(tokens, &mut local_interner);
+
+                    // TODO: handle dependency_errors
+                    let (dependencies, dependency_errors) =
+                        find_dependencies(&source_path, &statements);
+
+                    let mut queue_guard = work_queue.lock().unwrap();
+                    let mut visited_guard = visited.lock().unwrap();
+                    for dep_path in dependencies {
+                        if visited_guard.insert(dep_path.clone()) {
+                            queue_guard.push_back(dep_path);
                         }
                     }
+
+                    let result = ParallelParseResult {
+                        path: source_path,
+                        local_interner,
+                        statements,
+                        tokenization_errors,
+                        parsing_errors,
+                    };
+
+                    let mut results_guard = all_results.lock().unwrap();
+                    results_guard.push(Ok(result));
+                });
+            }
+        });
+
+        all_results.into_inner().unwrap()
+    }
+
+    pub fn merge_interners_and_declarations(
+        &mut self,
+        modules: Vec<Result<ParallelParseResult, FileReadingError>>,
+    ) -> (
+        StringInterner,                             // merged interner
+        HashMap<DeclarationId, CheckedDeclaration>, // merged declaration
+        HashMap<PathBuf, Vec<Stmt>>,                // modules
+    ) {
+        let mut parsed_modules = HashMap::new();
+        for module in modules {
+            match module {
+                Ok(parse_result) => {
+                    // TODO: Merge interners + remap old interner ids
+                    // TODO: Merge declarations
+
+                    if !parse_result.tokenization_errors.is_empty() {
+                        self.errors.push(CompilationError::Tokenization {
+                            path: parse_result.path.clone(),
+                            errors: parse_result.tokenization_errors,
+                        });
+                    }
+                    if !parse_result.parsing_errors.is_empty() {
+                        self.errors.push(CompilationError::Parsing {
+                            path: parse_result.path.clone(),
+                            errors: parse_result.parsing_errors,
+                        });
+                    }
+
+                    parsed_modules.insert(parse_result.path, parse_result.statements);
                 }
-                StmtKind::TypeAliasDecl(decl) => {
-                    let id = program_builder.new_declaration_id();
-                    // TODO: add new method -> current_module_builder.file_scope_insert(decl.identifier.name, id);
-
-                    let checked_decl = todo!();
-
-                    program_builder
-                        .declarations
-                        .insert(id, CheckedDeclaration::TypeAlias(checked_decl));
+                Err(file_error) => {
+                    self.errors
+                        .push(CompilationError::CouldNotReadFile(file_error));
                 }
-                StmtKind::Expression(Expr {
-                    kind: ExprKind::Fn { name, .. },
-                    ..
-                }) => {
-                    let id = program_builder.new_declaration_id();
-                    // TODO: add new method -> current_module_builder.file_scope_insert(name.name, id);
-
-                    let checked_fn_placeholder = todo!();
-
-                    program_builder
-                        .declarations
-                        .insert(id, CheckedDeclaration::Function(checked_fn_placeholder));
-                }
-                _ => {}
             }
         }
 
-        dependencies
+        todo!()
     }
+}
+
+fn find_dependencies(
+    current_module_path: &Path,
+    statements: &[Stmt],
+) -> (HashSet<PathBuf>, Vec<CompilationError>) {
+    let mut dependencies = HashSet::new();
+    let mut errors = Vec::new();
+
+    for stmt in statements {
+        if let StmtKind::From { path, .. } = &stmt.kind {
+            let relative_path_str = &path.value;
+            let mut target_path = current_module_path.to_path_buf();
+            target_path.pop();
+            target_path.push(relative_path_str);
+
+            match fs::canonicalize(target_path.clone()) {
+                Ok(canonical_path) => {
+                    dependencies.insert(canonical_path);
+                }
+                Err(e) => {
+                    errors.push(CompilationError::ModuleNotFound {
+                        importing_module: current_module_path.to_path_buf(),
+                        target_path,
+                        error: e,
+                    });
+                }
+            }
+        }
+    }
+    (dependencies, errors)
 }
