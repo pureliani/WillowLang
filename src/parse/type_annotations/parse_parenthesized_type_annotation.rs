@@ -4,7 +4,7 @@ use crate::{
 
 use super::Parser;
 
-impl<'a> Parser<'a> {
+impl Parser {
     pub fn parse_parenthesized_type_annotation(
         &mut self,
     ) -> Result<TypeAnnotation, ParsingError> {

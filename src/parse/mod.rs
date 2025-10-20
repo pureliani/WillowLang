@@ -2,12 +2,14 @@ mod expressions;
 mod statements;
 mod type_annotations;
 
-pub struct Parser<'a> {
+pub struct Parser {
     pub offset: usize,
     pub tokens: Vec<Token>,
     pub checkpoint_offset: usize,
-    pub interner: &'a mut StringInterner,
+    pub interner: Arc<SharedStringInterner>,
 }
+
+use std::sync::Arc;
 
 use unicode_segmentation::UnicodeSegmentation;
 
@@ -16,7 +18,7 @@ use crate::{
         stmt::Stmt, type_annotation::TypeAnnotation, IdentifierNode, Position, Span,
         StringNode,
     },
-    compile::string_interner::StringInterner,
+    compile::string_interner::{SharedStringInterner, StringInterner},
     tokenize::{KeywordKind, NumberKind, PunctuationKind, Token, TokenKind},
 };
 
@@ -73,7 +75,7 @@ pub struct DocAnnotation {
     span: Span,
 }
 
-impl<'a> Parser<'a> {
+impl Parser {
     fn match_token(&self, index: usize, kind: TokenKind) -> bool {
         if let Some(token) = self.tokens.get(self.offset + index) {
             return token.kind == kind;
@@ -306,7 +308,7 @@ impl<'a> Parser<'a> {
 
     pub fn parse(
         tokens: Vec<Token>,
-        interner: &'a mut StringInterner,
+        interner: Arc<SharedStringInterner>,
     ) -> (Vec<Stmt>, Vec<ParsingError>) {
         let mut state = Parser {
             offset: 0,

@@ -127,9 +127,11 @@ fn parse_number(full_number_str: &str) -> Result<NumberKind, TokenizationErrorKi
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
+
     use crate::{
         ast::{Position, Span},
-        compile::string_interner::StringInterner,
+        compile::string_interner::{SharedStringInterner, StringInterner},
         tokenize::{NumberKind, Token, TokenKind, Tokenizer},
     };
     use pretty_assertions::assert_eq;
@@ -380,8 +382,8 @@ mod tests {
         ];
 
         for (input, expected_kind, span) in test_cases {
-            let mut interner = StringInterner::new();
-            let (tokens, errors) = Tokenizer::tokenize(input, &mut interner);
+            let interner = Arc::new(SharedStringInterner::new());
+            let (tokens, errors) = Tokenizer::tokenize(input, interner);
 
             assert_eq!(errors, vec![]);
 

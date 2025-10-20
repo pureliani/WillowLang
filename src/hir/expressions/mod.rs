@@ -97,8 +97,8 @@ impl FunctionBuilder {
                 params,
                 body,
                 return_type,
-                name,
-            } => self.build_fn_expr(ctx, params, body, return_type, name),
+                identifier,
+            } => self.build_fn_expr(ctx, params, body, return_type, identifier),
             ExprKind::If {
                 branches,
                 else_branch,

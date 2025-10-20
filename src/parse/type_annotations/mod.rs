@@ -21,7 +21,7 @@ fn suffix_bp(token_kind: &TokenKind) -> Option<(u8, ())> {
     Some(priority)
 }
 
-impl<'a> Parser<'a> {
+impl Parser {
     pub fn parse_type_annotation(
         &mut self,
         min_prec: u8,
@@ -234,12 +234,14 @@ impl<'a> Parser<'a> {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
+
     use crate::{
         ast::{
             type_annotation::{TypeAnnotation, TypeAnnotationKind},
             Span,
         },
-        compile::string_interner::StringInterner,
+        compile::string_interner::SharedStringInterner,
         parse::Parser,
     };
 
@@ -505,13 +507,13 @@ mod tests {
         ];
 
         for (input, expected) in test_cases {
-            let mut interner = StringInterner::new();
-            let (tokens, _) = Tokenizer::tokenize(input, &mut interner);
+            let interner = Arc::new(SharedStringInterner::new());
+            let (tokens, _) = Tokenizer::tokenize(input, interner.clone());
             let mut parser = Parser {
                 offset: 0,
                 checkpoint_offset: 0,
                 tokens,
-                interner: &mut StringInterner::new(),
+                interner,
             };
             let result = parser.parse_type_annotation(0);
 

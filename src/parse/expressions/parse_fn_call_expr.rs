@@ -4,7 +4,7 @@ use crate::{
     tokenize::{PunctuationKind, TokenKind},
 };
 
-impl<'a> Parser<'a> {
+impl Parser {
     pub fn parse_fn_call_args(&mut self) -> Result<Vec<Expr>, ParsingError> {
         self.consume_punctuation(PunctuationKind::LParen)?;
         let args = self.comma_separated(

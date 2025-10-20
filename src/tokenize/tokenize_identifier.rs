@@ -17,18 +17,20 @@ impl<'a> Tokenizer<'a> {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
+
     use crate::{
         ast::{Position, Span},
-        compile::string_interner::StringInterner,
+        compile::string_interner::{SharedStringInterner, StringInterner},
         tokenize::{Token, TokenKind, Tokenizer},
     };
     use pretty_assertions::assert_eq;
 
     #[test]
     fn tokenizes_simple_identifiers() {
-        let mut interner = StringInterner::new();
+        let interner = Arc::new(SharedStringInterner::new());
         let hello_id = interner.intern("hello");
-        let (tokens, _) = Tokenizer::tokenize("hello", &mut interner);
+        let (tokens, _) = Tokenizer::tokenize("hello", interner);
 
         assert_eq!(
             tokens,
@@ -52,9 +54,9 @@ mod tests {
 
     #[test]
     fn tokenizes_sequence_as_identifier() {
-        let mut interner = StringInterner::new();
+        let interner = Arc::new(SharedStringInterner::new());
         let structhello_id = interner.intern("structhello");
-        let (tokens, _) = Tokenizer::tokenize("\nstructhello", &mut interner);
+        let (tokens, _) = Tokenizer::tokenize("\nstructhello", interner);
 
         assert_eq!(
             tokens,

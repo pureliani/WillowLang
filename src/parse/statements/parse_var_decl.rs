@@ -7,7 +7,7 @@ use crate::{
     tokenize::{KeywordKind, PunctuationKind, TokenKind},
 };
 
-impl<'a> Parser<'a> {
+impl Parser {
     pub fn parse_var_decl(
         &mut self,
         documentation: Option<DocAnnotation>,

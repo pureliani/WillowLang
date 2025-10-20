@@ -9,7 +9,7 @@ use crate::{
 
 use super::Parser;
 
-impl<'a> Parser<'a> {
+impl Parser {
     pub fn parse_fn_type_annotation(&mut self) -> Result<TypeAnnotation, ParsingError> {
         let start_offset = self.offset;
 

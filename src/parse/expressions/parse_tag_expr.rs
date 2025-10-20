@@ -4,7 +4,7 @@ use crate::{
     tokenize::{PunctuationKind, TokenKind},
 };
 
-impl<'a> Parser<'a> {
+impl Parser {
     pub fn parse_tag_expr(&mut self) -> Result<Expr, ParsingError> {
         let start_offset = self.offset;
         self.consume_punctuation(PunctuationKind::Hash)?;

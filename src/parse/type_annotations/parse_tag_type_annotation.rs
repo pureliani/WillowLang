@@ -4,7 +4,7 @@ use crate::{
     tokenize::{PunctuationKind, TokenKind},
 };
 
-impl<'a> Parser<'a> {
+impl Parser {
     pub fn parse_tag_type_annotation(&mut self) -> Result<TypeAnnotation, ParsingError> {
         let start_offset = self.offset;
 

@@ -4,7 +4,7 @@ use crate::{
     tokenize::{KeywordKind, PunctuationKind, TokenKind},
 };
 
-impl<'a> Parser<'a> {
+impl Parser {
     pub fn parse_match_expr(&mut self) -> Result<Expr, ParsingError> {
         let start_offset = self.offset;
 

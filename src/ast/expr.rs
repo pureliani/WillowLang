@@ -110,7 +110,7 @@ pub enum ExprKind {
     String(StringNode),
     Identifier(IdentifierNode),
     Fn {
-        name: IdentifierNode,
+        identifier: IdentifierNode,
         params: Vec<Param>,
         return_type: TypeAnnotation,
         body: BlockContents,

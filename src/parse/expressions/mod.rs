@@ -81,7 +81,7 @@ pub fn is_start_of_expr(token_kind: &TokenKind) -> bool {
     }
 }
 
-impl<'a> Parser<'a> {
+impl Parser {
     pub fn parse_expr(&mut self, min_prec: u8) -> Result<Expr, ParsingError> {
         let token = self.current().ok_or(self.unexpected_end_of_input())?;
 

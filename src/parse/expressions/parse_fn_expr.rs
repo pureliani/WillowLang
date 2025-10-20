@@ -7,12 +7,12 @@ use crate::{
     tokenize::{KeywordKind, PunctuationKind, TokenKind},
 };
 
-impl<'a> Parser<'a> {
+impl Parser {
     pub fn parse_fn_expr(&mut self) -> Result<Expr, ParsingError> {
         let start_offset = self.offset;
 
         self.consume_keyword(KeywordKind::Fn)?;
-        let name = self.consume_identifier()?;
+        let identifier = self.consume_identifier()?;
         self.consume_punctuation(PunctuationKind::LParen)?;
         let params = self.comma_separated(
             |p| {
@@ -35,7 +35,7 @@ impl<'a> Parser<'a> {
 
         Ok(Expr {
             kind: ExprKind::Fn {
-                name,
+                identifier,
                 params,
                 return_type,
                 body,

@@ -34,7 +34,7 @@ pub fn is_start_of_stmt(token_kind: &TokenKind) -> bool {
     )
 }
 
-impl<'a> Parser<'a> {
+impl Parser {
     pub fn parse_stmt(&mut self) -> Result<Stmt, ParsingError> {
         let result = if self.match_token(0, TokenKind::Keyword(KeywordKind::From)) {
             self.parse_from_stmt()

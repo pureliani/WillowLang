@@ -3,13 +3,13 @@ use std::{
     path::PathBuf,
     sync::{
         atomic::{AtomicUsize, Ordering},
-        Mutex,
+        Arc, Mutex,
     },
 };
 
 use crate::{
     ast::{stmt::Stmt, IdentifierNode},
-    compile::string_interner::StringInterner,
+    compile::string_interner::{SharedStringInterner, StringInterner},
     hir::{
         cfg::{
             BasicBlock, BasicBlockId, CheckedDeclaration, CheckedModule, ConstantId,
@@ -40,16 +40,16 @@ pub struct CapturedVar {
     pub identifier: IdentifierNode,
 }
 
-pub struct HIRContext<'a, 'b> {
-    pub program_builder: &'b mut ProgramBuilder<'a>,
-    pub module_builder: &'b mut ModuleBuilder,
+pub struct HIRContext<'a> {
+    pub program_builder: &'a mut ProgramBuilder,
+    pub module_builder: &'a mut ModuleBuilder,
 }
 
-pub struct ProgramBuilder<'a> {
+pub struct ProgramBuilder {
     pub modules: HashMap<PathBuf, ModuleBuilder>,
     pub declarations: HashMap<DeclarationId, CheckedDeclaration>,
     pub value_types: HashMap<ValueId, Type>,
-    pub string_interner: &'a mut StringInterner,
+    pub string_interner: Arc<SharedStringInterner>,
     /// Global errors
     pub errors: Vec<SemanticError>,
 
@@ -81,8 +81,8 @@ pub struct FunctionBuilder {
     value_id_counter: usize,
 }
 
-impl<'a> ProgramBuilder<'a> {
-    pub fn new(string_interner: &'a mut StringInterner) -> Self {
+impl ProgramBuilder {
+    pub fn new(string_interner: Arc<SharedStringInterner>) -> Self {
         ProgramBuilder {
             errors: vec![],
             modules: HashMap::new(),

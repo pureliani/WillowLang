@@ -10,7 +10,7 @@ use crate::{
 
 use super::is_start_of_expr;
 
-impl<'a> Parser<'a> {
+impl Parser {
     pub fn parse_codeblock_expr(&mut self) -> Result<BlockContents, ParsingError> {
         let start_offset = self.offset;
         self.consume_punctuation(PunctuationKind::LBrace)?;

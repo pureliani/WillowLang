@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use unicode_segmentation::UnicodeSegmentation;
 
 pub mod tokenize_documentation;
@@ -8,7 +10,7 @@ pub mod tokenize_string;
 
 use crate::{
     ast::{Position, Span},
-    compile::string_interner::{InternerId, StringInterner},
+    compile::string_interner::{InternerId, SharedStringInterner, StringInterner},
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -330,7 +332,7 @@ impl<'a> Tokenizer<'a> {
 
     pub fn tokenize(
         input: &'a str,
-        interner: &mut StringInterner,
+        interner: Arc<SharedStringInterner>,
     ) -> (Vec<Token>, Vec<TokenizationError>) {
         let mut state = Tokenizer {
             input,
@@ -560,9 +562,11 @@ fn is_keyword(identifier: &str) -> Option<KeywordKind> {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
+
     use crate::{
         ast::{Position, Span},
-        compile::string_interner::StringInterner,
+        compile::string_interner::SharedStringInterner,
         tokenize::{
             KeywordKind, NumberKind, PunctuationKind, Token, TokenKind, Tokenizer,
         },
@@ -572,9 +576,9 @@ mod tests {
     #[test]
     fn test_skip_single_line_comment() {
         let input = "// This is a comment\nlet x = 10;";
-        let mut interner = StringInterner::new();
+        let interner = Arc::new(SharedStringInterner::new());
         let x_id = interner.intern("x");
-        let (tokens, _) = Tokenizer::tokenize(input, &mut interner);
+        let (tokens, _) = Tokenizer::tokenize(input, interner);
 
         assert_eq!(
             tokens,
@@ -661,8 +665,8 @@ mod tests {
     #[test]
     fn test_skip_multiple_single_line_comments() {
         let input = "// Comment 1\n// Comment 2\nlet x = 10;";
-        let mut interner = StringInterner::new();
-        let (tokens, _) = Tokenizer::tokenize(input, &mut interner);
+        let interner = Arc::new(SharedStringInterner::new());
+        let (tokens, _) = Tokenizer::tokenize(input, interner);
 
         assert_eq!(tokens.len(), 5);
         assert_eq!(tokens[0].kind, TokenKind::Keyword(KeywordKind::Let));
@@ -671,8 +675,8 @@ mod tests {
     #[test]
     fn test_comment_at_end_of_input() {
         let input = "let x = 10; // Comment at the end";
-        let mut interner = StringInterner::new();
-        let (tokens, _) = Tokenizer::tokenize(input, &mut interner);
+        let interner = Arc::new(SharedStringInterner::new());
+        let (tokens, _) = Tokenizer::tokenize(input, interner);
 
         assert_eq!(tokens.len(), 5);
         assert_eq!(tokens[0].kind, TokenKind::Keyword(KeywordKind::Let));
@@ -681,8 +685,8 @@ mod tests {
     #[test]
     fn test_no_comments() {
         let input = "let x = 10;";
-        let mut interner = StringInterner::new();
-        let (tokens, _) = Tokenizer::tokenize(input, &mut interner);
+        let interner = Arc::new(SharedStringInterner::new());
+        let (tokens, _) = Tokenizer::tokenize(input, interner);
 
         assert_eq!(tokens.len(), 5);
         assert_eq!(tokens[0].kind, TokenKind::Keyword(KeywordKind::Let));
@@ -691,8 +695,8 @@ mod tests {
     #[test]
     fn test_only_comments() {
         let input = "// Only a comment";
-        let mut interner = StringInterner::new();
-        let (tokens, _) = Tokenizer::tokenize(input, &mut interner);
+        let interner = Arc::new(SharedStringInterner::new());
+        let (tokens, _) = Tokenizer::tokenize(input, interner);
         assert_eq!(tokens.len(), 0);
     }
 }
