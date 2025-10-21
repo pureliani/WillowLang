@@ -1,7 +1,5 @@
-use std::{fs, path::PathBuf};
-
-use codespan_reporting::files::SimpleFiles;
-use willow::{compile::Compiler, hir::ProgramBuilder};
+use std::path::PathBuf;
+use willow::compile::Compiler;
 
 fn main() {
     let file_path = match std::env::args().nth(1) {
