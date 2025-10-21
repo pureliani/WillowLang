@@ -1,14 +1,17 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, sync::Arc};
 
 use crate::{
-    compile::string_interner::{InternerId, StringInterner},
+    compile::string_interner::{InternerId, SharedStringInterner},
     hir::types::{
         checked_declaration::{CheckedFnType, CheckedTagType},
         checked_type::TypeKind,
     },
 };
 
-fn identifier_to_string(id: InternerId, string_interner: &StringInterner) -> String {
+fn identifier_to_string(
+    id: InternerId,
+    string_interner: Arc<SharedStringInterner>,
+) -> String {
     let identifier_name = string_interner.resolve(id);
 
     identifier_name.to_owned()
@@ -16,7 +19,7 @@ fn identifier_to_string(id: InternerId, string_interner: &StringInterner) -> Str
 
 fn tag_type_to_string(
     tag: &CheckedTagType,
-    string_interner: &StringInterner,
+    string_interner: Arc<SharedStringInterner>,
     visited_set: &mut HashSet<TypeKind>,
 ) -> String {
     let value_type = tag
@@ -25,7 +28,7 @@ fn tag_type_to_string(
         .map(|t| {
             format!(
                 "({})",
-                type_to_string_recursive(&t.kind, string_interner, visited_set)
+                type_to_string_recursive(&t.kind, string_interner.clone(), visited_set)
             )
         })
         .unwrap_or("".to_string());
@@ -37,14 +40,17 @@ fn tag_type_to_string(
     )
 }
 
-pub fn type_to_string(ty: &TypeKind, string_interner: &StringInterner) -> String {
+pub fn type_to_string(
+    ty: &TypeKind,
+    string_interner: Arc<SharedStringInterner>,
+) -> String {
     let mut visited_set = HashSet::new();
     type_to_string_recursive(ty, string_interner, &mut visited_set)
 }
 
 pub fn type_to_string_recursive(
     ty: &TypeKind,
-    string_interner: &StringInterner,
+    string_interner: Arc<SharedStringInterner>,
     visited_set: &mut HashSet<TypeKind>,
 ) -> String {
     // TODO: add recursion detection and handling
@@ -72,10 +78,13 @@ pub fn type_to_string_recursive(
                 .map(|field| {
                     format!(
                         "{}: {}",
-                        identifier_to_string(field.identifier.name, string_interner),
+                        identifier_to_string(
+                            field.identifier.name,
+                            string_interner.clone()
+                        ),
                         type_to_string_recursive(
                             &field.ty.kind,
-                            string_interner,
+                            string_interner.clone(),
                             visited_set
                         )
                     )
@@ -94,10 +103,10 @@ pub fn type_to_string_recursive(
                 .map(|p| {
                     format!(
                         "{}: {}",
-                        identifier_to_string(p.identifier.name, string_interner),
+                        identifier_to_string(p.identifier.name, string_interner.clone()),
                         type_to_string_recursive(
                             &p.ty.kind,
-                            string_interner,
+                            string_interner.clone(),
                             visited_set
                         )
                     )
@@ -112,12 +121,14 @@ pub fn type_to_string_recursive(
             fn_str
         }
         TypeKind::TypeAliasDecl(decl) => {
-            let name =
-                identifier_to_string(decl.borrow().identifier.name, string_interner);
+            let name = identifier_to_string(
+                decl.read().unwrap().identifier.name,
+                string_interner.clone(),
+            );
 
             let value = type_to_string_recursive(
-                &decl.borrow().value.kind,
-                string_interner,
+                &decl.read().unwrap().value.kind,
+                string_interner.clone(),
                 visited_set,
             );
 
@@ -130,7 +141,7 @@ pub fn type_to_string_recursive(
         TypeKind::Union(checked_tag_types) => {
             let variants = checked_tag_types
                 .iter()
-                .map(|tag| tag_type_to_string(tag, string_interner, visited_set))
+                .map(|tag| tag_type_to_string(tag, string_interner.clone(), visited_set))
                 .collect::<Vec<String>>()
                 .join(" | ");
 

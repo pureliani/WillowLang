@@ -32,7 +32,9 @@ pub fn get_alignment_of(type_kind: &TypeKind) -> usize {
         }
         TypeKind::Void => 1,
         TypeKind::Unknown => 1,
-        TypeKind::TypeAliasDecl(decl) => get_alignment_of(&decl.borrow().value.kind),
+        TypeKind::TypeAliasDecl(decl) => {
+            get_alignment_of(&decl.read().unwrap().value.kind)
+        }
         TypeKind::Tag(checked_tag_type) => todo!(),
     }
 }
@@ -86,7 +88,7 @@ impl FunctionBuilder {
                     .string_interner
                     .resolve(field_b.identifier.name);
 
-                name_a.cmp(name_b)
+                name_a.cmp(&name_b)
             })
         });
 

@@ -10,7 +10,7 @@ pub mod tokenize_string;
 
 use crate::{
     ast::{Position, Span},
-    compile::string_interner::{InternerId, SharedStringInterner, StringInterner},
+    compile::string_interner::{InternerId, SharedStringInterner},
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -231,7 +231,10 @@ pub enum TokenKind {
     Doc(String),
 }
 
-pub fn token_kind_to_string(kind: &TokenKind, interner: &mut StringInterner) -> String {
+pub fn token_kind_to_string(
+    kind: &TokenKind,
+    interner: Arc<SharedStringInterner>,
+) -> String {
     match kind {
         TokenKind::Identifier(id) => interner.resolve(*id).to_string(),
         TokenKind::Punctuation(punctuation_kind) => punctuation_kind.to_string(),
