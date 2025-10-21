@@ -30,7 +30,9 @@ use crate::{
         ProgramBuilder,
     },
     parse::{Parser, ParsingError, ParsingErrorKind},
-    tokenize::{token_kind_to_string, TokenizationError, TokenizationErrorKind, Tokenizer},
+    tokenize::{
+        token_kind_to_string, TokenizationError, TokenizationErrorKind, Tokenizer,
+    },
 };
 
 pub struct Compiler {
@@ -40,11 +42,27 @@ pub struct Compiler {
 }
 
 pub enum CompilationError {
-    CouldNotReadFile { path: PathBuf, error: std::io::Error },
-    ModuleNotFound { importing_module: PathBuf, target_path: PathBuf, error: std::io::Error },
-    Tokenization { path: PathBuf, errors: Vec<TokenizationError> },
-    Parsing { path: PathBuf, errors: Vec<ParsingError> },
-    Semantic { path: PathBuf, errors: Vec<SemanticError> },
+    CouldNotReadFile {
+        path: PathBuf,
+        error: std::io::Error,
+    },
+    ModuleNotFound {
+        importing_module: PathBuf,
+        target_path: PathBuf,
+        error: std::io::Error,
+    },
+    Tokenization {
+        path: PathBuf,
+        errors: Vec<TokenizationError>,
+    },
+    Parsing {
+        path: PathBuf,
+        errors: Vec<ParsingError>,
+    },
+    Semantic {
+        path: PathBuf,
+        errors: Vec<SemanticError>,
+    },
 }
 
 struct ParallelParseResult {
@@ -110,8 +128,12 @@ impl Compiler {
         // }
     }
 
-    pub fn parallel_parse_modules(&self, main_path: PathBuf) -> Vec<Result<ParallelParseResult, CompilationError>> {
-        let canonical_main = fs::canonicalize(main_path).expect("Could not find the main module");
+    pub fn parallel_parse_modules(
+        &self,
+        main_path: PathBuf,
+    ) -> Vec<Result<ParallelParseResult, CompilationError>> {
+        let canonical_main =
+            fs::canonicalize(main_path).expect("Could not find the main module");
 
         let work_queue = Mutex::new(VecDeque::from([canonical_main.clone()]));
         let visited = Mutex::new(HashSet::from([canonical_main]));
@@ -119,27 +141,38 @@ impl Compiler {
 
         rayon::scope(|s| {
             while let Some(source_path) = work_queue.lock().unwrap().pop_front() {
-                let interner_clone = self.interner.clone();
-                let files_clone = self.files.clone();
                 s.spawn(|_| {
+                    let interner = self.interner.clone();
+                    let files = self.files.clone();
                     let source_code = match fs::read_to_string(&source_path) {
                         Ok(sc) => sc,
                         Err(e) => {
-                            all_results.lock().unwrap().push(Err(CompilationError::CouldNotReadFile { path: source_path, error: e }));
+                            all_results.lock().unwrap().push(Err(
+                                CompilationError::CouldNotReadFile {
+                                    path: source_path,
+                                    error: e,
+                                },
+                            ));
                             return;
                         }
                     };
 
-                    let path_str = source_path.to_str().expect("Path contains invalid UTF-8");
-                    let file_id = interner_clone.intern(path_str).0;
-                    files_clone.lock().unwrap().add(file_id, source_code.clone());
+                    let path_str =
+                        source_path.to_str().expect("Path contains invalid UTF-8");
+                    let file_id = interner.intern(path_str).0;
+                    files.lock().unwrap().add(file_id, source_code.clone());
 
-                    let (tokens, tokenization_errors) = Tokenizer::tokenize(&source_code, interner_clone.clone());
-                    let (statements, parsing_errors) = Parser::parse(tokens, interner_clone.clone());
+                    let (tokens, tokenization_errors) =
+                        Tokenizer::tokenize(&source_code, interner.clone());
+                    let (statements, parsing_errors) =
+                        Parser::parse(tokens, interner.clone());
 
-                    let (dependencies, dependency_errors, declarations) = find_dependencies(&source_path, &statements);
+                    let (dependencies, dependency_errors, declarations) =
+                        find_dependencies(&source_path, &statements);
 
-                    let mut local_results: Vec<Result<ParallelParseResult, CompilationError>> = dependency_errors.into_iter().map(Err).collect();
+                    let mut local_results: Vec<
+                        Result<ParallelParseResult, CompilationError>,
+                    > = dependency_errors.into_iter().map(Err).collect();
 
                     let mut queue_guard = work_queue.lock().unwrap();
                     let mut visited_guard = visited.lock().unwrap();
@@ -181,18 +214,48 @@ impl Compiler {
                     errors.iter().for_each(|e| {
                         let span = e.span.start.byte_offset..e.span.end.byte_offset;
                         let label = Label::primary(file_id, span);
-                        let err = Diagnostic::error().with_code(format!("T{}", e.kind.code()));
+                        let err =
+                            Diagnostic::error().with_code(format!("T{}", e.kind.code()));
 
                         let diagnostic = match &e.kind {
-                            TokenizationErrorKind::UnterminatedString => err.with_message("Unterminated string").with_label(label.with_message("This string is not terminated")),
-                            TokenizationErrorKind::UnknownToken => err.with_message("Unknown token").with_label(label.with_message("This token is not recognized")),
-                            TokenizationErrorKind::UnknownEscapeSequence => err.with_message("Unknown escape sequence").with_label(label.with_message("The escape sequence here is invalid")),
-                            TokenizationErrorKind::InvalidFloatingNumber => err.with_message("Invalid floating-point number").with_label(label.with_message("This is not a valid floating-point number")),
-                            TokenizationErrorKind::InvalidIntegerNumber => err.with_message("Invalid integer number").with_label(label.with_message("This is not a valid integer number")),
-                            TokenizationErrorKind::UnterminatedDoc => err.with_message("Unterminated documentation").with_label(label.with_message("This documentation block is not terminated")),
+                            TokenizationErrorKind::UnterminatedString => {
+                                err.with_message("Unterminated string").with_label(
+                                    label.with_message("This string is not terminated"),
+                                )
+                            }
+                            TokenizationErrorKind::UnknownToken => {
+                                err.with_message("Unknown token").with_label(
+                                    label.with_message("This token is not recognized"),
+                                )
+                            }
+                            TokenizationErrorKind::UnknownEscapeSequence => {
+                                err.with_message("Unknown escape sequence").with_label(
+                                    label.with_message(
+                                        "The escape sequence here is invalid",
+                                    ),
+                                )
+                            }
+                            TokenizationErrorKind::InvalidFloatingNumber => err
+                                .with_message("Invalid floating-point number")
+                                .with_label(label.with_message(
+                                    "This is not a valid floating-point number",
+                                )),
+                            TokenizationErrorKind::InvalidIntegerNumber => {
+                                err.with_message("Invalid integer number").with_label(
+                                    label.with_message(
+                                        "This is not a valid integer number",
+                                    ),
+                                )
+                            }
+                            TokenizationErrorKind::UnterminatedDoc => err
+                                .with_message("Unterminated documentation")
+                                .with_label(label.with_message(
+                                    "This documentation block is not terminated",
+                                )),
                         };
 
-                        let _ = term::emit(&mut writer.lock(), &config, &*files, &diagnostic);
+                        let _ =
+                            term::emit(&mut writer.lock(), &config, &*files, &diagnostic);
                     });
                 }
                 CompilationError::Parsing { path, errors } => {
@@ -338,13 +401,29 @@ impl Compiler {
                     });
                 }
                 CompilationError::CouldNotReadFile { path, error } => {
-                    let diagnostic = Diagnostic::error().with_message("Could not read file").with_notes(vec![format!("Path: {}", path.display()), format!("Error: {}", error)]);
+                    let diagnostic = Diagnostic::error()
+                        .with_message("Could not read file")
+                        .with_notes(vec![
+                            format!("Path: {}", path.display()),
+                            format!("Error: {}", error),
+                        ]);
                     let _ = term::emit(&mut writer.lock(), &config, &*files, &diagnostic);
                 }
-                CompilationError::ModuleNotFound { importing_module, target_path, error } => {
+                CompilationError::ModuleNotFound {
+                    importing_module,
+                    target_path,
+                    error,
+                } => {
                     let diagnostic = Diagnostic::error()
                         .with_message("Module not found")
-                        .with_notes(vec![format!("Could not resolve import '{}'", target_path.display()), format!("  imported from: {}", importing_module.display()), format!("  error: {}", error)]);
+                        .with_notes(vec![
+                            format!(
+                                "Could not resolve import '{}'",
+                                target_path.display()
+                            ),
+                            format!("  imported from: {}", importing_module.display()),
+                            format!("  error: {}", error),
+                        ]);
                     let _ = term::emit(&mut writer.lock(), &config, &*files, &diagnostic);
                 }
             };
@@ -352,7 +431,10 @@ impl Compiler {
     }
 }
 
-fn find_dependencies(current_module_path: &Path, statements: &[Stmt]) -> (HashSet<PathBuf>, Vec<CompilationError>, Vec<IdentifierNode>) {
+fn find_dependencies(
+    current_module_path: &Path,
+    statements: &[Stmt],
+) -> (HashSet<PathBuf>, Vec<CompilationError>, Vec<IdentifierNode>) {
     let mut dependencies = HashSet::new();
     let mut errors = vec![];
     let mut declarations = vec![];
@@ -378,7 +460,10 @@ fn find_dependencies(current_module_path: &Path, statements: &[Stmt]) -> (HashSe
                     }
                 }
             }
-            StmtKind::Expression(Expr { kind: ExprKind::Fn { identifier, .. }, .. }) => {
+            StmtKind::Expression(Expr {
+                kind: ExprKind::Fn { identifier, .. },
+                ..
+            }) => {
                 declarations.push(*identifier);
             }
             StmtKind::TypeAliasDecl(TypeAliasDecl { identifier, .. }) => {
