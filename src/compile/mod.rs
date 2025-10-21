@@ -331,17 +331,13 @@ pub fn compile_file<'a, 'b>(
     }
 }
 
-pub struct Compiler {
-    errors: Vec<CompilationError>,
-}
-
-pub struct FileReadingError {
-    path: PathBuf,
-    error: std::io::Error,
-}
+pub struct Compiler;
 
 pub enum CompilationError {
-    CouldNotReadFile(FileReadingError),
+    CouldNotReadFile {
+        path: PathBuf,
+        error: std::io::Error,
+    },
     ModuleNotFound {
         importing_module: PathBuf,
         target_path: PathBuf,
@@ -375,6 +371,37 @@ impl Compiler {
         let parsed_modules =
             self.parallel_parse_modules(main_path, string_interner.clone());
 
+        let mut all_errors = vec![];
+        for m in parsed_modules {
+            match m {
+                Err(e) => {
+                    all_errors.push(e);
+                }
+                Ok(module) => {
+                    if module.tokenization_errors.len() > 0 {
+                        all_errors.push(CompilationError::Tokenization {
+                            path: module.path.clone(),
+                            errors: module.tokenization_errors,
+                        });
+                    }
+
+                    if module.parsing_errors.len() > 0 {
+                        all_errors.push(CompilationError::Parsing {
+                            path: module.path,
+                            errors: module.parsing_errors,
+                        });
+                    }
+
+                    // TODO: merge declarations
+                }
+            };
+        }
+
+        if all_errors.len() > 0 {
+            report_errors(&all_errors);
+            return;
+        }
+
         let mut program_builder = ProgramBuilder::new(string_interner);
         // TODO: generate hir
     }
@@ -383,7 +410,7 @@ impl Compiler {
         &self,
         main_path: PathBuf,
         string_interner: Arc<SharedStringInterner>,
-    ) -> Vec<Result<ParallelParseResult, FileReadingError>> {
+    ) -> Vec<Result<ParallelParseResult, CompilationError>> {
         let canonical_main =
             fs::canonicalize(main_path).expect("Could not find the main module");
 
@@ -397,10 +424,12 @@ impl Compiler {
                     let source_code = match fs::read_to_string(&source_path) {
                         Ok(sc) => sc,
                         Err(e) => {
-                            all_results.lock().unwrap().push(Err(FileReadingError {
-                                path: source_path,
-                                error: e,
-                            }));
+                            all_results.lock().unwrap().push(Err(
+                                CompilationError::CouldNotReadFile {
+                                    path: source_path,
+                                    error: e,
+                                },
+                            ));
                             return;
                         }
                     };
@@ -410,9 +439,14 @@ impl Compiler {
                     let (statements, parsing_errors) =
                         Parser::parse(tokens, string_interner.clone());
 
-                    // TODO: handle dependency_errors
                     let (dependencies, dependency_errors, declarations) =
                         find_dependencies(&source_path, &statements);
+                    all_results.lock().unwrap().extend(
+                        dependency_errors
+                            .into_iter()
+                            .map(|e| Err(e))
+                            .collect::<Vec<_>>(),
+                    );
 
                     let mut queue_guard = work_queue.lock().unwrap();
                     let mut visited_guard = visited.lock().unwrap();
@@ -483,4 +517,8 @@ fn find_dependencies(
     }
 
     (dependencies, errors, declarations)
+}
+
+fn report_errors(errors: &[CompilationError]) {
+    todo!()
 }

@@ -1,7 +1,6 @@
 use std::{
-    cell::RefCell,
     hash::{Hash, Hasher},
-    rc::Rc,
+    sync::{Arc, RwLock},
 };
 
 use crate::{
@@ -32,7 +31,7 @@ pub enum TypeKind {
     Tag(CheckedTagType),
     Union(Vec<CheckedTagType>),
     Struct(Vec<CheckedParam>),
-    TypeAliasDecl(Rc<RefCell<CheckedTypeAliasDecl>>),
+    TypeAliasDecl(Arc<RwLock<CheckedTypeAliasDecl>>),
     FnType(CheckedFnType),
     Pointer(Box<Type>),
     Unknown,

@@ -3,6 +3,7 @@ use std::{
     collections::{HashMap, HashSet},
     path::PathBuf,
     rc::Rc,
+    sync::{Arc, RwLock},
 };
 
 use crate::{
@@ -174,8 +175,8 @@ pub struct ControlFlowGraph {
 
 #[derive(Clone, Debug)]
 pub enum CheckedDeclaration {
-    TypeAlias(Rc<RefCell<CheckedTypeAliasDecl>>),
-    Function(Rc<RefCell<CheckedFnDecl>>),
+    TypeAlias(Arc<RwLock<CheckedTypeAliasDecl>>),
+    Function(Arc<RwLock<CheckedFnDecl>>),
     Var(CheckedVarDecl),
 }
 
