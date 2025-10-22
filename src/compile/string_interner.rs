@@ -54,6 +54,7 @@ impl SharedStringInterner {
         if let Some(id) = reader.forward.get(key) {
             return InternerId(*id);
         }
+        drop(reader);
 
         let mut writer = self.interner.write().unwrap();
 

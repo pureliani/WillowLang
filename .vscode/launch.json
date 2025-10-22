@@ -1,21 +1,15 @@
 {
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug code.wl",
-            "cargo": {
-                "args": [
-                    "build",
-                    "--bin",
-                    "willow",
-                ]
-            },
-            "args": [
-                "./code.wl"
-            ],
-            "cwd": "${workspaceFolder}"
-        }
-    ]
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug code.wl",
+      "cargo": {
+        "args": ["build", "--bin", "willow"]
+      },
+      "args": ["./code.wl"],
+      "cwd": "${workspaceFolder}"
+    }
+  ]
 }

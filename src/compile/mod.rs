@@ -65,7 +65,7 @@ pub enum CompilationError {
     },
 }
 
-struct ParallelParseResult {
+pub struct ParallelParseResult {
     path: PathBuf,
     statements: Vec<Stmt>,
     tokenization_errors: Vec<TokenizationError>,
