@@ -74,8 +74,17 @@ pub struct CheckedFnDecl {
 }
 
 #[derive(Clone, Debug)]
+pub enum VarStorage {
+    /// The variable is on the stack, ValueId is a direct pointer to its stack slot.
+    Stack(ValueId),
+    /// The variable has been captured by a closure.
+    Captured,
+}
+
+#[derive(Clone, Debug)]
 pub struct CheckedVarDecl {
-    pub stack_ptr: ValueId,
+    pub id: DeclarationId,
+    pub storage: VarStorage,
     pub identifier: IdentifierNode,
     pub documentation: Option<DocAnnotation>,
     pub constraint: Type,

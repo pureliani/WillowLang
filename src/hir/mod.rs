@@ -3,18 +3,17 @@ use std::{
     path::PathBuf,
     sync::{
         atomic::{AtomicUsize, Ordering},
-        Arc, Mutex,
+        Arc,
     },
 };
 
 use crate::{
     ast::{stmt::Stmt, IdentifierNode},
-    compile::string_interner::{SharedStringInterner, StringInterner},
+    compile::string_interner::SharedStringInterner,
     hir::{
         cfg::{
-            BasicBlock, BasicBlockId, CheckedDeclaration, CheckedModule, ConstantId,
-            ControlFlowGraph, DeclarationId, FunctionId, HeapAllocationId, Value,
-            ValueId,
+            BasicBlock, BasicBlockId, CheckedModule, ConstantId, ControlFlowGraph,
+            DeclarationId, FunctionId, HeapAllocationId, Value, ValueId,
         },
         errors::SemanticError,
         types::{
@@ -47,7 +46,6 @@ pub struct HIRContext<'a> {
 
 pub struct ProgramBuilder {
     pub modules: HashMap<PathBuf, ModuleBuilder>,
-    pub declarations: HashMap<DeclarationId, CheckedDeclaration>,
     pub value_types: HashMap<ValueId, Type>,
     pub string_interner: Arc<SharedStringInterner>,
     /// Global errors
@@ -87,7 +85,6 @@ impl ProgramBuilder {
             errors: vec![],
             modules: HashMap::new(),
             value_types: HashMap::new(),
-            declarations: HashMap::new(),
             string_interner,
             function_id_counter: AtomicUsize::new(0),
             constant_id_counter: AtomicUsize::new(0),

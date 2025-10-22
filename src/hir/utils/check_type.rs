@@ -11,7 +11,6 @@ use crate::{
             checked_declaration::{CheckedFnType, CheckedParam, CheckedTagType},
             checked_type::{Type, TypeKind},
         },
-        utils::scope::ScopeKind,
         FunctionBuilder, HIRContext,
     },
 };
@@ -38,7 +37,7 @@ impl FunctionBuilder {
         span: Span,
     ) -> Result<TypeKind, SemanticError> {
         ctx.module_builder
-            .scope_lookup(id.name, &ctx.program_builder)
+            .scope_lookup(id.name)
             .map(|entry| match entry {
                 CheckedDeclaration::TypeAlias(decl) => {
                     Ok(TypeKind::TypeAliasDecl(decl.clone()))
@@ -94,10 +93,8 @@ impl FunctionBuilder {
                 params,
                 return_type,
             } => {
-                ctx.module_builder.enter_scope(ScopeKind::FnType);
                 let checked_params = self.check_params(ctx, &params);
                 let checked_return_type = self.check_type_annotation(ctx, return_type);
-                ctx.module_builder.exit_scope();
 
                 TypeKind::FnType(CheckedFnType {
                     params: checked_params,

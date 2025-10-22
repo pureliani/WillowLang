@@ -1,8 +1,11 @@
+use std::sync::{Arc, RwLock};
+
 use crate::{
     ast::{decl::VarDecl, Span},
     hir::{
+        cfg::CheckedDeclaration,
         errors::{SemanticError, SemanticErrorKind},
-        types::checked_declaration::CheckedVarDecl,
+        types::checked_declaration::{CheckedVarDecl, VarStorage},
         FunctionBuilder, HIRContext,
     },
 };
@@ -77,15 +80,16 @@ impl FunctionBuilder {
         };
 
         let checked_var_decl = CheckedVarDecl {
+            id: ctx.program_builder.new_declaration_id(),
+            storage: VarStorage::Stack(variable_stack_ptr),
             identifier: var_decl.identifier,
             documentation: var_decl.documentation,
-            stack_ptr: variable_stack_ptr,
             constraint,
         };
 
         ctx.module_builder.scope_insert(
             var_decl.identifier,
-            SymbolEntry::VarDecl(checked_var_decl),
+            CheckedDeclaration::Var(checked_var_decl),
             span,
         );
     }

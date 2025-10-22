@@ -4,9 +4,9 @@ use crate::{
     ast::{IdentifierNode, Span},
     compile::string_interner::InternerId,
     hir::{
-        cfg::{BasicBlockId, CheckedDeclaration, DeclarationId},
+        cfg::{BasicBlockId, CheckedDeclaration},
         errors::{SemanticError, SemanticErrorKind},
-        ModuleBuilder, ProgramBuilder,
+        ModuleBuilder,
     },
 };
 
@@ -19,14 +19,13 @@ pub enum ScopeKind {
     },
     CodeBlock,
     File,
-    TypeAlias,
-    FnType,
+    GenericParams, // Not used for now
 }
 
 #[derive(Debug)]
 pub struct Scope {
     pub kind: ScopeKind,
-    symbols: HashMap<InternerId, DeclarationId>,
+    symbols: HashMap<InternerId, CheckedDeclaration>,
 }
 
 impl Scope {
@@ -64,12 +63,12 @@ impl ModuleBuilder {
     pub fn scope_insert(
         &mut self,
         id: IdentifierNode,
-        declaration_id: DeclarationId,
+        declaration: CheckedDeclaration,
         span: Span,
     ) {
         let last_scope = self.last_scope_mut();
 
-        if let Some(_) = last_scope.symbols.insert(id.name, declaration_id) {
+        if let Some(_) = last_scope.symbols.insert(id.name, declaration) {
             self.errors.push(SemanticError {
                 kind: SemanticErrorKind::DuplicateIdentifier(id),
                 span,
@@ -77,17 +76,12 @@ impl ModuleBuilder {
         }
     }
 
-    pub fn scope_lookup<'a, 'b>(
-        &'a self,
-        key: InternerId,
-        program_builder: &'b ProgramBuilder,
-    ) -> Option<&'b CheckedDeclaration> {
+    pub fn scope_lookup(&self, key: InternerId) -> Option<&CheckedDeclaration> {
         for scope in self.scopes.iter().rev() {
             if let Some(declaration) = scope.symbols.get(&key) {
-                todo!()
+                return Some(declaration);
             }
         }
-
         None
     }
 
