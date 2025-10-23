@@ -1,5 +1,3 @@
-use std::sync::{Arc, RwLock};
-
 use crate::{
     ast::{decl::VarDecl, Span},
     hir::{
