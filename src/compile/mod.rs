@@ -1,16 +1,15 @@
-use std::{
-    collections::{HashSet, VecDeque},
-    fs,
-    path::{Path, PathBuf},
-    sync::{Arc, Mutex},
-};
-
 use codespan_reporting::{
     diagnostic::{Diagnostic, Label},
     files::SimpleFiles,
-    term::{
-        self,
-        termcolor::{ColorChoice, StandardStream},
+    term::{self, termcolor::{ColorChoice, StandardStream}},
+};
+
+use std::{
+    collections::{HashSet},
+    fs,
+    path::{Path, PathBuf},
+    sync::{
+        Arc, Mutex,
     },
 };
 
@@ -41,6 +40,7 @@ pub struct Compiler {
     errors: Vec<CompilationError>,
 }
 
+#[derive(Debug)]
 pub enum CompilationError {
     CouldNotReadFile {
         path: PathBuf,
@@ -65,6 +65,7 @@ pub enum CompilationError {
     },
 }
 
+#[derive(Debug)]
 pub struct ParallelParseResult {
     path: PathBuf,
     statements: Vec<Stmt>,
@@ -133,39 +134,42 @@ impl Compiler {
         main_path: PathBuf,
     ) -> Vec<Result<ParallelParseResult, CompilationError>> {
         let canonical_main =
-            fs::canonicalize(main_path).expect("Could not find the main module");
+            main_path.canonicalize().expect("Could not find the main module");
 
-        let work_queue = Mutex::new(VecDeque::from([canonical_main.clone()]));
-        let visited = Mutex::new(HashSet::from([canonical_main]));
-        let all_results = Mutex::new(Vec::new());
+        let visited = Arc::new(Mutex::new(HashSet::new()));
+        let all_results = Arc::new(Mutex::new(Vec::new()));
 
-        rayon::scope(|s| loop {
-            let source_path = {
-                let mut guard = work_queue.lock().unwrap();
-                if let Some(p) = guard.pop_front() {
-                    p
-                } else {
-                    break;
+        rayon::scope(|s| {
+            fn parse_recursive(
+                path: PathBuf,
+                s: &rayon::Scope,
+                interner: Arc<SharedStringInterner>,
+                files: Arc<Mutex<SimpleFiles<usize, String>>>,
+                visited: Arc<Mutex<HashSet<PathBuf>>>,
+                all_results: Arc<
+                    Mutex<Vec<Result<ParallelParseResult, CompilationError>>>,
+                >,
+            ) {
+                let path = path.canonicalize().expect("Could not find a module");
+
+                {
+                    let mut visited_guard = visited.lock().unwrap();
+                    if !visited_guard.insert(path.clone()) {
+                        return;
+                    }
                 }
-            };
 
-            s.spawn(|_| {
-                let interner = self.interner.clone();
-                let files = self.files.clone();
-                let source_code = match fs::read_to_string(&source_path) {
+                let source_code = match fs::read_to_string(&path) {
                     Ok(sc) => sc,
                     Err(e) => {
                         all_results.lock().unwrap().push(Err(
-                            CompilationError::CouldNotReadFile {
-                                path: source_path,
-                                error: e,
-                            },
+                            CompilationError::CouldNotReadFile { path, error: e },
                         ));
                         return;
                     }
                 };
 
-                let path_str = source_path.to_str().expect("Path contains invalid UTF-8");
+                let path_str = path.to_str().expect("Path contains invalid UTF-8");
                 let file_id = interner.intern(path_str).0;
                 files.lock().unwrap().add(file_id, source_code.clone());
 
@@ -175,33 +179,51 @@ impl Compiler {
                     Parser::parse(tokens, interner.clone());
 
                 let (dependencies, dependency_errors, declarations) =
-                    find_dependencies(&source_path, &statements);
+                    find_dependencies(&path, &statements);
 
-                let mut local_results: Vec<
-                    Result<ParallelParseResult, CompilationError>,
-                > = dependency_errors.into_iter().map(Err).collect();
-
-                let mut queue_guard = work_queue.lock().unwrap();
-                let mut visited_guard = visited.lock().unwrap();
                 for dep_path in dependencies {
-                    if visited_guard.insert(dep_path.clone()) {
-                        queue_guard.push_back(dep_path);
-                    }
+                    let interner = Arc::clone(&interner);
+                    let files = Arc::clone(&files);
+                    let visited = Arc::clone(&visited);
+                    let all_results = Arc::clone(&all_results);
+
+                    s.spawn(move |s| {
+                        parse_recursive(
+                            dep_path,
+                            s,
+                            interner,
+                            files,
+                            visited,
+                            all_results,
+                        );
+                    });
                 }
 
-                local_results.push(Ok(ParallelParseResult {
-                    path: source_path,
+                let mut results_guard = all_results.lock().unwrap();
+                results_guard.extend(dependency_errors.into_iter().map(Err));
+                results_guard.push(Ok(ParallelParseResult {
+                    path,
                     statements,
                     declarations,
                     tokenization_errors,
                     parsing_errors,
                 }));
+            }
 
-                all_results.lock().unwrap().extend(local_results);
-            });
+            parse_recursive(
+                canonical_main,
+                s,
+                self.interner.clone(),
+                self.files.clone(),
+                visited,
+                all_results.clone(),
+            );
         });
 
-        all_results.into_inner().unwrap()
+        Arc::try_unwrap(all_results)
+            .expect("Arc unwrap failed")
+            .into_inner()
+            .expect("Mutex into_inner failed")
     }
 
     pub fn report_errors(&self) {
@@ -267,7 +289,9 @@ impl Compiler {
                     });
                 }
                 CompilationError::Parsing { path, errors } => {
-                    let file_id = self.interner.intern(path.to_str().unwrap()).0;
+                    let path_str = path.to_str().unwrap();
+                    let file_id = self.interner.intern(path_str).0;
+
                     errors.iter().for_each(|e| {
                         let span = e.span.start.byte_offset..e.span.end.byte_offset;
                         let label = Label::primary(file_id, span);
@@ -305,7 +329,7 @@ impl Compiler {
                                 .with_label(label.with_message(format!("Unexpected token \"{}\" after final expression", token_kind_to_string(&found.kind, self.interner.clone())))),
                             ParsingErrorKind::ExpectedATagTypeButFound(type_annotation) => todo!(),
                         };
-
+                        
                         let _ = term::emit(&mut writer.lock(), &config, &*files, &diagnostic);
                     });
                 }
