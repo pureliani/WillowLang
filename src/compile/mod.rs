@@ -76,7 +76,7 @@ pub struct ParallelParseResult {
 impl Compiler {
     pub fn new() -> Self {
         Self {
-            interner: Arc::new(SharedStringInterner::new()),
+            interner: Arc::new(SharedStringInterner::default()),
             files: Arc::new(Mutex::new(SimpleFiles::new())),
             errors: Vec::new(),
         }
@@ -139,60 +139,66 @@ impl Compiler {
         let visited = Mutex::new(HashSet::from([canonical_main]));
         let all_results = Mutex::new(Vec::new());
 
-        rayon::scope(|s| {
-            while let Some(source_path) = work_queue.lock().unwrap().pop_front() {
-                s.spawn(|_| {
-                    let interner = self.interner.clone();
-                    let files = self.files.clone();
-                    let source_code = match fs::read_to_string(&source_path) {
-                        Ok(sc) => sc,
-                        Err(e) => {
-                            all_results.lock().unwrap().push(Err(
-                                CompilationError::CouldNotReadFile {
-                                    path: source_path,
-                                    error: e,
-                                },
-                            ));
-                            return;
-                        }
-                    };
+        rayon::scope(|s| loop {
+            let source_path = {
+                let mut guard = work_queue.lock().unwrap();
+                if let Some(p) = guard.pop_front() {
+                    p
+                } else {
+                    break;
+                }
+            };
 
-                    let path_str =
-                        source_path.to_str().expect("Path contains invalid UTF-8");
-                    let file_id = interner.intern(path_str).0;
-                    files.lock().unwrap().add(file_id, source_code.clone());
-
-                    let (tokens, tokenization_errors) =
-                        Tokenizer::tokenize(&source_code, interner.clone());
-                    let (statements, parsing_errors) =
-                        Parser::parse(tokens, interner.clone());
-
-                    let (dependencies, dependency_errors, declarations) =
-                        find_dependencies(&source_path, &statements);
-
-                    let mut local_results: Vec<
-                        Result<ParallelParseResult, CompilationError>,
-                    > = dependency_errors.into_iter().map(Err).collect();
-
-                    let mut queue_guard = work_queue.lock().unwrap();
-                    let mut visited_guard = visited.lock().unwrap();
-                    for dep_path in dependencies {
-                        if visited_guard.insert(dep_path.clone()) {
-                            queue_guard.push_back(dep_path);
-                        }
+            s.spawn(|_| {
+                let interner = self.interner.clone();
+                let files = self.files.clone();
+                let source_code = match fs::read_to_string(&source_path) {
+                    Ok(sc) => sc,
+                    Err(e) => {
+                        all_results.lock().unwrap().push(Err(
+                            CompilationError::CouldNotReadFile {
+                                path: source_path,
+                                error: e,
+                            },
+                        ));
+                        return;
                     }
+                };
 
-                    local_results.push(Ok(ParallelParseResult {
-                        path: source_path,
-                        statements,
-                        declarations,
-                        tokenization_errors,
-                        parsing_errors,
-                    }));
+                let path_str = source_path.to_str().expect("Path contains invalid UTF-8");
+                let file_id = interner.intern(path_str).0;
+                files.lock().unwrap().add(file_id, source_code.clone());
 
-                    all_results.lock().unwrap().extend(local_results);
-                });
-            }
+                let (tokens, tokenization_errors) =
+                    Tokenizer::tokenize(&source_code, interner.clone());
+                let (statements, parsing_errors) =
+                    Parser::parse(tokens, interner.clone());
+
+                let (dependencies, dependency_errors, declarations) =
+                    find_dependencies(&source_path, &statements);
+
+                let mut local_results: Vec<
+                    Result<ParallelParseResult, CompilationError>,
+                > = dependency_errors.into_iter().map(Err).collect();
+
+                let mut queue_guard = work_queue.lock().unwrap();
+                let mut visited_guard = visited.lock().unwrap();
+                for dep_path in dependencies {
+                    if visited_guard.insert(dep_path.clone()) {
+                        queue_guard.push_back(dep_path);
+                    }
+                }
+
+                local_results.push(Ok(ParallelParseResult {
+                    path: source_path,
+                    statements,
+                    declarations,
+                    tokenization_errors,
+                    parsing_errors,
+                }));
+
+                all_results.lock().unwrap().extend(local_results);
+            });
         });
 
         all_results.into_inner().unwrap()
@@ -200,11 +206,13 @@ impl Compiler {
 
     pub fn report_errors(&self) {
         let writer = StandardStream::stderr(ColorChoice::Always);
-        let mut config = codespan_reporting::term::Config::default();
-        config.start_context_lines = 8;
-        config.end_context_lines = 8;
-        config.before_label_lines = 8;
-        config.after_label_lines = 8;
+        let config = codespan_reporting::term::Config {
+            start_context_lines: 8,
+            end_context_lines: 8,
+            before_label_lines: 8,
+            after_label_lines: 8,
+            ..Default::default()
+        };
         let files = self.files.lock().unwrap();
 
         for error in &self.errors {

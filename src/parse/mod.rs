@@ -44,7 +44,7 @@ pub enum ParsingErrorKind {
 impl ParsingErrorKind {
     pub fn code(&self) -> usize {
         match self {
-            ParsingErrorKind::DocMustBeFollowedByDeclaration { .. } => 1,
+            ParsingErrorKind::DocMustBeFollowedByDeclaration => 1,
             ParsingErrorKind::ExpectedAnExpressionButFound(..) => 2,
             ParsingErrorKind::ExpectedATypeButFound(..) => 3,
             ParsingErrorKind::InvalidSuffixOperator(..) => 4,
@@ -120,7 +120,7 @@ impl Parser {
     }
 
     fn get_span(
-        &mut self,
+        &self,
         start_offset: usize,
         end_offset: usize,
     ) -> Result<Span, ParsingError> {
@@ -163,12 +163,10 @@ impl Parser {
                         value: owned_value,
                     })
                 }
-                _ => {
-                    return Err(ParsingError {
-                        kind: ParsingErrorKind::ExpectedAStringValue,
-                        span: t.span,
-                    })
-                }
+                _ => Err(ParsingError {
+                    kind: ParsingErrorKind::ExpectedAStringValue,
+                    span: t.span,
+                }),
             }
         } else {
             Err(self.unexpected_end_of_input())

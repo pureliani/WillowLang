@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{hash_map::Entry, HashMap};
 
 use crate::{
     ast::{IdentifierNode, Span},
@@ -6,13 +6,13 @@ use crate::{
     hir::{
         cfg::{BasicBlockId, CheckedDeclaration},
         errors::{SemanticError, SemanticErrorKind},
-        ModuleBuilder,
+        FunctionBuilder, ModuleBuilder,
     },
 };
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug)]
 pub enum ScopeKind {
-    Function,
+    Function(Box<FunctionBuilder>),
     While {
         break_target: BasicBlockId,
         continue_target: BasicBlockId,
@@ -67,8 +67,9 @@ impl ModuleBuilder {
         span: Span,
     ) {
         let last_scope = self.last_scope_mut();
-
-        if let Some(_) = last_scope.symbols.insert(id.name, declaration) {
+        if let Entry::Vacant(e) = last_scope.symbols.entry(id.name) {
+            e.insert(declaration);
+        } else {
             self.errors.push(SemanticError {
                 kind: SemanticErrorKind::DuplicateIdentifier(id),
                 span,
@@ -87,12 +88,12 @@ impl ModuleBuilder {
 
     pub fn within_function_scope(&self) -> bool {
         for scope in self.scopes.iter().rev() {
-            if scope.kind == ScopeKind::Function {
+            if matches!(scope.kind, ScopeKind::Function(_)) {
                 return true;
             }
         }
 
-        return false;
+        false
     }
 
     pub fn within_loop_scope(&self) -> Option<(BasicBlockId, BasicBlockId)> {
@@ -111,6 +112,15 @@ impl ModuleBuilder {
     }
 
     pub fn is_file_scope(&self) -> bool {
-        self.last_scope().kind == ScopeKind::File
+        matches!(self.last_scope().kind, ScopeKind::File)
+    }
+
+    pub fn get_active_function_builder(&mut self) -> &mut FunctionBuilder {
+        for scope in self.scopes.iter_mut().rev() {
+            if let ScopeKind::Function(builder) = &mut scope.kind {
+                return builder;
+            }
+        }
+        panic!("INTERNAL COMPILER ERROR: Expected to find an active function builder on the scope stack.");
     }
 }

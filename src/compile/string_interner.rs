@@ -3,7 +3,7 @@ use std::{collections::HashMap, sync::RwLock};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct InternerId(pub usize);
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct StringInterner {
     pub forward: HashMap<String, usize>,
     backward: Vec<String>,
@@ -31,24 +31,21 @@ impl StringInterner {
     }
 
     pub fn resolve(&self, key: InternerId) -> &str {
-        self.backward.get(key.0).map(|v| v).expect(&format!(
-            "INTERNAL COMPILER ERROR: string interner expected key {} to exist",
-            key.0
-        ))
+        self.backward.get(key.0).unwrap_or_else(|| {
+            panic!(
+                "INTERNAL COMPILER ERROR: string interner expected key {} to exist",
+                key.0
+            )
+        })
     }
 }
 
+#[derive(Default)]
 pub struct SharedStringInterner {
     interner: RwLock<StringInterner>,
 }
 
 impl SharedStringInterner {
-    pub fn new() -> Self {
-        Self {
-            interner: RwLock::new(StringInterner::new()),
-        }
-    }
-
     pub fn intern(&self, key: &str) -> InternerId {
         let reader = self.interner.read().unwrap();
         if let Some(id) = reader.forward.get(key) {

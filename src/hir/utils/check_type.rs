@@ -19,10 +19,10 @@ impl FunctionBuilder {
     pub fn check_params(
         &mut self,
         ctx: &mut HIRContext,
-        params: &Vec<Param>,
+        params: &[Param],
     ) -> Vec<CheckedParam> {
         params
-            .into_iter()
+            .iter()
             .map(|p| CheckedParam {
                 ty: self.check_type_annotation(ctx, &p.constraint),
                 identifier: p.identifier,
@@ -93,7 +93,7 @@ impl FunctionBuilder {
                 params,
                 return_type,
             } => {
-                let checked_params = self.check_params(ctx, &params);
+                let checked_params = self.check_params(ctx, params);
                 let checked_return_type = self.check_type_annotation(ctx, return_type);
 
                 TypeKind::FnType(CheckedFnType {
@@ -103,9 +103,9 @@ impl FunctionBuilder {
             }
             TypeAnnotationKind::Struct(items) => {
                 let checked_field_types: Vec<CheckedParam> = items
-                    .into_iter()
+                    .iter()
                     .map(|(identifier, ty)| {
-                        let checked_type = self.check_type_annotation(ctx, &ty);
+                        let checked_type = self.check_type_annotation(ctx, ty);
                         CheckedParam {
                             identifier: *identifier,
                             ty: checked_type,
@@ -137,7 +137,7 @@ impl FunctionBuilder {
             }
             TypeAnnotationKind::Union(tag_annotations) => {
                 let checked_tag_types: Vec<CheckedTagType> = tag_annotations
-                    .into_iter()
+                    .iter()
                     .map(|t| {
                         let checked_type = t
                             .value_type

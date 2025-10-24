@@ -28,7 +28,7 @@ mod tests {
 
     #[test]
     fn tokenizes_simple_identifiers() {
-        let interner = Arc::new(SharedStringInterner::new());
+        let interner = Arc::new(SharedStringInterner::default());
         let hello_id = interner.intern("hello");
         let (tokens, _) = Tokenizer::tokenize("hello", interner);
 
@@ -54,7 +54,7 @@ mod tests {
 
     #[test]
     fn tokenizes_sequence_as_identifier() {
-        let interner = Arc::new(SharedStringInterner::new());
+        let interner = Arc::new(SharedStringInterner::default());
         let structhello_id = interner.intern("structhello");
         let (tokens, _) = Tokenizer::tokenize("\nstructhello", interner);
 

@@ -579,7 +579,7 @@ mod tests {
     #[test]
     fn test_skip_single_line_comment() {
         let input = "// This is a comment\nlet x = 10;";
-        let interner = Arc::new(SharedStringInterner::new());
+        let interner = Arc::new(SharedStringInterner::default());
         let x_id = interner.intern("x");
         let (tokens, _) = Tokenizer::tokenize(input, interner);
 
@@ -668,7 +668,7 @@ mod tests {
     #[test]
     fn test_skip_multiple_single_line_comments() {
         let input = "// Comment 1\n// Comment 2\nlet x = 10;";
-        let interner = Arc::new(SharedStringInterner::new());
+        let interner = Arc::new(SharedStringInterner::default());
         let (tokens, _) = Tokenizer::tokenize(input, interner);
 
         assert_eq!(tokens.len(), 5);
@@ -678,7 +678,7 @@ mod tests {
     #[test]
     fn test_comment_at_end_of_input() {
         let input = "let x = 10; // Comment at the end";
-        let interner = Arc::new(SharedStringInterner::new());
+        let interner = Arc::new(SharedStringInterner::default());
         let (tokens, _) = Tokenizer::tokenize(input, interner);
 
         assert_eq!(tokens.len(), 5);
@@ -688,7 +688,7 @@ mod tests {
     #[test]
     fn test_no_comments() {
         let input = "let x = 10;";
-        let interner = Arc::new(SharedStringInterner::new());
+        let interner = Arc::new(SharedStringInterner::default());
         let (tokens, _) = Tokenizer::tokenize(input, interner);
 
         assert_eq!(tokens.len(), 5);
@@ -698,7 +698,7 @@ mod tests {
     #[test]
     fn test_only_comments() {
         let input = "// Only a comment";
-        let interner = Arc::new(SharedStringInterner::new());
+        let interner = Arc::new(SharedStringInterner::default());
         let (tokens, _) = Tokenizer::tokenize(input, interner);
         assert_eq!(tokens.len(), 0);
     }

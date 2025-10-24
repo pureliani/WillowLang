@@ -117,29 +117,27 @@ impl Parser {
             }
             TokenKind::Punctuation(PunctuationKind::LBrace) => {
                 self.place_checkpoint();
-                let result =
-                    self.parse_struct_init_expr()
-                        .or_else(|struct_parsing_error| {
-                            let struct_parsing_error_offset = self.offset;
-                            self.goto_checkpoint();
-                            self.parse_codeblock_expr()
-                                .map(|codeblock| Expr {
-                                    span: codeblock.span,
-                                    kind: ExprKind::CodeBlock(codeblock),
-                                })
-                                .or_else(|codeblock_parsing_error| {
-                                    let codeblock_parsing_error_offset = self.offset;
-                                    if codeblock_parsing_error_offset
-                                        > struct_parsing_error_offset
-                                    {
-                                        Err(codeblock_parsing_error)
-                                    } else {
-                                        Err(struct_parsing_error)
-                                    }
-                                })
-                        })?;
 
-                result
+                self.parse_struct_init_expr()
+                    .or_else(|struct_parsing_error| {
+                        let struct_parsing_error_offset = self.offset;
+                        self.goto_checkpoint();
+                        self.parse_codeblock_expr()
+                            .map(|codeblock| Expr {
+                                span: codeblock.span,
+                                kind: ExprKind::CodeBlock(codeblock),
+                            })
+                            .map_err(|codeblock_parsing_error| {
+                                let codeblock_parsing_error_offset = self.offset;
+                                if codeblock_parsing_error_offset
+                                    > struct_parsing_error_offset
+                                {
+                                    codeblock_parsing_error
+                                } else {
+                                    struct_parsing_error
+                                }
+                            })
+                    })?
             }
             TokenKind::Punctuation(PunctuationKind::LBracket) => {
                 self.parse_list_literal_expr()?
@@ -201,12 +199,7 @@ impl Parser {
             }
         };
 
-        loop {
-            let op = match self.current() {
-                Some(o) => o.clone(),
-                None => break,
-            };
-
+        while let Some(op) = self.current().cloned() {
             if let Some((left_prec, ())) = suffix_bp(&op.kind) {
                 if left_prec < min_prec {
                     break;
@@ -275,7 +268,7 @@ impl Parser {
                     _ => {
                         return Err(ParsingError {
                             span: op.span,
-                            kind: ParsingErrorKind::InvalidSuffixOperator(op),
+                            kind: ParsingErrorKind::InvalidSuffixOperator(op.clone()),
                         })
                     }
                 };
@@ -384,40 +377,5 @@ impl Parser {
         }
 
         Ok(lhs)
-    }
-
-    fn synchronize_expr(&mut self) {
-        loop {
-            match self.current() {
-                Some(token) => {
-                    if is_start_of_expr(&token.kind) {
-                        return;
-                    }
-                    if token.kind == TokenKind::Punctuation(PunctuationKind::SemiCol) {
-                        self.advance();
-                        return;
-                    }
-                    if token.kind == TokenKind::Punctuation(PunctuationKind::RBrace) {
-                        self.advance();
-                        return;
-                    }
-                    if token.kind == TokenKind::Punctuation(PunctuationKind::RParen) {
-                        self.advance();
-                        return;
-                    }
-                    if token.kind == TokenKind::Punctuation(PunctuationKind::RBracket) {
-                        self.advance();
-                        return;
-                    }
-                    if token.kind == TokenKind::Punctuation(PunctuationKind::Comma) {
-                        self.advance();
-                        return;
-                    }
-
-                    self.advance();
-                }
-                None => return,
-            }
-        }
     }
 }

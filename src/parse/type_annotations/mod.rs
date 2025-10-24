@@ -194,12 +194,7 @@ impl Parser {
             }
         };
 
-        loop {
-            let op = match self.current() {
-                Some(o) => o,
-                None => break,
-            };
-
+        while let Some(op) = self.current() {
             if let Some((left_prec, ())) = suffix_bp(&op.kind) {
                 if left_prec < min_prec {
                     break;
@@ -507,7 +502,7 @@ mod tests {
         ];
 
         for (input, expected) in test_cases {
-            let interner = Arc::new(SharedStringInterner::new());
+            let interner = Arc::new(SharedStringInterner::default());
             let (tokens, _) = Tokenizer::tokenize(input, interner.clone());
             let mut parser = Parser {
                 offset: 0,

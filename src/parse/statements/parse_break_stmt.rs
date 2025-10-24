@@ -9,9 +9,10 @@ impl Parser {
         let start_offset = self.offset;
         self.consume_keyword(KeywordKind::Break)?;
         let span = self.get_span(start_offset, self.offset - 1)?;
-        return Ok(Stmt {
+
+        Ok(Stmt {
             kind: StmtKind::Break,
             span,
-        });
+        })
     }
 }

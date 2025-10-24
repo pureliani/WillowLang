@@ -226,7 +226,7 @@ impl FunctionBuilder {
         };
 
         if let Some((field_index, target_field)) = struct_fields
-            .into_iter()
+            .iter()
             .enumerate()
             .find(|(_, p)| p.identifier.name == field.name)
         {
@@ -426,9 +426,7 @@ impl FunctionBuilder {
             | BinaryOperationKind::Multiply
             | BinaryOperationKind::Divide
             | BinaryOperationKind::Modulo => {
-                let result_type =
-                    self.check_binary_numeric_operation(&left_type, &right_type)?;
-                result_type
+                self.check_binary_numeric_operation(&left_type, &right_type)?
             }
 
             BinaryOperationKind::LessThan

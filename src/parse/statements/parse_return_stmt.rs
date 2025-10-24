@@ -14,9 +14,9 @@ impl Parser {
 
         let span = self.get_span(start_offset, self.offset - 1)?;
 
-        return Ok(Stmt {
+        Ok(Stmt {
             kind: StmtKind::Return { value },
             span,
-        });
+        })
     }
 }

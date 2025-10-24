@@ -43,10 +43,7 @@ const SUFFIX_INFOS: [(&str, bool); 12] = [
 
 fn parse_number(full_number_str: &str) -> Result<NumberKind, TokenizationErrorKind> {
     for (suffix_str, is_float_suffix) in SUFFIX_INFOS {
-        if full_number_str.ends_with(suffix_str) {
-            let numeric_part =
-                &full_number_str[..full_number_str.len() - suffix_str.len()];
-
+        if let Some(numeric_part) = full_number_str.strip_suffix(suffix_str) {
             if !is_float_suffix && numeric_part.contains('.') {
                 // e.g. "1.0u8"
                 return Err(TokenizationErrorKind::InvalidIntegerNumber);
@@ -382,7 +379,7 @@ mod tests {
         ];
 
         for (input, expected_kind, span) in test_cases {
-            let interner = Arc::new(SharedStringInterner::new());
+            let interner = Arc::new(SharedStringInterner::default());
             let (tokens, errors) = Tokenizer::tokenize(input, interner);
 
             assert_eq!(errors, vec![]);

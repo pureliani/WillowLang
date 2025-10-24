@@ -97,10 +97,11 @@ impl Parser {
             }
         };
 
-        result.map_err(|e| {
+        if result.is_err() {
             self.synchronize_stmt();
-            e
-        })
+        }
+
+        result
     }
 
     pub fn synchronize_stmt(&mut self) {

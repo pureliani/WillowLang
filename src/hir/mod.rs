@@ -64,7 +64,6 @@ pub struct ModuleBuilder {
     /// Module-specific errors
     pub errors: Vec<SemanticError>,
     /// Stack of closures
-    pub functions: Vec<FunctionBuilder>,
     pub scopes: Vec<Scope>,
 }
 
@@ -185,7 +184,6 @@ impl ModuleBuilder {
         Self {
             module: CheckedModule::new(path),
             errors: vec![],
-            functions: vec![],
             scopes: vec![Scope::new(ScopeKind::File)],
         }
     }
