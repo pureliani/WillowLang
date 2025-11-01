@@ -1,9 +1,9 @@
 use crate::{
-    ast::{IdentifierNode, Span, StringNode},
+    ast::{decl::FnDecl, IdentifierNode, Span, StringNode},
     tokenize::NumberKind,
 };
 
-use super::{decl::Param, stmt::Stmt, type_annotation::TypeAnnotation};
+use super::{stmt::Stmt, type_annotation::TypeAnnotation};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct BlockContents {
@@ -109,12 +109,7 @@ pub enum ExprKind {
     Number(NumberKind),
     String(StringNode),
     Identifier(IdentifierNode),
-    Fn {
-        identifier: IdentifierNode,
-        params: Vec<Param>,
-        return_type: TypeAnnotation,
-        body: BlockContents,
-    },
+    Fn(FnDecl),
     Match {
         conditions: Vec<Expr>,
         arms: Vec<MatchArm>,

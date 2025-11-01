@@ -11,10 +11,9 @@ use ariadne::{Color, Label, Report};
 
 use crate::{
     ast::{
-        decl::TypeAliasDecl,
+        decl::Declaration,
         expr::{Expr, ExprKind},
         stmt::{Stmt, StmtKind},
-        IdentifierNode,
     },
     compile::{file_cache::FileCache, string_interner::SharedStringInterner},
     hir::{
@@ -65,7 +64,7 @@ pub struct ParallelParseResult {
     statements: Vec<Stmt>,
     tokenization_errors: Vec<TokenizationError>,
     parsing_errors: Vec<ParsingError>,
-    declarations: Vec<IdentifierNode>,
+    declarations: Vec<Declaration>,
 }
 
 impl Compiler {
@@ -447,10 +446,10 @@ let span = e.span.start.byte_offset..e.span.end.byte_offset;
 fn find_dependencies(
     current_module_path: &Path,
     statements: &[Stmt],
-) -> (HashSet<PathBuf>, Vec<CompilationError>, Vec<IdentifierNode>) {
+) -> (HashSet<PathBuf>, Vec<CompilationError>, Vec<Declaration>) {
     let mut dependencies = HashSet::new();
     let mut errors = vec![];
-    let mut declarations = vec![];
+    let mut declarations: Vec<Declaration> = vec![];
 
     for stmt in statements {
         match &stmt.kind {
@@ -474,13 +473,13 @@ fn find_dependencies(
                 }
             }
             StmtKind::Expression(Expr {
-                kind: ExprKind::Fn { identifier, .. },
+                kind: ExprKind::Fn(decl),
                 ..
             }) => {
-                declarations.push(*identifier);
+                declarations.push(Declaration::Fn(decl.clone()));
             }
-            StmtKind::TypeAliasDecl(TypeAliasDecl { identifier, .. }) => {
-                declarations.push(*identifier);
+            StmtKind::TypeAliasDecl(decl) => {
+                declarations.push(Declaration::TypeAlias(decl.clone()));
             }
             _ => {}
         }

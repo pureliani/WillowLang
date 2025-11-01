@@ -1,4 +1,7 @@
-use crate::{ast::IdentifierNode, parse::DocAnnotation};
+use crate::{
+    ast::{expr::BlockContents, IdentifierNode},
+    parse::DocAnnotation,
+};
 
 use super::{expr::Expr, type_annotation::TypeAnnotation};
 
@@ -9,10 +12,24 @@ pub struct Param {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub struct FnDecl {
+    pub identifier: IdentifierNode,
+    pub params: Vec<Param>,
+    pub return_type: TypeAnnotation,
+    pub body: BlockContents,
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct TypeAliasDecl {
     pub documentation: Option<DocAnnotation>,
     pub identifier: IdentifierNode,
     pub value: TypeAnnotation,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum Declaration {
+    TypeAlias(TypeAliasDecl),
+    Fn(FnDecl),
 }
 
 #[derive(Clone, Debug, PartialEq)]
