@@ -2,7 +2,7 @@ use std::{collections::HashSet, path::PathBuf};
 
 use crate::{
     ast::{IdentifierNode, Span},
-    compile::string_interner::InternerId,
+    compile::interner::InternerId,
     hir::types::checked_type::Type,
 };
 

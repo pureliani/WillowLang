@@ -2,7 +2,7 @@ use std::collections::{hash_map::Entry, HashMap};
 
 use crate::{
     ast::{IdentifierNode, Span},
-    compile::string_interner::InternerId,
+    compile::interner::InternerId,
     hir::{
         cfg::{BasicBlockId, CheckedDeclaration},
         errors::{SemanticError, SemanticErrorKind},

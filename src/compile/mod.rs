@@ -5,7 +5,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 pub mod file_cache;
-pub mod string_interner;
+pub mod interner;
 
 use ariadne::{Color, Label, Report};
 
@@ -15,7 +15,7 @@ use crate::{
         expr::{Expr, ExprKind},
         stmt::{Stmt, StmtKind},
     },
-    compile::{file_cache::FileCache, string_interner::SharedStringInterner},
+    compile::{file_cache::FileCache, interner::SharedStringInterner},
     hir::{
         errors::{SemanticError, SemanticErrorKind},
         utils::type_to_string::type_to_string,

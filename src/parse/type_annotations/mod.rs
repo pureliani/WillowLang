@@ -236,7 +236,7 @@ mod tests {
             type_annotation::{TypeAnnotation, TypeAnnotationKind},
             Span,
         },
-        compile::string_interner::SharedStringInterner,
+        compile::interner::SharedStringInterner,
         parse::Parser,
     };
 

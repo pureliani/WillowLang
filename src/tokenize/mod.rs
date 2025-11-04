@@ -10,7 +10,7 @@ pub mod tokenize_string;
 
 use crate::{
     ast::{Position, Span},
-    compile::string_interner::{InternerId, SharedStringInterner},
+    compile::interner::{InternerId, SharedStringInterner},
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -569,7 +569,7 @@ mod tests {
 
     use crate::{
         ast::{Position, Span},
-        compile::string_interner::SharedStringInterner,
+        compile::interner::SharedStringInterner,
         tokenize::{
             KeywordKind, NumberKind, PunctuationKind, Token, TokenKind, Tokenizer,
         },

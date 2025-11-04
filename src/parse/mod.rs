@@ -18,7 +18,7 @@ use crate::{
         stmt::Stmt, type_annotation::TypeAnnotation, IdentifierNode, Position, Span,
         StringNode,
     },
-    compile::string_interner::SharedStringInterner,
+    compile::interner::SharedStringInterner,
     tokenize::{KeywordKind, NumberKind, PunctuationKind, Token, TokenKind},
 };
 

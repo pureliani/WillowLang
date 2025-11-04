@@ -128,7 +128,7 @@ mod tests {
 
     use crate::{
         ast::{Position, Span},
-        compile::string_interner::SharedStringInterner,
+        compile::interner::SharedStringInterner,
         tokenize::{NumberKind, Token, TokenKind, Tokenizer},
     };
     use pretty_assertions::assert_eq;

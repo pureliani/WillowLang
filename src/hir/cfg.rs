@@ -6,7 +6,7 @@ use std::{
 
 use crate::{
     ast::IdentifierNode,
-    compile::string_interner::InternerId,
+    compile::interner::InternerId,
     hir::types::{
         checked_declaration::{CheckedFnDecl, CheckedTypeAliasDecl, CheckedVarDecl},
         checked_type::Type,

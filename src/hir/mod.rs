@@ -9,7 +9,7 @@ use std::{
 
 use crate::{
     ast::{stmt::Stmt, IdentifierNode},
-    compile::string_interner::SharedStringInterner,
+    compile::interner::SharedStringInterner,
     hir::{
         cfg::{
             BasicBlock, BasicBlockId, CheckedModule, ConstantId, ControlFlowGraph,

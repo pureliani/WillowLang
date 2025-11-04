@@ -1,6 +1,6 @@
 use std::hash::{Hash, Hasher};
 
-use crate::compile::string_interner::InternerId;
+use crate::compile::interner::InternerId;
 
 pub mod decl;
 pub mod expr;

@@ -1,7 +1,7 @@
 use std::{collections::HashSet, sync::Arc};
 
 use crate::{
-    compile::string_interner::{InternerId, SharedStringInterner},
+    compile::interner::{InternerId, SharedStringInterner},
     hir::types::{
         checked_declaration::{CheckedFnType, CheckedTagType},
         checked_type::TypeKind,
