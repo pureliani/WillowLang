@@ -1,7 +1,7 @@
 use std::{collections::HashSet, sync::Arc};
 
 use crate::{
-    compile::interner::{InternerId, SharedStringInterner},
+    compile::interner::{SharedStringInterner, StringId},
     hir::types::{
         checked_declaration::{CheckedFnType, CheckedTagType},
         checked_type::TypeKind,
@@ -9,7 +9,7 @@ use crate::{
 };
 
 fn identifier_to_string(
-    id: InternerId,
+    id: StringId,
     string_interner: Arc<SharedStringInterner>,
 ) -> String {
     let identifier_name = string_interner.resolve(id);

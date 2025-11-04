@@ -10,7 +10,7 @@ pub mod tokenize_string;
 
 use crate::{
     ast::{Position, Span},
-    compile::interner::{InternerId, SharedStringInterner},
+    compile::interner::{SharedStringInterner, StringId},
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -223,7 +223,7 @@ impl NumberKind {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TokenKind {
-    Identifier(InternerId),
+    Identifier(StringId),
     Punctuation(PunctuationKind),
     Keyword(KeywordKind),
     String(String),

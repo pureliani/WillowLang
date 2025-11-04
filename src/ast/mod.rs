@@ -1,6 +1,6 @@
 use std::hash::{Hash, Hasher};
 
-use crate::compile::interner::InternerId;
+use crate::compile::interner::StringId;
 
 pub mod decl;
 pub mod expr;
@@ -9,7 +9,7 @@ pub mod type_annotation;
 
 #[derive(Debug, Clone, Copy)]
 pub struct IdentifierNode {
-    pub name: InternerId,
+    pub name: StringId,
     pub span: Span,
 }
 

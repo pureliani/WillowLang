@@ -2,7 +2,7 @@ use std::{collections::HashSet, path::PathBuf};
 
 use crate::{
     ast::{IdentifierNode, Span},
-    compile::interner::InternerId,
+    compile::interner::StringId,
     hir::types::checked_type::Type,
 };
 
@@ -17,7 +17,7 @@ pub enum SemanticErrorKind {
     CannotDeclareGlobalVariable,
     DuplicateStructFieldInitializer(IdentifierNode),
     UnknownStructFieldInitializer(IdentifierNode),
-    MissingStructFieldInitializers(HashSet<InternerId>),
+    MissingStructFieldInitializers(HashSet<StringId>),
     CannotCall(Type),
     ExpectedANumericOperand,
     IncompatibleBranchTypes {

@@ -2,7 +2,7 @@ use std::collections::{hash_map::Entry, HashMap};
 
 use crate::{
     ast::{IdentifierNode, Span},
-    compile::interner::InternerId,
+    compile::interner::StringId,
     hir::{
         cfg::{BasicBlockId, CheckedDeclaration},
         errors::{SemanticError, SemanticErrorKind},
@@ -25,7 +25,7 @@ pub enum ScopeKind {
 #[derive(Debug)]
 pub struct Scope {
     pub kind: ScopeKind,
-    symbols: HashMap<InternerId, CheckedDeclaration>,
+    symbols: HashMap<StringId, CheckedDeclaration>,
 }
 
 impl Scope {
@@ -77,7 +77,7 @@ impl ModuleBuilder {
         }
     }
 
-    pub fn scope_lookup(&self, key: InternerId) -> Option<&CheckedDeclaration> {
+    pub fn scope_lookup(&self, key: StringId) -> Option<&CheckedDeclaration> {
         for scope in self.scopes.iter().rev() {
             if let Some(declaration) = scope.symbols.get(&key) {
                 return Some(declaration);
