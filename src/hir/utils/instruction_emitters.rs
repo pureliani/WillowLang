@@ -485,25 +485,50 @@ impl FunctionBuilder {
             panic!("INTERNAL COMPILER ERROR: emit_phi called with no sources.");
         }
 
-        let first_type = ctx.program_builder.get_value_type(&sources[0].1);
+        let source_types: Vec<Type> = sources
+            .iter()
+            .map(|(_, val)| ctx.program_builder.get_value_type(val))
+            .collect();
 
-        for (_, other_value) in sources.iter().skip(1) {
-            let other_type = ctx.program_builder.get_value_type(other_value);
-            if !self.check_is_assignable(&other_type, &first_type) {
-                return Err(SemanticError {
-                    span: other_type.span,
-                    kind: SemanticErrorKind::IncompatibleBranchTypes {
-                        first: first_type,
-                        second: other_type,
-                    },
-                });
+        let first_type = source_types[0].clone();
+        let mut are_all_tags = true;
+        let mut union_tags = Vec::new();
+
+        for ty in &source_types {
+            if let TypeKind::Tag(tag_type) = &ty.kind {
+                if !union_tags.contains(tag_type) {
+                    union_tags.push(tag_type.clone());
+                }
+            } else {
+                are_all_tags = false;
+                break;
             }
         }
+
+        let result_type = if are_all_tags {
+            Type {
+                kind: TypeKind::Union(union_tags),
+                span: first_type.span,
+            }
+        } else {
+            for other_type in source_types.iter().skip(1) {
+                if !self.check_is_assignable(other_type, &first_type) {
+                    return Err(SemanticError {
+                        span: other_type.span,
+                        kind: SemanticErrorKind::IncompatibleBranchTypes {
+                            first: first_type,
+                            second: other_type.clone(),
+                        },
+                    });
+                }
+            }
+            first_type
+        };
 
         let destination = ctx.program_builder.new_value_id();
         ctx.program_builder
             .value_types
-            .insert(destination, first_type);
+            .insert(destination, result_type);
 
         self.push_instruction(Instruction::Phi {
             destination,

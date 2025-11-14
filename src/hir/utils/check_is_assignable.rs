@@ -178,16 +178,6 @@ impl FunctionBuilder {
 
                 returns_compatible
             }
-            (TypeAliasDecl(source), _) => self.check_is_assignable_recursive(
-                &source.read().unwrap().value,
-                target_type,
-                visited_declarations,
-            ),
-            (_, TypeAliasDecl(target)) => self.check_is_assignable_recursive(
-                source_type,
-                &target.read().unwrap().value,
-                visited_declarations,
-            ),
             _ => false,
         };
 

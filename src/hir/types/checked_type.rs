@@ -1,11 +1,8 @@
-use std::{
-    hash::{Hash, Hasher},
-    sync::{Arc, RwLock},
-};
+use std::hash::{Hash, Hasher};
 
 use crate::{
     ast::Span,
-    hir::types::checked_declaration::{CheckedFnType, CheckedParam, CheckedTagType, CheckedTypeAliasDecl},
+    hir::types::checked_declaration::{CheckedFnType, CheckedParam, CheckedTagType},
 };
 
 #[derive(Clone, Debug)]
@@ -29,7 +26,6 @@ pub enum TypeKind {
     Tag(CheckedTagType),
     Union(Vec<CheckedTagType>),
     Struct(Vec<CheckedParam>),
-    TypeAliasDecl(Arc<RwLock<CheckedTypeAliasDecl>>),
     FnType(CheckedFnType),
     Pointer(Box<Type>),
     Unknown,
@@ -55,9 +51,6 @@ impl PartialEq for TypeKind {
             (TypeKind::F64, TypeKind::F64) => true,
             (TypeKind::String, TypeKind::String) => true,
             (TypeKind::Unknown, TypeKind::Unknown) => true,
-            (TypeKind::TypeAliasDecl(a), TypeKind::TypeAliasDecl(b)) => {
-                a.read().unwrap().value == b.read().unwrap().value
-            }
             (TypeKind::Struct(a), TypeKind::Struct(b)) => a == b,
             (TypeKind::FnType(a), TypeKind::FnType(b)) => a == b,
             (TypeKind::Tag(t1), TypeKind::Tag(t2)) => t1 == t2,
@@ -89,7 +82,6 @@ impl Hash for TypeKind {
             TypeKind::String => {}
             TypeKind::Unknown => {}
             TypeKind::Struct(decl) => decl.hash(state),
-            TypeKind::TypeAliasDecl(decl) => decl.read().unwrap().hash(state),
             TypeKind::FnType(decl) => decl.hash(state),
             TypeKind::Tag(tag) => tag.hash(state),
             TypeKind::Pointer(t) => t.hash(state),
