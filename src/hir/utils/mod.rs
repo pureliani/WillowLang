@@ -8,3 +8,4 @@ pub mod new_basic_block;
 pub mod numeric;
 pub mod scope;
 pub mod type_to_string;
+pub mod var_capture_analyzer;

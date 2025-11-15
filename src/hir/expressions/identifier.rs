@@ -26,6 +26,17 @@ impl FunctionBuilder {
                         }
                     }
                 }
+                CheckedDeclaration::UninitializedVar { identifier } => {
+                    return Value::Use(self.report_error_and_get_poison(
+                        ctx,
+                        SemanticError {
+                            kind: SemanticErrorKind::UseOfUninitializedVariable(
+                                identifier,
+                            ),
+                            span: identifier.span,
+                        },
+                    ));
+                }
                 CheckedDeclaration::TypeAlias(decl) => {
                     let span = decl.read().unwrap().identifier.span;
 

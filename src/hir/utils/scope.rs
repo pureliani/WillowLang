@@ -1,8 +1,11 @@
-use std::collections::{hash_map::Entry, HashMap};
+use std::{
+    collections::{hash_map::Entry, HashMap},
+    sync::Arc,
+};
 
 use crate::{
     ast::{IdentifierNode, Span},
-    compile::interner::StringId,
+    compile::interner::{SharedStringInterner, StringId},
     hir::{
         cfg::{BasicBlockId, CheckedDeclaration},
         errors::{SemanticError, SemanticErrorKind},
@@ -77,9 +80,48 @@ impl ModuleBuilder {
         }
     }
 
+    pub fn scope_replace(
+        &mut self,
+        id: IdentifierNode,
+        declaration: CheckedDeclaration,
+        string_interner: Arc<SharedStringInterner>,
+    ) {
+        let last_scope = self.last_scope_mut();
+
+        let existing_decl = last_scope
+            .symbols
+            .get_mut(&id.name)
+            .unwrap_or_else(|| {
+                let name = string_interner.resolve(id.name);
+                panic!(
+                    "INTERNAL COMPILER ERROR: Expected to find uninitialized variable '{}' in scope for replacement",
+                    name
+                )
+            });
+
+        if !matches!(existing_decl, CheckedDeclaration::UninitializedVar { .. }) {
+            let name = string_interner.resolve(id.name);
+            panic!(
+                "INTERNAL COMPILER ERROR: Attempted to replace a variable '{}' that was not in an uninitialized state",
+                name
+            );
+        }
+
+        *existing_decl = declaration;
+    }
+
     pub fn scope_lookup(&self, key: StringId) -> Option<&CheckedDeclaration> {
         for scope in self.scopes.iter().rev() {
             if let Some(declaration) = scope.symbols.get(&key) {
+                return Some(declaration);
+            }
+        }
+        None
+    }
+
+    pub fn scope_lookup_mut(&mut self, key: StringId) -> Option<&mut CheckedDeclaration> {
+        for scope in self.scopes.iter_mut().rev() {
+            if let Some(declaration) = scope.symbols.get_mut(&key) {
                 return Some(declaration);
             }
         }

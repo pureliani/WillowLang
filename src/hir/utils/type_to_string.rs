@@ -97,6 +97,7 @@ pub fn type_to_string_recursive(
         TypeKind::FnType(CheckedFnType {
             params,
             return_type,
+            convention,
         }) => {
             let params_str = params
                 .iter()

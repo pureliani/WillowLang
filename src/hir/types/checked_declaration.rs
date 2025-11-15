@@ -36,9 +36,18 @@ impl Hash for CheckedTagType {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub enum CallingConvention {
+    /// A standard function call. The value is a direct code pointer
+    Native,
+    /// A closure call. The value is a pointer to a ClosureObject { fn_ptr, env_ptr }
+    Closure,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct CheckedFnType {
     pub params: Vec<CheckedParam>,
     pub return_type: Box<Type>,
+    pub convention: CallingConvention,
 }
 
 #[derive(Clone, Debug)]

@@ -176,6 +176,11 @@ pub enum CheckedDeclaration {
     TypeAlias(Arc<RwLock<CheckedTypeAliasDecl>>),
     Function(Arc<RwLock<CheckedFnDecl>>),
     Var(CheckedVarDecl),
+    /// Represents a variable that is in scope but has not yet been declared.
+    /// Accessing it is an error. This is for detecting the Temporal Dead Zone.
+    UninitializedVar {
+        identifier: IdentifierNode,
+    },
 }
 
 #[derive(Clone, Debug)]

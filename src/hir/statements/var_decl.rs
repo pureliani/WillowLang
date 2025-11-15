@@ -85,10 +85,10 @@ impl FunctionBuilder {
             constraint,
         };
 
-        ctx.module_builder.scope_insert(
+        ctx.module_builder.scope_replace(
             var_decl.identifier,
             CheckedDeclaration::Var(checked_var_decl),
-            span,
+            ctx.program_builder.string_interner.clone(),
         );
     }
 }

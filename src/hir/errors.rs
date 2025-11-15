@@ -32,6 +32,7 @@ pub enum SemanticErrorKind {
     },
     UndeclaredIdentifier(IdentifierNode),
     UndeclaredType(IdentifierNode),
+    UseOfUninitializedVariable(IdentifierNode),
     ReturnKeywordOutsideFunction,
     BreakKeywordOutsideLoop,
     ContinueKeywordOutsideLoop,
@@ -114,6 +115,7 @@ impl SemanticErrorKind {
             SemanticErrorKind::FromStatementMustBeDeclaredAtTopLevel => 35,
             SemanticErrorKind::ModuleNotFound { .. } => 36,
             SemanticErrorKind::CannotUseFunctionDeclarationAsType => 37,
+            SemanticErrorKind::UseOfUninitializedVariable(..) => 38,
         }
     }
 }
