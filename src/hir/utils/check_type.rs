@@ -8,9 +8,7 @@ use crate::{
         cfg::CheckedDeclaration,
         errors::{SemanticError, SemanticErrorKind},
         types::{
-            checked_declaration::{
-                CallingConvention, CheckedFnType, CheckedParam, CheckedTagType,
-            },
+            checked_declaration::{CheckedFnType, CheckedParam, CheckedTagType},
             checked_type::{Type, TypeKind},
         },
         FunctionBuilder, HIRContext,
@@ -104,7 +102,6 @@ impl FunctionBuilder {
                 TypeKind::FnType(CheckedFnType {
                     params: checked_params,
                     return_type: Box::new(checked_return_type),
-                    convention: CallingConvention::Closure,
                 })
             }
             TypeAnnotationKind::Struct(items) => {

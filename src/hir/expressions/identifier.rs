@@ -3,7 +3,10 @@ use crate::{
     hir::{
         cfg::{CheckedDeclaration, Value},
         errors::{SemanticError, SemanticErrorKind},
-        types::checked_declaration::VarStorage,
+        types::{
+            checked_declaration::{CheckedFnType, VarStorage},
+            checked_type::{Type, TypeKind},
+        },
         FunctionBuilder, HIRContext,
     },
 };
@@ -81,8 +84,21 @@ impl FunctionBuilder {
                         },
                     ))
                 }
-                CheckedDeclaration::Function(_) => {
-                    todo!("Handle function as a value");
+                CheckedDeclaration::Function(fn_decl_arc) => {
+                    let fn_decl = fn_decl_arc.read().unwrap();
+
+                    let ty = Type {
+                        kind: TypeKind::FnType(CheckedFnType {
+                            params: fn_decl.params.clone(),
+                            return_type: Box::new(fn_decl.return_type.clone()),
+                        }),
+                        span: fn_decl.identifier.span,
+                    };
+
+                    Value::FunctionAddr {
+                        function_id: fn_decl.function_id,
+                        ty,
+                    }
                 }
             },
             None => Value::Use(self.report_error_and_get_poison(

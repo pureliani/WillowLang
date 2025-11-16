@@ -9,7 +9,7 @@ use std::{
 
 use crate::{
     ast::{stmt::Stmt, IdentifierNode},
-    compile::interner::SharedStringInterner,
+    compile::interner::{SharedStringInterner, SharedTagInterner},
     hir::{
         cfg::{
             BasicBlock, BasicBlockId, CheckedModule, ConstantId, ControlFlowGraph,
@@ -48,6 +48,7 @@ pub struct ProgramBuilder {
     pub modules: HashMap<PathBuf, ModuleBuilder>,
     pub value_types: HashMap<ValueId, Type>,
     pub string_interner: Arc<SharedStringInterner>,
+    pub tag_interner: Arc<SharedTagInterner>,
     /// Global errors
     pub errors: Vec<SemanticError>,
 
@@ -79,12 +80,16 @@ pub struct FunctionBuilder {
 }
 
 impl ProgramBuilder {
-    pub fn new(string_interner: Arc<SharedStringInterner>) -> Self {
+    pub fn new(
+        string_interner: Arc<SharedStringInterner>,
+        tag_interner: Arc<SharedTagInterner>,
+    ) -> Self {
         ProgramBuilder {
             errors: vec![],
             modules: HashMap::new(),
             value_types: HashMap::new(),
             string_interner,
+            tag_interner,
             function_id_counter: AtomicUsize::new(0),
             constant_id_counter: AtomicUsize::new(0),
             allocation_id_counter: AtomicUsize::new(0),

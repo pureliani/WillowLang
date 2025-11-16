@@ -14,6 +14,7 @@ pub mod or;
 pub mod static_access;
 pub mod string;
 pub mod struct_init;
+pub mod tag;
 pub mod typecast;
 pub mod unary_op;
 
@@ -108,7 +109,9 @@ impl FunctionBuilder {
             ExprKind::Struct(fields) => {
                 self.build_struct_init_expr(ctx, fields, expr.span)
             }
-            ExprKind::Tag { name, value } => todo!(),
+            ExprKind::Tag { name, value } => {
+                self.build_tag_expr(ctx, name, value, expr.span)
+            }
         }
     }
 }

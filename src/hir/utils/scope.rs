@@ -9,13 +9,13 @@ use crate::{
     hir::{
         cfg::{BasicBlockId, CheckedDeclaration},
         errors::{SemanticError, SemanticErrorKind},
-        FunctionBuilder, ModuleBuilder,
+        ModuleBuilder,
     },
 };
 
 #[derive(Debug)]
 pub enum ScopeKind {
-    Function(Box<FunctionBuilder>),
+    Function,
     While {
         break_target: BasicBlockId,
         continue_target: BasicBlockId,
@@ -130,7 +130,7 @@ impl ModuleBuilder {
 
     pub fn within_function_scope(&self) -> bool {
         for scope in self.scopes.iter().rev() {
-            if matches!(scope.kind, ScopeKind::Function(_)) {
+            if matches!(scope.kind, ScopeKind::Function) {
                 return true;
             }
         }
@@ -155,14 +155,5 @@ impl ModuleBuilder {
 
     pub fn is_file_scope(&self) -> bool {
         matches!(self.last_scope().kind, ScopeKind::File)
-    }
-
-    pub fn get_active_function_builder(&mut self) -> &mut FunctionBuilder {
-        for scope in self.scopes.iter_mut().rev() {
-            if let ScopeKind::Function(builder) = &mut scope.kind {
-                return builder;
-            }
-        }
-        panic!("INTERNAL COMPILER ERROR: Expected to find an active function builder on the scope stack.");
     }
 }

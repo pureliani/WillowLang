@@ -3,7 +3,7 @@ use std::hash::{Hash, Hasher};
 use crate::{
     ast::{IdentifierNode, Span},
     hir::{
-        cfg::{ControlFlowGraph, DeclarationId, ValueId},
+        cfg::{ControlFlowGraph, DeclarationId, FunctionId, ValueId},
         types::checked_type::Type,
     },
     parse::DocAnnotation,
@@ -36,18 +36,9 @@ impl Hash for CheckedTagType {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub enum CallingConvention {
-    /// A standard function call. The value is a direct code pointer
-    Native,
-    /// A closure call. The value is a pointer to a ClosureObject { fn_ptr, env_ptr }
-    Closure,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct CheckedFnType {
     pub params: Vec<CheckedParam>,
     pub return_type: Box<Type>,
-    pub convention: CallingConvention,
 }
 
 #[derive(Clone, Debug)]
@@ -76,6 +67,7 @@ impl Hash for CheckedTypeAliasDecl {
 #[derive(Clone, Debug)]
 pub struct CheckedFnDecl {
     pub id: DeclarationId,
+    pub function_id: FunctionId,
     pub identifier: IdentifierNode,
     pub params: Vec<CheckedParam>,
     pub return_type: Type,
