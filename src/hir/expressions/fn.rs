@@ -1,7 +1,7 @@
 use std::sync::{Arc, RwLock};
 
 use crate::{
-    ast::{decl::FnDecl, expr::BlockContents},
+    ast::{decl::FnDecl, expr::BlockContents, IdentifierNode},
     hir::{
         cfg::{CheckedDeclaration, Terminator, Value},
         errors::{SemanticError, SemanticErrorKind},
@@ -12,7 +12,10 @@ use crate::{
             },
             checked_type::{Type, TypeKind},
         },
-        utils::{scope::ScopeKind, var_capture_analyzer::analyze_captures},
+        utils::{
+            pack_struct::pack_struct, scope::ScopeKind,
+            var_capture_analyzer::analyze_captures,
+        },
         FunctionBuilder, HIRContext,
     },
     tokenize::NumberKind,
@@ -84,11 +87,9 @@ impl FunctionBuilder {
             .collect();
         let checked_return_type = self.check_type_annotation(ctx, &return_type);
 
-        // STAGE 1: ANALYZE - Run the read-only capture analysis pass.
         let captures_map = analyze_captures(ctx, &checked_params, &body);
 
         if captures_map.is_empty() {
-            // --- PATH A: NO CAPTURES (A regular function) ---
             let new_function_id = ctx.program_builder.new_function_id();
             let checked_fn_decl = Arc::new(RwLock::new(CheckedFnDecl {
                 id: ctx.program_builder.new_declaration_id(),
@@ -104,20 +105,18 @@ impl FunctionBuilder {
                 identifier.span,
             );
 
-            let mut new_fn_builder = FunctionBuilder::new(checked_return_type.clone());
+            let new_fn_builder = FunctionBuilder::new(checked_return_type.clone());
             ctx.module_builder
                 .enter_scope(ScopeKind::Function(Box::new(new_fn_builder)));
 
-            let active_builder = ctx.module_builder.get_active_function_builder();
-            active_builder.build_fn_body(ctx, &checked_params, body);
-
             let scope = ctx.module_builder.exit_scope();
-            let final_fn_builder = match scope.kind {
+            let mut fn_builder = match scope.kind {
                 ScopeKind::Function(builder) => builder,
                 _ => panic!("INTERNAL COMPILER ERROR: Expected to pop a function scope."),
             };
+            fn_builder.build_fn_body(ctx, &checked_params, body);
 
-            checked_fn_decl.write().unwrap().body = Some(final_fn_builder.cfg);
+            checked_fn_decl.write().unwrap().body = Some(fn_builder.cfg);
             let fn_type = Type {
                 kind: TypeKind::FnType(CheckedFnType {
                     params: checked_params,
@@ -131,9 +130,6 @@ impl FunctionBuilder {
                 ty: fn_type,
             }
         } else {
-            // --- PATH B: HAS CAPTURES (A closure) ---
-
-            // STAGE 2: MUTATE - Update the storage of captured variables in the current scope.
             let mut captures: Vec<CheckedParam> = Vec::new();
             for (id_node, ty) in captures_map {
                 captures.push(CheckedParam {
@@ -150,11 +146,11 @@ impl FunctionBuilder {
                     );
                 }
             }
-            captures.sort_by_key(|p| p.identifier.name.0);
 
-            // STAGE 3: GENERATE - Build the closure object and its wrapped function.
+            pack_struct(ctx, &mut captures);
+
             let env_struct_type = Type {
-                kind: TypeKind::Struct(captures.clone()),
+                kind: TypeKind::Struct(captures),
                 span: identifier.span,
             };
             let env_ptr = self
@@ -165,20 +161,24 @@ impl FunctionBuilder {
                 )
                 .expect("Failed to allocate closure environment");
 
-            for (i, captured_var) in captures.iter().enumerate() {
-                let field_ptr = self.emit_get_field_ptr_by_index(
-                    ctx,
-                    env_ptr,
-                    i,
-                    captured_var.ty.clone(),
-                );
-                let captured_value =
-                    self.build_identifier_expr(ctx, captured_var.identifier);
-                self.emit_store(ctx, field_ptr, captured_value);
+            if let TypeKind::Struct(canonical_env_fields) = &env_struct_type.kind {
+                for captured_var in canonical_env_fields {
+                    let field_ptr = self.emit_get_field_ptr(ctx, env_ptr, captured_var.identifier)
+                                   .expect("INTERNAL COMPILER ERROR: Field from canonical list not found.");
+
+                    let captured_value =
+                        self.build_identifier_expr(ctx, captured_var.identifier);
+                    self.emit_store(ctx, field_ptr, captured_value);
+                }
             }
 
+            let env_param_id = IdentifierNode {
+                name: ctx.program_builder.string_interner.intern("__env_ptr"),
+                span: identifier.span,
+            };
+
             let mut closure_params = vec![CheckedParam {
-                identifier,
+                identifier: env_param_id,
                 ty: Type {
                     kind: TypeKind::Pointer(Box::new(env_struct_type.clone())),
                     span: identifier.span,
@@ -196,76 +196,75 @@ impl FunctionBuilder {
             }));
             // TODO: Store this `checked_fn_decl` in a program-wide function list.
 
-            let mut new_fn_builder = FunctionBuilder::new(checked_return_type.clone());
+            let new_fn_builder = FunctionBuilder::new(checked_return_type.clone());
             ctx.module_builder
                 .enter_scope(ScopeKind::Function(Box::new(new_fn_builder)));
-
             // TODO: Modify `build_identifier_expr` to handle `VarStorage::Captured`.
             // It should know to load from the environment pointer (the first param).
-            let active_builder = ctx.module_builder.get_active_function_builder();
-            active_builder.build_fn_body(ctx, &closure_params, body);
 
             let scope = ctx.module_builder.exit_scope();
-            let final_fn_builder = match scope.kind {
+            let mut fn_builder = match scope.kind {
                 ScopeKind::Function(builder) => builder,
                 _ => panic!("INTERNAL COMPILER ERROR: Expected to pop a function scope."),
             };
-            checked_fn_decl.write().unwrap().body = Some(final_fn_builder.cfg);
+
+            fn_builder.build_fn_body(ctx, &closure_params, body);
+            checked_fn_decl.write().unwrap().body = Some(fn_builder.cfg);
+
+            let fn_ptr_id = IdentifierNode {
+                name: ctx.program_builder.string_interner.intern("__fn_ptr"),
+                span: identifier.span,
+            };
+
+            let mut closure_obj_fields = vec![
+                CheckedParam {
+                    identifier: fn_ptr_id,
+                    ty: Type {
+                        kind: TypeKind::Pointer(Box::new(Type {
+                            kind: TypeKind::Void,
+                            span: identifier.span,
+                        })),
+                        span: identifier.span,
+                    },
+                },
+                CheckedParam {
+                    identifier: env_param_id,
+                    ty: Type {
+                        kind: TypeKind::Pointer(Box::new(env_struct_type)),
+                        span: identifier.span,
+                    },
+                },
+            ];
+
+            pack_struct(ctx, &mut closure_obj_fields);
 
             let closure_obj_type = Type {
-                kind: TypeKind::Struct(vec![
-                    CheckedParam {
-                        identifier,
-                        ty: Type {
-                            kind: TypeKind::Pointer(Box::new(Type {
-                                kind: TypeKind::Void,
-                                span: identifier.span,
-                            })),
-                            span: identifier.span,
-                        },
-                    },
-                    CheckedParam {
-                        identifier,
-                        ty: Type {
-                            kind: TypeKind::Pointer(Box::new(env_struct_type)),
-                            span: identifier.span,
-                        },
-                    },
-                ]),
+                kind: TypeKind::Struct(closure_obj_fields),
                 span: identifier.span,
             };
             let closure_obj_ptr = self.emit_stack_alloc(ctx, closure_obj_type, 1);
-            let fn_ptr_field = self.emit_get_field_ptr_by_index(
-                ctx,
-                closure_obj_ptr,
-                0,
-                Type {
-                    kind: TypeKind::Void,
-                    span: identifier.span,
-                },
-            );
+
+            let fn_ptr_field = self
+                .emit_get_field_ptr(ctx, closure_obj_ptr, fn_ptr_id)
+                .expect(
+                    "INTERNAL COMPILER ERROR: __fn_ptr field not found in ClosureObject.",
+                );
             let fn_addr_val = Value::FunctionAddr {
                 function_id: new_function_id,
                 ty: Type {
                     kind: TypeKind::Void,
                     span: identifier.span,
-                },
+                }, // Type is erased
             };
             self.emit_store(ctx, fn_ptr_field, fn_addr_val);
-            let env_ptr_field = self.emit_get_field_ptr_by_index(
-                ctx,
-                closure_obj_ptr,
-                1,
-                Type {
-                    kind: TypeKind::Void,
-                    span: identifier.span,
-                },
-            );
+
+            let env_ptr_field = self.emit_get_field_ptr(ctx, closure_obj_ptr, env_param_id)
+                .expect("INTERNAL COMPILER ERROR: __env_ptr field not found in ClosureObject.");
             self.emit_store(ctx, env_ptr_field, Value::Use(env_ptr));
 
             let closure_type = Type {
                 kind: TypeKind::FnType(CheckedFnType {
-                    params: checked_params,
+                    params: checked_params, // The user-facing signature
                     return_type: Box::new(checked_return_type),
                     convention: CallingConvention::Closure,
                 }),

@@ -85,8 +85,12 @@ impl Hash for TypeKind {
             TypeKind::FnType(decl) => decl.hash(state),
             TypeKind::Tag(tag) => tag.hash(state),
             TypeKind::Pointer(t) => t.hash(state),
-            TypeKind::List(_) => todo!(),
-            TypeKind::Union(checked_tag_types) => todo!(),
+            TypeKind::List(item_type) => item_type.hash(state),
+            TypeKind::Union(checked_tag_types) => {
+                let mut sorted_tags = checked_tag_types.clone();
+                sorted_tags.sort_by(|a, b| a.identifier.name.0.cmp(&b.identifier.name.0));
+                sorted_tags.hash(state);
+            }
         }
     }
 }

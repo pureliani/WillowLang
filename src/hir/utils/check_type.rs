@@ -8,7 +8,9 @@ use crate::{
         cfg::CheckedDeclaration,
         errors::{SemanticError, SemanticErrorKind},
         types::{
-            checked_declaration::{CheckedFnType, CheckedParam, CheckedTagType},
+            checked_declaration::{
+                CallingConvention, CheckedFnType, CheckedParam, CheckedTagType,
+            },
             checked_type::{Type, TypeKind},
         },
         FunctionBuilder, HIRContext,
@@ -35,18 +37,19 @@ impl FunctionBuilder {
         ctx: &mut HIRContext,
         id: IdentifierNode,
         span: Span,
-    ) -> Result<TypeKind, SemanticError> {
+    ) -> Result<Type, SemanticError> {
         ctx.module_builder
             .scope_lookup(id.name)
             .map(|entry| match entry {
                 CheckedDeclaration::TypeAlias(decl) => {
-                    Ok(TypeKind::TypeAliasDecl(decl.clone()))
+                    Ok(decl.read().unwrap().value.as_ref().clone())
                 }
                 CheckedDeclaration::Function(_) => Err(SemanticError {
                     kind: SemanticErrorKind::CannotUseFunctionDeclarationAsType,
                     span,
                 }),
-                CheckedDeclaration::Var(_) => Err(SemanticError {
+                CheckedDeclaration::Var(_)
+                | CheckedDeclaration::UninitializedVar { .. } => Err(SemanticError {
                     kind: SemanticErrorKind::CannotUseVariableDeclarationAsType,
                     span,
                 }),
@@ -82,7 +85,9 @@ impl FunctionBuilder {
             TypeAnnotationKind::String => TypeKind::String,
             TypeAnnotationKind::Identifier(id) => {
                 match self.check_type_identifier_annotation(ctx, *id, annotation.span) {
-                    Ok(t) => t,
+                    Ok(resolved_type) => {
+                        return resolved_type;
+                    }
                     Err(error) => {
                         ctx.program_builder.errors.push(error);
                         TypeKind::Unknown
@@ -99,6 +104,7 @@ impl FunctionBuilder {
                 TypeKind::FnType(CheckedFnType {
                     params: checked_params,
                     return_type: Box::new(checked_return_type),
+                    convention: CallingConvention::Closure,
                 })
             }
             TypeAnnotationKind::Struct(items) => {

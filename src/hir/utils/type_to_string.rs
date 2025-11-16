@@ -121,20 +121,6 @@ pub fn type_to_string_recursive(
 
             fn_str
         }
-        TypeKind::TypeAliasDecl(decl) => {
-            let name = identifier_to_string(
-                decl.read().unwrap().identifier.name,
-                string_interner.clone(),
-            );
-
-            let value = type_to_string_recursive(
-                &decl.read().unwrap().value.kind,
-                string_interner.clone(),
-                visited_set,
-            );
-
-            format!("type {} = {};", name, value)
-        }
         TypeKind::Pointer(ty) => format!(
             "ptr<{}>",
             type_to_string_recursive(&ty.kind, string_interner, visited_set)

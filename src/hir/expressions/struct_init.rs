@@ -9,35 +9,11 @@ use crate::{
             checked_declaration::CheckedParam,
             checked_type::{Type, TypeKind},
         },
+        utils::pack_struct::pack_struct,
         FunctionBuilder, HIRContext,
     },
     tokenize::NumberKind,
 };
-
-pub fn get_alignment_of(type_kind: &TypeKind) -> usize {
-    use std::mem::align_of;
-
-    match type_kind {
-        TypeKind::U64 | TypeKind::I64 | TypeKind::F64 => 8,
-        TypeKind::U32 | TypeKind::I32 | TypeKind::F32 => 4,
-        TypeKind::U16 | TypeKind::I16 => 2,
-        TypeKind::U8 | TypeKind::I8 | TypeKind::Bool => 1,
-        TypeKind::Pointer(_)
-        | TypeKind::USize
-        | TypeKind::ISize
-        | TypeKind::FnType(_) => align_of::<usize>(),
-        TypeKind::Struct(_) | TypeKind::List(_) | TypeKind::String => align_of::<usize>(),
-        TypeKind::Union(checked_tag_type) => {
-            todo!()
-        }
-        TypeKind::Void => 1,
-        TypeKind::Unknown => 1,
-        TypeKind::TypeAliasDecl(decl) => {
-            get_alignment_of(&decl.read().unwrap().value.kind)
-        }
-        TypeKind::Tag(checked_tag_type) => todo!(),
-    }
-}
 
 impl FunctionBuilder {
     pub fn build_struct_init_expr(
@@ -74,23 +50,7 @@ impl FunctionBuilder {
             field_values.insert(field_name, value);
         }
 
-        resolved_fields.sort_by(|field_a, field_b| {
-            let align_a = get_alignment_of(&field_a.ty.kind);
-            let align_b = get_alignment_of(&field_b.ty.kind);
-
-            align_b.cmp(&align_a).then_with(|| {
-                let name_a = ctx
-                    .program_builder
-                    .string_interner
-                    .resolve(field_a.identifier.name);
-                let name_b = ctx
-                    .program_builder
-                    .string_interner
-                    .resolve(field_b.identifier.name);
-
-                name_a.cmp(&name_b)
-            })
-        });
+        pack_struct(ctx, &mut resolved_fields);
 
         let struct_type = Type {
             kind: TypeKind::Struct(resolved_fields),
