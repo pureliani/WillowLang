@@ -2,7 +2,9 @@ use std::hash::{Hash, Hasher};
 
 use crate::{
     ast::Span,
-    hir::types::checked_declaration::{CheckedFnType, CheckedParam, CheckedTagType},
+    hir::types::checked_declaration::{
+        CheckedClosureType, CheckedFnType, CheckedParam, CheckedTagType,
+    },
 };
 
 #[derive(Clone, Debug)]
@@ -27,6 +29,7 @@ pub enum TypeKind {
     Union(Vec<CheckedTagType>),
     Struct(Vec<CheckedParam>),
     FnType(CheckedFnType),
+    Closure(CheckedClosureType),
     Pointer(Box<Type>),
     Unknown,
 }
@@ -53,6 +56,7 @@ impl PartialEq for TypeKind {
             (TypeKind::Unknown, TypeKind::Unknown) => true,
             (TypeKind::Struct(a), TypeKind::Struct(b)) => a == b,
             (TypeKind::FnType(a), TypeKind::FnType(b)) => a == b,
+            (TypeKind::Closure(a), TypeKind::Closure(b)) => a == b,
             (TypeKind::Tag(t1), TypeKind::Tag(t2)) => t1 == t2,
             (TypeKind::Pointer(a), TypeKind::Pointer(b)) => a == b,
             _ => false,
@@ -83,6 +87,7 @@ impl Hash for TypeKind {
             TypeKind::Unknown => {}
             TypeKind::Struct(decl) => decl.hash(state),
             TypeKind::FnType(decl) => decl.hash(state),
+            TypeKind::Closure(decl) => decl.hash(state),
             TypeKind::Tag(tag) => tag.hash(state),
             TypeKind::Pointer(t) => t.hash(state),
             TypeKind::List(item_type) => item_type.hash(state),

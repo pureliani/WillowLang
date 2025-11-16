@@ -547,26 +547,33 @@ impl FunctionBuilder {
     ) -> Result<Option<ValueId>, SemanticError> {
         let value_type = ctx.program_builder.get_value_type(&value);
 
-        let fn_type_decl = if let TypeKind::FnType(decl) = value_type.kind {
-            decl
-        } else {
-            return Err(SemanticError {
-                kind: SemanticErrorKind::CannotCall(value_type),
-                span: call_span,
-            });
+        let (params, return_type) = match &value_type.kind {
+            TypeKind::FnType(fn_type) => {
+                (fn_type.params.clone(), fn_type.return_type.clone())
+            }
+            TypeKind::Closure(closure_type) => (
+                closure_type.params.clone(),
+                closure_type.return_type.clone(),
+            ),
+            _ => {
+                return Err(SemanticError {
+                    kind: SemanticErrorKind::CannotCall(value_type),
+                    span: call_span,
+                });
+            }
         };
 
-        if args.len() != fn_type_decl.params.len() {
+        if args.len() != params.len() {
             return Err(SemanticError {
                 kind: SemanticErrorKind::FnArgumentCountMismatch {
-                    expected: fn_type_decl.params.len(),
+                    expected: params.len(),
                     received: args.len(),
                 },
                 span: call_span,
             });
         }
 
-        for (arg_value, param_decl) in args.iter().zip(fn_type_decl.params.iter()) {
+        for (arg_value, param_decl) in args.iter().zip(params.iter()) {
             let arg_type = ctx.program_builder.get_value_type(arg_value);
             let param_type = &param_decl.ty;
 
@@ -581,11 +588,11 @@ impl FunctionBuilder {
             }
         }
 
-        let destination_id = if fn_type_decl.return_type.kind != TypeKind::Void {
+        let destination_id = if return_type.kind != TypeKind::Void {
             let dest_id = ctx.program_builder.new_value_id();
             ctx.program_builder
                 .value_types
-                .insert(dest_id, *fn_type_decl.return_type);
+                .insert(dest_id, *return_type);
             Some(dest_id)
         } else {
             None

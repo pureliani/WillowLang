@@ -3,13 +3,13 @@ use std::{
     path::PathBuf,
     sync::{
         atomic::{AtomicUsize, Ordering},
-        Arc,
+        Arc, RwLock,
     },
 };
 
 use crate::{
     ast::{stmt::Stmt, IdentifierNode},
-    compile::interner::{SharedStringInterner, SharedTagInterner},
+    compile::interner::{SharedStringInterner, SharedTagInterner, StringId},
     hir::{
         cfg::{
             BasicBlock, BasicBlockId, CheckedModule, ConstantId, ControlFlowGraph,
@@ -17,7 +17,7 @@ use crate::{
         },
         errors::SemanticError,
         types::{
-            checked_declaration::CheckedParam,
+            checked_declaration::{CheckedFnDecl, CheckedParam},
             checked_type::{Type, TypeKind},
         },
         utils::scope::{Scope, ScopeKind},
@@ -52,6 +52,9 @@ pub struct ProgramBuilder {
     /// Global errors
     pub errors: Vec<SemanticError>,
 
+    env_ptr_field_name: StringId,
+    fn_ptr_field_name: StringId,
+
     value_id_counter: AtomicUsize,
     function_id_counter: AtomicUsize,
     constant_id_counter: AtomicUsize,
@@ -66,6 +69,7 @@ pub struct ModuleBuilder {
     pub errors: Vec<SemanticError>,
     /// Stack of closures
     pub scopes: Vec<Scope>,
+    pub functions: HashMap<FunctionId, Arc<RwLock<CheckedFnDecl>>>,
 }
 
 #[derive(Debug)]
@@ -84,12 +88,17 @@ impl ProgramBuilder {
         string_interner: Arc<SharedStringInterner>,
         tag_interner: Arc<SharedTagInterner>,
     ) -> Self {
+        let env_ptr_field_name = string_interner.intern("__env_ptr");
+        let fn_ptr_field_name = string_interner.intern("__fn_ptr");
+
         ProgramBuilder {
             errors: vec![],
             modules: HashMap::new(),
             value_types: HashMap::new(),
             string_interner,
             tag_interner,
+            env_ptr_field_name,
+            fn_ptr_field_name,
             function_id_counter: AtomicUsize::new(0),
             constant_id_counter: AtomicUsize::new(0),
             allocation_id_counter: AtomicUsize::new(0),

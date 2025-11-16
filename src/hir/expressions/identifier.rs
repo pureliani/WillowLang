@@ -25,10 +25,7 @@ impl FunctionBuilder {
                             Value::Use(self.emit_load(ctx, stack_ptr))
                         }
                         VarStorage::Captured => {
-                            let env_param_name =
-                                ctx.program_builder.string_interner.intern("__env_ptr");
-
-                            let env_param_decl = ctx.module_builder.scope_lookup(env_param_name)
+                            let env_param_decl = ctx.module_builder.scope_lookup(ctx.program_builder.env_ptr_field_name)
                                  .expect("INTERNAL COMPILER ERROR: In a closure context, but the '__env_ptr' parameter was not found in scope.");
 
                             let env_param_stack_ptr = if let CheckedDeclaration::Var(
@@ -84,7 +81,10 @@ impl FunctionBuilder {
                         },
                     ))
                 }
-                CheckedDeclaration::Function(fn_decl_arc) => {
+                CheckedDeclaration::Function(function_id) => {
+                    let fn_decl_arc = ctx.module_builder.functions.get(&function_id)
+                        .expect("INTERNAL COMPILER ERROR: Function ID from scope not found in module's function list.");
+
                     let fn_decl = fn_decl_arc.read().unwrap();
 
                     let ty = Type {
