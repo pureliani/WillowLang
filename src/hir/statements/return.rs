@@ -26,8 +26,5 @@ impl FunctionBuilder {
         self.set_basic_block_terminator(Terminator::Return {
             value: Some(return_value),
         });
-
-        let new_block = self.new_basic_block();
-        self.use_basic_block(new_block);
     }
 }

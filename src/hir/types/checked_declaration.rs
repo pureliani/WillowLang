@@ -41,13 +41,6 @@ pub struct CheckedFnType {
     pub return_type: Box<Type>,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct CheckedClosureType {
-    pub params: Vec<CheckedParam>,
-    pub return_type: Box<Type>,
-    pub env_struct_type: Box<Type>,
-}
-
 #[derive(Clone, Debug)]
 pub struct CheckedTypeAliasDecl {
     pub id: DeclarationId,

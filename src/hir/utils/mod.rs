@@ -4,6 +4,7 @@ pub mod check_is_casting_allowed;
 pub mod check_is_equatable;
 pub mod check_type;
 pub mod instruction_emitters;
+pub mod layout;
 pub mod new_basic_block;
 pub mod numeric;
 pub mod pack_struct;

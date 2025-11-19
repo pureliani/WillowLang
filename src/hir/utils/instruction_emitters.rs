@@ -8,7 +8,7 @@ use crate::{
             IntrinsicFunction, Terminator, UnaryOperationKind, Value, ValueId,
         },
         errors::{SemanticError, SemanticErrorKind},
-        types::checked_type::{Type, TypeKind},
+        types::checked_type::{CheckedStruct, StructKind, Type},
         utils::{check_is_equatable::check_is_equatable, numeric::is_signed},
         FunctionBuilder, HIRContext, ModuleBuilder,
     },
@@ -46,16 +46,11 @@ impl FunctionBuilder {
         ctx: &mut HIRContext,
         error: SemanticError,
     ) -> ValueId {
-        let error_span = error.span;
         ctx.program_builder.errors.push(error);
         let unknown_result_id = ctx.program_builder.new_value_id();
-        ctx.program_builder.value_types.insert(
-            unknown_result_id,
-            Type {
-                kind: TypeKind::Unknown,
-                span: error_span,
-            },
-        );
+        ctx.program_builder
+            .value_types
+            .insert(unknown_result_id, Type::Unknown);
         unknown_result_id
     }
 
@@ -84,7 +79,7 @@ impl FunctionBuilder {
         current_block.instructions.push(instruction);
     }
 
-    /// Returns ValueId which holds pointer: TypeKind::Pointer(Box<Type>)
+    /// Returns ValueId which holds pointer: Type::Pointer(Box<Type>)
     pub fn emit_stack_alloc(
         &mut self,
         ctx: &mut HIRContext,
@@ -93,20 +88,16 @@ impl FunctionBuilder {
     ) -> ValueId {
         let destination = ctx.program_builder.new_value_id();
 
-        ctx.program_builder.value_types.insert(
-            destination,
-            Type {
-                span: ty.span,
-                kind: TypeKind::Pointer(Box::new(ty)),
-            },
-        );
+        ctx.program_builder
+            .value_types
+            .insert(destination, Type::Pointer(Box::new(ty)));
 
         self.push_instruction(Instruction::StackAlloc { destination, count });
 
         destination
     }
 
-    /// Returns ValueId which holds pointer: TypeKind::Pointer(Box<Type>)
+    /// Returns ValueId which holds pointer: Type::Pointer(Box<Type>)
     pub fn emit_heap_alloc(
         &mut self,
         ctx: &mut HIRContext,
@@ -114,13 +105,15 @@ impl FunctionBuilder {
         count: Value,
     ) -> Result<ValueId, SemanticError> {
         let count_type = ctx.program_builder.get_value_type(&count);
-        let expected_count_type = Type {
-            kind: TypeKind::USize,
-            span: count_type.span,
-        };
+        let expected_count_type = Type::USize;
         if !self.check_is_assignable(&count_type, &expected_count_type) {
+            // Note: We need a span for the error. Since Type no longer has span,
+            // we rely on the caller or context. Here we assume count_type came from an expression
+            // but we don't have the expression span.
+            // Ideally, `get_value_type` or `Value` should carry span info, or we pass it in.
+            // For now, we use a default span or fix this upstream.
             return Err(SemanticError {
-                span: count_type.span,
+                span: Span::default(), // TODO: Fix span propagation
                 kind: SemanticErrorKind::TypeMismatch {
                     expected: expected_count_type,
                     received: count_type,
@@ -131,13 +124,9 @@ impl FunctionBuilder {
         let destination = ctx.program_builder.new_value_id();
         let allocation_site_id = ctx.program_builder.new_allocation_id();
 
-        ctx.program_builder.value_types.insert(
-            destination,
-            Type {
-                span: ty.span,
-                kind: TypeKind::Pointer(Box::new(ty)),
-            },
-        );
+        ctx.program_builder
+            .value_types
+            .insert(destination, Type::Pointer(Box::new(ty)));
 
         self.push_instruction(Instruction::HeapAlloc {
             destination,
@@ -158,10 +147,10 @@ impl FunctionBuilder {
         let destination_ptr_type =
             ctx.program_builder.get_value_id_type(&destination_ptr);
 
-        if let TypeKind::Pointer(target_type) = destination_ptr_type.kind {
+        if let Type::Pointer(target_type) = destination_ptr_type {
             if !self.check_is_assignable(&value_type, &target_type) {
                 ctx.program_builder.errors.push(SemanticError {
-                    span: value_type.span,
+                    span: Span::default(), // TODO: Fix span
                     kind: SemanticErrorKind::TypeMismatch {
                         expected: *target_type,
                         received: value_type,
@@ -182,7 +171,7 @@ impl FunctionBuilder {
     pub fn emit_load(&mut self, ctx: &mut HIRContext, source_ptr: ValueId) -> ValueId {
         let ptr_type = ctx.program_builder.get_value_id_type(&source_ptr);
 
-        let destination_type = if let TypeKind::Pointer(target_type) = ptr_type.kind {
+        let destination_type = if let Type::Pointer(target_type) = ptr_type {
             *target_type
         } else {
             panic!(
@@ -212,8 +201,8 @@ impl FunctionBuilder {
     ) -> Result<ValueId, SemanticError> {
         let base_ptr_type = ctx.program_builder.get_value_id_type(&base_ptr);
 
-        let struct_fields = if let TypeKind::Pointer(ptr_to) = &base_ptr_type.kind {
-            if let TypeKind::Struct(s) = &ptr_to.kind {
+        let s = if let Type::Pointer(ptr_to) = base_ptr_type {
+            if let Type::Struct(s) = *ptr_to {
                 s
             } else {
                 return Err(SemanticError {
@@ -225,20 +214,12 @@ impl FunctionBuilder {
             panic!("INTERNAL COMPILER ERROR: emit_get_field_ptr called on a non-pointer type.");
         };
 
-        if let Some((field_index, target_field)) = struct_fields
-            .iter()
-            .enumerate()
-            .find(|(_, p)| p.identifier.name == field.name)
-        {
+        if let Some((field_index, ty)) = s.get_field(field.name) {
             let destination = ctx.program_builder.new_value_id();
 
-            ctx.program_builder.value_types.insert(
-                destination,
-                Type {
-                    kind: TypeKind::Pointer(Box::new(target_field.ty.clone())),
-                    span: field.span,
-                },
-            );
+            ctx.program_builder
+                .value_types
+                .insert(destination, Type::Pointer(Box::new(ty.clone())));
 
             self.push_instruction(Instruction::GetFieldPtr {
                 destination,
@@ -267,15 +248,12 @@ impl FunctionBuilder {
                 item,
             } => {
                 let index_type = ctx.program_builder.get_value_type(&index);
-                let expected_index_type = &Type {
-                    kind: TypeKind::USize,
-                    span: index_type.span,
-                };
-                if !self.check_is_assignable(&index_type, expected_index_type) {
+
+                if !self.check_is_assignable(&index_type, &Type::USize) {
                     return Err(SemanticError {
-                        span: index_type.span,
+                        span: Span::default(), // TODO: Fix span
                         kind: SemanticErrorKind::TypeMismatch {
-                            expected: expected_index_type.clone(),
+                            expected: Type::USize,
                             received: index_type,
                         },
                     });
@@ -284,24 +262,44 @@ impl FunctionBuilder {
                 let item_type = ctx.program_builder.get_value_type(&item);
                 let list_type = ctx.program_builder.get_value_id_type(&list_base_ptr);
 
-                if let TypeKind::Pointer(ptr_to) = &list_type.kind {
-                    if let TypeKind::List(expected_list_item_type) = &ptr_to.kind {
-                        if !self.check_is_assignable(&item_type, expected_list_item_type)
-                        {
-                            return Err(SemanticError {
-                                span: item_type.span,
-                                kind: SemanticErrorKind::TypeMismatch {
-                                    expected: *expected_list_item_type.clone(),
-                                    received: item_type,
-                                },
-                            });
-                        }
-                    } else {
-                        panic!("INTERNAL COMPILER ERROR: Called ListSet intrinsic function on a pointer to a non-list type");
-                    }
-                } else {
+                let Type::Pointer(ptr_to) = &list_type else {
                     panic!("INTERNAL COMPILER ERROR: Called ListSet intrinsic function on a non-pointer type");
+                };
+
+                let Type::Struct(checked_struct) = ptr_to.as_ref() else {
+                    panic!("INTERNAL COMPILER ERROR: Called ListSet intrinsic function on a pointer to a non-struct type");
+                };
+
+                if !matches!(checked_struct.kind(), StructKind::List) {
+                    panic!("INTERNAL COMPILER ERROR: Called ListSet intrinsic function on a pointer to a non-list struct");
                 }
+
+                let ptr_field_name = ctx.program_builder.common_identifiers.ptr;
+                let (_, ptr_field_type) = checked_struct
+                    .get_field(ptr_field_name)
+                    .expect("INTERNAL COMPILER ERROR: List struct missing 'ptr' field");
+
+                let Type::Pointer(element_type) = ptr_field_type else {
+                    panic!("INTERNAL COMPILER ERROR: List 'ptr' field is not a pointer");
+                };
+
+                if !self.check_is_assignable(&item_type, element_type) {
+                    return Err(SemanticError {
+                        span: Span::default(),
+                        kind: SemanticErrorKind::TypeMismatch {
+                            expected: *element_type.clone(),
+                            received: item_type,
+                        },
+                    });
+                }
+
+                self.push_instruction(Instruction::IntrinsicFunctionCall(
+                    IntrinsicFunction::ListSet {
+                        list_base_ptr,
+                        index,
+                        item,
+                    },
+                ));
 
                 Ok(None)
             }
@@ -327,40 +325,19 @@ impl FunctionBuilder {
         value: Value,
     ) -> Result<ValueId, SemanticError> {
         let value_type = ctx.program_builder.get_value_type(&value);
-        let span = value_type.span;
+        let span = Span::default(); // TODO: Fix span
 
         let destination = match op_kind {
             UnaryOperationKind::Neg => {
-                if !is_signed(&value_type.kind) {
+                if !is_signed(&value_type) {
                     let expected = HashSet::from([
-                        Type {
-                            kind: TypeKind::I8,
-                            span,
-                        },
-                        Type {
-                            kind: TypeKind::I16,
-                            span,
-                        },
-                        Type {
-                            kind: TypeKind::I32,
-                            span,
-                        },
-                        Type {
-                            kind: TypeKind::I64,
-                            span,
-                        },
-                        Type {
-                            kind: TypeKind::ISize,
-                            span,
-                        },
-                        Type {
-                            kind: TypeKind::F32,
-                            span,
-                        },
-                        Type {
-                            kind: TypeKind::F64,
-                            span,
-                        },
+                        Type::I8,
+                        Type::I16,
+                        Type::I32,
+                        Type::I64,
+                        Type::ISize,
+                        Type::F32,
+                        Type::F64,
                     ]);
 
                     return Err(SemanticError {
@@ -375,10 +352,7 @@ impl FunctionBuilder {
                 ctx.program_builder.new_value_id()
             }
             UnaryOperationKind::Not => {
-                let bool_type = Type {
-                    kind: TypeKind::Bool,
-                    span,
-                };
+                let bool_type = Type::Bool;
 
                 if !self.check_is_assignable(&value_type, &bool_type) {
                     return Err(SemanticError {
@@ -415,10 +389,7 @@ impl FunctionBuilder {
     ) -> Result<ValueId, SemanticError> {
         let left_type = ctx.program_builder.get_value_type(&left);
         let right_type = ctx.program_builder.get_value_type(&right);
-        let combined_span = Span {
-            start: left_type.span.start,
-            end: right_type.span.end,
-        };
+        let combined_span = Span::default(); // TODO: Fix span
 
         let destination_type = match op_kind {
             BinaryOperationKind::Add
@@ -435,19 +406,13 @@ impl FunctionBuilder {
             | BinaryOperationKind::GreaterThanOrEqual => {
                 self.check_binary_numeric_operation(&left_type, &right_type)?;
 
-                Type {
-                    kind: TypeKind::Bool,
-                    span: combined_span,
-                }
+                Type::Bool
             }
 
             BinaryOperationKind::Equal | BinaryOperationKind::NotEqual => {
-                if !check_is_equatable(&left_type.kind, &right_type.kind) {
+                if !check_is_equatable(&left_type, &right_type) {
                     return Err(SemanticError {
-                        span: Span {
-                            start: left_type.span.start,
-                            end: right_type.span.end,
-                        },
+                        span: combined_span,
                         kind: SemanticErrorKind::CannotCompareType {
                             of: left_type,
                             to: right_type,
@@ -455,10 +420,7 @@ impl FunctionBuilder {
                     });
                 }
 
-                Type {
-                    kind: TypeKind::Bool,
-                    span: combined_span,
-                }
+                Type::Bool
             }
         };
 
@@ -495,9 +457,14 @@ impl FunctionBuilder {
         let mut union_tags = Vec::new();
 
         for ty in &source_types {
-            if let TypeKind::Tag(tag_type) = &ty.kind {
-                if !union_tags.contains(tag_type) {
-                    union_tags.push(tag_type.clone());
+            if let Type::Struct(s) = ty {
+                if matches!(s.kind(), StructKind::Tag) {
+                    if !union_tags.contains(ty) {
+                        union_tags.push(ty.clone());
+                    }
+                } else {
+                    are_all_tags = false;
+                    break;
                 }
             } else {
                 are_all_tags = false;
@@ -506,15 +473,13 @@ impl FunctionBuilder {
         }
 
         let result_type = if are_all_tags {
-            Type {
-                kind: TypeKind::Union(union_tags),
-                span: first_type.span,
-            }
+            // Create a Union from the collected tags
+            Type::Struct(CheckedStruct::union(&ctx.program_builder, &union_tags))
         } else {
             for other_type in source_types.iter().skip(1) {
                 if !self.check_is_assignable(other_type, &first_type) {
                     return Err(SemanticError {
-                        span: other_type.span,
+                        span: Span::default(), // TODO: Fix span
                         kind: SemanticErrorKind::IncompatibleBranchTypes {
                             first: first_type,
                             second: other_type.clone(),
@@ -547,14 +512,34 @@ impl FunctionBuilder {
     ) -> Result<Option<ValueId>, SemanticError> {
         let value_type = ctx.program_builder.get_value_type(&value);
 
-        let (params, return_type) = match &value_type.kind {
-            TypeKind::FnType(fn_type) => {
-                (fn_type.params.clone(), fn_type.return_type.clone())
+        let (params, return_type) = match &value_type {
+            Type::Fn(fn_type) => (fn_type.params.clone(), fn_type.return_type.clone()),
+            Type::Struct(s) if matches!(s.kind(), StructKind::Closure) => {
+                // A closure wrapper is { fn_ptr, env_ptr }.
+                // We need to find the actual function signature.
+                // However, the Type::Struct(Closure) itself doesn't carry the signature info
+                // in its fields (it just has void* pointers).
+                //
+                // This implies that `value_type` for a closure variable MUST carry the signature info
+                // somehow.
+                //
+                // In your previous design, TypeKind::Closure had the signature.
+                // Now, Type::Struct(Closure) is just the memory layout.
+                //
+                // SOLUTION:
+                // You likely need a `Type::Closure(Box<CheckedFnType>)` or similar high-level type
+                // that *lowers* to `Type::Struct(Closure)` during codegen, OR
+                // you need to store the signature in `StructKind::Closure(Signature)`.
+                //
+                // Given your current `StructKind::Closure` has no data, we have a problem here.
+                // The type system has lost the signature information.
+
+                // TEMPORARY FIX ASSUMPTION:
+                // You might want to change StructKind::Closure to StructKind::Closure(Box<CheckedFnType>)
+                // so the type system knows what the closure expects.
+
+                todo!("Implement closure signature tracking in Type system");
             }
-            TypeKind::Closure(closure_type) => (
-                closure_type.params.clone(),
-                closure_type.return_type.clone(),
-            ),
             _ => {
                 return Err(SemanticError {
                     kind: SemanticErrorKind::CannotCall(value_type),
@@ -579,7 +564,7 @@ impl FunctionBuilder {
 
             if !self.check_is_assignable(&arg_type, param_type) {
                 return Err(SemanticError {
-                    span: arg_type.span,
+                    span: Span::default(), // TODO: Fix span
                     kind: SemanticErrorKind::TypeMismatch {
                         expected: param_type.clone(),
                         received: arg_type,
@@ -588,7 +573,7 @@ impl FunctionBuilder {
             }
         }
 
-        let destination_id = if return_type.kind != TypeKind::Void {
+        let destination_id = if *return_type != Type::Void {
             let dest_id = ctx.program_builder.new_value_id();
             ctx.program_builder
                 .value_types
@@ -619,7 +604,7 @@ impl FunctionBuilder {
             return self.report_error_and_get_poison(
                 ctx,
                 SemanticError {
-                    span: value_type.span,
+                    span: Span::default(), // TODO: Fix span
                     kind: SemanticErrorKind::CannotCastType {
                         source_type: value_type.clone(),
                         target_type: target_type.clone(),

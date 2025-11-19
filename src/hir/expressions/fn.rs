@@ -10,7 +10,7 @@ use crate::{
                 CheckedClosureType, CheckedFnDecl, CheckedFnType, CheckedParam,
                 CheckedVarDecl, VarStorage,
             },
-            checked_type::{Type, TypeKind},
+            checked_type::{CheckedStruct, StructKind, Type, TypeKind},
         },
         utils::{
             pack_struct::pack_struct, scope::ScopeKind,
@@ -117,7 +117,7 @@ impl FunctionBuilder {
             ctx.module_builder.exit_scope();
 
             let fn_type = Type {
-                kind: TypeKind::FnType(CheckedFnType {
+                kind: TypeKind::Fn(CheckedFnType {
                     params: checked_params,
                     return_type: Box::new(checked_return_type),
                 }),
@@ -150,7 +150,7 @@ impl FunctionBuilder {
 
             // 2. Instantiate env struct on heap with captured variables
             let env_struct_type = Type {
-                kind: TypeKind::Struct(captures),
+                kind: TypeKind::Struct(CheckedStruct { kind: StructKind }),
                 span: identifier.span,
             };
             let env_ptr = self

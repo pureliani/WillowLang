@@ -18,7 +18,7 @@ use crate::{
         errors::SemanticError,
         types::{
             checked_declaration::{CheckedFnDecl, CheckedParam},
-            checked_type::{Type, TypeKind},
+            checked_type::{CheckedStruct, Type},
         },
         utils::scope::{Scope, ScopeKind},
     },
@@ -44,6 +44,17 @@ pub struct HIRContext<'a> {
     pub module_builder: &'a mut ModuleBuilder,
 }
 
+pub struct CommonIdentifiers {
+    env_ptr: StringId,
+    fn_ptr: StringId,
+    ptr: StringId,
+    capacity: StringId,
+    len: StringId,
+    id: StringId,
+    value: StringId,
+    payload: StringId,
+}
+
 pub struct ProgramBuilder {
     pub modules: HashMap<PathBuf, ModuleBuilder>,
     pub value_types: HashMap<ValueId, Type>,
@@ -52,8 +63,7 @@ pub struct ProgramBuilder {
     /// Global errors
     pub errors: Vec<SemanticError>,
 
-    env_ptr_field_name: StringId,
-    fn_ptr_field_name: StringId,
+    pub common_identifiers: CommonIdentifiers,
 
     value_id_counter: AtomicUsize,
     function_id_counter: AtomicUsize,
@@ -88,8 +98,16 @@ impl ProgramBuilder {
         string_interner: Arc<SharedStringInterner>,
         tag_interner: Arc<SharedTagInterner>,
     ) -> Self {
-        let env_ptr_field_name = string_interner.intern("__env_ptr");
-        let fn_ptr_field_name = string_interner.intern("__fn_ptr");
+        let common_identifiers = CommonIdentifiers {
+            id: string_interner.intern("id"),
+            value: string_interner.intern("value"),
+            payload: string_interner.intern("payload"),
+            capacity: string_interner.intern("capacity"),
+            env_ptr: string_interner.intern("env_ptr"),
+            fn_ptr: string_interner.intern("fn_ptr"),
+            len: string_interner.intern("len"),
+            ptr: string_interner.intern("ptr"),
+        };
 
         ProgramBuilder {
             errors: vec![],
@@ -97,8 +115,7 @@ impl ProgramBuilder {
             value_types: HashMap::new(),
             string_interner,
             tag_interner,
-            env_ptr_field_name,
-            fn_ptr_field_name,
+            common_identifiers,
             function_id_counter: AtomicUsize::new(0),
             constant_id_counter: AtomicUsize::new(0),
             allocation_id_counter: AtomicUsize::new(0),
@@ -153,40 +170,27 @@ impl ProgramBuilder {
 
     pub fn get_value_type(&self, value: &Value) -> Type {
         match value {
-            Value::VoidLiteral => Type {
-                kind: TypeKind::Void,
-                span: Default::default(),
-            },
-            Value::BoolLiteral(_) => Type {
-                kind: TypeKind::Bool,
-                // TODO: fix this later
-                span: Default::default(),
-            },
+            Value::VoidLiteral => Type::Void,
+            Value::BoolLiteral(_) => Type::Bool,
             Value::NumberLiteral(kind) => {
-                let kind = match kind {
-                    NumberKind::I64(_) => TypeKind::I64,
-                    NumberKind::I32(_) => TypeKind::I32,
-                    NumberKind::I16(_) => TypeKind::I16,
-                    NumberKind::I8(_) => TypeKind::I8,
-                    NumberKind::F32(_) => TypeKind::F32,
-                    NumberKind::F64(_) => TypeKind::F64,
-                    NumberKind::U64(_) => TypeKind::U64,
-                    NumberKind::U32(_) => TypeKind::U32,
-                    NumberKind::U16(_) => TypeKind::U16,
-                    NumberKind::U8(_) => TypeKind::U8,
-                    NumberKind::USize(_) => TypeKind::USize,
-                    NumberKind::ISize(_) => TypeKind::ISize,
+                let ty = match kind {
+                    NumberKind::I64(_) => Type::I64,
+                    NumberKind::I32(_) => Type::I32,
+                    NumberKind::I16(_) => Type::I16,
+                    NumberKind::I8(_) => Type::I8,
+                    NumberKind::F32(_) => Type::F32,
+                    NumberKind::F64(_) => Type::F64,
+                    NumberKind::U64(_) => Type::U64,
+                    NumberKind::U32(_) => Type::U32,
+                    NumberKind::U16(_) => Type::U16,
+                    NumberKind::U8(_) => Type::U8,
+                    NumberKind::USize(_) => Type::USize,
+                    NumberKind::ISize(_) => Type::ISize,
                 };
 
-                Type {
-                    kind,
-                    span: Default::default(),
-                }
+                ty
             }
-            Value::StringLiteral(_) => Type {
-                kind: TypeKind::String,
-                span: Default::default(),
-            },
+            Value::StringLiteral(_) => Type::Struct(CheckedStruct::const_string(self)),
             Value::FunctionAddr { ty, .. } => ty.clone(),
             Value::Use(value_id) => self.get_value_id_type(value_id),
         }
@@ -199,6 +203,7 @@ impl ModuleBuilder {
             module: CheckedModule::new(path),
             errors: vec![],
             scopes: vec![Scope::new(ScopeKind::File)],
+            functions: HashMap::new(),
         }
     }
 

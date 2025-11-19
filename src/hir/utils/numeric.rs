@@ -1,7 +1,7 @@
-use crate::hir::types::checked_type::TypeKind;
+use crate::hir::types::checked_type::Type;
 
-pub fn get_numeric_type_rank(ty: &TypeKind) -> i32 {
-    use TypeKind::*;
+pub fn get_numeric_type_rank(ty: &Type) -> i32 {
+    use Type::*;
     match &ty {
         I8 | U8 => 1,
         I16 | U16 => 2,
@@ -13,20 +13,20 @@ pub fn get_numeric_type_rank(ty: &TypeKind) -> i32 {
     }
 }
 
-pub fn is_float(ty: &TypeKind) -> bool {
-    use TypeKind::*;
+pub fn is_float(ty: &Type) -> bool {
+    use Type::*;
     matches!(ty, F32 | F64)
 }
 
-pub fn is_integer(ty: &TypeKind) -> bool {
-    use TypeKind::*;
+pub fn is_integer(ty: &Type) -> bool {
+    use Type::*;
     matches!(
         ty,
         I8 | I16 | I32 | I64 | U8 | U16 | U32 | U64 | ISize | USize
     )
 }
 
-pub fn is_signed(ty: &TypeKind) -> bool {
-    use TypeKind::*;
+pub fn is_signed(ty: &Type) -> bool {
+    use Type::*;
     matches!(ty, I8 | I16 | I32 | I64 | ISize | F32 | F64)
 }

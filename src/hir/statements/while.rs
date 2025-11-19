@@ -3,7 +3,7 @@ use crate::{
     hir::{
         cfg::Terminator,
         errors::{SemanticError, SemanticErrorKind},
-        types::checked_type::{Type, TypeKind},
+        types::checked_type::Type,
         utils::scope::ScopeKind,
         FunctionBuilder, HIRContext,
     },

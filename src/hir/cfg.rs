@@ -6,7 +6,6 @@ use std::{
 
 use crate::{
     ast::IdentifierNode,
-    compile::interner::StringId,
     hir::types::{
         checked_declaration::{CheckedTypeAliasDecl, CheckedVarDecl},
         checked_type::Type,
@@ -59,7 +58,7 @@ pub enum Value {
     VoidLiteral,
     BoolLiteral(bool),
     NumberLiteral(NumberKind),
-    StringLiteral(StringId),
+    StringLiteral(String),
     FunctionAddr { function_id: FunctionId, ty: Type },
     Use(ValueId),
 }

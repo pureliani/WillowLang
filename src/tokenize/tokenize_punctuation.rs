@@ -144,6 +144,10 @@ impl<'a> Tokenizer<'a> {
                 self.consume();
                 Some(PunctuationKind::Question)
             }
+            "#" => {
+                self.consume();
+                Some(PunctuationKind::Hash)
+            }
             _ => None,
         }
     }
