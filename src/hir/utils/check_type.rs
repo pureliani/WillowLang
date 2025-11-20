@@ -9,7 +9,7 @@ use crate::{
         errors::{SemanticError, SemanticErrorKind},
         types::{
             checked_declaration::{CheckedFnType, CheckedParam, CheckedTagType},
-            checked_type::Type,
+            checked_type::{CheckedStruct, Type},
         },
         FunctionBuilder, HIRContext,
     },
@@ -60,6 +60,29 @@ impl FunctionBuilder {
             })
     }
 
+    pub fn check_tag_annotation(
+        &mut self,
+        ctx: &mut HIRContext,
+        TagAnnotation {
+            identifier,
+            value_type,
+            span,
+        }: &TagAnnotation,
+    ) -> Type {
+        let checked_value_type = value_type
+            .as_ref()
+            .map(|v| self.check_type_annotation(ctx, v));
+
+        // TODO: figure out what to do with the semantic type
+        let semantic_type = CheckedTagType {
+            identifier: *identifier,
+            value_type: checked_value_type.clone().map(Box::new),
+            span: *span,
+        };
+
+        Type::Struct(CheckedStruct::tag(&ctx.program_builder, checked_value_type))
+    }
+
     pub fn check_type_annotation(
         &mut self,
         ctx: &mut HIRContext,
@@ -80,7 +103,9 @@ impl FunctionBuilder {
             TypeAnnotationKind::I64 => Type::I64,
             TypeAnnotationKind::F32 => Type::F32,
             TypeAnnotationKind::F64 => Type::F64,
-            TypeAnnotationKind::String => Type::String,
+            TypeAnnotationKind::String => {
+                Type::Struct(CheckedStruct::string(&ctx.program_builder))
+            }
             TypeAnnotationKind::Identifier(id) => {
                 match self.check_type_identifier_annotation(ctx, *id, annotation.span) {
                     Ok(resolved_type) => {
@@ -88,7 +113,7 @@ impl FunctionBuilder {
                     }
                     Err(error) => {
                         ctx.program_builder.errors.push(error);
-                        TypeKind::Unknown
+                        Type::Unknown
                     }
                 }
             }
@@ -99,13 +124,16 @@ impl FunctionBuilder {
                 let checked_params = self.check_params(ctx, params);
                 let checked_return_type = self.check_type_annotation(ctx, return_type);
 
-                TypeKind::FnType(CheckedFnType {
+                // TODO: figure out
+                let semantic_type = CheckedFnType {
                     params: checked_params,
                     return_type: Box::new(checked_return_type),
-                })
+                };
+
+                Type::Struct(CheckedStruct::closure(&ctx.program_builder))
             }
             TypeAnnotationKind::Struct(items) => {
-                let checked_field_types: Vec<CheckedParam> = items
+                let mut checked_field_types: Vec<CheckedParam> = items
                     .iter()
                     .map(|(identifier, ty)| {
                         let checked_type = self.check_type_annotation(ctx, ty);
@@ -116,52 +144,30 @@ impl FunctionBuilder {
                     })
                     .collect();
 
-                TypeKind::Struct(checked_field_types)
+                Type::Struct(CheckedStruct::user_defined(
+                    &ctx.program_builder,
+                    &mut checked_field_types,
+                ))
             }
             TypeAnnotationKind::List(item_type) => {
                 let checked_item_type = self.check_type_annotation(ctx, item_type);
 
-                TypeKind::List(Box::new(checked_item_type))
+                Type::Struct(CheckedStruct::list(&ctx.program_builder, checked_item_type))
             }
-            TypeAnnotationKind::Tag(TagAnnotation {
-                identifier,
-                value_type,
-                span,
-            }) => {
-                let checked_value_type = value_type
-                    .as_ref()
-                    .map(|v| Box::new(self.check_type_annotation(ctx, v)));
-
-                TypeKind::Tag(CheckedTagType {
-                    identifier: *identifier,
-                    value_type: checked_value_type,
-                    span: *span,
-                })
-            }
+            TypeAnnotationKind::Tag(t) => self.check_tag_annotation(ctx, t),
             TypeAnnotationKind::Union(tag_annotations) => {
-                let checked_tag_types: Vec<CheckedTagType> = tag_annotations
+                let checked_tag_types: Vec<Type> = tag_annotations
                     .iter()
-                    .map(|t| {
-                        let checked_type = t
-                            .value_type
-                            .as_ref()
-                            .map(|t| Box::new(self.check_type_annotation(ctx, t)));
-
-                        CheckedTagType {
-                            identifier: t.identifier,
-                            value_type: checked_type,
-                            span: t.span,
-                        }
-                    })
+                    .map(|t| self.check_tag_annotation(ctx, t))
                     .collect();
 
-                TypeKind::Union(checked_tag_types)
+                Type::Struct(CheckedStruct::union(
+                    &ctx.program_builder,
+                    &checked_tag_types,
+                ))
             }
         };
 
-        Type {
-            kind,
-            span: annotation.span,
-        }
+        kind
     }
 }

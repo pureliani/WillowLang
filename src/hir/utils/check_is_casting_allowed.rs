@@ -10,7 +10,7 @@ impl FunctionBuilder {
         source_type: &Type,
         target_type: &Type,
     ) -> bool {
-        match (&source_type.kind, &target_type.kind) {
+        match (&source_type, &target_type) {
             (st, tt)
                 if is_integer(st)
                     && is_integer(tt)

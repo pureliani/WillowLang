@@ -5,7 +5,7 @@ use crate::{
         errors::{SemanticError, SemanticErrorKind},
         types::{
             checked_declaration::{CheckedFnType, VarStorage},
-            checked_type::{Type, TypeKind},
+            checked_type::Type,
         },
         FunctionBuilder, HIRContext,
     },
@@ -95,7 +95,7 @@ impl FunctionBuilder {
                         span: fn_decl.identifier.span,
                     };
 
-                    Value::FunctionAddr {
+                    Value::Function {
                         function_id: fn_decl.function_id,
                         ty,
                     }

@@ -3,7 +3,7 @@ use crate::{
     hir::{
         cfg::{BasicBlockId, Terminator, Value},
         errors::{SemanticError, SemanticErrorKind},
-        types::checked_type::{Type, TypeKind},
+        types::checked_type::Type,
         FunctionBuilder, HIRContext,
     },
 };
@@ -41,22 +41,20 @@ impl FunctionBuilder {
         let mut phi_sources: Vec<(BasicBlockId, Value)> = Vec::new();
 
         for (condition, body) in branches {
+            let condition_span = condition.span;
             self.use_basic_block(last_condition_block_id);
 
             let condition_value = self.build_expr(ctx, *condition);
             let condition_value_type =
                 ctx.program_builder.get_value_type(&condition_value);
-            let expected_condition_type = Type {
-                kind: TypeKind::Bool,
-                span: condition_value_type.span,
-            };
+            let expected_condition_type = Type::Bool;
 
             if !self.check_is_assignable(&condition_value_type, &expected_condition_type)
             {
                 return Value::Use(self.report_error_and_get_poison(
                     ctx,
                     SemanticError {
-                        span: condition_value_type.span,
+                        span: condition_span,
                         kind: SemanticErrorKind::TypeMismatch {
                             expected: expected_condition_type,
                             received: condition_value_type,

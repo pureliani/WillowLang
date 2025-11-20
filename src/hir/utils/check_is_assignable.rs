@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use crate::hir::{
     types::{
         checked_declaration::{CheckedFnType, CheckedTagType},
-        checked_type::{Type, TypeKind},
+        checked_type::Type,
     },
     FunctionBuilder,
 };

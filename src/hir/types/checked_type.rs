@@ -45,8 +45,8 @@ impl CheckedStruct {
         &self.fields
     }
 
-    /// Looks up a field by name.
-    /// Returns `Some((index, type))` if found, or `None`.
+    /// Looks up a field by name
+    /// Returns `Some((index, type))` if found, or `None`
     ///
     /// This is used by the FunctionBuilder to emit `GetFieldPtr` instructions.
     pub fn get_field(&self, name: StringId) -> Option<(usize, &Type)> {
@@ -72,20 +72,20 @@ impl CheckedStruct {
 
     pub fn user_defined(
         program_builder: &ProgramBuilder,
-        fields: &mut [CheckedParam],
+        user_defined_fields: &[CheckedParam],
     ) -> Self {
-        pack_struct(program_builder, fields);
+        let mut packed_fields: Vec<CheckedParam> = user_defined_fields.into();
+        pack_struct(program_builder, &mut packed_fields);
         Self {
             kind: StructKind::UserDefined,
-            fields: fields.into(),
+            fields: packed_fields,
         }
     }
 
-    /// Creates the "Fat Pointer" wrapper: { fn_ptr: *void, env_ptr: *void }
+    /// Creates the closure object: { fn_ptr: *void, env_ptr: *void }
     pub fn closure(program_builder: &ProgramBuilder) -> Self {
         let void_ptr = Type::Pointer(Box::new(Type::Void));
 
-        // Fixed order
         let fields = vec![
             Self::internal_param(
                 program_builder.common_identifiers.fn_ptr,
@@ -100,8 +100,8 @@ impl CheckedStruct {
         }
     }
 
-    /// Creates the captured environment struct.
-    /// Packed to minimize size.
+    /// Creates the captured environment struct
+    /// Packed to minimize size
     pub fn closure_env(
         program_builder: &ProgramBuilder,
         fields: &mut [CheckedParam],
@@ -136,7 +136,7 @@ impl CheckedStruct {
     }
 
     /// Creates a Union struct: { id: u16, payload: Buffer }
-    /// The payload is large enough to hold the largest variant.
+    /// The payload is large enough to hold the largest variant
     pub fn union(program_builder: &ProgramBuilder, variants: &[Type]) -> Self {
         let mut max_size = 0;
         let mut max_align = 1;
@@ -172,7 +172,6 @@ impl CheckedStruct {
 
     /// Creates a dynamic List: { capacity: usize, len: usize, ptr: *T }
     pub fn list(program_builder: &ProgramBuilder, element_type: Type) -> Self {
-        // Fixed order: capacity, len, ptr
         let fields = vec![
             Self::internal_param(
                 program_builder.common_identifiers.capacity,
@@ -193,7 +192,6 @@ impl CheckedStruct {
 
     /// Creates a dynamic String: { capacity: usize, len: usize, ptr: *u8 }
     pub fn string(program_builder: &ProgramBuilder) -> Self {
-        // Fixed order: capacity, len, ptr
         let fields = vec![
             Self::internal_param(
                 program_builder.common_identifiers.capacity,
@@ -214,7 +212,6 @@ impl CheckedStruct {
 
     /// Creates a String View (ConstString): { len: usize, ptr: *u8 }
     pub fn const_string(program_builder: &ProgramBuilder) -> Self {
-        // Fixed order
         let fields = vec![
             Self::internal_param(program_builder.common_identifiers.len, Type::USize),
             Self::internal_param(
@@ -257,13 +254,13 @@ pub enum Type {
     /// Represents a function pointer signature
     Fn(CheckedFnType),
 
-    /// Represents a raw block of memory with a specific size and alignment.
+    /// Represents a raw block of memory with a specific size and alignment
     /// Used for Union payloads.
     Buffer {
         size: usize,
         alignment: usize,
     },
 
-    /// Used for error recovery.
+    /// Used for error recovery
     Unknown,
 }

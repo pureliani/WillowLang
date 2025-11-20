@@ -1,7 +1,7 @@
 use std::sync::{Arc, RwLock};
 
 use crate::{
-    ast::{decl::FnDecl, expr::BlockContents, IdentifierNode},
+    ast::{decl::FnDecl, expr::BlockContents, IdentifierNode, Span},
     hir::{
         cfg::{CheckedDeclaration, Terminator, Value},
         errors::{SemanticError, SemanticErrorKind},
@@ -10,7 +10,7 @@ use crate::{
                 CheckedClosureType, CheckedFnDecl, CheckedFnType, CheckedParam,
                 CheckedVarDecl, VarStorage,
             },
-            checked_type::{CheckedStruct, StructKind, Type, TypeKind},
+            checked_type::{CheckedStruct, StructKind, Type},
         },
         utils::{
             pack_struct::pack_struct, scope::ScopeKind,
@@ -54,7 +54,7 @@ impl FunctionBuilder {
 
         if !self.check_is_assignable(&final_value_type, &self.return_type) {
             ctx.module_builder.errors.push(SemanticError {
-                span: final_value_type.span,
+                span: Span::default(), // TODO: fix later
                 kind: SemanticErrorKind::ReturnTypeMismatch {
                     expected: self.return_type.clone(),
                     received: final_value_type,
@@ -116,17 +116,14 @@ impl FunctionBuilder {
             checked_fn_decl.write().unwrap().body = Some(new_fn_builder.cfg);
             ctx.module_builder.exit_scope();
 
-            let fn_type = Type {
-                kind: TypeKind::Fn(CheckedFnType {
-                    params: checked_params,
-                    return_type: Box::new(checked_return_type),
-                }),
-                span: identifier.span,
-            };
+            let fn_type = Type::Fn(CheckedFnType {
+                params: checked_params,
+                return_type: Box::new(checked_return_type),
+            });
 
-            Value::FunctionAddr {
+            Value::Function {
                 function_id: new_function_id,
-                ty: fn_type,
+                ty: fn_type, // redundant
             }
         } else {
             // 1. Find captured variables
@@ -242,7 +239,7 @@ impl FunctionBuilder {
             let fn_ptr_field = self
                 .emit_get_field_ptr(ctx, closure_obj_ptr, fn_ptr_id)
                 .unwrap();
-            let fn_addr_val = Value::FunctionAddr {
+            let fn_addr_val = Value::Function {
                 function_id: new_function_id,
                 ty: Type {
                     kind: TypeKind::Void,

@@ -58,13 +58,15 @@ pub struct CommonIdentifiers {
 pub struct ProgramBuilder {
     pub modules: HashMap<PathBuf, ModuleBuilder>,
     pub value_types: HashMap<ValueId, Type>,
+
+    pub functions: HashMap<FunctionId, Arc<RwLock<CheckedFnDecl>>>,
+
     pub string_interner: Arc<SharedStringInterner>,
     pub tag_interner: Arc<SharedTagInterner>,
-    /// Global errors
-    pub errors: Vec<SemanticError>,
-
     pub common_identifiers: CommonIdentifiers,
 
+    // errors and counters
+    pub errors: Vec<SemanticError>,
     value_id_counter: AtomicUsize,
     function_id_counter: AtomicUsize,
     constant_id_counter: AtomicUsize,
@@ -79,7 +81,6 @@ pub struct ModuleBuilder {
     pub errors: Vec<SemanticError>,
     /// Stack of closures
     pub scopes: Vec<Scope>,
-    pub functions: HashMap<FunctionId, Arc<RwLock<CheckedFnDecl>>>,
 }
 
 #[derive(Debug)]
@@ -116,6 +117,7 @@ impl ProgramBuilder {
             string_interner,
             tag_interner,
             common_identifiers,
+            functions: HashMap::new(),
             function_id_counter: AtomicUsize::new(0),
             constant_id_counter: AtomicUsize::new(0),
             allocation_id_counter: AtomicUsize::new(0),
@@ -191,7 +193,7 @@ impl ProgramBuilder {
                 ty
             }
             Value::StringLiteral(_) => Type::Struct(CheckedStruct::const_string(self)),
-            Value::FunctionAddr { ty, .. } => ty.clone(),
+            Value::Function { ty, .. } => ty.clone(),
             Value::Use(value_id) => self.get_value_id_type(value_id),
         }
     }
@@ -203,7 +205,6 @@ impl ModuleBuilder {
             module: CheckedModule::new(path),
             errors: vec![],
             scopes: vec![Scope::new(ScopeKind::File)],
-            functions: HashMap::new(),
         }
     }
 

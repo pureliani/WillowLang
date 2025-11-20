@@ -32,34 +32,16 @@ pub struct ConstantId(pub usize);
 pub struct DeclarationId(pub usize);
 
 #[derive(Clone, Debug)]
-pub enum IntrinsicFunction {
-    ListSet {
-        list_base_ptr: ValueId,
-        index: Value,
-        item: Value,
-    },
-    ListGet {
-        list_base_ptr: ValueId,
-        index: Value,
-        destination: ValueId,
-    },
-}
-
-#[derive(Clone, Debug)]
-pub enum IntrinsicField {
-    ListLen {
-        list_base_ptr: ValueId,
-        destination: ValueId,
-    },
-}
-
-#[derive(Clone, Debug)]
 pub enum Value {
     VoidLiteral,
     BoolLiteral(bool),
     NumberLiteral(NumberKind),
     StringLiteral(String),
-    FunctionAddr { function_id: FunctionId, ty: Type },
+    /// Represents a reference to a function.
+    Function {
+        function_id: FunctionId,
+        ty: Type,
+    },
     Use(ValueId),
 }
 
@@ -85,10 +67,18 @@ pub enum Instruction {
         destination: ValueId,
         source_ptr: ValueId,
     },
+    /// Used for Structs, Offset is static (usize).
     GetFieldPtr {
         destination: ValueId,
         base_ptr: ValueId,
         field_index: usize,
+    },
+    /// Used for Arrays/Buffers, Offset is dynamic (Value).
+    /// Computes: base_ptr + (index * sizeof(T))
+    GetElementPtr {
+        destination: ValueId,
+        base_ptr: ValueId,
+        index: Value,
     },
     UnaryOp {
         op_kind: UnaryOperationKind,
@@ -111,8 +101,6 @@ pub enum Instruction {
         function_rvalue: Value,
         args: Vec<Value>,
     },
-    IntrinsicFunctionCall(IntrinsicFunction),
-    IntrinsicFieldAccess(IntrinsicField),
     Phi {
         destination: ValueId,
         sources: Vec<(BasicBlockId, Value)>,

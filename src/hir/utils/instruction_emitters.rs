@@ -4,8 +4,8 @@ use crate::{
     ast::{IdentifierNode, Span},
     hir::{
         cfg::{
-            BasicBlock, BasicBlockId, BinaryOperationKind, Instruction, IntrinsicField,
-            IntrinsicFunction, Terminator, UnaryOperationKind, Value, ValueId,
+            BasicBlock, BasicBlockId, BinaryOperationKind, Instruction, Terminator,
+            UnaryOperationKind, Value, ValueId,
         },
         errors::{SemanticError, SemanticErrorKind},
         types::checked_type::{CheckedStruct, StructKind, Type},
@@ -236,86 +236,42 @@ impl FunctionBuilder {
         }
     }
 
-    pub fn emit_intrinsic_function_call(
+    pub fn emit_get_element_ptr(
         &mut self,
         ctx: &mut HIRContext,
-        function_kind: IntrinsicFunction,
-    ) -> Result<Option<ValueId>, SemanticError> {
-        match function_kind {
-            IntrinsicFunction::ListSet {
-                list_base_ptr,
-                index,
-                item,
-            } => {
-                let index_type = ctx.program_builder.get_value_type(&index);
-
-                if !self.check_is_assignable(&index_type, &Type::USize) {
-                    return Err(SemanticError {
-                        span: Span::default(), // TODO: Fix span
-                        kind: SemanticErrorKind::TypeMismatch {
-                            expected: Type::USize,
-                            received: index_type,
-                        },
-                    });
-                }
-
-                let item_type = ctx.program_builder.get_value_type(&item);
-                let list_type = ctx.program_builder.get_value_id_type(&list_base_ptr);
-
-                let Type::Pointer(ptr_to) = &list_type else {
-                    panic!("INTERNAL COMPILER ERROR: Called ListSet intrinsic function on a non-pointer type");
-                };
-
-                let Type::Struct(checked_struct) = ptr_to.as_ref() else {
-                    panic!("INTERNAL COMPILER ERROR: Called ListSet intrinsic function on a pointer to a non-struct type");
-                };
-
-                if !matches!(checked_struct.kind(), StructKind::List) {
-                    panic!("INTERNAL COMPILER ERROR: Called ListSet intrinsic function on a pointer to a non-list struct");
-                }
-
-                let ptr_field_name = ctx.program_builder.common_identifiers.ptr;
-                let (_, ptr_field_type) = checked_struct
-                    .get_field(ptr_field_name)
-                    .expect("INTERNAL COMPILER ERROR: List struct missing 'ptr' field");
-
-                let Type::Pointer(element_type) = ptr_field_type else {
-                    panic!("INTERNAL COMPILER ERROR: List 'ptr' field is not a pointer");
-                };
-
-                if !self.check_is_assignable(&item_type, element_type) {
-                    return Err(SemanticError {
-                        span: Span::default(),
-                        kind: SemanticErrorKind::TypeMismatch {
-                            expected: *element_type.clone(),
-                            received: item_type,
-                        },
-                    });
-                }
-
-                self.push_instruction(Instruction::IntrinsicFunctionCall(
-                    IntrinsicFunction::ListSet {
-                        list_base_ptr,
-                        index,
-                        item,
-                    },
-                ));
-
-                Ok(None)
-            }
-            IntrinsicFunction::ListGet {
-                list_base_ptr,
-                index,
-                destination,
-            } => todo!(),
+        base_ptr: ValueId,
+        index: Value,
+    ) -> Result<ValueId, SemanticError> {
+        let index_type = ctx.program_builder.get_value_type(&index);
+        if !self.check_is_assignable(&index_type, &Type::USize) {
+            return Err(SemanticError {
+                span: Span::default(),
+                kind: SemanticErrorKind::TypeMismatch {
+                    expected: Type::USize,
+                    received: index_type,
+                },
+            });
         }
-    }
-    pub fn emit_intrinsic_field_access(
-        &mut self,
-        ctx: &mut HIRContext,
-        function_kind: IntrinsicField,
-    ) {
-        todo!()
+
+        let base_ptr_type = ctx.program_builder.get_value_id_type(&base_ptr);
+        let element_type = if let Type::Pointer(inner) = base_ptr_type {
+            *inner
+        } else {
+            panic!("INTERNAL COMPILER ERROR: emit_get_element_ptr expects a pointer");
+        };
+
+        let destination = ctx.program_builder.new_value_id();
+        ctx.program_builder
+            .value_types
+            .insert(destination, Type::Pointer(Box::new(element_type)));
+
+        self.push_instruction(Instruction::GetElementPtr {
+            destination,
+            base_ptr,
+            index,
+        });
+
+        Ok(destination)
     }
 
     pub fn emit_unary_op(
