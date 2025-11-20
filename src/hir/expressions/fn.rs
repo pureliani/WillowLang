@@ -100,7 +100,7 @@ impl FunctionBuilder {
                 body: None,
             }));
 
-            ctx.module_builder
+            ctx.program_builder
                 .functions
                 .insert(new_function_id, checked_fn_decl.clone());
 

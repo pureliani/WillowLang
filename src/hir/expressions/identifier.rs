@@ -82,7 +82,7 @@ impl FunctionBuilder {
                     ))
                 }
                 CheckedDeclaration::Function(function_id) => {
-                    let fn_decl_arc = ctx.module_builder.functions.get(&function_id)
+                    let fn_decl_arc = ctx.program_builder.functions.get(&function_id)
                         .expect("INTERNAL COMPILER ERROR: Function ID from scope not found in module's function list.");
 
                     let fn_decl = fn_decl_arc.read().unwrap();
