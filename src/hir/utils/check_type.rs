@@ -14,7 +14,7 @@ use crate::{
             checked_declaration::{CheckedParam, FnType, TagType},
             checked_type::{StructKind, Type},
         },
-        utils::pack_struct::pack_struct,
+        utils::layout::pack_struct,
         FunctionBuilder, HIRContext,
     },
 };

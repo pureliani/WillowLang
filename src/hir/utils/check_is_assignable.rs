@@ -116,7 +116,7 @@ impl FunctionBuilder {
             (Pointer(source), Pointer(target)) => {
                 self.check_is_assignable_recursive(source, target, visited_declarations)
             }
-            (Struct(source_fields), Struct(target_fields)) => {
+            (Struct(source_kind), Struct(target_kind)) => {
                 if source_fields.len() != target_fields.len() {
                     return false;
                 }
@@ -139,12 +139,12 @@ impl FunctionBuilder {
                 is_assignable
             }
             (
-                FnType(FnType {
+                Fn(FnType {
                     params: source_params,
                     return_type: source_return_type,
                     ..
                 }),
-                FnType(FnType {
+                Fn(FnType {
                     params: target_params,
                     return_type: target_return_type,
                     ..

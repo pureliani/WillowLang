@@ -9,7 +9,7 @@ use crate::{
             checked_declaration::CheckedParam,
             checked_type::{Type, TypeKind},
         },
-        utils::pack_struct::pack_struct,
+        utils::layout::pack_struct,
         FunctionBuilder, HIRContext,
     },
     tokenize::NumberKind,

@@ -13,8 +13,7 @@ use crate::{
             checked_type::{StructLayout, StructLayoutKind, Type},
         },
         utils::{
-            pack_struct::pack_struct, scope::ScopeKind,
-            var_capture_analyzer::analyze_captures,
+            layout::pack_struct, scope::ScopeKind, var_capture_analyzer::analyze_captures,
         },
         FunctionBuilder, HIRContext,
     },

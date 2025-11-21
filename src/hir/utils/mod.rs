@@ -7,7 +7,6 @@ pub mod instruction_emitters;
 pub mod layout;
 pub mod new_basic_block;
 pub mod numeric;
-pub mod pack_struct;
 pub mod scope;
 pub mod type_to_string;
 pub mod var_capture_analyzer;
