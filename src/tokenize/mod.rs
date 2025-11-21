@@ -139,8 +139,6 @@ pub enum KeywordKind {
     U16,
     U32,
     U64,
-    USize,
-    ISize,
     F32,
     F64,
     Fn,
@@ -174,8 +172,6 @@ impl KeywordKind {
             KeywordKind::U16 => "u16",
             KeywordKind::U32 => "u32",
             KeywordKind::U64 => "u64",
-            KeywordKind::USize => "usize",
-            KeywordKind::ISize => "isize",
             KeywordKind::F32 => "f32",
             KeywordKind::F64 => "f64",
             KeywordKind::Fn => "fn",
@@ -198,8 +194,6 @@ pub enum NumberKind {
     U32(u32),
     U16(u16),
     U8(u8),
-    USize(usize),
-    ISize(isize),
 }
 
 impl NumberKind {
@@ -215,8 +209,6 @@ impl NumberKind {
             NumberKind::U32(v) => format!("{}u32", v),
             NumberKind::U16(v) => format!("{}u16", v),
             NumberKind::U8(v) => format!("{}u8", v),
-            NumberKind::USize(v) => format!("{}usize", v),
-            NumberKind::ISize(v) => format!("{}isize", v),
         }
     }
 }
@@ -554,8 +546,6 @@ fn is_keyword(identifier: &str) -> Option<KeywordKind> {
         "u64" => Some(KeywordKind::U64),
         "f32" => Some(KeywordKind::F32),
         "f64" => Some(KeywordKind::F64),
-        "usize" => Some(KeywordKind::USize),
-        "isize" => Some(KeywordKind::ISize),
         "match" => Some(KeywordKind::Match),
         "enum" => Some(KeywordKind::Enum),
         "mut" => Some(KeywordKind::Mut),

@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use crate::hir::{
     types::{
-        checked_declaration::{CheckedFnType, CheckedTagType},
+        checked_declaration::{CheckedTagType, FnType},
         checked_type::Type,
     },
     FunctionBuilder,
@@ -73,10 +73,10 @@ impl FunctionBuilder {
         target_type: &Type,
         visited_declarations: &mut HashSet<(usize, usize)>,
     ) -> bool {
-        use TypeKind::*;
+        use Type::*;
         // TODO: add recursion detection and handling
 
-        let result = match (&source_type.kind, &target_type.kind) {
+        let result = match (&source_type, &target_type) {
             (I8, I8)
             | (I16, I16)
             | (I32, I32)
@@ -89,7 +89,6 @@ impl FunctionBuilder {
             | (USize, USize)
             | (F32, F32)
             | (F64, F64)
-            | (String, String)
             | (Bool, Bool)
             | (Void, Void)
             | (Unknown, _) => true,
@@ -140,12 +139,12 @@ impl FunctionBuilder {
                 is_assignable
             }
             (
-                FnType(CheckedFnType {
+                FnType(FnType {
                     params: source_params,
                     return_type: source_return_type,
                     ..
                 }),
-                FnType(CheckedFnType {
+                FnType(FnType {
                     params: target_params,
                     return_type: target_return_type,
                     ..

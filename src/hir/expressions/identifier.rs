@@ -4,7 +4,7 @@ use crate::{
         cfg::{CheckedDeclaration, Value},
         errors::{SemanticError, SemanticErrorKind},
         types::{
-            checked_declaration::{CheckedFnType, VarStorage},
+            checked_declaration::{FnType, VarStorage},
             checked_type::Type,
         },
         FunctionBuilder, HIRContext,
@@ -88,7 +88,7 @@ impl FunctionBuilder {
                     let fn_decl = fn_decl_arc.read().unwrap();
 
                     let ty = Type {
-                        kind: TypeKind::FnType(CheckedFnType {
+                        kind: TypeKind::FnType(FnType {
                             params: fn_decl.params.clone(),
                             return_type: Box::new(fn_decl.return_type.clone()),
                         }),

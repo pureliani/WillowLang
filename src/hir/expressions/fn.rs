@@ -7,8 +7,8 @@ use crate::{
         errors::{SemanticError, SemanticErrorKind},
         types::{
             checked_declaration::{
-                CheckedClosureType, CheckedFnDecl, CheckedFnType, CheckedParam,
-                CheckedVarDecl, VarStorage,
+                CheckedClosureType, CheckedFnDecl, CheckedParam, CheckedVarDecl, FnType,
+                VarStorage,
             },
             checked_type::{StructLayout, StructLayoutKind, Type},
         },
@@ -116,7 +116,7 @@ impl FunctionBuilder {
             checked_fn_decl.write().unwrap().body = Some(new_fn_builder.cfg);
             ctx.module_builder.exit_scope();
 
-            let fn_type = Type::Fn(CheckedFnType {
+            let fn_type = Type::Fn(FnType {
                 params: checked_params,
                 return_type: Box::new(checked_return_type),
             });

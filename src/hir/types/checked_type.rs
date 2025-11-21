@@ -1,228 +1,145 @@
 use crate::{
-    ast::{IdentifierNode, Span},
     compile::interner::StringId,
     hir::{
-        types::checked_declaration::{CheckedFnType, CheckedParam},
-        utils::{layout::get_layout_of, pack_struct::pack_struct},
+        types::checked_declaration::{CheckedParam, FnType, TagType},
+        utils::layout::get_layout_of,
         ProgramBuilder,
     },
 };
 use std::hash::Hash;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub enum StructLayoutKind {
-    /// Packed by "pack_struct" helper
-    UserDefined,
+pub enum StructKind {
+    UserDefined(Vec<CheckedParam>), // packed
+
     /// { fn_ptr, env_ptr }
-    Closure,
-    /// Two closures capturing the same variables (names + types + order)
-    /// will have the same Environment Type.
-    ClosureEnv,
-    /// { discriminant, value }
-    Tag,
-    /// { discriminant, payload_union }
-    Union,
-    /// { capacity, len, ptr }
-    List,
-    /// { capacity, len, ptr }
+    Closure(FnType),
+
+    /// The captured environment.
+    ClosureEnv(Vec<CheckedParam>), // packed
+
+    /// { id: u16, value: T }
+    Tag(TagType),
+
+    /// { id: u16, payload: Buffer }
+    Union {
+        variants: Vec<TagType>,
+    },
+
+    /// { capacity: usize, len: usize, ptr: ptr<T> }
+    List(Box<Type>),
+
+    /// { capacity: usize, len: usize, ptr: ptr<u8> }
     String,
-    /// { len, ptr }
+
+    /// { len: usize, ptr: ptr<u8> }
     ConstString,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct StructLayout {
-    kind: StructLayoutKind,
-    fields: Vec<CheckedParam>,
-}
-
-impl StructLayout {
-    pub fn kind(&self) -> &StructLayoutKind {
-        &self.kind
-    }
-
-    pub fn fields(&self) -> &[CheckedParam] {
-        &self.fields
-    }
-
-    /// Looks up a field by name
-    /// Returns `Some((index, type))` if found, or `None`
-    ///
-    /// This is used by the FunctionBuilder to emit `GetFieldPtr` instructions.
-    pub fn get_field(&self, name: StringId) -> Option<(usize, &Type)> {
-        self.fields.iter().enumerate().find_map(|(index, param)| {
-            if param.identifier.name == name {
-                Some((index, &param.ty))
-            } else {
-                None
+impl StructKind {
+    /// The "Magic" Lookup Method.
+    /// Maps a Field Name -> (Index, Type).
+    pub fn get_field(
+        &self,
+        ctx: &ProgramBuilder,
+        name: StringId,
+    ) -> Option<(usize, Type)> {
+        match self {
+            StructKind::UserDefined(fields) | StructKind::ClosureEnv(fields) => {
+                fields.iter().enumerate().find_map(|(i, param)| {
+                    if param.identifier.name == name {
+                        Some((i, param.ty.clone()))
+                    } else {
+                        None
+                    }
+                })
             }
-        })
-    }
 
-    /// Helper to create a param with a default span (for internal types)
-    fn internal_param(name: StringId, ty: Type) -> CheckedParam {
-        CheckedParam {
-            identifier: IdentifierNode {
-                name,
-                span: Span::default(),
-            },
-            ty,
-        }
-    }
-
-    pub fn user_defined(
-        program_builder: &ProgramBuilder,
-        user_defined_fields: &[CheckedParam],
-    ) -> Self {
-        let mut packed_fields: Vec<CheckedParam> = user_defined_fields.into();
-        pack_struct(program_builder, &mut packed_fields);
-        Self {
-            kind: StructLayoutKind::UserDefined,
-            fields: packed_fields,
-        }
-    }
-
-    /// Creates the closure object: { fn_ptr: *void, env_ptr: *void }
-    pub fn closure(program_builder: &ProgramBuilder) -> Self {
-        let void_ptr = Type::Pointer(Box::new(Type::Void));
-
-        let fields = vec![
-            Self::internal_param(
-                program_builder.common_identifiers.fn_ptr,
-                void_ptr.clone(),
-            ),
-            Self::internal_param(program_builder.common_identifiers.env_ptr, void_ptr),
-        ];
-
-        Self {
-            kind: StructLayoutKind::Closure,
-            fields,
-        }
-    }
-
-    /// Creates the captured environment struct
-    /// Packed to minimize size
-    pub fn closure_env(
-        program_builder: &ProgramBuilder,
-        fields: &mut [CheckedParam],
-    ) -> Self {
-        pack_struct(program_builder, fields);
-        Self {
-            kind: StructLayoutKind::ClosureEnv,
-            fields: fields.into(),
-        }
-    }
-
-    /// Creates a Tag struct: { id: u16, value: T }
-    /// IMPORTANT: We do NOT pack this. The `id` must be at offset 0
-    /// so it aligns with the Union's `id`
-    pub fn tag(program_builder: &ProgramBuilder, value_type: Option<Type>) -> Self {
-        let mut fields = vec![Self::internal_param(
-            program_builder.common_identifiers.id,
-            Type::U16,
-        )];
-
-        if let Some(ty) = value_type {
-            fields.push(Self::internal_param(
-                program_builder.common_identifiers.value,
-                ty,
-            ));
-        }
-
-        Self {
-            kind: StructLayoutKind::Tag,
-            fields,
-        }
-    }
-
-    /// Creates a Union struct: { id: u16, payload: Buffer }
-    /// The payload is large enough to hold the largest variant
-    pub fn union(program_builder: &ProgramBuilder, variants: &[Type]) -> Self {
-        let mut max_size = 0;
-        let mut max_align = 1;
-
-        for variant_type in variants {
-            let layout = get_layout_of(variant_type);
-            if layout.size > max_size {
-                max_size = layout.size;
+            StructKind::Closure(_) => {
+                let void_ptr = Type::Pointer(Box::new(Type::Void));
+                if name == ctx.common_identifiers.fn_ptr {
+                    Some((0, void_ptr.clone()))
+                } else if name == ctx.common_identifiers.env_ptr {
+                    Some((1, void_ptr))
+                } else {
+                    None
+                }
             }
-            if layout.alignment > max_align {
-                max_align = layout.alignment;
+
+            // FIX: Destructure the tuple variant correctly
+            StructKind::Tag(tag_type) => {
+                if name == ctx.common_identifiers.id {
+                    Some((0, Type::U16))
+                } else if name == ctx.common_identifiers.value {
+                    // Index 1 is the value (if it exists)
+                    tag_type.value_type.as_ref().map(|t| (1, *t.clone()))
+                } else {
+                    None
+                }
             }
-        }
 
-        let payload_type = Type::Buffer {
-            size: max_size,
-            alignment: max_align,
-        };
+            StructKind::Union { variants } => {
+                if name == ctx.common_identifiers.id {
+                    Some((0, Type::U16))
+                } else if name == ctx.common_identifiers.payload {
+                    // Calculate Buffer Layout on the fly!
+                    let mut max_size = 0;
+                    let mut max_align = 1;
+                    for v in variants {
+                        // v is now Type, so get_layout_of works
+                        let l = get_layout_of(v);
+                        if l.size > max_size {
+                            max_size = l.size;
+                        }
+                        if l.alignment > max_align {
+                            max_align = l.alignment;
+                        }
+                    }
+                    Some((
+                        1,
+                        Type::Buffer {
+                            size: max_size,
+                            alignment: max_align,
+                        },
+                    ))
+                } else {
+                    None
+                }
+            }
 
-        let fields = vec![
-            Self::internal_param(program_builder.common_identifiers.id, Type::U16),
-            Self::internal_param(
-                program_builder.common_identifiers.payload,
-                payload_type,
-            ),
-        ];
+            StructKind::List(elem_ty) => {
+                if name == ctx.common_identifiers.capacity {
+                    Some((0, Type::USize))
+                } else if name == ctx.common_identifiers.len {
+                    Some((1, Type::USize))
+                } else if name == ctx.common_identifiers.ptr {
+                    Some((2, Type::Pointer(elem_ty.clone())))
+                } else {
+                    None
+                }
+            }
 
-        Self {
-            kind: StructLayoutKind::Union,
-            fields,
-        }
-    }
+            StructKind::String => {
+                if name == ctx.common_identifiers.capacity {
+                    Some((0, Type::USize))
+                } else if name == ctx.common_identifiers.len {
+                    Some((1, Type::USize))
+                } else if name == ctx.common_identifiers.ptr {
+                    Some((2, Type::Pointer(Box::new(Type::U8))))
+                } else {
+                    None
+                }
+            }
 
-    /// Creates a dynamic List: { capacity: usize, len: usize, ptr: *T }
-    pub fn list(program_builder: &ProgramBuilder, element_type: Type) -> Self {
-        let fields = vec![
-            Self::internal_param(
-                program_builder.common_identifiers.capacity,
-                Type::USize,
-            ),
-            Self::internal_param(program_builder.common_identifiers.len, Type::USize),
-            Self::internal_param(
-                program_builder.common_identifiers.ptr,
-                Type::Pointer(Box::new(element_type)),
-            ),
-        ];
-
-        Self {
-            kind: StructLayoutKind::List,
-            fields,
-        }
-    }
-
-    /// Creates a dynamic String: { capacity: usize, len: usize, ptr: *u8 }
-    pub fn string(program_builder: &ProgramBuilder) -> Self {
-        let fields = vec![
-            Self::internal_param(
-                program_builder.common_identifiers.capacity,
-                Type::USize,
-            ),
-            Self::internal_param(program_builder.common_identifiers.len, Type::USize),
-            Self::internal_param(
-                program_builder.common_identifiers.ptr,
-                Type::Pointer(Box::new(Type::U8)),
-            ),
-        ];
-
-        Self {
-            kind: StructLayoutKind::String,
-            fields,
-        }
-    }
-
-    /// Creates a String View (ConstString): { len: usize, ptr: *u8 }
-    pub fn const_string(program_builder: &ProgramBuilder) -> Self {
-        let fields = vec![
-            Self::internal_param(program_builder.common_identifiers.len, Type::USize),
-            Self::internal_param(
-                program_builder.common_identifiers.ptr,
-                Type::Pointer(Box::new(Type::U8)),
-            ),
-        ];
-
-        Self {
-            kind: StructLayoutKind::ConstString,
-            fields,
+            StructKind::ConstString => {
+                if name == ctx.common_identifiers.len {
+                    Some((0, Type::USize))
+                } else if name == ctx.common_identifiers.ptr {
+                    Some((1, Type::Pointer(Box::new(Type::U8))))
+                } else {
+                    None
+                }
+            }
         }
     }
 }
@@ -248,14 +165,12 @@ pub enum Type {
     Pointer(Box<Type>),
 
     /// Represents any block of memory with named fields
-    /// (User structs, Lists, Strings, Closures, Unions, etc..)
-    Struct(StructLayout),
+    Struct(StructKind),
 
     /// Represents a function pointer signature
-    Fn(CheckedFnType),
+    Fn(FnType),
 
     /// Represents a raw block of memory with a specific size and alignment
-    /// Used for Union payloads.
     Buffer {
         size: usize,
         alignment: usize,

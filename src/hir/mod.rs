@@ -18,7 +18,7 @@ use crate::{
         errors::SemanticError,
         types::{
             checked_declaration::{CheckedFnDecl, CheckedParam},
-            checked_type::{StructLayout, Type},
+            checked_type::{StructKind, Type},
         },
         utils::scope::{Scope, ScopeKind},
     },
@@ -192,7 +192,7 @@ impl ProgramBuilder {
 
                 ty
             }
-            Value::StringLiteral(_) => Type::Struct(StructLayout::const_string(self)),
+            Value::StringLiteral(_) => Type::Struct(StructKind::String),
             Value::Function { ty, .. } => ty.clone(),
             Value::Use(value_id) => self.get_value_id_type(value_id),
         }

@@ -17,8 +17,6 @@ pub enum TypeAnnotationKind {
     U16,
     U32,
     U64,
-    USize,
-    ISize,
     I8,
     I16,
     I32,

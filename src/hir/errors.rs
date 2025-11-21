@@ -10,6 +10,7 @@ use crate::{
 pub enum SemanticErrorKind {
     UnreachableCode,
     DuplicateIdentifier(IdentifierNode),
+    DuplicateUnionVariant(IdentifierNode),
     CannotIndex(Type),
     FromStatementMustBeDeclaredAtTopLevel,
     ModuleNotFound(PathBuf),

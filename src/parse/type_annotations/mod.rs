@@ -89,26 +89,6 @@ impl Parser {
                     span,
                 }
             }
-            TokenKind::Keyword(KeywordKind::USize) => {
-                let start_offset = self.offset;
-
-                self.consume_keyword(KeywordKind::USize)?;
-                let span = self.get_span(start_offset, self.offset - 1)?;
-                TypeAnnotation {
-                    kind: TypeAnnotationKind::USize,
-                    span,
-                }
-            }
-            TokenKind::Keyword(KeywordKind::ISize) => {
-                let start_offset = self.offset;
-
-                self.consume_keyword(KeywordKind::ISize)?;
-                let span = self.get_span(start_offset, self.offset - 1)?;
-                TypeAnnotation {
-                    kind: TypeAnnotationKind::ISize,
-                    span,
-                }
-            }
             TokenKind::Keyword(KeywordKind::I8) => {
                 let start_offset = self.offset;
 
@@ -423,24 +403,6 @@ mod tests {
                             line: 1,
                             col: 4,
                             byte_offset: 3,
-                        },
-                    },
-                },
-            ),
-            (
-                "usize",
-                TypeAnnotation {
-                    kind: TypeAnnotationKind::USize,
-                    span: Span {
-                        start: Position {
-                            line: 1,
-                            col: 1,
-                            byte_offset: 0,
-                        },
-                        end: Position {
-                            line: 1,
-                            col: 6,
-                            byte_offset: 5,
                         },
                     },
                 },

@@ -8,7 +8,10 @@ use crate::{
             UnaryOperationKind, Value, ValueId,
         },
         errors::{SemanticError, SemanticErrorKind},
-        types::checked_type::{StructLayout, StructLayoutKind, Type},
+        types::{
+            checked_declaration::TagType,
+            checked_type::{StructKind, Type},
+        },
         utils::{check_is_equatable::check_is_equatable, numeric::is_signed},
         FunctionBuilder, HIRContext, ModuleBuilder,
     },
@@ -214,7 +217,7 @@ impl FunctionBuilder {
             panic!("INTERNAL COMPILER ERROR: emit_get_field_ptr called on a non-pointer type.");
         };
 
-        if let Some((field_index, ty)) = s.get_field(field.name) {
+        if let Some((field_index, ty)) = s.get_field(&ctx.program_builder, field.name) {
             let destination = ctx.program_builder.new_value_id();
 
             ctx.program_builder
@@ -410,17 +413,12 @@ impl FunctionBuilder {
 
         let first_type = source_types[0].clone();
         let mut are_all_tags = true;
-        let mut union_tags = Vec::new();
+        let mut union_tags: Vec<TagType> = Vec::new();
 
         for ty in &source_types {
-            if let Type::Struct(s) = ty {
-                if matches!(s.kind(), StructLayoutKind::Tag) {
-                    if !union_tags.contains(ty) {
-                        union_tags.push(ty.clone());
-                    }
-                } else {
-                    are_all_tags = false;
-                    break;
+            if let Type::Struct(StructKind::Tag(t)) = ty {
+                if !union_tags.contains(t) {
+                    union_tags.push(t.clone());
                 }
             } else {
                 are_all_tags = false;
@@ -429,13 +427,16 @@ impl FunctionBuilder {
         }
 
         let result_type = if are_all_tags {
-            // Create a Union from the collected tags
-            Type::Struct(StructLayout::union(&ctx.program_builder, &union_tags))
+            union_tags.sort_by(|a, b| a.id.0.cmp(&b.id.0));
+
+            Type::Struct(StructKind::Union {
+                variants: union_tags,
+            })
         } else {
             for other_type in source_types.iter().skip(1) {
                 if !self.check_is_assignable(other_type, &first_type) {
                     return Err(SemanticError {
-                        span: Span::default(), // TODO: Fix span
+                        span: Span::default(),
                         kind: SemanticErrorKind::IncompatibleBranchTypes {
                             first: first_type,
                             second: other_type.clone(),
@@ -470,31 +471,8 @@ impl FunctionBuilder {
 
         let (params, return_type) = match &value_type {
             Type::Fn(fn_type) => (fn_type.params.clone(), fn_type.return_type.clone()),
-            Type::Struct(s) if matches!(s.kind(), StructLayoutKind::Closure) => {
-                // A closure wrapper is { fn_ptr, env_ptr }.
-                // We need to find the actual function signature.
-                // However, the Type::Struct(Closure) itself doesn't carry the signature info
-                // in its fields (it just has void* pointers).
-                //
-                // This implies that `value_type` for a closure variable MUST carry the signature info
-                // somehow.
-                //
-                // In your previous design, TypeKind::Closure had the signature.
-                // Now, Type::Struct(Closure) is just the memory layout.
-                //
-                // SOLUTION:
-                // You likely need a `Type::Closure(Box<CheckedFnType>)` or similar high-level type
-                // that *lowers* to `Type::Struct(Closure)` during codegen, OR
-                // you need to store the signature in `StructKind::Closure(Signature)`.
-                //
-                // Given your current `StructKind::Closure` has no data, we have a problem here.
-                // The type system has lost the signature information.
-
-                // TEMPORARY FIX ASSUMPTION:
-                // You might want to change StructKind::Closure to StructKind::Closure(Box<CheckedFnType>)
-                // so the type system knows what the closure expects.
-
-                todo!("Implement closure signature tracking in Type system");
+            Type::Struct(s) if matches!(s, StructKind::Closure(_)) => {
+                todo!();
             }
             _ => {
                 return Err(SemanticError {
@@ -583,7 +561,7 @@ impl FunctionBuilder {
         destination
     }
 
-    pub fn emit_nop(&mut self, module_builder: &mut ModuleBuilder) {
-        todo!()
+    pub fn emit_nop(&mut self, _module_builder: &mut ModuleBuilder) {
+        self.push_instruction(Instruction::Nop);
     }
 }

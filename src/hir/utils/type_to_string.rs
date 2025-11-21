@@ -4,16 +4,41 @@ use crate::{
     compile::interner::StringId,
     hir::{
         types::{
-            checked_declaration::CheckedFnType,
-            checked_type::{StructLayout, StructLayoutKind, Type},
+            checked_declaration::{CheckedParam, FnType, TagType},
+            checked_type::{StructKind, Type},
         },
         ProgramBuilder,
     },
 };
 
 fn identifier_to_string(id: StringId, program_builder: &ProgramBuilder) -> String {
-    let identifier_name = program_builder.string_interner.resolve(id);
-    identifier_name.to_owned()
+    // SharedInterner::resolve returns T (String), so we get an owned String here.
+    program_builder.string_interner.resolve(id)
+}
+
+fn tag_type_to_string(
+    tag: &TagType,
+    program_builder: &ProgramBuilder,
+    visited_set: &mut HashSet<Type>,
+) -> String {
+    // 1. Resolve TagId -> StringId
+    let name_string_id = program_builder.tag_interner.resolve(tag.id);
+    // 2. Resolve StringId -> String
+    let name = program_builder.string_interner.resolve(name_string_id);
+
+    // 3. Format value if present
+    let value_str = tag
+        .value_type
+        .as_ref()
+        .map(|v| {
+            format!(
+                "({})",
+                type_to_string_recursive(v, program_builder, visited_set)
+            )
+        })
+        .unwrap_or_default();
+
+    format!("#{0}{1}", name, value_str)
 }
 
 pub fn type_to_string(ty: &Type, program_builder: &ProgramBuilder) -> String {
@@ -26,8 +51,6 @@ pub fn type_to_string_recursive(
     program_builder: &ProgramBuilder,
     visited_set: &mut HashSet<Type>,
 ) -> String {
-    // If we are already visiting this type in the current path
-    // return a placeholder to avoid infinite recursion.
     if !visited_set.insert(ty.clone()) {
         return "...".to_string();
     }
@@ -51,26 +74,10 @@ pub fn type_to_string_recursive(
 
         Type::Struct(s) => struct_to_string(s, program_builder, visited_set),
 
-        Type::Fn(CheckedFnType {
-            params,
-            return_type,
-        }) => {
-            let params_str = params
-                .iter()
-                .map(|p| {
-                    format!(
-                        "{}: {}",
-                        identifier_to_string(p.identifier.name, program_builder),
-                        type_to_string_recursive(&p.ty, program_builder, visited_set)
-                    )
-                })
-                .collect::<Vec<String>>()
-                .join(", ");
-
-            let return_type_str =
-                type_to_string_recursive(&return_type, program_builder, visited_set);
-            format!("fn ({}): {}", params_str, return_type_str)
+        Type::Fn(fn_type) => {
+            fn_signature_to_string(fn_type, program_builder, visited_set)
         }
+
         Type::Pointer(ty) => format!(
             "ptr<{}>",
             type_to_string_recursive(ty, program_builder, visited_set)
@@ -85,76 +92,91 @@ pub fn type_to_string_recursive(
     result
 }
 
-fn struct_to_string(
-    s: &StructLayout,
+fn fn_signature_to_string(
+    fn_type: &FnType,
     program_builder: &ProgramBuilder,
     visited_set: &mut HashSet<Type>,
 ) -> String {
-    match s.kind() {
-        StructLayoutKind::UserDefined => {
-            let fields = s
-                .fields()
+    let params_str = fn_type
+        .params
+        .iter()
+        .map(|p| {
+            format!(
+                "{}: {}",
+                identifier_to_string(p.identifier.name, program_builder),
+                type_to_string_recursive(&p.ty, program_builder, visited_set)
+            )
+        })
+        .collect::<Vec<String>>()
+        .join(", ");
+
+    let return_type_str =
+        type_to_string_recursive(&fn_type.return_type, program_builder, visited_set);
+
+    format!("fn({}): {}", params_str, return_type_str)
+}
+
+fn struct_to_string(
+    s: &StructKind,
+    program_builder: &ProgramBuilder,
+    visited_set: &mut HashSet<Type>,
+) -> String {
+    match s {
+        StructKind::UserDefined(fields) => {
+            let fields_str = fields
                 .iter()
                 .map(|f| {
                     format!(
                         "{}: {}",
-                        identifier_to_string(f.identifier.name, program_builder,),
+                        identifier_to_string(f.identifier.name, program_builder),
                         type_to_string_recursive(&f.ty, program_builder, visited_set)
                     )
                 })
                 .collect::<Vec<String>>()
                 .join(", ");
-            format!("{{ {} }}", fields)
+            format!("{{ {} }}", fields_str)
         }
-        StructLayoutKind::Closure => String::from("Closure"),
-        StructLayoutKind::ClosureEnv => String::from("ClosureEnv"),
-        StructLayoutKind::Tag => {
-            // A Tag struct is { id: u16, value: T }.
-            // We used the variant name as the field name for 'value'.
-            // If there is a second field, we use its name as the tag name.
-            if let Some(value_field) = s.fields().get(1) {
-                let variant_name =
-                    identifier_to_string(value_field.identifier.name, program_builder);
-                let value_type = type_to_string_recursive(
-                    &value_field.ty,
-                    program_builder,
-                    visited_set,
-                );
-                format!("#{}({})", variant_name, value_type)
-            } else {
-                // Unit tag (only has id field).
-                // Note: We lost the name of the unit tag in the Type system!
-                // We can only print a generic placeholder or the ID.
-                String::from("#Tag")
-            }
+        StructKind::Closure(fn_type) => {
+            format!(
+                "Closure<{}>",
+                fn_signature_to_string(fn_type, program_builder, visited_set)
+            )
         }
-        StructLayoutKind::Union => {
-            // A Union struct is { id: u16, payload: Buffer }.
-            // We lost the list of variants in the Type system.
-            String::from("Union")
-        }
-        StructLayoutKind::List => {
-            // List is { cap, len, ptr: Pointer<T> }.
-            // We try to find the "ptr" field to determine T.
-            let elem_type_str = s
-                .fields()
+        StructKind::ClosureEnv(fields) => {
+            let fields_str = fields
                 .iter()
-                .find(|f| {
-                    identifier_to_string(f.identifier.name, program_builder) == "ptr"
-                })
                 .map(|f| {
-                    if let Type::Pointer(inner) = &f.ty {
-                        type_to_string_recursive(inner, program_builder, visited_set)
-                    } else {
-                        String::from("?")
-                    }
+                    format!(
+                        "{}: {}",
+                        identifier_to_string(f.identifier.name, program_builder),
+                        type_to_string_recursive(&f.ty, program_builder, visited_set)
+                    )
                 })
-                .unwrap_or_else(|| String::from("?"));
+                .collect::<Vec<String>>()
+                .join(", ");
+            format!("ClosureEnv {{ {} }}", fields_str)
+        }
+        StructKind::Tag(tag_type) => {
+            tag_type_to_string(tag_type, program_builder, visited_set)
+        }
+        StructKind::Union { variants } => {
+            if variants.is_empty() {
+                return String::from("<empty union>");
+            }
+            let variants_str = variants
+                .iter()
+                .map(|tag| tag_type_to_string(tag, program_builder, visited_set))
+                .collect::<Vec<String>>()
+                .join(" | ");
+
+            variants_str
+        }
+        StructKind::List(item_type) => {
+            let elem_type_str =
+                type_to_string_recursive(item_type, program_builder, visited_set);
 
             format!("{}[]", elem_type_str)
         }
-        StructLayoutKind::String | StructLayoutKind::ConstString => {
-            String::from("string")
-        }
+        StructKind::String | StructKind::ConstString => String::from("string"),
     }
 }
