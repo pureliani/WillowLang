@@ -32,13 +32,6 @@ pub mod statements;
 pub mod types;
 pub mod utils;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct CapturedVar {
-    pub original_value_id: ValueId,
-    pub captured_as_field_ptr_id: ValueId,
-    pub identifier: IdentifierNode,
-}
-
 pub struct HIRContext<'a> {
     pub program_builder: &'a mut ProgramBuilder,
     pub module_builder: &'a mut ModuleBuilder,
@@ -87,8 +80,6 @@ pub struct ModuleBuilder {
 pub struct FunctionBuilder {
     pub cfg: ControlFlowGraph,
     pub return_type: Type,
-    pub captures: HashSet<CapturedVar>,
-
     pub current_block_id: BasicBlockId,
     block_id_counter: usize,
     value_id_counter: usize,
