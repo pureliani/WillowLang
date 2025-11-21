@@ -10,7 +10,7 @@ use crate::{
 use std::hash::Hash;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub enum StructKind {
+pub enum StructLayoutKind {
     /// Packed by "pack_struct" helper
     UserDefined,
     /// { fn_ptr, env_ptr }
@@ -31,13 +31,13 @@ pub enum StructKind {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct CheckedStruct {
-    kind: StructKind,
+pub struct StructLayout {
+    kind: StructLayoutKind,
     fields: Vec<CheckedParam>,
 }
 
-impl CheckedStruct {
-    pub fn kind(&self) -> &StructKind {
+impl StructLayout {
+    pub fn kind(&self) -> &StructLayoutKind {
         &self.kind
     }
 
@@ -77,7 +77,7 @@ impl CheckedStruct {
         let mut packed_fields: Vec<CheckedParam> = user_defined_fields.into();
         pack_struct(program_builder, &mut packed_fields);
         Self {
-            kind: StructKind::UserDefined,
+            kind: StructLayoutKind::UserDefined,
             fields: packed_fields,
         }
     }
@@ -95,7 +95,7 @@ impl CheckedStruct {
         ];
 
         Self {
-            kind: StructKind::Closure,
+            kind: StructLayoutKind::Closure,
             fields,
         }
     }
@@ -108,7 +108,7 @@ impl CheckedStruct {
     ) -> Self {
         pack_struct(program_builder, fields);
         Self {
-            kind: StructKind::ClosureEnv,
+            kind: StructLayoutKind::ClosureEnv,
             fields: fields.into(),
         }
     }
@@ -130,7 +130,7 @@ impl CheckedStruct {
         }
 
         Self {
-            kind: StructKind::Tag,
+            kind: StructLayoutKind::Tag,
             fields,
         }
     }
@@ -165,7 +165,7 @@ impl CheckedStruct {
         ];
 
         Self {
-            kind: StructKind::Union,
+            kind: StructLayoutKind::Union,
             fields,
         }
     }
@@ -185,7 +185,7 @@ impl CheckedStruct {
         ];
 
         Self {
-            kind: StructKind::List,
+            kind: StructLayoutKind::List,
             fields,
         }
     }
@@ -205,7 +205,7 @@ impl CheckedStruct {
         ];
 
         Self {
-            kind: StructKind::String,
+            kind: StructLayoutKind::String,
             fields,
         }
     }
@@ -221,7 +221,7 @@ impl CheckedStruct {
         ];
 
         Self {
-            kind: StructKind::ConstString,
+            kind: StructLayoutKind::ConstString,
             fields,
         }
     }
@@ -249,7 +249,7 @@ pub enum Type {
 
     /// Represents any block of memory with named fields
     /// (User structs, Lists, Strings, Closures, Unions, etc..)
-    Struct(CheckedStruct),
+    Struct(StructLayout),
 
     /// Represents a function pointer signature
     Fn(CheckedFnType),

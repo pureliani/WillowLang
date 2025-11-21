@@ -10,7 +10,7 @@ use crate::{
                 CheckedClosureType, CheckedFnDecl, CheckedFnType, CheckedParam,
                 CheckedVarDecl, VarStorage,
             },
-            checked_type::{CheckedStruct, StructKind, Type},
+            checked_type::{StructLayout, StructLayoutKind, Type},
         },
         utils::{
             pack_struct::pack_struct, scope::ScopeKind,
@@ -147,7 +147,9 @@ impl FunctionBuilder {
 
             // 2. Instantiate env struct on heap with captured variables
             let env_struct_type = Type {
-                kind: TypeKind::Struct(CheckedStruct { kind: StructKind }),
+                kind: TypeKind::Struct(StructLayout {
+                    kind: StructLayoutKind,
+                }),
                 span: identifier.span,
             };
             let env_ptr = self

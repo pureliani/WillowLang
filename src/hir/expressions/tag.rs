@@ -2,10 +2,7 @@ use crate::{
     ast::{expr::Expr, IdentifierNode, Span},
     hir::{
         cfg::Value,
-        types::{
-            checked_declaration::CheckedTagType,
-            checked_type::{Type, TypeKind},
-        },
+        types::{checked_declaration::CheckedTagType, checked_type::Type},
         FunctionBuilder, HIRContext,
     },
 };

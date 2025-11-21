@@ -5,7 +5,7 @@ use crate::{
     hir::{
         types::{
             checked_declaration::CheckedFnType,
-            checked_type::{CheckedStruct, StructKind, Type},
+            checked_type::{StructLayout, StructLayoutKind, Type},
         },
         ProgramBuilder,
     },
@@ -86,12 +86,12 @@ pub fn type_to_string_recursive(
 }
 
 fn struct_to_string(
-    s: &CheckedStruct,
+    s: &StructLayout,
     program_builder: &ProgramBuilder,
     visited_set: &mut HashSet<Type>,
 ) -> String {
     match s.kind() {
-        StructKind::UserDefined => {
+        StructLayoutKind::UserDefined => {
             let fields = s
                 .fields()
                 .iter()
@@ -106,9 +106,9 @@ fn struct_to_string(
                 .join(", ");
             format!("{{ {} }}", fields)
         }
-        StructKind::Closure => String::from("Closure"),
-        StructKind::ClosureEnv => String::from("ClosureEnv"),
-        StructKind::Tag => {
+        StructLayoutKind::Closure => String::from("Closure"),
+        StructLayoutKind::ClosureEnv => String::from("ClosureEnv"),
+        StructLayoutKind::Tag => {
             // A Tag struct is { id: u16, value: T }.
             // We used the variant name as the field name for 'value'.
             // If there is a second field, we use its name as the tag name.
@@ -128,12 +128,12 @@ fn struct_to_string(
                 String::from("#Tag")
             }
         }
-        StructKind::Union => {
+        StructLayoutKind::Union => {
             // A Union struct is { id: u16, payload: Buffer }.
             // We lost the list of variants in the Type system.
             String::from("Union")
         }
-        StructKind::List => {
+        StructLayoutKind::List => {
             // List is { cap, len, ptr: Pointer<T> }.
             // We try to find the "ptr" field to determine T.
             let elem_type_str = s
@@ -153,6 +153,8 @@ fn struct_to_string(
 
             format!("{}[]", elem_type_str)
         }
-        StructKind::String | StructKind::ConstString => String::from("string"),
+        StructLayoutKind::String | StructLayoutKind::ConstString => {
+            String::from("string")
+        }
     }
 }

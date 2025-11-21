@@ -9,7 +9,7 @@ use crate::{
         errors::{SemanticError, SemanticErrorKind},
         types::{
             checked_declaration::{CheckedFnType, CheckedParam, CheckedTagType},
-            checked_type::{CheckedStruct, Type},
+            checked_type::{StructLayout, Type},
         },
         FunctionBuilder, HIRContext,
     },
@@ -80,7 +80,7 @@ impl FunctionBuilder {
             span: *span,
         };
 
-        Type::Struct(CheckedStruct::tag(&ctx.program_builder, checked_value_type))
+        Type::Struct(StructLayout::tag(&ctx.program_builder, checked_value_type))
     }
 
     pub fn check_type_annotation(
@@ -104,7 +104,7 @@ impl FunctionBuilder {
             TypeAnnotationKind::F32 => Type::F32,
             TypeAnnotationKind::F64 => Type::F64,
             TypeAnnotationKind::String => {
-                Type::Struct(CheckedStruct::string(&ctx.program_builder))
+                Type::Struct(StructLayout::string(&ctx.program_builder))
             }
             TypeAnnotationKind::Identifier(id) => {
                 match self.check_type_identifier_annotation(ctx, *id, annotation.span) {
@@ -130,7 +130,7 @@ impl FunctionBuilder {
                     return_type: Box::new(checked_return_type),
                 };
 
-                Type::Struct(CheckedStruct::closure(&ctx.program_builder))
+                Type::Struct(StructLayout::closure(&ctx.program_builder))
             }
             TypeAnnotationKind::Struct(items) => {
                 let mut checked_field_types: Vec<CheckedParam> = items
@@ -144,7 +144,7 @@ impl FunctionBuilder {
                     })
                     .collect();
 
-                Type::Struct(CheckedStruct::user_defined(
+                Type::Struct(StructLayout::user_defined(
                     &ctx.program_builder,
                     &mut checked_field_types,
                 ))
@@ -152,7 +152,7 @@ impl FunctionBuilder {
             TypeAnnotationKind::List(item_type) => {
                 let checked_item_type = self.check_type_annotation(ctx, item_type);
 
-                Type::Struct(CheckedStruct::list(&ctx.program_builder, checked_item_type))
+                Type::Struct(StructLayout::list(&ctx.program_builder, checked_item_type))
             }
             TypeAnnotationKind::Tag(t) => self.check_tag_annotation(ctx, t),
             TypeAnnotationKind::Union(tag_annotations) => {
@@ -161,7 +161,7 @@ impl FunctionBuilder {
                     .map(|t| self.check_tag_annotation(ctx, t))
                     .collect();
 
-                Type::Struct(CheckedStruct::union(
+                Type::Struct(StructLayout::union(
                     &ctx.program_builder,
                     &checked_tag_types,
                 ))

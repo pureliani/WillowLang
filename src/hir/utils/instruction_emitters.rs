@@ -8,7 +8,7 @@ use crate::{
             UnaryOperationKind, Value, ValueId,
         },
         errors::{SemanticError, SemanticErrorKind},
-        types::checked_type::{CheckedStruct, StructKind, Type},
+        types::checked_type::{StructLayout, StructLayoutKind, Type},
         utils::{check_is_equatable::check_is_equatable, numeric::is_signed},
         FunctionBuilder, HIRContext, ModuleBuilder,
     },
@@ -414,7 +414,7 @@ impl FunctionBuilder {
 
         for ty in &source_types {
             if let Type::Struct(s) = ty {
-                if matches!(s.kind(), StructKind::Tag) {
+                if matches!(s.kind(), StructLayoutKind::Tag) {
                     if !union_tags.contains(ty) {
                         union_tags.push(ty.clone());
                     }
@@ -430,7 +430,7 @@ impl FunctionBuilder {
 
         let result_type = if are_all_tags {
             // Create a Union from the collected tags
-            Type::Struct(CheckedStruct::union(&ctx.program_builder, &union_tags))
+            Type::Struct(StructLayout::union(&ctx.program_builder, &union_tags))
         } else {
             for other_type in source_types.iter().skip(1) {
                 if !self.check_is_assignable(other_type, &first_type) {
@@ -470,7 +470,7 @@ impl FunctionBuilder {
 
         let (params, return_type) = match &value_type {
             Type::Fn(fn_type) => (fn_type.params.clone(), fn_type.return_type.clone()),
-            Type::Struct(s) if matches!(s.kind(), StructKind::Closure) => {
+            Type::Struct(s) if matches!(s.kind(), StructLayoutKind::Closure) => {
                 // A closure wrapper is { fn_ptr, env_ptr }.
                 // We need to find the actual function signature.
                 // However, the Type::Struct(Closure) itself doesn't carry the signature info
