@@ -1,3 +1,4 @@
+use crate::hir::types::checked_declaration::TagType;
 use crate::hir::types::checked_type::{StructKind, Type};
 use crate::hir::{types::checked_declaration::CheckedParam, ProgramBuilder};
 
@@ -15,10 +16,10 @@ impl Layout {
 }
 
 // Constants for the target architecture
-const PTR_SIZE: usize = 8;
-const PTR_ALIGN: usize = 8;
-const USIZE_SIZE: usize = 8;
-const USIZE_ALIGN: usize = 8;
+const PTR_SIZE: usize = size_of::<usize>();
+const PTR_ALIGN: usize = size_of::<usize>();
+const USIZE_SIZE: usize = size_of::<usize>();
+const USIZE_ALIGN: usize = size_of::<usize>();
 
 /// IMPORTANT: Make sure user-defined and closure-environment structs are packed first before calling this function
 pub fn get_layout_of(ty: &Type) -> Layout {
@@ -75,31 +76,34 @@ fn get_struct_layout(s: &StructKind) -> Layout {
         }
 
         // { id: u16, value: T }
-        StructKind::Tag(tag_type) => {
-            let mut types = vec![&Type::U16];
-            if let Some(val_ty) = &tag_type.value_type {
-                types.push(val_ty);
-            }
-
-            calculate_fields_layout(&types)
-        }
+        StructKind::Tag(tag_type) => get_tag_layout(tag_type),
 
         // { id: u16, payload: Buffer }
-        StructKind::Union { variants } => {
-            let mut max_size = 0;
-            let mut max_align = 1;
-
-            for tag_type in variants {
-                let tag_struct = Type::Struct(StructKind::Tag(tag_type.clone()));
-                let layout = get_layout_of(&tag_struct);
-
-                max_size = cmp::max(max_size, layout.size);
-                max_align = cmp::max(max_align, layout.alignment);
-            }
-
-            Layout::new(max_size, max_align)
-        }
+        StructKind::Union { variants } => get_union_layout(variants),
     }
+}
+
+pub fn get_tag_layout(tag: &TagType) -> Layout {
+    let mut types = vec![&Type::U16];
+    if let Some(val_ty) = &tag.value_type {
+        types.push(val_ty);
+    }
+
+    calculate_fields_layout(&types)
+}
+
+pub fn get_union_layout(variants: &[TagType]) -> Layout {
+    let mut max_size = 0;
+    let mut max_align = 1;
+
+    for tag_type in variants {
+        let layout = get_tag_layout(tag_type);
+
+        max_size = cmp::max(max_size, layout.size);
+        max_align = cmp::max(max_align, layout.alignment);
+    }
+
+    Layout::new(max_size, max_align)
 }
 
 /// Helper to calculate layout of fields placed sequentially in memory

@@ -2,7 +2,7 @@ use crate::{
     compile::interner::StringId,
     hir::{
         types::checked_declaration::{CheckedParam, FnType, TagType},
-        utils::layout::get_layout_of,
+        utils::layout::get_union_layout,
         ProgramBuilder,
     },
 };
@@ -82,24 +82,13 @@ impl StructKind {
                 if name == ctx.common_identifiers.id {
                     Some((0, Type::U16))
                 } else if name == ctx.common_identifiers.payload {
-                    // Calculate Buffer Layout on the fly!
-                    let mut max_size = 0;
-                    let mut max_align = 1;
-                    for v in variants {
-                        // v is now Type, so get_layout_of works
-                        let l = get_layout_of(v);
-                        if l.size > max_size {
-                            max_size = l.size;
-                        }
-                        if l.alignment > max_align {
-                            max_align = l.alignment;
-                        }
-                    }
+                    let layout = get_union_layout(variants);
+
                     Some((
                         1,
                         Type::Buffer {
-                            size: max_size,
-                            alignment: max_align,
+                            size: layout.size,
+                            alignment: layout.alignment,
                         },
                     ))
                 } else {
