@@ -117,6 +117,7 @@ impl SemanticErrorKind {
             SemanticErrorKind::ModuleNotFound { .. } => 36,
             SemanticErrorKind::CannotUseFunctionDeclarationAsType => 37,
             SemanticErrorKind::UseOfUninitializedVariable(..) => 38,
+            SemanticErrorKind::DuplicateUnionVariant(_) => 39,
         }
     }
 }

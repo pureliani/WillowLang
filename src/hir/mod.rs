@@ -241,7 +241,6 @@ impl FunctionBuilder {
         Self {
             cfg,
             return_type,
-            captures: HashSet::new(),
             current_block_id: entry_block_id,
             block_id_counter: 1,
             value_id_counter: 0,

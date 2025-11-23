@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use crate::hir::{
     types::{
-        checked_declaration::{CheckedTagType, FnType},
+        checked_declaration::{FnType, TagType},
         checked_type::Type,
     },
     FunctionBuilder,
@@ -11,19 +11,19 @@ use crate::hir::{
 impl FunctionBuilder {
     pub fn check_is_tag_assignable(
         &self,
-        source_tag: &CheckedTagType,
-        target_tag: &CheckedTagType,
+        source_tag: &TagType,
+        target_tag: &TagType,
         visited_declarations: &mut HashSet<(usize, usize)>,
     ) -> bool {
         match (source_tag, target_tag) {
             (
-                CheckedTagType {
-                    identifier: id_a,
+                TagType {
+                    id: id_a,
                     value_type: Some(value_type_a),
                     ..
                 },
-                CheckedTagType {
-                    identifier: id_b,
+                TagType {
+                    id: id_b,
                     value_type: Some(value_type_b),
                     ..
                 },
@@ -43,13 +43,13 @@ impl FunctionBuilder {
                 )
             }
             (
-                CheckedTagType {
-                    identifier: id_a,
+                TagType {
+                    id: id_a,
                     value_type: None,
                     ..
                 },
-                CheckedTagType {
-                    identifier: id_b,
+                TagType {
+                    id: id_b,
                     value_type: None,
                     ..
                 },
@@ -82,15 +82,17 @@ impl FunctionBuilder {
             | (I32, I32)
             | (I64, I64)
             | (ISize, ISize)
+            | (USize, USize)
             | (U8, U8)
             | (U16, U16)
             | (U32, U32)
             | (U64, U64)
-            | (USize, USize)
             | (F32, F32)
             | (F64, F64)
             | (Bool, Bool)
             | (Void, Void)
+            | (_, Void)
+            | (_, Unknown)
             | (Unknown, _) => true,
             (Union(source), Union(target)) => source.iter().all(|source_item| {
                 target.iter().any(|target_item| {

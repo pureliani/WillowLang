@@ -194,6 +194,8 @@ pub enum NumberKind {
     U32(u32),
     U16(u16),
     U8(u8),
+    ISize(u8),
+    USize(u8),
 }
 
 impl NumberKind {
@@ -209,6 +211,8 @@ impl NumberKind {
             NumberKind::U32(v) => format!("{}u32", v),
             NumberKind::U16(v) => format!("{}u16", v),
             NumberKind::U8(v) => format!("{}u8", v),
+            NumberKind::ISize(v) => format!("{}isize", v),
+            NumberKind::USize(v) => format!("{}usize", v),
         }
     }
 }
