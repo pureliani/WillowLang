@@ -194,8 +194,8 @@ pub enum NumberKind {
     U32(u32),
     U16(u16),
     U8(u8),
-    ISize(u8),
-    USize(u8),
+    ISize(isize),
+    USize(usize),
 }
 
 impl NumberKind {

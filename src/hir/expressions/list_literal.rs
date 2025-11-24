@@ -1,6 +1,15 @@
 use crate::{
-    ast::{expr::Expr, Span},
-    hir::{cfg::Value, FunctionBuilder, HIRContext},
+    ast::{expr::Expr, IdentifierNode, Span},
+    hir::{
+        cfg::Value,
+        errors::{SemanticError, SemanticErrorKind},
+        types::{
+            checked_declaration::TagType,
+            checked_type::{StructKind, Type},
+        },
+        FunctionBuilder, HIRContext,
+    },
+    tokenize::NumberKind,
 };
 
 impl FunctionBuilder {
@@ -10,6 +19,104 @@ impl FunctionBuilder {
         items: Vec<Expr>,
         expr_span: Span,
     ) -> Value {
-        todo!()
+        let identifier_capacity = ctx.program_builder.common_identifiers.capacity;
+        let identifier_ptr = ctx.program_builder.common_identifiers.ptr;
+        let identifier_len = ctx.program_builder.common_identifiers.len;
+
+        let item_values: Vec<Value> = items
+            .into_iter()
+            .map(|item| self.build_expr(ctx, item))
+            .collect();
+
+        let element_type = if item_values.is_empty() {
+            Type::Void
+        } else {
+            let all_tags = item_values.iter().all(|v| {
+                let ty = ctx.program_builder.get_value_type(v);
+                matches!(ty, Type::Struct(StructKind::Tag(_)))
+            });
+
+            if all_tags {
+                let mut union_tags: Vec<TagType> = Vec::new();
+                for val in &item_values {
+                    let ty = ctx.program_builder.get_value_type(val);
+                    if let Type::Struct(StructKind::Tag(tag)) = ty {
+                        if !union_tags.contains(&tag) {
+                            union_tags.push(tag);
+                        }
+                    }
+                }
+                union_tags.sort_by(|a, b| a.id.0.cmp(&b.id.0));
+
+                Type::Struct(StructKind::Union {
+                    variants: union_tags,
+                })
+            } else {
+                let first_type = ctx.program_builder.get_value_type(&item_values[0]);
+                for item in item_values.iter().skip(1) {
+                    let item_type = ctx.program_builder.get_value_type(item);
+                    if !self.check_is_assignable(&item_type, &first_type) {
+                        return Value::Use(self.report_error_and_get_poison(
+                            ctx,
+                            SemanticError {
+                                span: expr_span,
+                                kind: SemanticErrorKind::TypeMismatch {
+                                    expected: first_type,
+                                    received: item_type,
+                                },
+                            },
+                        ));
+                    }
+                }
+                first_type
+            }
+        };
+
+        let capacity = item_values.len();
+        let capacity_val = Value::NumberLiteral(NumberKind::USize(capacity));
+
+        let buffer_ptr =
+            match self.emit_heap_alloc(ctx, element_type.clone(), capacity_val.clone()) {
+                Ok(id) => id,
+                Err(e) => return Value::Use(self.report_error_and_get_poison(ctx, e)),
+            };
+
+        let list_type = Type::Struct(StructKind::List(Box::new(element_type)));
+        let header_ptr = match self.emit_heap_alloc(
+            ctx,
+            list_type.clone(),
+            Value::NumberLiteral(NumberKind::USize(1)),
+        ) {
+            Ok(id) => id,
+            Err(e) => return Value::Use(self.report_error_and_get_poison(ctx, e)),
+        };
+
+        let mut set_field = |name, val| {
+            let field_id = IdentifierNode {
+                name,
+                span: expr_span,
+            };
+
+            let ptr = self.emit_get_field_ptr(ctx, header_ptr, field_id)
+                .expect("INTERNAL COMPILER ERROR: Failed to set field on List literal, Struct definition mismatch?");
+
+            self.emit_store(ctx, ptr, val);
+        };
+
+        set_field(identifier_capacity, capacity_val.clone());
+        set_field(identifier_len, capacity_val);
+        set_field(identifier_ptr, Value::Use(buffer_ptr));
+
+        for (i, val) in item_values.into_iter().enumerate() {
+            let index_val = Value::NumberLiteral(NumberKind::USize(i));
+
+            let elem_ptr = self
+                .emit_get_element_ptr(ctx, buffer_ptr, index_val)
+                .unwrap();
+
+            self.emit_store(ctx, elem_ptr, val);
+        }
+
+        Value::Use(header_ptr)
     }
 }

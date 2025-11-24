@@ -7,7 +7,7 @@ use crate::{
         errors::{SemanticError, SemanticErrorKind},
         types::{
             checked_declaration::CheckedParam,
-            checked_type::{Type, TypeKind},
+            checked_type::{StructKind, Type},
         },
         utils::layout::pack_struct,
         FunctionBuilder, HIRContext,
@@ -50,12 +50,9 @@ impl FunctionBuilder {
             field_values.insert(field_name, value);
         }
 
-        pack_struct(ctx, &mut resolved_fields);
+        pack_struct(&ctx.program_builder, &mut resolved_fields);
 
-        let struct_type = Type {
-            kind: TypeKind::Struct(resolved_fields),
-            span,
-        };
+        let struct_type = Type::Struct(StructKind::UserDefined(resolved_fields));
 
         let struct_ptr = self
             .emit_heap_alloc(
@@ -65,8 +62,8 @@ impl FunctionBuilder {
             )
             .expect("INTERNAL COMPILER ERROR: failed to allocate struct on heap");
 
-        if let TypeKind::Struct(canonical_fields) = &struct_type.kind {
-            for field in canonical_fields {
+        if let Type::Struct(StructKind::UserDefined(sorted_fields)) = &struct_type {
+            for field in sorted_fields {
                 let field_ptr =
                     match self.emit_get_field_ptr(ctx, struct_ptr, field.identifier) {
                         Ok(ptr) => ptr,
