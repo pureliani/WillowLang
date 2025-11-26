@@ -101,10 +101,6 @@ pub enum Instruction {
         function_rvalue: Value,
         args: Vec<Value>,
     },
-    Phi {
-        destination: ValueId,
-        sources: Vec<(BasicBlockId, Value)>,
-    },
     Nop,
 }
 
@@ -146,10 +142,17 @@ pub enum Terminator {
 }
 
 #[derive(Clone, Debug)]
+pub struct PhiNode {
+    pub destination: ValueId,
+    pub sources: Vec<(BasicBlockId, Value)>,
+}
+
+#[derive(Clone, Debug)]
 pub struct BasicBlock {
     pub id: BasicBlockId,
     pub instructions: Vec<Instruction>,
     pub terminator: Option<Terminator>,
+    pub phis: Vec<PhiNode>,
 }
 
 #[derive(Clone, Debug)]

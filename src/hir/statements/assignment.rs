@@ -30,12 +30,15 @@ impl FunctionBuilder {
 
                 match decl.storage {
                     VarStorage::Stack(stack_ptr) => Ok(stack_ptr),
-                    VarStorage::Captured => {
+                    VarStorage::HeapField {
+                        base_ptr,
+                        field_index,
+                    } => {
                         // TODO:
                         // 1. Find the pointer to the closure's environment struct.
                         // 2. Find the field index for this variable.
                         // 3. Emit a GetFieldPtr instruction.
-                        todo!("Implement l-value resolution for captured variable");
+                        todo!();
                     }
                 }
             }

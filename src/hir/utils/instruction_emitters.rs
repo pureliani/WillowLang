@@ -4,8 +4,8 @@ use crate::{
     ast::{IdentifierNode, Span},
     hir::{
         cfg::{
-            BasicBlock, BasicBlockId, BinaryOperationKind, Instruction, Terminator,
-            UnaryOperationKind, Value, ValueId,
+            BasicBlock, BasicBlockId, BinaryOperationKind, Instruction, PhiNode,
+            Terminator, UnaryOperationKind, Value, ValueId,
         },
         errors::{SemanticError, SemanticErrorKind},
         types::{
@@ -452,7 +452,8 @@ impl FunctionBuilder {
             .value_types
             .insert(destination, result_type);
 
-        self.push_instruction(Instruction::Phi {
+        let current_block = self.get_current_basic_block();
+        current_block.phis.push(PhiNode {
             destination,
             sources,
         });
