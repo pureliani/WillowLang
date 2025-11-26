@@ -136,7 +136,7 @@ fn struct_to_string(
                 .join(", ");
             format!("{{ {} }}", fields_str)
         }
-        StructKind::Closure(fn_type) => {
+        StructKind::ClosureObject(fn_type) => {
             format!(
                 "Closure<{}>",
                 fn_signature_to_string(fn_type, program_builder, visited_set)

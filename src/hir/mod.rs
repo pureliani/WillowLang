@@ -1,5 +1,5 @@
 use std::{
-    collections::{HashMap, HashSet},
+    collections::HashMap,
     path::PathBuf,
     sync::{
         atomic::{AtomicUsize, Ordering},
@@ -8,12 +8,12 @@ use std::{
 };
 
 use crate::{
-    ast::{stmt::Stmt, IdentifierNode},
+    ast::stmt::Stmt,
     compile::interner::{SharedStringInterner, SharedTagInterner, StringId},
     hir::{
         cfg::{
             BasicBlock, BasicBlockId, CheckedModule, ConstantId, ControlFlowGraph,
-            DeclarationId, FunctionId, HeapAllocationId, Value, ValueId,
+            DeclarationId, FunctionId, Value, ValueId,
         },
         errors::SemanticError,
         types::{
@@ -63,7 +63,6 @@ pub struct ProgramBuilder {
     value_id_counter: AtomicUsize,
     function_id_counter: AtomicUsize,
     constant_id_counter: AtomicUsize,
-    allocation_id_counter: AtomicUsize,
     declaration_id_counter: AtomicUsize,
 }
 
@@ -111,7 +110,6 @@ impl ProgramBuilder {
             functions: HashMap::new(),
             function_id_counter: AtomicUsize::new(0),
             constant_id_counter: AtomicUsize::new(0),
-            allocation_id_counter: AtomicUsize::new(0),
             value_id_counter: AtomicUsize::new(0),
             declaration_id_counter: AtomicUsize::new(0),
         }
@@ -142,10 +140,6 @@ impl ProgramBuilder {
 
     pub fn new_constant_id(&self) -> ConstantId {
         ConstantId(self.constant_id_counter.fetch_add(1, Ordering::SeqCst))
-    }
-
-    pub fn new_allocation_id(&self) -> HeapAllocationId {
-        HeapAllocationId(self.allocation_id_counter.fetch_add(1, Ordering::SeqCst))
     }
 
     pub fn new_value_id(&self) -> ValueId {
@@ -233,6 +227,7 @@ impl FunctionBuilder {
                     id: entry_block_id,
                     instructions: vec![],
                     terminator: None,
+                    phis: vec![],
                 },
             )]),
             entry_block: entry_block_id,

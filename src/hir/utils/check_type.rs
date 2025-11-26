@@ -129,7 +129,7 @@ impl FunctionBuilder {
                     return_type: Box::new(checked_return_type),
                 };
 
-                Type::Struct(StructKind::Closure(fn_type))
+                Type::Struct(StructKind::ClosureObject(fn_type))
             }
             TypeAnnotationKind::Struct(items) => {
                 let mut checked_field_types: Vec<CheckedParam> = items

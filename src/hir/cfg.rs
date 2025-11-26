@@ -20,9 +20,6 @@ pub struct FunctionId(pub usize);
 pub struct BasicBlockId(pub usize);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub struct HeapAllocationId(pub usize);
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct ValueId(pub usize);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -53,32 +50,49 @@ pub enum Instruction {
     },
     HeapAlloc {
         destination: ValueId,
-        allocation_site_id: HeapAllocationId,
         count: Value,
     },
-    Free {
-        pointer: ValueId,
+    HeapFree {
+        ptr: ValueId,
     },
     Store {
-        destination_ptr: ValueId,
-        source_val: Value,
+        ptr: ValueId,
+        value: Value,
     },
     Load {
         destination: ValueId,
-        source_ptr: ValueId,
+        ptr: ValueId,
     },
-    /// Used for Structs, Offset is static (usize).
-    GetFieldPtr {
-        destination: ValueId,
-        base_ptr: ValueId,
-        field_index: usize,
+    FileOpen {
+        destination_fd: ValueId,
+        path: Value,
+        mode: Value,
     },
-    /// Used for Arrays/Buffers, Offset is dynamic (Value).
-    /// Computes: base_ptr + (index * sizeof(T))
-    GetElementPtr {
-        destination: ValueId,
-        base_ptr: ValueId,
-        index: Value,
+    FileWrite {
+        fd: ValueId,
+        data: Value,
+        len: Value,
+    },
+    FileRead {
+        fd: ValueId,
+        buffer: ValueId,
+        len: Value,
+        value_destination: ValueId, // Result of read()
+    },
+    FileClose {
+        fd: ValueId,
+    },
+    SocketConnect {
+        address: Value,
+        port: Value,
+        value_destination: ValueId,
+    },
+    SocketSend {
+        socket: ValueId,
+        data: Value,
+    },
+    SocketClose {
+        socket: ValueId,
     },
     UnaryOp {
         op_kind: UnaryOperationKind,
@@ -100,6 +114,16 @@ pub enum Instruction {
         destination: Option<ValueId>,
         function_rvalue: Value,
         args: Vec<Value>,
+    },
+    GetFieldPtr {
+        destination: ValueId,
+        base_ptr: ValueId,
+        field_index: usize,
+    },
+    GetElementPtr {
+        destination: ValueId,
+        base_ptr: ValueId,
+        index: Value,
     },
     Nop,
 }
@@ -166,18 +190,15 @@ pub enum CheckedDeclaration {
     TypeAlias(Arc<RwLock<CheckedTypeAliasDecl>>),
     Function(FunctionId),
     Var(CheckedVarDecl),
-    /// Represents a variable that is in scope but has not yet been declared.
-    /// Accessing it is an error. This is for detecting the Temporal Dead Zone.
-    UninitializedVar {
-        identifier: IdentifierNode,
-    },
+    // This is for detecting the Temporal Dead Zone
+    UninitializedVar { identifier: IdentifierNode },
 }
 
 #[derive(Clone, Debug)]
 pub struct CheckedModule {
     pub path: PathBuf,
     pub functions: HashMap<FunctionId, ControlFlowGraph>,
-    pub constant_data: HashMap<ConstantId, Vec<u8>>, // map id -> bytes
+    pub constant_data: HashMap<ConstantId, Vec<u8>>,
     pub declarations: HashMap<IdentifierNode, CheckedDeclaration>,
     pub exports: HashSet<IdentifierNode>,
 }

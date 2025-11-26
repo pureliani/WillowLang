@@ -13,7 +13,7 @@ pub enum StructKind {
     UserDefined(Vec<CheckedParam>), // packed
 
     /// { fn_ptr, env_ptr }
-    Closure(FnType),
+    ClosureObject(FnType),
 
     /// The captured environment.
     ClosureEnv(Vec<CheckedParam>), // packed
@@ -55,7 +55,7 @@ impl StructKind {
                 })
             }
 
-            StructKind::Closure(_) => {
+            StructKind::ClosureObject(_) => {
                 let void_ptr = Type::Pointer(Box::new(Type::Void));
                 if name == ctx.common_identifiers.fn_ptr {
                     Some((0, void_ptr.clone()))

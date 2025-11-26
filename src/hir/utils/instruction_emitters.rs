@@ -125,30 +125,19 @@ impl FunctionBuilder {
         }
 
         let destination = ctx.program_builder.new_value_id();
-        let allocation_site_id = ctx.program_builder.new_allocation_id();
 
         ctx.program_builder
             .value_types
             .insert(destination, Type::Pointer(Box::new(ty)));
 
-        self.push_instruction(Instruction::HeapAlloc {
-            destination,
-            allocation_site_id,
-            count,
-        });
+        self.push_instruction(Instruction::HeapAlloc { destination, count });
 
         Ok(destination)
     }
 
-    pub fn emit_store(
-        &mut self,
-        ctx: &mut HIRContext,
-        destination_ptr: ValueId,
-        value: Value,
-    ) {
+    pub fn emit_store(&mut self, ctx: &mut HIRContext, ptr: ValueId, value: Value) {
         let value_type = ctx.program_builder.get_value_type(&value);
-        let destination_ptr_type =
-            ctx.program_builder.get_value_id_type(&destination_ptr);
+        let destination_ptr_type = ctx.program_builder.get_value_id_type(&ptr);
 
         if let Type::Pointer(target_type) = destination_ptr_type {
             if !self.check_is_assignable(&value_type, &target_type) {
@@ -165,14 +154,11 @@ impl FunctionBuilder {
             panic!("INTERNAL COMPILER ERROR: Expected destination_ptr_id to be of Pointer<T> type");
         }
 
-        self.push_instruction(Instruction::Store {
-            destination_ptr,
-            source_val: value,
-        });
+        self.push_instruction(Instruction::Store { ptr, value });
     }
 
-    pub fn emit_load(&mut self, ctx: &mut HIRContext, source_ptr: ValueId) -> ValueId {
-        let ptr_type = ctx.program_builder.get_value_id_type(&source_ptr);
+    pub fn emit_load(&mut self, ctx: &mut HIRContext, ptr: ValueId) -> ValueId {
+        let ptr_type = ctx.program_builder.get_value_id_type(&ptr);
 
         let destination_type = if let Type::Pointer(target_type) = ptr_type {
             *target_type
@@ -188,10 +174,7 @@ impl FunctionBuilder {
             .value_types
             .insert(destination, destination_type);
 
-        self.push_instruction(Instruction::Load {
-            destination,
-            source_ptr,
-        });
+        self.push_instruction(Instruction::Load { destination, ptr });
 
         destination
     }
@@ -472,7 +455,7 @@ impl FunctionBuilder {
 
         let (params, return_type) = match &value_type {
             Type::Fn(fn_type) => (fn_type.params.clone(), fn_type.return_type.clone()),
-            Type::Struct(s) if matches!(s, StructKind::Closure(_)) => {
+            Type::Struct(s) if matches!(s, StructKind::ClosureObject(_)) => {
                 todo!();
             }
             _ => {

@@ -55,7 +55,7 @@ fn get_struct_layout(s: &StructKind) -> Layout {
         }
 
         // { fn_ptr, env_ptr }
-        StructKind::Closure(_) => Layout::new(PTR_SIZE * 2, PTR_ALIGN),
+        StructKind::ClosureObject(_) => Layout::new(PTR_SIZE * 2, PTR_ALIGN),
 
         // { capacity: usize, len: usize, ptr: ptr<T> }
         StructKind::List(_) => {
