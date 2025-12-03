@@ -13,7 +13,7 @@ impl FunctionBuilder {
                 id: block_id,
                 instructions: vec![],
                 terminator: None,
-                phis: vec![],
+                params: vec![],
             },
         );
 

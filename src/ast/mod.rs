@@ -6,6 +6,7 @@ pub mod decl;
 pub mod expr;
 pub mod stmt;
 pub mod type_annotation;
+pub mod visitor;
 
 #[derive(Debug, Clone, Copy)]
 pub struct IdentifierNode {

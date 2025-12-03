@@ -153,11 +153,14 @@ pub enum BinaryOperationKind {
 pub enum Terminator {
     Jump {
         target: BasicBlockId,
+        args: Vec<Value>,
     },
     CondJump {
         condition: Value,
         true_target: BasicBlockId,
+        true_args: Vec<Value>,
         false_target: BasicBlockId,
+        false_args: Vec<Value>,
     },
     Return {
         value: Option<Value>,
@@ -166,17 +169,11 @@ pub enum Terminator {
 }
 
 #[derive(Clone, Debug)]
-pub struct PhiNode {
-    pub destination: ValueId,
-    pub sources: Vec<(BasicBlockId, Value)>,
-}
-
-#[derive(Clone, Debug)]
 pub struct BasicBlock {
     pub id: BasicBlockId,
     pub instructions: Vec<Instruction>,
     pub terminator: Option<Terminator>,
-    pub phis: Vec<PhiNode>,
+    pub params: Vec<ValueId>,
 }
 
 #[derive(Clone, Debug)]
