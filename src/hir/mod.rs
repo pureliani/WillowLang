@@ -1,5 +1,5 @@
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     path::PathBuf,
     sync::{
         atomic::{AtomicUsize, Ordering},
@@ -80,6 +80,14 @@ pub struct FunctionBuilder {
     pub cfg: ControlFlowGraph,
     pub return_type: Type,
     pub current_block_id: BasicBlockId,
+
+    pub predecessors: HashMap<BasicBlockId, Vec<BasicBlockId>>,
+    pub block_value_maps: HashMap<BasicBlockId, HashMap<ValueId, ValueId>>,
+    pub value_definitions: HashMap<ValueId, BasicBlockId>,
+    pub sealed_blocks: HashSet<BasicBlockId>,
+    // Map: BlockId -> List of (LocalParamId, OriginalValueId)
+    pub incomplete_params: HashMap<BasicBlockId, Vec<(ValueId, ValueId)>>,
+
     block_id_counter: usize,
     value_id_counter: usize,
 }
@@ -227,19 +235,28 @@ impl FunctionBuilder {
                     id: entry_block_id,
                     instructions: vec![],
                     terminator: None,
-                    phis: vec![],
+                    params: vec![],
                 },
             )]),
             entry_block: entry_block_id,
         };
 
-        Self {
+        let mut builder = Self {
             cfg,
             return_type,
+            block_value_maps: HashMap::new(),
+            incomplete_params: HashMap::new(),
+            predecessors: HashMap::new(),
+            value_definitions: HashMap::new(),
+            sealed_blocks: HashSet::new(),
             current_block_id: entry_block_id,
             block_id_counter: 1,
             value_id_counter: 0,
-        }
+        };
+
+        builder.sealed_blocks.insert(entry_block_id);
+
+        builder
     }
 
     pub fn build_body(

@@ -4,14 +4,11 @@ use crate::{
     ast::{IdentifierNode, Span},
     hir::{
         cfg::{
-            BasicBlock, BasicBlockId, BinaryOperationKind, Instruction, PhiNode,
-            Terminator, UnaryOperationKind, Value, ValueId,
+            BasicBlock, BasicBlockId, BinaryOperationKind, Instruction, Terminator,
+            UnaryOperationKind, Value, ValueId,
         },
         errors::{SemanticError, SemanticErrorKind},
-        types::{
-            checked_declaration::TagType,
-            checked_type::{StructKind, Type},
-        },
+        types::checked_type::{StructKind, Type},
         utils::{check_is_equatable::check_is_equatable, numeric::is_signed},
         FunctionBuilder, HIRContext, ModuleBuilder,
     },
@@ -29,9 +26,144 @@ impl FunctionBuilder {
         }
     }
 
-    pub fn set_basic_block_terminator(&mut self, terminator: Terminator) {
-        let current_basic_block = self.cfg.blocks.get_mut(&self.current_block_id);
+    pub fn alloc_value(&mut self, ctx: &mut HIRContext, ty: Type) -> ValueId {
+        let id = ctx.program_builder.new_value_id();
+        ctx.program_builder.value_types.insert(id, ty);
 
+        self.value_definitions.insert(id, self.current_block_id);
+
+        id
+    }
+
+    pub fn append_block_param(
+        &mut self,
+        ctx: &mut HIRContext,
+        block_id: BasicBlockId,
+        ty: Type,
+    ) -> ValueId {
+        let id = ctx.program_builder.new_value_id();
+        ctx.program_builder.value_types.insert(id, ty);
+
+        self.value_definitions.insert(id, block_id);
+
+        let block = self.cfg.blocks.get_mut(&block_id).expect(&format!(
+            "INTERNAL COMPILER ERROR: Could not append basic block parameter, BasicBlockId({}) not found",
+            block_id.0,
+        ));
+        block.params.push(id);
+        id
+    }
+
+    fn add_predecessor(&mut self, target: BasicBlockId, from: BasicBlockId) {
+        self.predecessors.entry(target).or_default().push(from);
+    }
+
+    pub fn get_mapped_value(
+        &self,
+        block: BasicBlockId,
+        original: ValueId,
+    ) -> Option<ValueId> {
+        self.block_value_maps
+            .get(&block)
+            .and_then(|map| map.get(&original).copied())
+    }
+
+    pub fn map_value(&mut self, block: BasicBlockId, original: ValueId, local: ValueId) {
+        self.block_value_maps
+            .entry(block)
+            .or_default()
+            .insert(original, local);
+    }
+
+    pub fn seal_block(&mut self, ctx: &mut HIRContext, block_id: BasicBlockId) {
+        if !self.sealed_blocks.insert(block_id) {
+            return;
+        }
+
+        if let Some(incomplete) = self.incomplete_params.remove(&block_id) {
+            for (param_id, original_value_id) in incomplete {
+                self.fill_predecessors(ctx, block_id, original_value_id, param_id);
+            }
+        }
+    }
+
+    pub fn use_value_in_block(
+        &mut self,
+        ctx: &mut HIRContext,
+        block_id: BasicBlockId,
+        original_value_id: ValueId,
+    ) -> ValueId {
+        if let Some(def_block) = self.value_definitions.get(&original_value_id) {
+            if *def_block == block_id {
+                return original_value_id;
+            }
+        }
+
+        if let Some(local_id) = self.get_mapped_value(block_id, original_value_id) {
+            return local_id;
+        }
+
+        if !self.sealed_blocks.contains(&block_id) {
+            // We don't know all predecessors yet, so we MUST create a parameter
+            // to be safe. We will fill in the arguments later when we seal.
+            let ty = ctx.program_builder.get_value_id_type(&original_value_id);
+            let param_id = self.append_block_param(ctx, block_id, ty);
+
+            self.map_value(block_id, original_value_id, param_id);
+
+            self.incomplete_params
+                .entry(block_id)
+                .or_default()
+                .push((param_id, original_value_id));
+
+            return param_id;
+        }
+
+        let ty = ctx.program_builder.get_value_id_type(&original_value_id);
+        let param_id = self.append_block_param(ctx, block_id, ty);
+        self.map_value(block_id, original_value_id, param_id);
+        self.fill_predecessors(ctx, block_id, original_value_id, param_id);
+
+        param_id
+    }
+
+    fn fill_predecessors(
+        &mut self,
+        ctx: &mut HIRContext,
+        block_id: BasicBlockId,
+        original_value_id: ValueId,
+        _param_id: ValueId,
+    ) {
+        let preds = self
+            .predecessors
+            .get(&block_id)
+            .cloned()
+            .unwrap_or_default();
+
+        for pred_id in preds {
+            let val_in_pred = self.use_value_in_block(ctx, pred_id, original_value_id);
+
+            self.append_arg_to_terminator(pred_id, block_id, val_in_pred);
+        }
+    }
+
+    pub fn set_basic_block_terminator(&mut self, terminator: Terminator) {
+        match &terminator {
+            Terminator::Jump { target, .. } => {
+                self.add_predecessor(*target, self.current_block_id);
+            }
+            Terminator::CondJump {
+                true_target,
+                false_target,
+                ..
+            } => {
+                self.add_predecessor(*true_target, self.current_block_id);
+                self.add_predecessor(*false_target, self.current_block_id);
+            }
+            _ => {}
+        }
+
+        let current_basic_block = self.cfg.blocks.get_mut(&self.current_block_id);
         if let Some(bb) = current_basic_block {
             bb.terminator = Some(terminator);
         } else {
@@ -42,18 +174,48 @@ impl FunctionBuilder {
         }
     }
 
-    /// Records a semantic error and returns a new "poison" Value of type Unknown.
-    /// The caller is responsible for immediately returning the poison Value.
+    fn append_arg_to_terminator(
+        &mut self,
+        block_id: BasicBlockId,
+        target_block: BasicBlockId,
+        arg: ValueId,
+    ) {
+        let block = self.cfg.blocks.get_mut(&block_id).expect("Block not found");
+        let terminator = block.terminator.as_mut().expect("Terminator not found");
+
+        match terminator {
+            Terminator::Jump { target, args } => {
+                if *target == target_block {
+                    args.push(Value::Use(arg));
+                }
+            }
+            Terminator::CondJump {
+                true_target,
+                true_args,
+                false_target,
+                false_args,
+                ..
+            } => {
+                if *true_target == target_block {
+                    true_args.push(Value::Use(arg));
+                }
+                if *false_target == target_block {
+                    false_args.push(Value::Use(arg));
+                }
+            }
+            _ => {}
+        }
+    }
+
+    /// Records a semantic error and returns a new "poison" Value of type Unknown
+    /// The caller is responsible for immediately returning the poison Value
     pub fn report_error_and_get_poison(
         &mut self,
         ctx: &mut HIRContext,
         error: SemanticError,
     ) -> ValueId {
         ctx.program_builder.errors.push(error);
-        let unknown_result_id = ctx.program_builder.new_value_id();
-        ctx.program_builder
-            .value_types
-            .insert(unknown_result_id, Type::Unknown);
+        let unknown_result_id = self.alloc_value(ctx, Type::Unknown);
         unknown_result_id
     }
 
@@ -89,12 +251,7 @@ impl FunctionBuilder {
         ty: Type,
         count: usize,
     ) -> ValueId {
-        let destination = ctx.program_builder.new_value_id();
-
-        ctx.program_builder
-            .value_types
-            .insert(destination, Type::Pointer(Box::new(ty)));
-
+        let destination = self.alloc_value(ctx, Type::Pointer(Box::new(ty)));
         self.push_instruction(Instruction::StackAlloc { destination, count });
 
         destination
@@ -110,11 +267,6 @@ impl FunctionBuilder {
         let count_type = ctx.program_builder.get_value_type(&count);
         let expected_count_type = Type::USize;
         if !self.check_is_assignable(&count_type, &expected_count_type) {
-            // Note: We need a span for the error. Since Type no longer has span,
-            // we rely on the caller or context. Here we assume count_type came from an expression
-            // but we don't have the expression span.
-            // Ideally, `get_value_type` or `Value` should carry span info, or we pass it in.
-            // For now, we use a default span or fix this upstream.
             return Err(SemanticError {
                 span: Span::default(), // TODO: Fix span propagation
                 kind: SemanticErrorKind::TypeMismatch {
@@ -124,12 +276,7 @@ impl FunctionBuilder {
             });
         }
 
-        let destination = ctx.program_builder.new_value_id();
-
-        ctx.program_builder
-            .value_types
-            .insert(destination, Type::Pointer(Box::new(ty)));
-
+        let destination = self.alloc_value(ctx, Type::Pointer(Box::new(ty)));
         self.push_instruction(Instruction::HeapAlloc { destination, count });
 
         Ok(destination)
@@ -168,12 +315,7 @@ impl FunctionBuilder {
             );
         };
 
-        let destination = ctx.program_builder.new_value_id();
-
-        ctx.program_builder
-            .value_types
-            .insert(destination, destination_type);
-
+        let destination = self.alloc_value(ctx, destination_type);
         self.push_instruction(Instruction::Load { destination, ptr });
 
         destination
@@ -201,11 +343,7 @@ impl FunctionBuilder {
         };
 
         if let Some((field_index, ty)) = s.get_field(&ctx.program_builder, field.name) {
-            let destination = ctx.program_builder.new_value_id();
-
-            ctx.program_builder
-                .value_types
-                .insert(destination, Type::Pointer(Box::new(ty.clone())));
+            let destination = self.alloc_value(ctx, Type::Pointer(Box::new(ty.clone())));
 
             self.push_instruction(Instruction::GetFieldPtr {
                 destination,
@@ -246,11 +384,7 @@ impl FunctionBuilder {
             panic!("INTERNAL COMPILER ERROR: emit_get_element_ptr expects a pointer");
         };
 
-        let destination = ctx.program_builder.new_value_id();
-        ctx.program_builder
-            .value_types
-            .insert(destination, Type::Pointer(Box::new(element_type)));
-
+        let destination = self.alloc_value(ctx, Type::Pointer(Box::new(element_type)));
         self.push_instruction(Instruction::GetElementPtr {
             destination,
             base_ptr,
@@ -269,7 +403,7 @@ impl FunctionBuilder {
         let value_type = ctx.program_builder.get_value_type(&value);
         let span = Span::default(); // TODO: Fix span
 
-        let destination = match op_kind {
+        match op_kind {
             UnaryOperationKind::Neg => {
                 if !is_signed(&value_type) {
                     let expected = HashSet::from([
@@ -290,8 +424,6 @@ impl FunctionBuilder {
                         span,
                     });
                 }
-
-                ctx.program_builder.new_value_id()
             }
             UnaryOperationKind::Not => {
                 let bool_type = Type::Bool;
@@ -305,14 +437,10 @@ impl FunctionBuilder {
                         span,
                     });
                 }
-
-                ctx.program_builder.new_value_id()
             }
         };
 
-        ctx.program_builder
-            .value_types
-            .insert(destination, value_type);
+        let destination = self.alloc_value(ctx, value_type);
         self.push_instruction(Instruction::UnaryOp {
             op_kind,
             destination,
@@ -366,79 +494,12 @@ impl FunctionBuilder {
             }
         };
 
-        let destination = ctx.program_builder.new_value_id();
-        ctx.program_builder
-            .value_types
-            .insert(destination, destination_type);
+        let destination = self.alloc_value(ctx, destination_type);
         self.push_instruction(Instruction::BinaryOp {
             op_kind,
             destination,
             left,
             right,
-        });
-
-        Ok(destination)
-    }
-
-    pub fn emit_phi(
-        &mut self,
-        ctx: &mut HIRContext,
-        sources: Vec<(BasicBlockId, Value)>,
-    ) -> Result<ValueId, SemanticError> {
-        if sources.is_empty() {
-            panic!("INTERNAL COMPILER ERROR: emit_phi called with no sources.");
-        }
-
-        let source_types: Vec<Type> = sources
-            .iter()
-            .map(|(_, val)| ctx.program_builder.get_value_type(val))
-            .collect();
-
-        let first_type = source_types[0].clone();
-        let mut are_all_tags = true;
-        let mut union_tags: Vec<TagType> = Vec::new();
-
-        for ty in &source_types {
-            if let Type::Struct(StructKind::Tag(t)) = ty {
-                if !union_tags.contains(t) {
-                    union_tags.push(t.clone());
-                }
-            } else {
-                are_all_tags = false;
-                break;
-            }
-        }
-
-        let result_type = if are_all_tags {
-            union_tags.sort_by(|a, b| a.id.0.cmp(&b.id.0));
-
-            Type::Struct(StructKind::Union {
-                variants: union_tags,
-            })
-        } else {
-            for other_type in source_types.iter().skip(1) {
-                if !self.check_is_assignable(other_type, &first_type) {
-                    return Err(SemanticError {
-                        span: Span::default(),
-                        kind: SemanticErrorKind::IncompatibleBranchTypes {
-                            first: first_type,
-                            second: other_type.clone(),
-                        },
-                    });
-                }
-            }
-            first_type
-        };
-
-        let destination = ctx.program_builder.new_value_id();
-        ctx.program_builder
-            .value_types
-            .insert(destination, result_type);
-
-        let current_block = self.get_current_basic_block();
-        current_block.phis.push(PhiNode {
-            destination,
-            sources,
         });
 
         Ok(destination)
@@ -492,11 +553,7 @@ impl FunctionBuilder {
         }
 
         let destination_id = if *return_type != Type::Void {
-            let dest_id = ctx.program_builder.new_value_id();
-            ctx.program_builder
-                .value_types
-                .insert(dest_id, *return_type);
-            Some(dest_id)
+            Some(self.alloc_value(ctx, *return_type))
         } else {
             None
         };
@@ -531,11 +588,7 @@ impl FunctionBuilder {
             );
         }
 
-        let destination = ctx.program_builder.new_value_id();
-        ctx.program_builder
-            .value_types
-            .insert(destination, target_type.clone());
-
+        let destination = self.alloc_value(ctx, target_type.clone());
         self.push_instruction(Instruction::TypeCast {
             destination,
             operand: value,
