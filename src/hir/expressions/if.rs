@@ -1,9 +1,13 @@
 use crate::{
     ast::expr::{BlockContents, Expr},
+    ast::Span,
     hir::{
         cfg::{BasicBlockId, Terminator, Value},
         errors::{SemanticError, SemanticErrorKind},
-        types::checked_type::Type,
+        types::{
+            checked_declaration::TagType,
+            checked_type::{StructKind, Type},
+        },
         FunctionBuilder, HIRContext,
     },
 };
@@ -36,31 +40,27 @@ impl FunctionBuilder {
         }
 
         let merge_block_id = self.new_basic_block();
+        let mut branch_results: Vec<(BasicBlockId, Value, Span)> = Vec::new();
         let mut last_condition_block_id = self.current_block_id;
-
-        let mut phi_sources: Vec<(BasicBlockId, Value)> = Vec::new();
 
         for (condition, body) in branches {
             let condition_span = condition.span;
+            let body_span = body.span;
+
             self.use_basic_block(last_condition_block_id);
 
             let condition_value = self.build_expr(ctx, *condition);
             let condition_value_type =
                 ctx.program_builder.get_value_type(&condition_value);
-            let expected_condition_type = Type::Bool;
 
-            if !self.check_is_assignable(&condition_value_type, &expected_condition_type)
-            {
-                return Value::Use(self.report_error_and_get_poison(
-                    ctx,
-                    SemanticError {
-                        span: condition_span,
-                        kind: SemanticErrorKind::TypeMismatch {
-                            expected: expected_condition_type,
-                            received: condition_value_type,
-                        },
+            if !self.check_is_assignable(&condition_value_type, &Type::Bool) {
+                ctx.program_builder.errors.push(SemanticError {
+                    span: condition_span,
+                    kind: SemanticErrorKind::TypeMismatch {
+                        expected: Type::Bool,
+                        received: condition_value_type,
                     },
-                ));
+                });
             }
 
             let body_block_id = self.new_basic_block();
@@ -69,40 +69,111 @@ impl FunctionBuilder {
             self.set_basic_block_terminator(Terminator::CondJump {
                 condition: condition_value,
                 true_target: body_block_id,
+                true_args: vec![],
                 false_target: next_condition_block_id,
+                false_args: vec![],
             });
+
+            self.seal_block(ctx, body_block_id);
 
             self.use_basic_block(body_block_id);
             let body_value = self.build_codeblock_expr(ctx, body);
-            let body_exit_block_id = self.current_block_id;
-            phi_sources.push((body_exit_block_id, body_value));
-            self.set_basic_block_terminator(Terminator::Jump {
-                target: merge_block_id,
-            });
 
+            if self.get_current_basic_block().terminator.is_none() {
+                branch_results.push((self.current_block_id, body_value, body_span));
+            }
+
+            self.seal_block(ctx, next_condition_block_id);
             last_condition_block_id = next_condition_block_id;
         }
 
         self.use_basic_block(last_condition_block_id);
 
         if let Some(else_body) = else_branch {
+            let else_span = else_body.span;
             let else_value = self.build_codeblock_expr(ctx, else_body);
-            let else_exit_block_id = self.current_block_id;
-            phi_sources.push((else_exit_block_id, else_value));
+
+            if self.get_current_basic_block().terminator.is_none() {
+                branch_results.push((self.current_block_id, else_value, else_span));
+            }
+        } else {
+            if context == IfContext::Statement {
+                self.set_basic_block_terminator(Terminator::Jump {
+                    target: merge_block_id,
+                    args: vec![],
+                });
+            }
         }
 
-        self.set_basic_block_terminator(Terminator::Jump {
-            target: merge_block_id,
-        });
+        let result_param_id = if context == IfContext::Expression {
+            let result_type = if branch_results.is_empty() {
+                Type::Void
+            } else {
+                let all_tags = branch_results.iter().all(|(_, v, _)| {
+                    let ty = ctx.program_builder.get_value_type(v);
+                    matches!(ty, Type::Struct(StructKind::Tag(_)))
+                });
 
+                if all_tags {
+                    let mut union_tags: Vec<TagType> = Vec::new();
+                    for (_, val, _) in &branch_results {
+                        let ty = ctx.program_builder.get_value_type(val);
+                        if let Type::Struct(StructKind::Tag(tag)) = ty {
+                            if !union_tags.contains(&tag) {
+                                union_tags.push(tag);
+                            }
+                        }
+                    }
+                    union_tags.sort_by(|a, b| a.id.0.cmp(&b.id.0));
+                    Type::Struct(StructKind::Union {
+                        variants: union_tags,
+                    })
+                } else {
+                    let (_, first_val, _) = &branch_results[0];
+                    let first_type = ctx.program_builder.get_value_type(first_val);
+
+                    for (_, val, span) in branch_results.iter().skip(1) {
+                        let ty = ctx.program_builder.get_value_type(val);
+                        if !self.check_is_assignable(&ty, &first_type) {
+                            ctx.program_builder.errors.push(SemanticError {
+                                span: *span,
+                                kind: SemanticErrorKind::TypeMismatch {
+                                    expected: first_type.clone(),
+                                    received: ty,
+                                },
+                            });
+                        }
+                    }
+                    first_type
+                }
+            };
+
+            Some(self.append_block_param(ctx, merge_block_id, result_type))
+        } else {
+            None
+        };
+
+        // Emit Jumps for all collected branches
+        for (block_id, val, _) in branch_results {
+            self.use_basic_block(block_id);
+
+            let args = if let Some(_) = result_param_id {
+                vec![val]
+            } else {
+                vec![]
+            };
+
+            self.set_basic_block_terminator(Terminator::Jump {
+                target: merge_block_id,
+                args,
+            });
+        }
+
+        self.seal_block(ctx, merge_block_id);
         self.use_basic_block(merge_block_id);
 
-        if context == IfContext::Expression {
-            let phi_destination = match self.emit_phi(ctx, phi_sources) {
-                Ok(id) => id,
-                Err(e) => return Value::Use(self.report_error_and_get_poison(ctx, e)),
-            };
-            Value::Use(phi_destination)
+        if let Some(pid) = result_param_id {
+            Value::Use(pid)
         } else {
             Value::VoidLiteral
         }
