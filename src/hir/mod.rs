@@ -42,6 +42,7 @@ pub struct CommonIdentifiers {
     fn_ptr: StringId,
     ptr: StringId,
     capacity: StringId,
+    is_heap_allocated: StringId,
     len: StringId,
     id: StringId,
     value: StringId,
@@ -58,7 +59,8 @@ pub struct ProgramBuilder {
     pub tag_interner: Arc<SharedTagInterner>,
     pub common_identifiers: CommonIdentifiers,
 
-    // errors and counters
+    pub constant_data: HashMap<ConstantId, Vec<u8>>,
+
     pub errors: Vec<SemanticError>,
     value_id_counter: AtomicUsize,
     function_id_counter: AtomicUsize,
@@ -102,6 +104,7 @@ impl ProgramBuilder {
             value: string_interner.intern("value"),
             payload: string_interner.intern("payload"),
             capacity: string_interner.intern("capacity"),
+            is_heap_allocated: string_interner.intern("is_heap_allocated"),
             env_ptr: string_interner.intern("env_ptr"),
             fn_ptr: string_interner.intern("fn_ptr"),
             len: string_interner.intern("len"),
@@ -112,6 +115,7 @@ impl ProgramBuilder {
             errors: vec![],
             modules: HashMap::new(),
             value_types: HashMap::new(),
+            constant_data: HashMap::new(),
             string_interner,
             tag_interner,
             common_identifiers,
@@ -185,7 +189,6 @@ impl ProgramBuilder {
 
                 ty
             }
-            Value::StringLiteral(_) => Type::Struct(StructKind::String),
             Value::Function { ty, .. } => ty.clone(),
             Value::Use(value_id) => self.get_value_id_type(value_id),
         }

@@ -1,8 +1,8 @@
-use crate::hir::types::checked_declaration::TagType;
-use crate::hir::types::checked_type::{StructKind, Type};
-use crate::hir::{types::checked_declaration::CheckedParam, ProgramBuilder};
+use std::panic;
 
-use std::cmp;
+use crate::hir::types::checked_declaration::CheckedParam;
+use crate::hir::types::checked_type::{StructKind, Type};
+use crate::hir::ProgramBuilder;
 
 pub struct Layout {
     pub size: usize,
@@ -22,7 +22,7 @@ const USIZE_SIZE: usize = size_of::<usize>();
 const USIZE_ALIGN: usize = size_of::<usize>();
 
 /// IMPORTANT: Make sure user-defined and closure-environment structs are packed first before calling this function
-pub fn get_layout_of(ty: &Type) -> Layout {
+pub fn get_layout_of(ty: &Type, ctx: &ProgramBuilder) -> Layout {
     match ty {
         Type::Void => Layout::new(0, 1),
         Type::Bool | Type::U8 | Type::I8 => Layout::new(1, 1),
@@ -38,83 +38,28 @@ pub fn get_layout_of(ty: &Type) -> Layout {
 
         Type::Unknown => Layout::new(0, 1),
 
-        Type::Struct(s) => get_struct_layout(s),
+        Type::Struct(s) => {
+            let fields = s.fields(ctx);
+            let types: Vec<&Type> = fields.iter().map(|(_, ty)| ty).collect();
+
+            calculate_fields_layout(&types, ctx)
+        }
     }
 }
 
-pub fn get_alignment_of(ty: &Type) -> usize {
-    get_layout_of(ty).alignment
-}
-
-fn get_struct_layout(s: &StructKind) -> Layout {
-    match s {
-        // Must be packed before
-        StructKind::UserDefined(fields) | StructKind::ClosureEnv(fields) => {
-            let types: Vec<&Type> = fields.iter().map(|f| &f.ty).collect();
-            calculate_fields_layout(&types)
-        }
-
-        // { fn_ptr, env_ptr }
-        StructKind::ClosureObject(_) => Layout::new(PTR_SIZE * 2, PTR_ALIGN),
-
-        // { capacity: usize, len: usize, ptr: ptr<T> }
-        StructKind::List(_) => {
-            let size = USIZE_SIZE + USIZE_SIZE + PTR_SIZE;
-            Layout::new(size, USIZE_ALIGN)
-        }
-
-        // { capacity: usize, len: usize, ptr: ptr<u8> }
-        StructKind::String => {
-            let size = USIZE_SIZE + USIZE_SIZE + PTR_SIZE;
-            Layout::new(size, USIZE_ALIGN)
-        }
-
-        // { len: usize, ptr: ptr<u8> }
-        StructKind::ConstString => {
-            let size = USIZE_SIZE + PTR_SIZE;
-            Layout::new(size, USIZE_ALIGN)
-        }
-
-        // { id: u16, value: T }
-        StructKind::Tag(tag_type) => get_tag_layout(tag_type),
-
-        // { id: u16, payload: Buffer }
-        StructKind::Union { variants } => get_union_layout(variants),
-    }
-}
-
-pub fn get_tag_layout(tag: &TagType) -> Layout {
-    let mut types = vec![&Type::U16];
-    if let Some(val_ty) = &tag.value_type {
-        types.push(val_ty);
-    }
-
-    calculate_fields_layout(&types)
-}
-
-pub fn get_union_layout(variants: &[TagType]) -> Layout {
-    let mut max_size = 0;
-    let mut max_align = 1;
-
-    for tag_type in variants {
-        let layout = get_tag_layout(tag_type);
-
-        max_size = cmp::max(max_size, layout.size);
-        max_align = cmp::max(max_align, layout.alignment);
-    }
-
-    Layout::new(max_size, max_align)
+pub fn get_alignment_of(ty: &Type, ctx: &ProgramBuilder) -> usize {
+    get_layout_of(ty, ctx).alignment
 }
 
 /// Helper to calculate layout of fields placed sequentially in memory
-fn calculate_fields_layout(field_types: &[&Type]) -> Layout {
+fn calculate_fields_layout(field_types: &[&Type], ctx: &ProgramBuilder) -> Layout {
     let mut current_offset = 0;
     let mut max_alignment = 1;
 
     for ty in field_types {
-        let field_layout = get_layout_of(ty);
+        let field_layout = get_layout_of(ty, ctx);
 
-        max_alignment = cmp::max(max_alignment, field_layout.alignment);
+        max_alignment = std::cmp::max(max_alignment, field_layout.alignment);
 
         let padding = (field_layout.alignment
             - (current_offset % field_layout.alignment))
@@ -130,11 +75,31 @@ fn calculate_fields_layout(field_types: &[&Type]) -> Layout {
     Layout::new(total_size, max_alignment)
 }
 
-pub fn pack_struct(program_builder: &ProgramBuilder, fields: &mut [CheckedParam]) {
-    fields.sort_by(|field_a, field_b| {
-        let align_a = get_alignment_of(&field_a.ty);
-        let align_b = get_alignment_of(&field_b.ty);
+pub fn pack_struct(
+    program_builder: &ProgramBuilder,
+    struct_kind: StructKind,
+) -> StructKind {
+    match struct_kind {
+        StructKind::UserDefined(mut fields) => {
+            sort_fields(program_builder, &mut fields);
+            StructKind::UserDefined(fields)
+        }
+        StructKind::ClosureEnv(mut fields) => {
+            sort_fields(program_builder, &mut fields);
+            StructKind::ClosureEnv(fields)
+        }
+        _ => {
+            panic!("INTERNAL COMPILER ERROR: Cannot pack struct that is neither user defined nor closure environment!");
+        }
+    }
+}
 
+fn sort_fields(program_builder: &ProgramBuilder, fields: &mut [CheckedParam]) {
+    fields.sort_by(|field_a, field_b| {
+        let align_a = get_alignment_of(&field_a.ty, program_builder);
+        let align_b = get_alignment_of(&field_b.ty, program_builder);
+
+        // Sort by Alignment (Descending) -> Name (Ascending)
         align_b.cmp(&align_a).then_with(|| {
             let name_a = program_builder
                 .string_interner

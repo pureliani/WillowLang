@@ -33,7 +33,6 @@ pub enum Value {
     VoidLiteral,
     BoolLiteral(bool),
     NumberLiteral(NumberKind),
-    StringLiteral(String),
     /// Represents a reference to a function.
     Function {
         function_id: FunctionId,
@@ -62,6 +61,10 @@ pub enum Instruction {
     Load {
         destination: ValueId,
         ptr: ValueId,
+    },
+    LoadConstant {
+        destination: ValueId,
+        constant_id: ConstantId,
     },
     FileOpen {
         destination_fd: ValueId,
@@ -195,7 +198,6 @@ pub enum CheckedDeclaration {
 pub struct CheckedModule {
     pub path: PathBuf,
     pub functions: HashMap<FunctionId, ControlFlowGraph>,
-    pub constant_data: HashMap<ConstantId, Vec<u8>>,
     pub declarations: HashMap<IdentifierNode, CheckedDeclaration>,
     pub exports: HashSet<IdentifierNode>,
 }
@@ -205,7 +207,6 @@ impl CheckedModule {
         Self {
             path,
             declarations: HashMap::new(),
-            constant_data: HashMap::new(),
             exports: HashSet::new(),
             functions: HashMap::new(),
         }

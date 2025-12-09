@@ -50,9 +50,12 @@ impl FunctionBuilder {
             field_values.insert(field_name, value);
         }
 
-        pack_struct(&ctx.program_builder, &mut resolved_fields);
+        let packed_fields = pack_struct(
+            &ctx.program_builder,
+            StructKind::UserDefined(resolved_fields),
+        );
 
-        let struct_type = Type::Struct(StructKind::UserDefined(resolved_fields));
+        let struct_type = Type::Struct(packed_fields);
 
         let struct_ptr = self
             .emit_heap_alloc(

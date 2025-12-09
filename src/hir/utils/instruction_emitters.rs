@@ -4,8 +4,8 @@ use crate::{
     ast::{IdentifierNode, Span},
     hir::{
         cfg::{
-            BasicBlock, BasicBlockId, BinaryOperationKind, Instruction, Terminator,
-            UnaryOperationKind, Value, ValueId,
+            BasicBlock, BasicBlockId, BinaryOperationKind, ConstantId, Instruction,
+            Terminator, UnaryOperationKind, Value, ValueId,
         },
         errors::{SemanticError, SemanticErrorKind},
         types::checked_type::{StructKind, Type},
@@ -317,6 +317,23 @@ impl FunctionBuilder {
 
         let destination = self.alloc_value(ctx, destination_type);
         self.push_instruction(Instruction::Load { destination, ptr });
+
+        destination
+    }
+
+    pub fn emit_load_constant(
+        &mut self,
+        ctx: &mut HIRContext,
+        constant_id: ConstantId,
+    ) -> ValueId {
+        let ptr_type = Type::Pointer(Box::new(Type::U8));
+
+        let destination = self.alloc_value(ctx, ptr_type);
+
+        self.push_instruction(Instruction::LoadConstant {
+            destination,
+            constant_id,
+        });
 
         destination
     }

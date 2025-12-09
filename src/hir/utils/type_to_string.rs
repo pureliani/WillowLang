@@ -4,7 +4,7 @@ use crate::{
     compile::interner::StringId,
     hir::{
         types::{
-            checked_declaration::{CheckedParam, FnType, TagType},
+            checked_declaration::{FnType, TagType},
             checked_type::{StructKind, Type},
         },
         ProgramBuilder,
@@ -177,6 +177,6 @@ fn struct_to_string(
 
             format!("{}[]", elem_type_str)
         }
-        StructKind::String | StructKind::ConstString => String::from("string"),
+        StructKind::String => String::from("string"),
     }
 }

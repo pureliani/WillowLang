@@ -132,7 +132,7 @@ impl FunctionBuilder {
                 Type::Struct(StructKind::ClosureObject(fn_type))
             }
             TypeAnnotationKind::Struct(items) => {
-                let mut checked_field_types: Vec<CheckedParam> = items
+                let checked_field_types: Vec<CheckedParam> = items
                     .iter()
                     .map(|(identifier, ty)| {
                         let checked_type = self.check_type_annotation(ctx, ty);
@@ -142,9 +142,13 @@ impl FunctionBuilder {
                         }
                     })
                     .collect();
-                pack_struct(&ctx.program_builder, &mut checked_field_types);
 
-                Type::Struct(StructKind::UserDefined(checked_field_types))
+                let packed = pack_struct(
+                    &ctx.program_builder,
+                    StructKind::UserDefined(checked_field_types),
+                );
+
+                Type::Struct(packed)
             }
             TypeAnnotationKind::List(item_type) => {
                 let checked_item_type = self.check_type_annotation(ctx, item_type);
