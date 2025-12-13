@@ -77,42 +77,30 @@ impl FunctionBuilder {
             },
         };
 
-        // 3. Update SSA State & Declaration Data
         if let Some(val) = value_id {
-            // Ensure we have a ValueId (handle literals)
             let val_id = match val {
-                Value::Use(id) => todo!(),
+                Value::Use(id) => self.use_value_in_block(ctx, self.current_block_id, id),
                 _ => {
-                    // If build_expr returned a literal (e.g. NumberLiteral),
-                    // we allocate a ValueId for it now to track it in SSA.
                     let ty = ctx.program_builder.get_value_type(&val);
-                    // Note: alloc_value registers the definition in the current block
-                    self.alloc_value(ctx, ty)
+                    self.emit_type_cast(ctx, val, ty)
                 }
             };
 
-            // A. Register the SSA value for this declaration in the current block
             self.write_variable(decl_id, val_id);
 
-            // B. Construct the Checked Declaration
             let checked_var_decl = CheckedVarDecl {
                 id: decl_id,
-                storage: VarStorage::Local, // Pure SSA
+                storage: VarStorage::Local,
                 identifier: var_decl.identifier,
                 documentation: var_decl.documentation,
                 constraint,
             };
 
-            // C. Update the Data in ProgramBuilder
-            // We overwrite the 'UninitializedVar' entry with the full 'Var' entry.
-            // The Scope (Name -> ID) remains unchanged, which is exactly what we want.
             ctx.program_builder
                 .declarations
                 .insert(decl_id, CheckedDeclaration::Var(checked_var_decl));
         } else {
-            // It remains UninitializedVar in ProgramBuilder.
-            // We might want to update the constraint info if UninitializedVar supports it,
-            // but for now, doing nothing keeps it as Uninitialized.
+            // It remains UninitializedVar in ProgramBuilder
         }
     }
 }

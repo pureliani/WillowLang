@@ -3,14 +3,13 @@ use std::sync::{Arc, RwLock};
 use crate::{
     ast::{decl::FnDecl, expr::BlockContents, IdentifierNode, Span},
     hir::{
-        cfg::{CheckedDeclaration, Terminator, Value},
+        cfg::{Terminator, Value},
         errors::{SemanticError, SemanticErrorKind},
         types::{
             checked_declaration::{
-                CheckedClosureType, CheckedFnDecl, CheckedParam, CheckedVarDecl, FnType,
-                VarStorage,
+                CheckedFnDecl, CheckedParam, CheckedVarDecl, FnType, VarStorage,
             },
-            checked_type::{StructLayout, StructLayoutKind, Type},
+            checked_type::Type,
         },
         utils::{
             layout::pack_struct, scope::ScopeKind, var_capture_analyzer::analyze_captures,
@@ -89,10 +88,8 @@ impl FunctionBuilder {
         let captures_map = analyze_captures(ctx, &checked_params, &body);
 
         if captures_map.is_empty() {
-            let new_function_id = ctx.program_builder.new_function_id();
             let checked_fn_decl = Arc::new(RwLock::new(CheckedFnDecl {
                 id: ctx.program_builder.new_declaration_id(),
-                function_id: new_function_id,
                 identifier,
                 params: checked_params.clone(),
                 return_type: checked_return_type.clone(),
