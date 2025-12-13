@@ -2,7 +2,7 @@ use crate::{
     compile::interner::StringId,
     hir::{
         types::checked_declaration::{CheckedParam, FnType, TagType},
-        utils::layout::{get_layout_of, get_union_payload_layout},
+        utils::layout::get_layout_of,
         ProgramBuilder,
     },
 };

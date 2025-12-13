@@ -4,12 +4,13 @@ use std::{
 };
 
 use crate::{
-    ast::{IdentifierNode, Span},
+    ast::IdentifierNode,
     compile::interner::{SharedStringInterner, StringId},
     hir::{
-        cfg::{BasicBlockId, CheckedDeclaration},
+        cfg::{BasicBlockId, DeclarationId},
         errors::{SemanticError, SemanticErrorKind},
-        ModuleBuilder,
+        types::checked_declaration::CheckedDeclaration,
+        ModuleBuilder, ProgramBuilder,
     },
 };
 
@@ -28,7 +29,7 @@ pub enum ScopeKind {
 #[derive(Debug)]
 pub struct Scope {
     pub kind: ScopeKind,
-    symbols: HashMap<StringId, CheckedDeclaration>,
+    symbols: HashMap<StringId, DeclarationId>,
 }
 
 impl Scope {
@@ -65,32 +66,42 @@ impl ModuleBuilder {
 
     pub fn scope_insert(
         &mut self,
+        program_builder: &mut ProgramBuilder,
         id: IdentifierNode,
         declaration: CheckedDeclaration,
-        span: Span,
     ) {
+        let decl_id = match &declaration {
+            CheckedDeclaration::Var(decl) => decl.id,
+            CheckedDeclaration::TypeAlias(decl) => decl.id,
+            CheckedDeclaration::Function(decl) => decl.id,
+            CheckedDeclaration::UninitializedVar { id, .. } => *id,
+        };
+
+        program_builder.declarations.insert(decl_id, declaration);
+
         let last_scope = self.last_scope_mut();
         if let Entry::Vacant(e) = last_scope.symbols.entry(id.name) {
-            e.insert(declaration);
+            e.insert(decl_id);
         } else {
             self.errors.push(SemanticError {
                 kind: SemanticErrorKind::DuplicateIdentifier(id),
-                span,
+                span: id.span,
             });
         }
     }
 
     pub fn scope_replace(
         &mut self,
+        program_builder: &mut ProgramBuilder,
         id: IdentifierNode,
-        declaration: CheckedDeclaration,
+        new_declaration: CheckedDeclaration,
         string_interner: Arc<SharedStringInterner>,
     ) {
         let last_scope = self.last_scope_mut();
 
-        let existing_decl = last_scope
+        let existing_decl_id = last_scope
             .symbols
-            .get_mut(&id.name)
+            .get(&id.name)
             .unwrap_or_else(|| {
                 let name = string_interner.resolve(id.name);
                 panic!(
@@ -99,7 +110,11 @@ impl ModuleBuilder {
                 )
             });
 
-        if !matches!(existing_decl, CheckedDeclaration::UninitializedVar { .. }) {
+        let existing_decl = program_builder.get_declaration_mut(*existing_decl_id);
+        if !matches!(
+            existing_decl,
+            &mut CheckedDeclaration::UninitializedVar { .. }
+        ) {
             let name = string_interner.resolve(id.name);
             panic!(
                 "INTERNAL COMPILER ERROR: Attempted to replace a variable '{}' that was not in an uninitialized state",
@@ -107,22 +122,21 @@ impl ModuleBuilder {
             );
         }
 
-        *existing_decl = declaration;
-    }
-
-    pub fn scope_lookup(&self, key: StringId) -> Option<&CheckedDeclaration> {
-        for scope in self.scopes.iter().rev() {
-            if let Some(declaration) = scope.symbols.get(&key) {
-                return Some(declaration);
-            }
+        if !matches!(&new_declaration, &CheckedDeclaration::Var { .. }) {
+            let name = string_interner.resolve(id.name);
+            panic!(
+                "INTERNAL COMPILER ERROR: Attempted to replace an uninitialized variable '{}' with something other than initialized variable",
+                name
+            );
         }
-        None
+
+        *existing_decl = new_declaration;
     }
 
-    pub fn scope_lookup_mut(&mut self, key: StringId) -> Option<&mut CheckedDeclaration> {
-        for scope in self.scopes.iter_mut().rev() {
-            if let Some(declaration) = scope.symbols.get_mut(&key) {
-                return Some(declaration);
+    pub fn scope_lookup(&self, key: StringId) -> Option<DeclarationId> {
+        for scope in self.scopes.iter().rev() {
+            if let Some(id) = scope.symbols.get(&key) {
+                return Some(*id);
             }
         }
         None

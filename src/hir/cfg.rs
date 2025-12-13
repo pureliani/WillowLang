@@ -1,20 +1,9 @@
 use std::{
     collections::{HashMap, HashSet},
     path::PathBuf,
-    sync::{Arc, RwLock},
 };
 
-use crate::{
-    ast::IdentifierNode,
-    hir::types::{
-        checked_declaration::{CheckedTypeAliasDecl, CheckedVarDecl},
-        checked_type::Type,
-    },
-    tokenize::NumberKind,
-};
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub struct FunctionId(pub usize);
+use crate::{ast::IdentifierNode, hir::types::checked_type::Type, tokenize::NumberKind};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct BasicBlockId(pub usize);
@@ -33,11 +22,6 @@ pub enum Value {
     VoidLiteral,
     BoolLiteral(bool),
     NumberLiteral(NumberKind),
-    /// Represents a reference to a function.
-    Function {
-        function_id: FunctionId,
-        ty: Type,
-    },
     Use(ValueId),
 }
 
@@ -186,19 +170,8 @@ pub struct ControlFlowGraph {
 }
 
 #[derive(Clone, Debug)]
-pub enum CheckedDeclaration {
-    TypeAlias(Arc<RwLock<CheckedTypeAliasDecl>>),
-    Function(FunctionId),
-    Var(CheckedVarDecl),
-    // This is for detecting the Temporal Dead Zone
-    UninitializedVar { identifier: IdentifierNode },
-}
-
-#[derive(Clone, Debug)]
 pub struct CheckedModule {
     pub path: PathBuf,
-    pub functions: HashMap<FunctionId, ControlFlowGraph>,
-    pub declarations: HashMap<IdentifierNode, CheckedDeclaration>,
     pub exports: HashSet<IdentifierNode>,
 }
 
@@ -206,9 +179,7 @@ impl CheckedModule {
     pub fn new(path: PathBuf) -> Self {
         Self {
             path,
-            declarations: HashMap::new(),
             exports: HashSet::new(),
-            functions: HashMap::new(),
         }
     }
 }

@@ -4,7 +4,7 @@ use crate::{
     ast::{IdentifierNode, Span},
     compile::interner::TagId,
     hir::{
-        cfg::{ControlFlowGraph, DeclarationId, FunctionId, ValueId},
+        cfg::{ControlFlowGraph, DeclarationId, ValueId},
         types::checked_type::Type,
     },
     parse::DocAnnotation,
@@ -68,7 +68,6 @@ impl Hash for CheckedTypeAliasDecl {
 #[derive(Clone, Debug)]
 pub struct CheckedFnDecl {
     pub id: DeclarationId,
-    pub function_id: FunctionId,
     pub identifier: IdentifierNode,
     pub params: Vec<CheckedParam>,
     pub return_type: Type,
@@ -77,13 +76,13 @@ pub struct CheckedFnDecl {
 
 #[derive(Clone, Debug)]
 pub enum VarStorage {
-    /// The variable is on the stack, ValueId is a direct pointer to its stack slot
-    Stack(ValueId),
-    /// The variable is a field inside a heap allocated struct struct
-    HeapField {
-        base_ptr: ValueId,
-        field_index: usize,
-    },
+    /// The variable is a direct SSA value.
+    /// The specific ValueId is tracked dynamically in FunctionBuilder.block_locals.
+    Local,
+
+    /// The variable is stored in memory (e.g., captured in a closure environment).
+    /// The ValueId is a pointer to the storage location.
+    Heap(ValueId),
 }
 
 #[derive(Clone, Debug)]
@@ -93,4 +92,16 @@ pub struct CheckedVarDecl {
     pub identifier: IdentifierNode,
     pub documentation: Option<DocAnnotation>,
     pub constraint: Type,
+}
+
+#[derive(Clone, Debug)]
+pub enum CheckedDeclaration {
+    TypeAlias(CheckedTypeAliasDecl),
+    Function(CheckedFnDecl),
+    Var(CheckedVarDecl),
+    // This is for detecting the Temporal Dead Zone
+    UninitializedVar {
+        id: DeclarationId,
+        identifier: IdentifierNode,
+    },
 }

@@ -1,9 +1,9 @@
 use crate::{
     ast::{decl::VarDecl, Span},
     hir::{
-        cfg::CheckedDeclaration,
+        cfg::Value,
         errors::{SemanticError, SemanticErrorKind},
-        types::checked_declaration::{CheckedVarDecl, VarStorage},
+        types::checked_declaration::{CheckedDeclaration, CheckedVarDecl, VarStorage},
         FunctionBuilder, HIRContext,
     },
 };
@@ -23,7 +23,12 @@ impl FunctionBuilder {
             return;
         }
 
-        let (value, constraint) = match var_decl.constraint {
+        let decl_id = ctx
+            .module_builder
+            .scope_lookup(var_decl.identifier.name)
+            .expect("INTERNAL COMPILER ERROR: Variable declaration was not hoisted");
+
+        let (value_id, constraint) = match var_decl.constraint {
             Some(constraint_annotation) => match var_decl.value {
                 Some(value_expr) => {
                     let initial_value = self.build_expr(ctx, value_expr);
@@ -37,7 +42,7 @@ impl FunctionBuilder {
                         .check_is_assignable(&initial_value_type, &expected_constraint)
                     {
                         ctx.module_builder.errors.push(SemanticError {
-                            span: initial_value_type.span,
+                            span: Default::default(), // TODO: Add appropriate span
                             kind: SemanticErrorKind::TypeMismatch {
                                 expected: expected_constraint,
                                 received: initial_value_type,
@@ -72,23 +77,42 @@ impl FunctionBuilder {
             },
         };
 
-        let variable_stack_ptr = self.emit_stack_alloc(ctx, constraint.clone(), 1);
-        if let Some(initial_value) = value {
-            self.emit_store(ctx, variable_stack_ptr, initial_value);
-        };
+        // 3. Update SSA State & Declaration Data
+        if let Some(val) = value_id {
+            // Ensure we have a ValueId (handle literals)
+            let val_id = match val {
+                Value::Use(id) => todo!(),
+                _ => {
+                    // If build_expr returned a literal (e.g. NumberLiteral),
+                    // we allocate a ValueId for it now to track it in SSA.
+                    let ty = ctx.program_builder.get_value_type(&val);
+                    // Note: alloc_value registers the definition in the current block
+                    self.alloc_value(ctx, ty)
+                }
+            };
 
-        let checked_var_decl = CheckedVarDecl {
-            id: ctx.program_builder.new_declaration_id(),
-            storage: VarStorage::Stack(variable_stack_ptr),
-            identifier: var_decl.identifier,
-            documentation: var_decl.documentation,
-            constraint,
-        };
+            // A. Register the SSA value for this declaration in the current block
+            self.write_variable(decl_id, val_id);
 
-        ctx.module_builder.scope_replace(
-            var_decl.identifier,
-            CheckedDeclaration::Var(checked_var_decl),
-            ctx.program_builder.string_interner.clone(),
-        );
+            // B. Construct the Checked Declaration
+            let checked_var_decl = CheckedVarDecl {
+                id: decl_id,
+                storage: VarStorage::Local, // Pure SSA
+                identifier: var_decl.identifier,
+                documentation: var_decl.documentation,
+                constraint,
+            };
+
+            // C. Update the Data in ProgramBuilder
+            // We overwrite the 'UninitializedVar' entry with the full 'Var' entry.
+            // The Scope (Name -> ID) remains unchanged, which is exactly what we want.
+            ctx.program_builder
+                .declarations
+                .insert(decl_id, CheckedDeclaration::Var(checked_var_decl));
+        } else {
+            // It remains UninitializedVar in ProgramBuilder.
+            // We might want to update the constraint info if UninitializedVar supports it,
+            // but for now, doing nothing keeps it as Uninitialized.
+        }
     }
 }

@@ -7,8 +7,10 @@ use crate::{
         IdentifierNode,
     },
     hir::{
-        cfg::CheckedDeclaration,
-        types::{checked_declaration::CheckedParam, checked_type::Type},
+        types::{
+            checked_declaration::{CheckedDeclaration, CheckedParam},
+            checked_type::Type,
+        },
         HIRContext,
     },
 };

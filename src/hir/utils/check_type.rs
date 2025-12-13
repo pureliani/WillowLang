@@ -8,10 +8,9 @@ use crate::{
     },
     compile::interner::TagId,
     hir::{
-        cfg::CheckedDeclaration,
         errors::{SemanticError, SemanticErrorKind},
         types::{
-            checked_declaration::{CheckedParam, FnType, TagType},
+            checked_declaration::{CheckedDeclaration, CheckedParam, FnType, TagType},
             checked_type::{StructKind, Type},
         },
         utils::layout::pack_struct,
@@ -42,10 +41,8 @@ impl FunctionBuilder {
     ) -> Result<Type, SemanticError> {
         ctx.module_builder
             .scope_lookup(id.name)
-            .map(|entry| match entry {
-                CheckedDeclaration::TypeAlias(decl) => {
-                    Ok(decl.read().unwrap().value.as_ref().clone())
-                }
+            .map(|entry| match ctx.program_builder.get_declaration(entry) {
+                CheckedDeclaration::TypeAlias(decl) => Ok((*decl.value).clone()),
                 CheckedDeclaration::Function(_) => Err(SemanticError {
                     kind: SemanticErrorKind::CannotUseFunctionDeclarationAsType,
                     span,

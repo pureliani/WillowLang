@@ -2,11 +2,7 @@ use crate::{
     ast::{expr::Expr, IdentifierNode, Span},
     hir::{
         cfg::Value,
-        errors::{SemanticError, SemanticErrorKind},
-        types::{
-            checked_declaration::TagType,
-            checked_type::{StructKind, Type},
-        },
+        types::checked_type::{StructKind, Type},
         FunctionBuilder, HIRContext,
     },
     tokenize::NumberKind,
@@ -23,52 +19,22 @@ impl FunctionBuilder {
         let identifier_ptr = ctx.program_builder.common_identifiers.ptr;
         let identifier_len = ctx.program_builder.common_identifiers.len;
 
-        let item_values: Vec<Value> = items
-            .into_iter()
-            .map(|item| self.build_expr(ctx, item))
-            .collect();
+        let mut item_values = Vec::with_capacity(items.len());
+        let mut type_entries = Vec::with_capacity(items.len());
 
-        let element_type = if item_values.is_empty() {
-            Type::Void
-        } else {
-            let all_tags = item_values.iter().all(|v| {
-                let ty = ctx.program_builder.get_value_type(v);
-                matches!(ty, Type::Struct(StructKind::Tag(_)))
-            });
+        for item in items {
+            let span = item.span;
+            let val = self.build_expr(ctx, item);
+            let ty = ctx.program_builder.get_value_type(&val);
 
-            if all_tags {
-                let mut union_tags: Vec<TagType> = Vec::new();
-                for val in &item_values {
-                    let ty = ctx.program_builder.get_value_type(val);
-                    if let Type::Struct(StructKind::Tag(tag)) = ty {
-                        if !union_tags.contains(&tag) {
-                            union_tags.push(tag);
-                        }
-                    }
-                }
-                union_tags.sort_by(|a, b| a.id.0.cmp(&b.id.0));
+            item_values.push(val);
+            type_entries.push((ty, span));
+        }
 
-                Type::Struct(StructKind::Union {
-                    variants: union_tags,
-                })
-            } else {
-                let first_type = ctx.program_builder.get_value_type(&item_values[0]);
-                for item in item_values.iter().skip(1) {
-                    let item_type = ctx.program_builder.get_value_type(item);
-                    if !self.check_is_assignable(&item_type, &first_type) {
-                        return Value::Use(self.report_error_and_get_poison(
-                            ctx,
-                            SemanticError {
-                                span: expr_span,
-                                kind: SemanticErrorKind::TypeMismatch {
-                                    expected: first_type,
-                                    received: item_type,
-                                },
-                            },
-                        ));
-                    }
-                }
-                first_type
+        let element_type = match self.try_unify_types(&type_entries) {
+            Ok(ty) => ty,
+            Err(e) => {
+                return Value::Use(self.report_error_and_get_poison(ctx, e));
             }
         };
 
@@ -97,8 +63,9 @@ impl FunctionBuilder {
                 span: expr_span,
             };
 
-            let ptr = self.emit_get_field_ptr(ctx, header_ptr, field_id)
-                .expect("INTERNAL COMPILER ERROR: Failed to set field on List literal, Struct definition mismatch?");
+            let ptr = self
+                .emit_get_field_ptr(ctx, header_ptr, field_id)
+                .expect("INTERNAL COMPILER ERROR: Failed to set field on List literal");
 
             self.emit_store(ctx, ptr, val);
         };

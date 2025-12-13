@@ -3,7 +3,7 @@ use std::{
     path::PathBuf,
     sync::{
         atomic::{AtomicUsize, Ordering},
-        Arc, RwLock,
+        Arc,
     },
 };
 
@@ -13,12 +13,12 @@ use crate::{
     hir::{
         cfg::{
             BasicBlock, BasicBlockId, CheckedModule, ConstantId, ControlFlowGraph,
-            DeclarationId, FunctionId, Value, ValueId,
+            DeclarationId, Value, ValueId,
         },
         errors::SemanticError,
         types::{
-            checked_declaration::{CheckedFnDecl, CheckedParam},
-            checked_type::{StructKind, Type},
+            checked_declaration::{CheckedDeclaration, CheckedParam},
+            checked_type::Type,
         },
         utils::scope::{Scope, ScopeKind},
     },
@@ -53,17 +53,15 @@ pub struct ProgramBuilder {
     pub modules: HashMap<PathBuf, ModuleBuilder>,
     pub value_types: HashMap<ValueId, Type>,
 
-    pub functions: HashMap<FunctionId, Arc<RwLock<CheckedFnDecl>>>,
+    pub declarations: HashMap<DeclarationId, CheckedDeclaration>,
+    pub constant_data: HashMap<ConstantId, Vec<u8>>,
 
     pub string_interner: Arc<SharedStringInterner>,
     pub tag_interner: Arc<SharedTagInterner>,
     pub common_identifiers: CommonIdentifiers,
 
-    pub constant_data: HashMap<ConstantId, Vec<u8>>,
-
     pub errors: Vec<SemanticError>,
     value_id_counter: AtomicUsize,
-    function_id_counter: AtomicUsize,
     constant_id_counter: AtomicUsize,
     declaration_id_counter: AtomicUsize,
 }
@@ -87,8 +85,11 @@ pub struct FunctionBuilder {
     pub block_value_maps: HashMap<BasicBlockId, HashMap<ValueId, ValueId>>,
     pub value_definitions: HashMap<ValueId, BasicBlockId>,
     pub sealed_blocks: HashSet<BasicBlockId>,
-    // Map: BlockId -> List of (LocalParamId, OriginalValueId)
+    // Map: BlockId -> List of (PlaceholderParamId, OriginalValueId)
     pub incomplete_params: HashMap<BasicBlockId, Vec<(ValueId, ValueId)>>,
+    pub var_to_current_valueid: HashMap<BasicBlockId, HashMap<DeclarationId, ValueId>>,
+    // Map: BlockId -> List of (DeclarationId, PlaceholderParamId)
+    pub incomplete_variables: HashMap<BasicBlockId, Vec<(DeclarationId, ValueId)>>,
 
     block_id_counter: usize,
     value_id_counter: usize,
@@ -119,8 +120,7 @@ impl ProgramBuilder {
             string_interner,
             tag_interner,
             common_identifiers,
-            functions: HashMap::new(),
-            function_id_counter: AtomicUsize::new(0),
+            declarations: HashMap::new(),
             constant_id_counter: AtomicUsize::new(0),
             value_id_counter: AtomicUsize::new(0),
             declaration_id_counter: AtomicUsize::new(0),
@@ -146,8 +146,16 @@ impl ProgramBuilder {
         DeclarationId(self.declaration_id_counter.fetch_add(1, Ordering::SeqCst))
     }
 
-    pub fn new_function_id(&self) -> FunctionId {
-        FunctionId(self.function_id_counter.fetch_add(1, Ordering::SeqCst))
+    pub fn get_declaration(&self, id: DeclarationId) -> &CheckedDeclaration {
+        self.declarations
+            .get(&id)
+            .expect("INTERNAL COMPILER ERROR: DeclarationId not found")
+    }
+
+    pub fn get_declaration_mut(&mut self, id: DeclarationId) -> &mut CheckedDeclaration {
+        self.declarations
+            .get_mut(&id)
+            .expect("INTERNAL COMPILER ERROR: DeclarationId not found")
     }
 
     pub fn new_constant_id(&self) -> ConstantId {
@@ -189,7 +197,6 @@ impl ProgramBuilder {
 
                 ty
             }
-            Value::Function { ty, .. } => ty.clone(),
             Value::Use(value_id) => self.get_value_id_type(value_id),
         }
     }
@@ -247,6 +254,8 @@ impl FunctionBuilder {
         let mut builder = Self {
             cfg,
             return_type,
+            var_to_current_valueid: HashMap::new(),
+            incomplete_variables: HashMap::new(),
             block_value_maps: HashMap::new(),
             incomplete_params: HashMap::new(),
             predecessors: HashMap::new(),

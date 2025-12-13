@@ -1,9 +1,8 @@
 use crate::{
     ast::{expr::BlockContents, stmt::StmtKind},
     hir::{
-        cfg::{CheckedDeclaration, Value},
-        utils::scope::ScopeKind,
-        FunctionBuilder, HIRContext,
+        cfg::Value, types::checked_declaration::CheckedDeclaration,
+        utils::scope::ScopeKind, FunctionBuilder, HIRContext,
     },
 };
 
@@ -18,11 +17,12 @@ impl FunctionBuilder {
         for stmt in &codeblock.statements {
             if let StmtKind::VarDecl(var_decl) = &stmt.kind {
                 ctx.module_builder.scope_insert(
+                    ctx.program_builder,
                     var_decl.identifier,
                     CheckedDeclaration::UninitializedVar {
+                        id: ctx.program_builder.new_declaration_id(),
                         identifier: var_decl.identifier,
                     },
-                    var_decl.identifier.span,
                 );
             }
         }

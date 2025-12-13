@@ -1,11 +1,8 @@
-use std::sync::{Arc, RwLock};
-
 use crate::{
     ast::{decl::TypeAliasDecl, Span},
     hir::{
-        cfg::CheckedDeclaration,
         errors::{SemanticError, SemanticErrorKind},
-        types::checked_declaration::CheckedTypeAliasDecl,
+        types::checked_declaration::{CheckedDeclaration, CheckedTypeAliasDecl},
         FunctionBuilder, HIRContext,
     },
 };
@@ -28,18 +25,18 @@ impl FunctionBuilder {
         let alias_value =
             Box::new(self.check_type_annotation(ctx, &type_alias_decl.value));
 
-        let checked_type_alias_decl = Arc::new(RwLock::new(CheckedTypeAliasDecl {
+        let checked_type_alias_decl = CheckedTypeAliasDecl {
             id: ctx.program_builder.new_declaration_id(),
             documentation: type_alias_decl.documentation,
             identifier: type_alias_decl.identifier,
             span,
             value: alias_value,
-        }));
+        };
 
         ctx.module_builder.scope_insert(
+            ctx.program_builder,
             type_alias_decl.identifier,
             CheckedDeclaration::TypeAlias(checked_type_alias_decl),
-            span,
         );
     }
 }

@@ -64,6 +64,7 @@ impl FunctionBuilder {
                     {
                         self.set_basic_block_terminator(Terminator::Jump {
                             target: break_target,
+                            args: vec![],
                         });
                     } else {
                         ctx.module_builder.errors.push(SemanticError {
@@ -78,6 +79,7 @@ impl FunctionBuilder {
                     {
                         self.set_basic_block_terminator(Terminator::Jump {
                             target: continue_target,
+                            args: vec![],
                         });
                     } else {
                         ctx.module_builder.errors.push(SemanticError {

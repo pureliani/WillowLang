@@ -1,9 +1,9 @@
 use crate::{
     ast::expr::{Expr, ExprKind},
     hir::{
-        cfg::{CheckedDeclaration, ValueId},
+        cfg::ValueId,
         errors::{SemanticError, SemanticErrorKind},
-        types::checked_declaration::VarStorage,
+        types::checked_declaration::{CheckedDeclaration, VarStorage},
         FunctionBuilder, HIRContext,
     },
 };
@@ -16,7 +16,10 @@ impl FunctionBuilder {
     ) -> Result<ValueId, SemanticError> {
         match expr.kind {
             ExprKind::Identifier(identifier) => {
-                let decl = match ctx.module_builder.scope_lookup(identifier.name) {
+                let id = ctx.module_builder.scope_lookup(identifier.name);
+                let declaration = id.map(|id| ctx.program_builder.get_declaration(id));
+
+                let decl = match declaration {
                     Some(CheckedDeclaration::Var(var_decl)) => Ok(var_decl.clone()),
                     Some(_) => Err(SemanticError {
                         kind: SemanticErrorKind::InvalidLValue,
@@ -29,17 +32,8 @@ impl FunctionBuilder {
                 }?;
 
                 match decl.storage {
-                    VarStorage::Stack(stack_ptr) => Ok(stack_ptr),
-                    VarStorage::HeapField {
-                        base_ptr,
-                        field_index,
-                    } => {
-                        // TODO:
-                        // 1. Find the pointer to the closure's environment struct.
-                        // 2. Find the field index for this variable.
-                        // 3. Emit a GetFieldPtr instruction.
-                        todo!();
-                    }
+                    VarStorage::Local => todo!(),
+                    VarStorage::Heap(ptr) => todo!(),
                 }
             }
             ExprKind::Access { left, field } => {

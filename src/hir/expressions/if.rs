@@ -4,10 +4,7 @@ use crate::{
     hir::{
         cfg::{BasicBlockId, Terminator, Value},
         errors::{SemanticError, SemanticErrorKind},
-        types::{
-            checked_declaration::TagType,
-            checked_type::{StructKind, Type},
-        },
+        types::checked_type::Type,
         FunctionBuilder, HIRContext,
     },
 };
@@ -106,45 +103,16 @@ impl FunctionBuilder {
         }
 
         let result_param_id = if context == IfContext::Expression {
-            let result_type = if branch_results.is_empty() {
-                Type::Void
-            } else {
-                let all_tags = branch_results.iter().all(|(_, v, _)| {
-                    let ty = ctx.program_builder.get_value_type(v);
-                    matches!(ty, Type::Struct(StructKind::Tag(_)))
-                });
+            let type_entries: Vec<(Type, Span)> = branch_results
+                .iter()
+                .map(|(_, val, span)| (ctx.program_builder.get_value_type(val), *span))
+                .collect();
 
-                if all_tags {
-                    let mut union_tags: Vec<TagType> = Vec::new();
-                    for (_, val, _) in &branch_results {
-                        let ty = ctx.program_builder.get_value_type(val);
-                        if let Type::Struct(StructKind::Tag(tag)) = ty {
-                            if !union_tags.contains(&tag) {
-                                union_tags.push(tag);
-                            }
-                        }
-                    }
-                    union_tags.sort_by(|a, b| a.id.0.cmp(&b.id.0));
-                    Type::Struct(StructKind::Union {
-                        variants: union_tags,
-                    })
-                } else {
-                    let (_, first_val, _) = &branch_results[0];
-                    let first_type = ctx.program_builder.get_value_type(first_val);
-
-                    for (_, val, span) in branch_results.iter().skip(1) {
-                        let ty = ctx.program_builder.get_value_type(val);
-                        if !self.check_is_assignable(&ty, &first_type) {
-                            ctx.program_builder.errors.push(SemanticError {
-                                span: *span,
-                                kind: SemanticErrorKind::TypeMismatch {
-                                    expected: first_type.clone(),
-                                    received: ty,
-                                },
-                            });
-                        }
-                    }
-                    first_type
+            let result_type = match self.try_unify_types(&type_entries) {
+                Ok(ty) => ty,
+                Err(e) => {
+                    ctx.program_builder.errors.push(e);
+                    Type::Unknown
                 }
             };
 
