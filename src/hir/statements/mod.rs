@@ -1,5 +1,4 @@
 pub mod assignment;
-pub mod enum_decl;
 pub mod from;
 pub mod r#return;
 pub mod type_alias_decl;
