@@ -3,7 +3,7 @@ use crate::{
     hir::{
         cfg::Value,
         errors::{SemanticError, SemanticErrorKind},
-        types::checked_declaration::{CheckedDeclaration, CheckedVarDecl, VarStorage},
+        types::checked_declaration::{CheckedDeclaration, CheckedVarDecl},
         FunctionBuilder, HIRContext,
     },
 };
@@ -78,6 +78,8 @@ impl FunctionBuilder {
         };
 
         if let Some(val) = value_id {
+            let ptr = self.emit_stack_alloc(ctx, constraint.clone(), 1);
+
             let val_id = match val {
                 Value::Use(id) => self.use_value_in_block(ctx, self.current_block_id, id),
                 _ => {
@@ -86,21 +88,19 @@ impl FunctionBuilder {
                 }
             };
 
-            self.write_variable(decl_id, val_id);
-
             let checked_var_decl = CheckedVarDecl {
                 id: decl_id,
-                storage: VarStorage::Local,
+                ptr,
                 identifier: var_decl.identifier,
                 documentation: var_decl.documentation,
                 constraint,
             };
 
+            self.emit_store(ctx, ptr, Value::Use(val_id));
+
             ctx.program_builder
                 .declarations
                 .insert(decl_id, CheckedDeclaration::Var(checked_var_decl));
-        } else {
-            // It remains UninitializedVar in ProgramBuilder
         }
     }
 }

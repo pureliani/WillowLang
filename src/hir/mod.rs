@@ -87,9 +87,6 @@ pub struct FunctionBuilder {
     pub sealed_blocks: HashSet<BasicBlockId>,
     // Map: BlockId -> List of (PlaceholderParamId, OriginalValueId)
     pub incomplete_params: HashMap<BasicBlockId, Vec<(ValueId, ValueId)>>,
-    pub var_to_current_valueid: HashMap<BasicBlockId, HashMap<DeclarationId, ValueId>>,
-    // Map: BlockId -> List of (DeclarationId, PlaceholderParamId)
-    pub incomplete_variables: HashMap<BasicBlockId, Vec<(DeclarationId, ValueId)>>,
 
     block_id_counter: usize,
     value_id_counter: usize,
@@ -254,8 +251,6 @@ impl FunctionBuilder {
         let mut builder = Self {
             cfg,
             return_type,
-            var_to_current_valueid: HashMap::new(),
-            incomplete_variables: HashMap::new(),
             block_value_maps: HashMap::new(),
             incomplete_params: HashMap::new(),
             predecessors: HashMap::new(),

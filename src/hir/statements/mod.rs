@@ -48,7 +48,9 @@ impl FunctionBuilder {
                 StmtKind::VarDecl(var_decl) => {
                     self.build_var_decl(ctx, var_decl, statement.span)
                 }
-                StmtKind::Return { value } => todo!(),
+                StmtKind::Return { value } => {
+                    self.build_return_stmt(ctx, value, statement.span)
+                }
                 StmtKind::Assignment { target, value } => {
                     self.build_assignment_stmt(ctx, target, value)
                 }

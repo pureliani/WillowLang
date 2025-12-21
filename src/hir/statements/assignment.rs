@@ -3,7 +3,7 @@ use crate::{
     hir::{
         cfg::ValueId,
         errors::{SemanticError, SemanticErrorKind},
-        types::checked_declaration::{CheckedDeclaration, VarStorage},
+        types::checked_declaration::CheckedDeclaration,
         FunctionBuilder, HIRContext,
     },
 };
@@ -31,10 +31,9 @@ impl FunctionBuilder {
                     }),
                 }?;
 
-                match decl.storage {
-                    VarStorage::Local => todo!(),
-                    VarStorage::Heap(ptr) => todo!(),
-                }
+                let ptr_in_block =
+                    self.use_value_in_block(ctx, self.current_block_id, decl.ptr);
+                Ok(ptr_in_block)
             }
             ExprKind::Access { left, field } => {
                 let base_ptr_id = self.build_lvalue_expr(ctx, *left)?;

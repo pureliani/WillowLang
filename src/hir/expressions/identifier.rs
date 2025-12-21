@@ -3,10 +3,7 @@ use crate::{
     hir::{
         cfg::Value,
         errors::{SemanticError, SemanticErrorKind},
-        types::{
-            checked_declaration::{CheckedDeclaration, FnType, VarStorage},
-            checked_type::Type,
-        },
+        types::checked_declaration::CheckedDeclaration,
         FunctionBuilder, HIRContext,
     },
 };
@@ -25,15 +22,13 @@ impl FunctionBuilder {
         match maybe_decl {
             Some(decl) => match decl {
                 CheckedDeclaration::Var(checked_var_decl) => {
-                    match checked_var_decl.storage {
-                        VarStorage::Local => {
-                            let v = self.read_variable(ctx, checked_var_decl.id);
-                            Value::Use(v)
-                        }
-                        VarStorage::Heap(ptr) => {
-                            todo!()
-                        }
-                    }
+                    let ptr_val = self.use_value_in_block(
+                        ctx,
+                        self.current_block_id,
+                        checked_var_decl.ptr,
+                    );
+
+                    Value::Use(self.emit_load(ctx, ptr_val))
                 }
                 CheckedDeclaration::UninitializedVar { id, identifier } => {
                     return Value::Use(self.report_error_and_get_poison(

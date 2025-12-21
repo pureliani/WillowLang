@@ -3,6 +3,7 @@ use crate::{
     hir::{
         cfg::Terminator,
         errors::{SemanticError, SemanticErrorKind},
+        types::checked_type::Type,
         FunctionBuilder, HIRContext,
     },
 };
@@ -20,11 +21,14 @@ impl FunctionBuilder {
                 },
                 span,
             });
-            return;
         }
 
-        self.set_basic_block_terminator(Terminator::Return {
-            value: Some(return_value),
-        });
+        let final_value = if self.return_type == Type::Void {
+            None
+        } else {
+            Some(return_value)
+        };
+
+        self.set_basic_block_terminator(Terminator::Return { value: final_value });
     }
 }

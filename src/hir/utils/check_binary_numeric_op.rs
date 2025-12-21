@@ -12,33 +12,35 @@ impl FunctionBuilder {
     pub fn check_binary_numeric_operation(
         &mut self,
         left: &Type,
+        left_span: Span,
         right: &Type,
+        right_span: Span,
     ) -> Result<Type, SemanticError> {
         let span = Span {
-            start: left.span.start,
-            end: right.span.end,
+            start: left_span.start,
+            end: right_span.end,
         };
 
-        let left_type = if is_float(&left.kind) || is_integer(&left.kind) {
+        let left_type = if is_float(left) || is_integer(left) {
             left
         } else {
             return Err(SemanticError {
                 kind: SemanticErrorKind::ExpectedANumericOperand,
-                span: left.span,
+                span: left_span,
             });
         };
 
-        let right_type = if is_float(&right.kind) || is_integer(&right.kind) {
+        let right_type = if is_float(right) || is_integer(right) {
             right
         } else {
             return Err(SemanticError {
                 kind: SemanticErrorKind::ExpectedANumericOperand,
-                span: right.span,
+                span: right_span,
             });
         };
 
-        if (is_float(&left_type.kind) && is_integer(&right_type.kind))
-            || (is_integer(&left_type.kind) && is_float(&right_type.kind))
+        if (is_float(left_type) && is_integer(right_type))
+            || (is_integer(left_type) && is_float(right_type))
         {
             return Err(SemanticError {
                 kind: SemanticErrorKind::MixedFloatAndInteger,
@@ -46,7 +48,7 @@ impl FunctionBuilder {
             });
         }
 
-        if is_signed(&left_type.kind) != is_signed(&right_type.kind) {
+        if is_signed(left_type) != is_signed(right_type) {
             return Err(SemanticError {
                 kind: SemanticErrorKind::MixedSignedAndUnsigned,
                 span,
@@ -57,19 +59,13 @@ impl FunctionBuilder {
             return Ok(left_type.clone());
         }
 
-        let left_rank = get_numeric_type_rank(&left_type.kind);
-        let right_rank = get_numeric_type_rank(&right_type.kind);
+        let left_rank = get_numeric_type_rank(left_type);
+        let right_rank = get_numeric_type_rank(right_type);
 
         if left_rank > right_rank {
-            Ok(Type {
-                kind: left_type.kind.clone(),
-                span,
-            })
+            Ok(left_type.clone())
         } else {
-            Ok(Type {
-                kind: right_type.kind.clone(),
-                span,
-            })
+            Ok(right_type.clone())
         }
     }
 }

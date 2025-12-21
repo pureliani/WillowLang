@@ -75,20 +75,10 @@ pub struct CheckedFnDecl {
 }
 
 #[derive(Clone, Debug)]
-pub enum VarStorage {
-    /// The variable is a direct SSA value.
-    /// The specific ValueId is tracked dynamically in FunctionBuilder.block_locals.
-    Local,
-
-    /// The variable is stored in memory (e.g., captured in a closure environment).
-    /// The ValueId is a pointer to the storage location.
-    Heap(ValueId),
-}
-
-#[derive(Clone, Debug)]
 pub struct CheckedVarDecl {
     pub id: DeclarationId,
-    pub storage: VarStorage,
+    /// ptr is a ValueId which holds a pointer to the actual data
+    pub ptr: ValueId,
     pub identifier: IdentifierNode,
     pub documentation: Option<DocAnnotation>,
     pub constraint: Type,

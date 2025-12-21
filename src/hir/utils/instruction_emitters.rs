@@ -256,26 +256,39 @@ impl FunctionBuilder {
         ctx: &mut HIRContext,
         op_kind: BinaryOperationKind,
         left: Value,
+        left_span: Span,
         right: Value,
+        right_span: Span,
     ) -> Result<ValueId, SemanticError> {
         let left_type = ctx.program_builder.get_value_type(&left);
         let right_type = ctx.program_builder.get_value_type(&right);
-        let combined_span = Span::default(); // TODO: Fix span
+        let combined_span = Span {
+            start: left_span.start,
+            end: right_span.end,
+        };
 
         let destination_type = match op_kind {
             BinaryOperationKind::Add
             | BinaryOperationKind::Subtract
             | BinaryOperationKind::Multiply
             | BinaryOperationKind::Divide
-            | BinaryOperationKind::Modulo => {
-                self.check_binary_numeric_operation(&left_type, &right_type)?
-            }
+            | BinaryOperationKind::Modulo => self.check_binary_numeric_operation(
+                &left_type,
+                left_span,
+                &right_type,
+                right_span,
+            )?,
 
             BinaryOperationKind::LessThan
             | BinaryOperationKind::LessThanOrEqual
             | BinaryOperationKind::GreaterThan
             | BinaryOperationKind::GreaterThanOrEqual => {
-                self.check_binary_numeric_operation(&left_type, &right_type)?;
+                self.check_binary_numeric_operation(
+                    &left_type,
+                    left_span,
+                    &right_type,
+                    right_span,
+                )?;
 
                 Type::Bool
             }
