@@ -30,7 +30,7 @@ pub fn get_layout_of(ty: &Type, ctx: &ProgramBuilder) -> Layout {
         Type::U32 | Type::I32 | Type::F32 => Layout::new(4, 4),
         Type::U64 | Type::I64 | Type::F64 => Layout::new(8, 8),
 
-        Type::Pointer(_) | Type::Fn(_) | Type::USize | Type::ISize => {
+        Type::Pointer { .. } | Type::Fn(_) | Type::USize | Type::ISize => {
             Layout::new(USIZE_SIZE, USIZE_ALIGN)
         }
 

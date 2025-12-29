@@ -5,6 +5,7 @@ pub mod parse_if_expr;
 pub mod parse_list_literal_expr;
 pub mod parse_match_expr;
 pub mod parse_parenthesized_expr;
+pub mod parse_ptr_expr;
 pub mod parse_struct_init_expr;
 pub mod parse_tag_expr;
 
@@ -76,7 +77,8 @@ pub fn is_start_of_expr(token_kind: &TokenKind) -> bool {
         | TokenKind::Punctuation(PunctuationKind::LBracket) // List literal
         | TokenKind::Punctuation(PunctuationKind::Minus)    // Negation
         | TokenKind::Punctuation(PunctuationKind::Not)      // Logical NOT
-        => true,
+        | TokenKind::Keyword(KeywordKind::Ref)
+        | TokenKind::Keyword(KeywordKind::Mut) => true,
         _ => false,
     }
 }
@@ -191,6 +193,8 @@ impl Parser {
                     kind: ExprKind::String(value),
                 }
             }
+            TokenKind::Keyword(KeywordKind::Ref) => self.parse_ptr_expr(false)?,
+            TokenKind::Keyword(KeywordKind::Mut) => self.parse_ptr_expr(true)?,
             _ => {
                 return Err(ParsingError {
                     kind: ParsingErrorKind::ExpectedAnExpressionButFound(token.clone()),

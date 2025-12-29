@@ -11,7 +11,7 @@ use crate::{
         errors::{SemanticError, SemanticErrorKind},
         types::{
             checked_declaration::{CheckedDeclaration, CheckedParam, FnType, TagType},
-            checked_type::{StructKind, Type},
+            checked_type::{PointerKind, StructKind, Type},
         },
         utils::layout::pack_struct,
         FunctionBuilder, HIRContext,
@@ -178,6 +178,20 @@ impl FunctionBuilder {
                 Type::Struct(StructKind::Union {
                     variants: checked_tag_types,
                 })
+            }
+            TypeAnnotationKind::Ref(inner) => {
+                let checked_inner = self.check_type_annotation(ctx, inner);
+                Type::Pointer {
+                    kind: PointerKind::Ref,
+                    to: Box::new(checked_inner),
+                }
+            }
+            TypeAnnotationKind::Mut(inner) => {
+                let checked_inner = self.check_type_annotation(ctx, inner);
+                Type::Pointer {
+                    kind: PointerKind::Mut,
+                    to: Box::new(checked_inner),
+                }
             }
         };
 

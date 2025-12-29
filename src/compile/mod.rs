@@ -421,6 +421,7 @@ let span = e.span.start.byte_offset..e.span.end.byte_offset;
                             SemanticErrorKind::CannotDeclareGlobalVariable => todo!(),
                             SemanticErrorKind::CannotUseFunctionDeclarationAsType => todo!(),
                             SemanticErrorKind::UseOfUninitializedVariable(identifier_node) => todo!(),
+                            SemanticErrorKind::DuplicateUnionVariant(identifier_node) => todo!(),
                         };
 
                         let _ = final_report.finish().print(&mut *cache);

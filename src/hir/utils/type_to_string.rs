@@ -5,14 +5,13 @@ use crate::{
     hir::{
         types::{
             checked_declaration::{FnType, TagType},
-            checked_type::{StructKind, Type},
+            checked_type::{PointerKind, StructKind, Type},
         },
         ProgramBuilder,
     },
 };
 
 fn identifier_to_string(id: StringId, program_builder: &ProgramBuilder) -> String {
-    // SharedInterner::resolve returns T (String), so we get an owned String here.
     program_builder.string_interner.resolve(id)
 }
 
@@ -21,12 +20,8 @@ fn tag_type_to_string(
     program_builder: &ProgramBuilder,
     visited_set: &mut HashSet<Type>,
 ) -> String {
-    // 1. Resolve TagId -> StringId
     let name_string_id = program_builder.tag_interner.resolve(tag.id);
-    // 2. Resolve StringId -> String
     let name = program_builder.string_interner.resolve(name_string_id);
-
-    // 3. Format value if present
     let value_str = tag
         .value_type
         .as_ref()
@@ -78,10 +73,14 @@ pub fn type_to_string_recursive(
             fn_signature_to_string(fn_type, program_builder, visited_set)
         }
 
-        Type::Pointer(ty) => format!(
-            "ptr<{}>",
-            type_to_string_recursive(ty, program_builder, visited_set)
-        ),
+        Type::Pointer { kind, to } => {
+            let inner = type_to_string_recursive(to, program_builder, visited_set);
+            match kind {
+                PointerKind::Raw => format!("ptr<{}>", inner),
+                PointerKind::Ref => format!("ref<{}>", inner),
+                PointerKind::Mut => format!("mut<{}>", inner),
+            }
+        }
         Type::Buffer { size, alignment } => {
             format!("Buffer(size={}, align={})", size, alignment)
         }

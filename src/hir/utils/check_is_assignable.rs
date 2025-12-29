@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use crate::hir::{
     types::{
         checked_declaration::{FnType, TagType},
-        checked_type::Type,
+        checked_type::{PointerKind, StructKind, Type},
     },
     FunctionBuilder,
 };
@@ -94,37 +94,70 @@ impl FunctionBuilder {
             | (_, Void)
             | (_, Unknown)
             | (Unknown, _) => true,
-            (Union(source), Union(target)) => source.iter().all(|source_item| {
-                target.iter().any(|target_item| {
-                    self.check_is_tag_assignable(
-                        source_item,
-                        target_item,
-                        visited_declarations,
-                    )
-                })
-            }),
-            (Tag(source_item), Union(target_union)) => {
-                target_union.iter().any(|target_item| {
-                    self.check_is_tag_assignable(
-                        source_item,
-                        target_item,
-                        visited_declarations,
-                    )
-                })
-            }
-            (Tag(t1), Tag(t2)) => {
-                self.check_is_tag_assignable(t1, t2, visited_declarations)
-            }
-            (Pointer(source), Pointer(target)) => {
-                self.check_is_assignable_recursive(source, target, visited_declarations)
-            }
-            (Struct(source_kind), Struct(target_kind)) => {
-                if source_fields.len() != target_fields.len() {
+
+            (
+                Pointer {
+                    kind: kind_a,
+                    to: to_a,
+                },
+                Pointer {
+                    kind: kind_b,
+                    to: to_b,
+                },
+            ) => {
+                let kind_compatible = match (kind_a, kind_b) {
+                    (PointerKind::Raw, PointerKind::Raw) => true,
+                    (PointerKind::Ref, PointerKind::Ref) => true,
+                    (PointerKind::Mut, PointerKind::Mut) => true,
+                    // Mut can be assigned to Ref (downgrade)
+                    (PointerKind::Mut, PointerKind::Ref) => true,
+                    _ => false,
+                };
+
+                if !kind_compatible {
                     return false;
                 }
 
-                let is_assignable =
-                    source_fields
+                self.check_is_assignable_recursive(to_a, to_b, visited_declarations)
+            }
+
+            (Struct(source), Struct(target)) => match (source, target) {
+                (
+                    StructKind::Union { variants: source },
+                    StructKind::Union { variants: target },
+                ) => source.into_iter().all(|source_item| {
+                    target.into_iter().any(|target_item| {
+                        self.check_is_tag_assignable(
+                            source_item,
+                            target_item,
+                            visited_declarations,
+                        )
+                    })
+                }),
+                (
+                    StructKind::Tag(source_item),
+                    StructKind::Union {
+                        variants: target_union,
+                    },
+                ) => target_union.iter().any(|target_item| {
+                    self.check_is_tag_assignable(
+                        source_item,
+                        target_item,
+                        visited_declarations,
+                    )
+                }),
+                (StructKind::Tag(t1), StructKind::Tag(t2)) => {
+                    self.check_is_tag_assignable(t1, t2, visited_declarations)
+                }
+                (
+                    StructKind::UserDefined(source_fields),
+                    StructKind::UserDefined(target_fields),
+                ) => {
+                    if source_fields.len() != target_fields.len() {
+                        return false;
+                    }
+
+                    let is_assignable = source_fields
                         .iter()
                         .zip(target_fields.iter())
                         .all(|(sp, tp)| {
@@ -138,8 +171,27 @@ impl FunctionBuilder {
                             same_name && assignable
                         });
 
-                is_assignable
-            }
+                    is_assignable
+                }
+                (
+                    StructKind::ClosureObject(source_object),
+                    StructKind::ClosureObject(target_object),
+                ) => todo!(),
+                (
+                    StructKind::ClosureEnv(source_env),
+                    StructKind::ClosureEnv(target_env),
+                ) => todo!(),
+                (
+                    StructKind::List(source_item_type),
+                    StructKind::List(target_item_type),
+                ) => self.check_is_assignable_recursive(
+                    source_item_type,
+                    target_item_type,
+                    visited_declarations,
+                ),
+                (StructKind::String, StructKind::String) => true,
+                _ => false,
+            },
             (
                 Fn(FnType {
                     params: source_params,

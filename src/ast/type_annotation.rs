@@ -33,6 +33,8 @@ pub enum TypeAnnotationKind {
         params: Vec<Param>,
         return_type: Box<TypeAnnotation>,
     },
+    Ref(Box<TypeAnnotation>),
+    Mut(Box<TypeAnnotation>),
 }
 
 #[derive(Clone, Debug, PartialEq)]

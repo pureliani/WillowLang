@@ -1,5 +1,6 @@
 pub mod parse_fn_type_annotation;
 pub mod parse_parenthesized_type_annotation;
+pub mod parse_ptr_type_annotation;
 pub mod parse_struct_type_annotation;
 pub mod parse_tag_type_annotation;
 
@@ -159,6 +160,13 @@ impl Parser {
                 self.parse_struct_type_annotation()?
             }
             TokenKind::Keyword(KeywordKind::Fn) => self.parse_fn_type_annotation()?,
+            TokenKind::Keyword(KeywordKind::Ref) => {
+                self.parse_ptr_type_annotation(false)?
+            }
+
+            TokenKind::Keyword(KeywordKind::Mut) => {
+                self.parse_ptr_type_annotation(true)?
+            }
             TokenKind::Identifier(_) => {
                 let identifier = self.consume_identifier()?;
                 TypeAnnotation {
