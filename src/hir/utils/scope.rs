@@ -170,4 +170,27 @@ impl ModuleBuilder {
     pub fn is_file_scope(&self) -> bool {
         matches!(self.last_scope().kind, ScopeKind::File)
     }
+
+    pub fn scope_map(&mut self, id: IdentifierNode, decl_id: DeclarationId) {
+        let last_scope = self.last_scope_mut();
+
+        if let Entry::Vacant(e) = last_scope.symbols.entry(id.name) {
+            e.insert(decl_id);
+        } else {
+            self.errors.push(SemanticError {
+                kind: SemanticErrorKind::DuplicateIdentifier(id),
+                span: id.span,
+            });
+        }
+    }
+
+    pub fn resolve_export(&self, name: StringId) -> Option<DeclarationId> {
+        if !self.module.exports.contains(&name) {
+            return None;
+        }
+
+        self.scopes
+            .first()
+            .and_then(|s| s.symbols.get(&name).copied())
+    }
 }

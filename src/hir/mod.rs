@@ -16,10 +16,7 @@ use crate::{
             DeclarationId, Value, ValueId,
         },
         errors::SemanticError,
-        types::{
-            checked_declaration::{CheckedDeclaration, CheckedParam},
-            checked_type::Type,
-        },
+        types::{checked_declaration::CheckedDeclaration, checked_type::Type},
         utils::scope::{Scope, ScopeKind},
     },
     tokenize::NumberKind,
@@ -264,20 +261,5 @@ impl FunctionBuilder {
         builder.sealed_blocks.insert(entry_block_id);
 
         builder
-    }
-
-    pub fn build_body(
-        &mut self,
-        ctx: &mut HIRContext,
-        params: Vec<CheckedParam>,
-        body: Vec<Stmt>,
-    ) {
-        for param in params {
-            todo!()
-        }
-
-        for stmt in body {
-            todo!()
-        }
     }
 }

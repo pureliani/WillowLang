@@ -68,6 +68,10 @@ pub enum SemanticErrorKind {
         source_type: Type,
         target_type: Type,
     },
+    SymbolNotExported {
+        module_path: PathBuf,
+        symbol: IdentifierNode,
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -118,6 +122,7 @@ impl SemanticErrorKind {
             SemanticErrorKind::CannotUseFunctionDeclarationAsType => 37,
             SemanticErrorKind::UseOfUninitializedVariable(..) => 38,
             SemanticErrorKind::DuplicateUnionVariant(_) => 39,
+            SemanticErrorKind::SymbolNotExported { .. } => 40,
         }
     }
 }

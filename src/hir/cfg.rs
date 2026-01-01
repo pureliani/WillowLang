@@ -3,7 +3,9 @@ use std::{
     path::PathBuf,
 };
 
-use crate::{ast::IdentifierNode, hir::types::checked_type::Type, tokenize::NumberKind};
+use crate::{
+    compile::interner::StringId, hir::types::checked_type::Type, tokenize::NumberKind,
+};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct BasicBlockId(pub usize);
@@ -172,7 +174,7 @@ pub struct ControlFlowGraph {
 #[derive(Clone, Debug)]
 pub struct CheckedModule {
     pub path: PathBuf,
-    pub exports: HashSet<IdentifierNode>,
+    pub exports: HashSet<StringId>,
 }
 
 impl CheckedModule {
