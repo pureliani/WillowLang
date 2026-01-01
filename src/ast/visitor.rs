@@ -7,7 +7,7 @@ use crate::ast::{
 };
 use crate::tokenize::NumberKind;
 
-pub trait Visitor<'ast>: Sized {
+pub trait ASTVisitor<'ast>: Sized {
     fn visit_stmt(&mut self, stmt: &'ast Stmt) {
         walk_stmt(self, stmt);
     }
@@ -254,7 +254,7 @@ pub trait Visitor<'ast>: Sized {
     }
 }
 
-pub fn walk_stmt<'ast, V: Visitor<'ast>>(v: &mut V, stmt: &'ast Stmt) {
+pub fn walk_stmt<'ast, V: ASTVisitor<'ast>>(v: &mut V, stmt: &'ast Stmt) {
     match &stmt.kind {
         StmtKind::Expression(e) => v.visit_expr_stmt(e),
         StmtKind::TypeAliasDecl(d) => v.visit_type_alias_decl_stmt(d),
@@ -268,7 +268,7 @@ pub fn walk_stmt<'ast, V: Visitor<'ast>>(v: &mut V, stmt: &'ast Stmt) {
     }
 }
 
-pub fn walk_expr<'ast, V: Visitor<'ast>>(v: &mut V, expr: &'ast Expr) {
+pub fn walk_expr<'ast, V: ASTVisitor<'ast>>(v: &mut V, expr: &'ast Expr) {
     match &expr.kind {
         ExprKind::Identifier(id) => v.visit_identifier_expr(*id),
         ExprKind::Not { right } => v.visit_not_expr(right),
@@ -310,7 +310,7 @@ pub fn walk_expr<'ast, V: Visitor<'ast>>(v: &mut V, expr: &'ast Expr) {
     }
 }
 
-pub fn walk_block<'ast, V: Visitor<'ast>>(v: &mut V, block: &'ast BlockContents) {
+pub fn walk_block<'ast, V: ASTVisitor<'ast>>(v: &mut V, block: &'ast BlockContents) {
     for stmt in &block.statements {
         v.visit_stmt(stmt);
     }
@@ -319,7 +319,7 @@ pub fn walk_block<'ast, V: Visitor<'ast>>(v: &mut V, block: &'ast BlockContents)
     }
 }
 
-pub fn walk_type<'ast, V: Visitor<'ast>>(v: &mut V, ty: &'ast TypeAnnotation) {
+pub fn walk_type<'ast, V: ASTVisitor<'ast>>(v: &mut V, ty: &'ast TypeAnnotation) {
     match &ty.kind {
         TypeAnnotationKind::Identifier(id) => v.visit_ident_type(*id),
         TypeAnnotationKind::Struct(fields) => {

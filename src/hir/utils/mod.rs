@@ -11,3 +11,4 @@ pub mod scope;
 pub mod ssa_builder;
 pub mod try_unify_types;
 pub mod type_to_string;
+pub mod var_capture_analyzer;
