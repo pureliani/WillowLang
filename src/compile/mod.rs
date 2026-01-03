@@ -402,7 +402,6 @@ let span = e.span.start.byte_offset..e.span.end.byte_offset;
                                 let joined = field_names.iter().map(|n| format!("\"{}\"", n)).collect::<Vec<String>>().join(", ");
                                 report.with_message("Missing field initializers").with_label(label.with_message(format!("Missing initializers for the following struct fields {}", joined)))
                             }
-                            SemanticErrorKind::VarDeclWithoutConstraintOrInitializer { .. } => report.with_message("Variable declarations must have an initializer").with_label(label.with_message("This variable declaration must have an initializer")),
                             SemanticErrorKind::DuplicateIdentifier(id) => {
                                 let identifier_name = self.string_interner.resolve(id.name);
                                 report.with_message("Duplicate identifier").with_label(label.with_message(format!("Duplicate identifier declaration \"{}\"", identifier_name)))

@@ -37,5 +37,5 @@ pub struct VarDecl {
     pub documentation: Option<DocAnnotation>,
     pub identifier: IdentifierNode,
     pub constraint: Option<TypeAnnotation>,
-    pub value: Option<Expr>,
+    pub value: Expr,
 }

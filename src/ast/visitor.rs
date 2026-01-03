@@ -223,9 +223,7 @@ pub trait ASTVisitor<'ast>: Sized {
         if let Some(constraint) = &decl.constraint {
             self.visit_type(constraint);
         }
-        if let Some(val) = &decl.value {
-            self.visit_expr(val);
-        }
+        self.visit_expr(&decl.value);
     }
 
     fn visit_type_alias_decl(&mut self, decl: &'ast TypeAliasDecl) {

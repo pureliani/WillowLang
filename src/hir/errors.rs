@@ -14,7 +14,6 @@ pub enum SemanticErrorKind {
     CannotIndex(Type),
     FromStatementMustBeDeclaredAtTopLevel,
     ModuleNotFound(PathBuf),
-    VarDeclWithoutConstraintOrInitializer,
     CannotDeclareGlobalVariable,
     DuplicateStructFieldInitializer(IdentifierNode),
     UnknownStructFieldInitializer(IdentifierNode),
