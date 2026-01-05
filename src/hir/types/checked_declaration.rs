@@ -48,6 +48,7 @@ pub struct CheckedTypeAliasDecl {
     pub identifier: IdentifierNode,
     pub documentation: Option<DocAnnotation>,
     pub value: Box<Type>,
+    pub is_exported: bool,
     pub span: Span,
 }
 
@@ -72,6 +73,7 @@ pub struct CheckedFnDecl {
     pub params: Vec<CheckedParam>,
     pub return_type: Type,
     pub body: Option<ControlFlowGraph>,
+    pub is_exported: bool,
 }
 
 #[derive(Clone, Debug)]

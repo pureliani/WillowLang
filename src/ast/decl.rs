@@ -17,6 +17,7 @@ pub struct FnDecl {
     pub params: Vec<Param>,
     pub return_type: TypeAnnotation,
     pub body: BlockContents,
+    pub is_exported: bool,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -24,6 +25,7 @@ pub struct TypeAliasDecl {
     pub documentation: Option<DocAnnotation>,
     pub identifier: IdentifierNode,
     pub value: TypeAnnotation,
+    pub is_exported: bool,
 }
 
 #[derive(Clone, Debug, PartialEq)]

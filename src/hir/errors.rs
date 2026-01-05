@@ -98,7 +98,6 @@ impl SemanticErrorKind {
             SemanticErrorKind::CannotAccess { .. } => 14,
             SemanticErrorKind::CannotCall { .. } => 15,
             SemanticErrorKind::CannotUseVariableDeclarationAsType => 16,
-            SemanticErrorKind::VarDeclWithoutConstraintOrInitializer => 17,
             SemanticErrorKind::AccessToUndefinedField { .. } => 18,
             SemanticErrorKind::FnArgumentCountMismatch { .. } => 19,
             SemanticErrorKind::TypeAliasMustBeDeclaredAtTopLevel => 20,

@@ -42,7 +42,7 @@ impl FunctionBuilder {
                     }
                 }
                 StmtKind::TypeAliasDecl(type_alias_decl) => {
-                    self.build_type_alias_decl(ctx, type_alias_decl, statement.span);
+                    build_type_alias_decl(ctx, type_alias_decl, statement.span);
                 }
                 StmtKind::VarDecl(var_decl) => {
                     self.build_var_decl(ctx, var_decl, statement.span)
@@ -54,7 +54,7 @@ impl FunctionBuilder {
                     self.build_assignment_stmt(ctx, target, value)
                 }
                 StmtKind::From { path, identifiers } => {
-                    self.build_from_stmt(ctx, path, identifiers, statement.span)
+                    build_from_stmt(ctx, path, identifiers, statement.span)
                 }
                 StmtKind::While { condition, body } => {
                     self.build_while_stmt(ctx, condition, body);

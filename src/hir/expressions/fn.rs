@@ -4,6 +4,7 @@ use crate::{
         cfg::{Terminator, Value},
         errors::{SemanticError, SemanticErrorKind},
         types::checked_declaration::{CheckedDeclaration, CheckedParam, CheckedVarDecl},
+        utils::check_type::check_type_annotation,
         FunctionBuilder, HIRContext,
     },
 };
@@ -63,16 +64,17 @@ impl FunctionBuilder {
             params,
             return_type,
             body,
+            is_exported,
         } = fn_decl;
 
         let checked_params: Vec<CheckedParam> = params
             .iter()
             .map(|p| CheckedParam {
                 identifier: p.identifier,
-                ty: self.check_type_annotation(ctx, &p.constraint),
+                ty: check_type_annotation(ctx, &p.constraint),
             })
             .collect();
-        let checked_return_type = self.check_type_annotation(ctx, &return_type);
+        let checked_return_type = check_type_annotation(ctx, &return_type);
 
         todo!()
     }

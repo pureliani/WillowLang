@@ -1,6 +1,8 @@
 use crate::{
     ast::{expr::Expr, type_annotation::TypeAnnotation},
-    hir::{cfg::Value, FunctionBuilder, HIRContext},
+    hir::{
+        cfg::Value, utils::check_type::check_type_annotation, FunctionBuilder, HIRContext,
+    },
 };
 
 impl FunctionBuilder {
@@ -11,7 +13,7 @@ impl FunctionBuilder {
         target: TypeAnnotation,
     ) -> Value {
         let value = self.build_expr(ctx, *left);
-        let target_type = self.check_type_annotation(ctx, &target);
+        let target_type = check_type_annotation(ctx, &target);
         Value::Use(self.emit_type_cast(ctx, value, target_type))
     }
 }

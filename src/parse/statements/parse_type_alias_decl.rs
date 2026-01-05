@@ -11,6 +11,7 @@ impl Parser {
     pub fn parse_type_alias_decl(
         &mut self,
         documentation: Option<DocAnnotation>,
+        is_exported: bool,
     ) -> Result<Stmt, ParsingError> {
         let start_offset = self.offset;
 
@@ -31,6 +32,7 @@ impl Parser {
                 identifier: name,
                 documentation,
                 value: ty,
+                is_exported,
             }),
             span,
         })
