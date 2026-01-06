@@ -65,6 +65,7 @@ impl FunctionBuilder {
             return_type,
             body,
             is_exported,
+            documentation,
         } = fn_decl;
 
         let checked_params: Vec<CheckedParam> = params

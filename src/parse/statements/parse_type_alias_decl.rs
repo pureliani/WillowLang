@@ -3,17 +3,23 @@ use crate::{
         decl::TypeAliasDecl,
         stmt::{Stmt, StmtKind},
     },
-    parse::{DocAnnotation, Parser, ParsingError},
-    tokenize::{KeywordKind, PunctuationKind},
+    parse::{Parser, ParsingError},
+    tokenize::{KeywordKind, PunctuationKind, TokenKind},
 };
 
 impl Parser {
-    pub fn parse_type_alias_decl(
-        &mut self,
-        documentation: Option<DocAnnotation>,
-        is_exported: bool,
-    ) -> Result<Stmt, ParsingError> {
+    pub fn parse_type_alias_decl(&mut self) -> Result<Stmt, ParsingError> {
+        let documentation = self.consume_optional_doc();
+
         let start_offset = self.offset;
+
+        let is_exported = if self.match_token(0, TokenKind::Keyword(KeywordKind::Export))
+        {
+            self.consume_keyword(KeywordKind::Export)?;
+            true
+        } else {
+            false
+        };
 
         self.consume_keyword(KeywordKind::Type)?;
 

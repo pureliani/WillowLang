@@ -3,15 +3,14 @@ use crate::{
         decl::VarDecl,
         stmt::{Stmt, StmtKind},
     },
-    parse::{DocAnnotation, Parser, ParsingError},
+    parse::{Parser, ParsingError},
     tokenize::{KeywordKind, PunctuationKind, TokenKind},
 };
 
 impl Parser {
-    pub fn parse_var_decl(
-        &mut self,
-        documentation: Option<DocAnnotation>,
-    ) -> Result<Stmt, ParsingError> {
+    pub fn parse_var_decl(&mut self) -> Result<Stmt, ParsingError> {
+        let documentation = self.consume_optional_doc();
+
         let start_offset = self.offset;
 
         self.consume_keyword(KeywordKind::Let)?;

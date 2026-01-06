@@ -30,78 +30,107 @@ pub fn is_start_of_stmt(token_kind: &TokenKind) -> bool {
                 | KeywordKind::Continue
                 | KeywordKind::Type
                 | KeywordKind::Let
+                | KeywordKind::Export
         ) | TokenKind::Doc(_)
     )
 }
 
 impl Parser {
     pub fn parse_stmt(&mut self) -> Result<Stmt, ParsingError> {
-        let result = if self.match_token(0, TokenKind::Keyword(KeywordKind::From)) {
-            self.parse_from_stmt()
-        } else if self.match_token(0, TokenKind::Keyword(KeywordKind::While)) {
-            self.parse_while_stmt()
-        } else if self.match_token(0, TokenKind::Keyword(KeywordKind::Return)) {
-            self.parse_return_stmt()
-        } else if self.match_token(0, TokenKind::Keyword(KeywordKind::Break)) {
-            self.parse_break_stmt()
-        } else if self.match_token(0, TokenKind::Keyword(KeywordKind::Continue)) {
-            self.parse_continue_stmt()
+        let mut lookahead_index = 0;
+
+        let has_doc = if matches_token!(self, lookahead_index, TokenKind::Doc(_)) {
+            lookahead_index += 1;
+            true
         } else {
-            let documentation = self.consume_optional_doc();
-
-            if self.match_token(0, TokenKind::Keyword(KeywordKind::Let)) {
-                self.parse_var_decl(documentation)
-            } else if self.match_token(0, TokenKind::Keyword(KeywordKind::Type)) {
-                self.parse_type_alias_decl(documentation)
-            } else if let Some(doc) = documentation {
-                Err(ParsingError {
-                    kind: ParsingErrorKind::DocMustBeFollowedByDeclaration,
-                    span: doc.span,
-                })
-            } else {
-                let lhs = self.parse_expr(0);
-
-                match lhs {
-                    Ok(lhs) => {
-                        if self
-                            .match_token(0, TokenKind::Punctuation(PunctuationKind::Eq))
-                            && !self.match_token(
-                                1,
-                                TokenKind::Punctuation(PunctuationKind::Eq),
-                            )
-                        {
-                            // It's an assignment statement
-                            self.parse_assignment_stmt(lhs)
-                        } else {
-                            // It's a standalone expression statement
-                            let mut end_span = lhs.span;
-                            if self.match_token(
-                                0,
-                                TokenKind::Punctuation(PunctuationKind::SemiCol),
-                            ) {
-                                end_span = self.current().unwrap().span;
-                                self.advance();
-                            }
-
-                            Ok(Stmt {
-                                span: Span {
-                                    start: lhs.span.start,
-                                    end: end_span.end,
-                                },
-                                kind: StmtKind::Expression(lhs),
-                            })
-                        }
-                    }
-                    Err(e) => Err(e),
-                }
-            }
+            false
         };
 
-        if result.is_err() {
-            self.synchronize_stmt();
+        let has_export = if matches_token!(
+            self,
+            lookahead_index,
+            TokenKind::Keyword(KeywordKind::Export)
+        ) {
+            lookahead_index += 1;
+            true
+        } else {
+            false
+        };
+
+        if matches_token!(self, lookahead_index, TokenKind::Keyword(KeywordKind::Type)) {
+            return self.parse_type_alias_decl();
         }
 
-        result
+        if matches_token!(self, lookahead_index, TokenKind::Keyword(KeywordKind::Let)) {
+            return self.parse_var_decl();
+        }
+
+        if matches_token!(self, lookahead_index, TokenKind::Keyword(KeywordKind::Fn)) {
+            let expr = self.parse_fn_expr()?;
+            return Ok(Stmt {
+                span: expr.span,
+                kind: StmtKind::Expression(expr),
+            });
+        }
+
+        if has_export {
+            let invalid_token = self
+                .tokens
+                .get(self.offset + lookahead_index)
+                .unwrap_or_else(|| self.tokens.last().unwrap());
+
+            return Err(ParsingError {
+                kind: ParsingErrorKind::ExpectedStatementOrExpression {
+                    found: invalid_token.clone(),
+                },
+                span: invalid_token.span,
+            });
+        }
+
+        if has_doc {
+            return Err(ParsingError {
+                kind: ParsingErrorKind::DocMustBeFollowedByDeclaration,
+                span: self.tokens.get(self.offset).unwrap().span,
+            });
+        }
+
+        if matches_token!(self, 0, TokenKind::Keyword(KeywordKind::From)) {
+            return self.parse_from_stmt();
+        }
+        if matches_token!(self, 0, TokenKind::Keyword(KeywordKind::While)) {
+            return self.parse_while_stmt();
+        }
+        if matches_token!(self, 0, TokenKind::Keyword(KeywordKind::Return)) {
+            return self.parse_return_stmt();
+        }
+        if matches_token!(self, 0, TokenKind::Keyword(KeywordKind::Break)) {
+            return self.parse_break_stmt();
+        }
+        if matches_token!(self, 0, TokenKind::Keyword(KeywordKind::Continue)) {
+            return self.parse_continue_stmt();
+        }
+
+        let lhs = self.parse_expr(0)?;
+
+        if matches_token!(self, 0, TokenKind::Punctuation(PunctuationKind::Eq))
+            && !matches_token!(self, 1, TokenKind::Punctuation(PunctuationKind::Eq))
+        {
+            self.parse_assignment_stmt(lhs)
+        } else {
+            let mut end_span = lhs.span;
+            if matches_token!(self, 0, TokenKind::Punctuation(PunctuationKind::SemiCol)) {
+                end_span = self.current().unwrap().span;
+                self.advance();
+            }
+
+            Ok(Stmt {
+                span: Span {
+                    start: lhs.span.start,
+                    end: end_span.end,
+                },
+                kind: StmtKind::Expression(lhs),
+            })
+        }
     }
 
     pub fn synchronize_stmt(&mut self) {

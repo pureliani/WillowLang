@@ -14,6 +14,7 @@ use crate::{
         cfg::Terminator,
         errors::{SemanticError, SemanticErrorKind},
         expressions::r#if::IfContext,
+        statements::{from::build_from_stmt, type_alias_decl::build_type_alias_decl},
         FunctionBuilder, HIRContext,
     },
 };

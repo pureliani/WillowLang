@@ -1,3 +1,11 @@
+macro_rules! matches_token {
+    ($parser:expr, $index:expr, $pattern:pat $(if $guard:expr)?) => {
+        $parser.tokens.get($parser.offset + $index).map_or(false, |token| {
+            matches!(token.kind, $pattern $(if $guard)?)
+        })
+    };
+}
+
 mod expressions;
 mod statements;
 mod type_annotations;
@@ -39,6 +47,7 @@ pub enum ParsingErrorKind {
     UnexpectedStatementAfterFinalExpression,
     ExpectedStatementOrExpression { found: Token },
     UnexpectedTokenAfterFinalExpression { found: Token },
+    ExpectedToBeFollowedByOneOfTheTokens(Vec<Token>),
 }
 
 impl ParsingErrorKind {
@@ -59,6 +68,7 @@ impl ParsingErrorKind {
             ParsingErrorKind::ExpectedStatementOrExpression { .. } => 23,
             ParsingErrorKind::UnexpectedTokenAfterFinalExpression { .. } => 24,
             ParsingErrorKind::ExpectedATagTypeButFound(..) => 25,
+            ParsingErrorKind::ExpectedToBeFollowedByOneOfTheTokens(..) => 26,
         }
     }
 }
@@ -212,16 +222,20 @@ impl Parser {
         Err(self.unexpected_end_of_input())
     }
 
-    pub fn consume_keyword(&mut self, expected: KeywordKind) -> Result<(), ParsingError> {
+    pub fn consume_keyword(
+        &mut self,
+        expected: KeywordKind,
+    ) -> Result<Span, ParsingError> {
         if let Some(token) = self.current() {
+            let span = token.span;
             match token.kind {
                 TokenKind::Keyword(keyword_kind) if keyword_kind == expected => {
                     self.advance();
-                    Ok(())
+                    Ok(span)
                 }
                 _ => Err(ParsingError {
                     kind: ParsingErrorKind::ExpectedAKeyword(expected),
-                    span: token.span,
+                    span,
                 }),
             }
         } else {

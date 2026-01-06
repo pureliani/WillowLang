@@ -24,11 +24,6 @@ impl FunctionBuilder {
             return;
         }
 
-        let decl_id = ctx
-            .module_builder
-            .scope_lookup(var_decl.identifier.name)
-            .expect("INTERNAL COMPILER ERROR: Variable declaration was not hoisted");
-
         let (initial_value, initial_constraint) = match var_decl.constraint {
             Some(constraint_annotation) => {
                 let initial_value_span = var_decl.value.span;
@@ -72,7 +67,7 @@ impl FunctionBuilder {
         };
 
         let checked_var_decl = CheckedVarDecl {
-            id: decl_id,
+            id: ctx.program_builder.new_declaration_id(),
             ptr,
             identifier: var_decl.identifier,
             documentation: var_decl.documentation,
@@ -81,8 +76,10 @@ impl FunctionBuilder {
 
         self.emit_store(ctx, ptr, Value::Use(val_id));
 
-        ctx.program_builder
-            .declarations
-            .insert(decl_id, CheckedDeclaration::Var(checked_var_decl));
+        ctx.module_builder.scope_insert(
+            ctx.program_builder,
+            var_decl.identifier,
+            CheckedDeclaration::Var(checked_var_decl),
+        );
     }
 }

@@ -320,7 +320,7 @@ impl Compiler {
                                 .with_message("Unexpected token after final expression")
                                 .with_label(label.with_message(format!("Unexpected token \"{}\" after final expression", token_kind_to_string(&found.kind, self.string_interner.clone())))),
                             ParsingErrorKind::ExpectedATagTypeButFound(type_annotation) => todo!(),
-
+                            ParsingErrorKind::ExpectedToBeFollowedByOneOfTheTokens(tokens) => todo!(),
                         };
 
                         let _ = final_report.finish().print(&mut *cache);
@@ -421,6 +421,7 @@ let span = e.span.start.byte_offset..e.span.end.byte_offset;
                             SemanticErrorKind::CannotUseFunctionDeclarationAsType => todo!(),
                             SemanticErrorKind::UseOfUninitializedVariable(identifier_node) => todo!(),
                             SemanticErrorKind::DuplicateUnionVariant(identifier_node) => todo!(),
+                            SemanticErrorKind::SymbolNotExported { module_path, symbol } => todo!(),
                         };
 
                         let _ = final_report.finish().print(&mut *cache);

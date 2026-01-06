@@ -13,6 +13,7 @@ pub struct Param {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct FnDecl {
+    pub documentation: Option<DocAnnotation>,
     pub identifier: IdentifierNode,
     pub params: Vec<Param>,
     pub return_type: TypeAnnotation,
