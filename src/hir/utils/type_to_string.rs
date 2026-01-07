@@ -5,7 +5,7 @@ use crate::{
     hir::{
         types::{
             checked_declaration::{FnType, TagType},
-            checked_type::{PointerKind, StructKind, Type},
+            checked_type::{StructKind, Type},
         },
         ProgramBuilder,
     },
@@ -66,20 +66,13 @@ pub fn type_to_string_recursive(
         Type::F32 => String::from("f32"),
         Type::F64 => String::from("f64"),
         Type::Unknown => String::from("unknown"),
-
         Type::Struct(s) => struct_to_string(s, program_builder, visited_set),
-
         Type::Fn(fn_type) => {
             fn_signature_to_string(fn_type, program_builder, visited_set)
         }
-
-        Type::Pointer { kind, to } => {
+        Type::Pointer(to) => {
             let inner = type_to_string_recursive(to, program_builder, visited_set);
-            match kind {
-                PointerKind::Raw => format!("ptr<{}>", inner),
-                PointerKind::Ref => format!("ref<{}>", inner),
-                PointerKind::Mut => format!("mut<{}>", inner),
-            }
+            format!("ptr<{}>", inner)
         }
         Type::Buffer { size, alignment } => {
             format!("Buffer(size={}, align={})", size, alignment)

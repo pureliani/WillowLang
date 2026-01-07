@@ -11,7 +11,6 @@ pub mod list_literal;
 pub mod r#match;
 pub mod number_literal;
 pub mod or;
-pub mod ptr;
 pub mod static_access;
 pub mod string;
 pub mod struct_init;
@@ -115,8 +114,6 @@ impl FunctionBuilder {
             ExprKind::Tag { name, value } => {
                 self.build_tag_expr(ctx, name, value, expr.span)
             }
-            ExprKind::Ref(expr) => self.build_ptr_expr(ctx, expr, false),
-            ExprKind::Mut(expr) => self.build_ptr_expr(ctx, expr, true),
         }
     }
 }

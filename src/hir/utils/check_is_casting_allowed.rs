@@ -1,5 +1,5 @@
 use crate::hir::{
-    types::checked_type::{PointerKind, Type},
+    types::checked_type::Type,
     utils::numeric::{get_numeric_type_rank, is_float, is_integer, is_signed},
     FunctionBuilder,
 };
@@ -23,21 +23,6 @@ impl FunctionBuilder {
             }
             (st, tt) if is_integer(st) && is_float(tt) => true,
 
-            (
-                Type::Pointer { kind: src_kind, .. },
-                Type::Pointer { kind: tgt_kind, .. },
-            ) => match (src_kind, tgt_kind) {
-                (PointerKind::Mut, PointerKind::Ref) => true,
-                (PointerKind::Mut, PointerKind::Raw) => true,
-
-                (PointerKind::Raw, PointerKind::Mut) => true,
-                (PointerKind::Raw, PointerKind::Ref) => true,
-
-                (PointerKind::Ref, PointerKind::Raw) => true,
-                (PointerKind::Ref, PointerKind::Mut) => false,
-
-                _ => false,
-            },
             (Type::Pointer { .. }, t) if is_integer(t) => true,
             (s, Type::Pointer { .. }) if is_integer(s) => true,
             _ => false,

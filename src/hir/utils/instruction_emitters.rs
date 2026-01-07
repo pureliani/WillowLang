@@ -8,7 +8,7 @@ use crate::{
             ValueId,
         },
         errors::{SemanticError, SemanticErrorKind},
-        types::checked_type::{PointerKind, StructKind, Type},
+        types::checked_type::{StructKind, Type},
         utils::{check_is_equatable::check_is_equatable, numeric::is_signed},
         FunctionBuilder, HIRContext, ModuleBuilder,
     },
@@ -35,13 +35,7 @@ impl FunctionBuilder {
         ty: Type,
         count: usize,
     ) -> ValueId {
-        let destination = self.alloc_value(
-            ctx,
-            Type::Pointer {
-                to: Box::new(ty),
-                kind: PointerKind::Raw,
-            },
-        );
+        let destination = self.alloc_value(ctx, Type::Pointer(Box::new(ty)));
         self.push_instruction(Instruction::StackAlloc { destination, count });
 
         destination
@@ -66,13 +60,7 @@ impl FunctionBuilder {
             });
         }
 
-        let destination = self.alloc_value(
-            ctx,
-            Type::Pointer {
-                to: Box::new(ty),
-                kind: PointerKind::Raw,
-            },
-        );
+        let destination = self.alloc_value(ctx, Type::Pointer(Box::new(ty)));
         self.push_instruction(Instruction::HeapAlloc { destination, count });
 
         Ok(destination)
@@ -83,15 +71,9 @@ impl FunctionBuilder {
         let destination_ptr_type = ctx.program_builder.get_value_id_type(&ptr);
 
         let target_type = match destination_ptr_type {
-                  Type::Pointer { kind, to } => match kind {
-                      PointerKind::Ref => {
-                          // TODO: Report error properly
-                          panic!("INTERNAL COMPILER ERROR: Cannot store to immutable reference");
-                      }
-                      PointerKind::Mut | PointerKind::Raw => to,
-                  },
-                  _ => panic!("INTERNAL COMPILER ERROR: Expected destination_ptr_id to be of Pointer type"),
-              };
+            Type::Pointer(to) => to,
+            _ => panic!("INTERNAL COMPILER ERROR: Expected destination_ptr_id to be of Pointer type"),
+        };
 
         if !self.check_is_assignable(&value_type, &target_type) {
             ctx.program_builder.errors.push(SemanticError {
@@ -111,7 +93,7 @@ impl FunctionBuilder {
         let ptr_type = ctx.program_builder.get_value_id_type(&ptr);
 
         let destination_type = match ptr_type {
-            Type::Pointer { to, .. } => *to,
+            Type::Pointer(to) => *to,
             _ => panic!(
                 "INTERNAL COMPILER ERROR: Expected source_ptr to be of Pointer type"
             ),
@@ -128,10 +110,7 @@ impl FunctionBuilder {
         ctx: &mut HIRContext,
         constant_id: ConstantId,
     ) -> ValueId {
-        let ptr_type = Type::Pointer {
-            kind: PointerKind::Raw,
-            to: Box::new(Type::U8),
-        };
+        let ptr_type = Type::Pointer(Box::new(Type::U8));
         let destination = self.alloc_value(ctx, ptr_type);
 
         self.push_instruction(Instruction::LoadConstant {
@@ -150,25 +129,22 @@ impl FunctionBuilder {
     ) -> Result<ValueId, SemanticError> {
         let base_ptr_type = ctx.program_builder.get_value_id_type(&base_ptr);
 
-        let (s, ptr_kind) = match base_ptr_type {
-                    Type::Pointer { kind, to } => {
-                        if let Type::Struct(s) = *to {
-                            (s, kind)
-                        } else {
-                            return Err(SemanticError {
-                                kind: SemanticErrorKind::CannotAccess(to.as_ref().clone()),
-                                span: field.span,
-                            });
-                        }
-                    }
-                    _ => panic!("INTERNAL COMPILER ERROR: emit_get_field_ptr called on a non-pointer type."),
-                };
+        let s = match base_ptr_type {
+            Type::Pointer (to) => {
+                if let Type::Struct(s) = *to {
+                    s
+                } else {
+                    return Err(SemanticError {
+                        kind: SemanticErrorKind::CannotAccess(to.as_ref().clone()),
+                        span: field.span,
+                    });
+                }
+            }
+            _ => panic!("INTERNAL COMPILER ERROR: emit_get_field_ptr called on a non-pointer type."),
+        };
 
         if let Some((field_index, ty)) = s.get_field(&ctx.program_builder, field.name) {
-            let result_type = Type::Pointer {
-                kind: ptr_kind,
-                to: Box::new(ty.clone()),
-            };
+            let result_type = Type::Pointer(Box::new(ty.clone()));
 
             let destination = self.alloc_value(ctx, result_type);
 
@@ -205,17 +181,14 @@ impl FunctionBuilder {
         }
 
         let base_ptr_type = ctx.program_builder.get_value_id_type(&base_ptr);
-        let (element_type, ptr_kind) = match base_ptr_type {
-            Type::Pointer { kind, to } => (*to, kind),
+        let element_type = match base_ptr_type {
+            Type::Pointer(to) => *to,
             _ => {
                 panic!("INTERNAL COMPILER ERROR: emit_get_element_ptr expects a pointer")
             }
         };
 
-        let result_type = Type::Pointer {
-            kind: ptr_kind,
-            to: Box::new(element_type),
-        };
+        let result_type = Type::Pointer(Box::new(element_type));
 
         let destination = self.alloc_value(ctx, result_type);
         self.push_instruction(Instruction::GetElementPtr {

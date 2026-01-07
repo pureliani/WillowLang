@@ -42,10 +42,7 @@ impl StructKind {
                 .collect(),
 
             StructKind::ClosureObject(_) => {
-                let void_ptr = Type::Pointer {
-                    kind: PointerKind::Raw,
-                    to: Box::new(Type::Void),
-                };
+                let void_ptr = Type::Pointer(Box::new(Type::Void));
                 vec![
                     (ctx.common_identifiers.fn_ptr, void_ptr.clone()),
                     (ctx.common_identifiers.env_ptr, void_ptr),
@@ -55,13 +52,7 @@ impl StructKind {
             StructKind::List(elem_ty) => vec![
                 (ctx.common_identifiers.capacity, Type::USize),
                 (ctx.common_identifiers.len, Type::USize),
-                (
-                    ctx.common_identifiers.ptr,
-                    Type::Pointer {
-                        kind: PointerKind::Raw,
-                        to: elem_ty.clone(),
-                    },
-                ),
+                (ctx.common_identifiers.ptr, Type::Pointer(elem_ty.clone())),
             ],
 
             StructKind::String => vec![
@@ -69,10 +60,7 @@ impl StructKind {
                 (ctx.common_identifiers.len, Type::USize),
                 (
                     ctx.common_identifiers.ptr,
-                    Type::Pointer {
-                        kind: PointerKind::Raw,
-                        to: Box::new(Type::U8),
-                    },
+                    Type::Pointer(Box::new(Type::U8)),
                 ),
             ],
 
@@ -125,17 +113,6 @@ impl StructKind {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub enum PointerKind {
-    /// A raw pointer (equivalent to C's "T*")
-    /// Used for internal structures (Lists, Strings) and unsafe code
-    Raw,
-    /// An immutable reference (equivalent to "const T*")
-    Ref,
-    /// A mutable reference (equivalent to "T*"")
-    Mut,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Type {
     Void,
     Bool,
@@ -153,10 +130,7 @@ pub enum Type {
     F64,
 
     /// Represents a pointer to another type
-    Pointer {
-        kind: PointerKind,
-        to: Box<Type>,
-    },
+    Pointer(Box<Type>),
 
     /// Represents any block of memory with named fields
     Struct(StructKind),

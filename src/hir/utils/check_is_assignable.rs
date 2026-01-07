@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use crate::hir::{
     types::{
         checked_declaration::{FnType, TagType},
-        checked_type::{PointerKind, StructKind, Type},
+        checked_type::{StructKind, Type},
     },
     FunctionBuilder,
 };
@@ -94,32 +94,6 @@ impl FunctionBuilder {
             | (_, Void)
             | (_, Unknown)
             | (Unknown, _) => true,
-
-            (
-                Pointer {
-                    kind: kind_a,
-                    to: to_a,
-                },
-                Pointer {
-                    kind: kind_b,
-                    to: to_b,
-                },
-            ) => {
-                let kind_compatible = match (kind_a, kind_b) {
-                    (PointerKind::Raw, PointerKind::Raw) => true,
-                    (PointerKind::Ref, PointerKind::Ref) => true,
-                    (PointerKind::Mut, PointerKind::Mut) => true,
-                    // Mut can be assigned to Ref (downgrade)
-                    (PointerKind::Mut, PointerKind::Ref) => true,
-                    _ => false,
-                };
-
-                if !kind_compatible {
-                    return false;
-                }
-
-                self.check_is_assignable_recursive(to_a, to_b, visited_declarations)
-            }
 
             (Struct(source), Struct(target)) => match (source, target) {
                 (

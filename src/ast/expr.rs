@@ -120,8 +120,6 @@ pub enum ExprKind {
     },
     List(Vec<Expr>),
     CodeBlock(BlockContents),
-    Ref(Box<Expr>),
-    Mut(Box<Expr>),
 }
 
 #[derive(Clone, Debug, PartialEq)]

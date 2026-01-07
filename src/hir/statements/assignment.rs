@@ -3,10 +3,7 @@ use crate::{
     hir::{
         cfg::ValueId,
         errors::{SemanticError, SemanticErrorKind},
-        types::{
-            checked_declaration::CheckedDeclaration,
-            checked_type::{PointerKind, Type},
-        },
+        types::checked_declaration::CheckedDeclaration,
         FunctionBuilder, HIRContext,
     },
 };
@@ -40,21 +37,8 @@ impl FunctionBuilder {
             }
             ExprKind::Access { left, field } => {
                 let base_ptr_id = self.build_lvalue_expr(ctx, *left)?;
-                let base_ptr_type = ctx.program_builder.get_value_id_type(&base_ptr_id);
 
-                let actual_base = if let Type::Pointer { kind, .. } = &base_ptr_type {
-                    match kind {
-                        PointerKind::Ref | PointerKind::Mut => {
-                            // Implicit dereference
-                            self.emit_load(ctx, base_ptr_id)
-                        }
-                        PointerKind::Raw => base_ptr_id,
-                    }
-                } else {
-                    base_ptr_id
-                };
-
-                self.emit_get_field_ptr(ctx, actual_base, field)
+                self.emit_get_field_ptr(ctx, base_ptr_id, field)
             }
             _ => Err(SemanticError {
                 kind: SemanticErrorKind::InvalidLValue,

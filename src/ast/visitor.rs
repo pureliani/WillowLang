@@ -16,10 +16,6 @@ pub trait ASTVisitor<'ast>: Sized {
         walk_expr(self, expr);
     }
 
-    fn visit_ref_expr(&mut self, inner: &'ast Expr) {
-        self.visit_expr(inner);
-    }
-
     fn visit_mut_expr(&mut self, inner: &'ast Expr) {
         self.visit_expr(inner);
     }
@@ -303,8 +299,6 @@ pub fn walk_expr<'ast, V: ASTVisitor<'ast>>(v: &mut V, expr: &'ast Expr) {
         } => v.visit_if_expr(branches, else_branch.as_ref()),
         ExprKind::List(items) => v.visit_list_literal_expr(items),
         ExprKind::CodeBlock(block) => v.visit_codeblock_expr(block),
-        ExprKind::Ref(inner) => v.visit_ref_expr(inner),
-        ExprKind::Mut(inner) => v.visit_mut_expr(inner),
     }
 }
 
@@ -351,8 +345,6 @@ pub fn walk_type<'ast, V: ASTVisitor<'ast>>(v: &mut V, ty: &'ast TypeAnnotation)
             }
             v.visit_type(return_type);
         }
-        TypeAnnotationKind::Ref(inner) => v.visit_type(inner),
-        TypeAnnotationKind::Mut(inner) => v.visit_type(inner),
         TypeAnnotationKind::Void => {}
         TypeAnnotationKind::Bool => {}
         TypeAnnotationKind::U8 => {}
