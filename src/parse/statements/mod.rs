@@ -37,6 +37,16 @@ pub fn is_start_of_stmt(token_kind: &TokenKind) -> bool {
 
 impl Parser {
     pub fn parse_stmt(&mut self) -> Result<Stmt, ParsingError> {
+        let result = self.parse_stmt_no_sync();
+
+        if result.is_err() {
+            self.synchronize_stmt();
+        }
+
+        result
+    }
+
+    pub fn parse_stmt_no_sync(&mut self) -> Result<Stmt, ParsingError> {
         let mut lookahead_index = 0;
 
         let has_doc = if matches_token!(self, lookahead_index, TokenKind::Doc(_)) {

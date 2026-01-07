@@ -8,7 +8,6 @@ use std::{
 };
 
 use crate::{
-    ast::stmt::Stmt,
     compile::interner::{SharedStringInterner, SharedTagInterner, StringId},
     hir::{
         cfg::{
@@ -121,21 +120,6 @@ impl ProgramBuilder {
         }
     }
 
-    pub fn build_module(&mut self, path: PathBuf, statements: Vec<Stmt>) {
-        let mut module_builder = ModuleBuilder::new(path.clone());
-        module_builder.build_top_level_statements(self, statements);
-        self.modules.insert(path, module_builder);
-    }
-
-    pub fn finish(self) -> (HashMap<PathBuf, ModuleBuilder>, Vec<SemanticError>) {
-        let mut global_errors = vec![];
-
-        // TODO: Check all imports were resolved.
-        // TODO: Check for a single `main` function in the whole program.
-
-        (self.modules, global_errors)
-    }
-
     pub fn new_declaration_id(&self) -> DeclarationId {
         DeclarationId(self.declaration_id_counter.fetch_add(1, Ordering::SeqCst))
     }
@@ -203,29 +187,6 @@ impl ModuleBuilder {
             errors: vec![],
             scopes: vec![Scope::new(ScopeKind::File)],
         }
-    }
-
-    fn build_top_level_statements(
-        &mut self,
-        program_builder: &mut ProgramBuilder,
-        statements: Vec<Stmt>,
-    ) {
-        let mut ctx = HIRContext {
-            module_builder: self,
-            program_builder,
-        };
-
-        // TODO: One pass to add declarations to the scope (handle forward declarations)
-        for stmt in &statements {
-            todo!()
-        }
-
-        // TODO: Generate HIR
-        for stmt in &statements {
-            todo!()
-        }
-
-        todo!()
     }
 }
 
