@@ -15,7 +15,10 @@ use crate::{
             DeclarationId, Value, ValueId,
         },
         errors::SemanticError,
-        types::{checked_declaration::CheckedDeclaration, checked_type::Type},
+        types::{
+            checked_declaration::{CheckedDeclaration, FnType},
+            checked_type::Type,
+        },
         utils::scope::{Scope, ScopeKind},
     },
     tokenize::NumberKind,
@@ -176,6 +179,18 @@ impl ProgramBuilder {
                 ty
             }
             Value::Use(value_id) => self.get_value_id_type(value_id),
+            Value::Function(declaration_id) => {
+                let fn_decl = self.get_declaration(*declaration_id);
+                match fn_decl {
+                    CheckedDeclaration::Function(checked_fn_decl) => Type::Fn(FnType {
+                        params: checked_fn_decl.params.clone(),
+                        return_type: Box::new(checked_fn_decl.return_type.clone()),
+                    }),
+                    CheckedDeclaration::TypeAlias(..)
+                    | CheckedDeclaration::Var(..)
+                    | CheckedDeclaration::UninitializedVar { .. } => todo!(),
+                }
+            }
         }
     }
 }

@@ -7,6 +7,7 @@ pub mod r#fn;
 pub mod fn_call;
 pub mod identifier;
 pub mod r#if;
+pub mod index;
 pub mod list_literal;
 pub mod r#match;
 pub mod number_literal;
@@ -108,12 +109,11 @@ impl FunctionBuilder {
             ExprKind::Match { conditions, arms } => {
                 self.build_match_expr(ctx, conditions, arms)
             }
-            ExprKind::Struct(fields) => {
-                self.build_struct_init_expr(ctx, fields, expr.span)
-            }
+            ExprKind::Struct(fields) => self.build_struct_init_expr(ctx, fields),
             ExprKind::Tag { name, value } => {
                 self.build_tag_expr(ctx, name, value, expr.span)
             }
+            ExprKind::Index { left, index } => self.build_index_expr(ctx, left, index),
         }
     }
 }

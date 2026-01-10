@@ -30,7 +30,7 @@ impl FunctionBuilder {
 
                     Value::Use(self.emit_load(ctx, ptr_val))
                 }
-                CheckedDeclaration::UninitializedVar { id, identifier } => {
+                CheckedDeclaration::UninitializedVar { identifier, .. } => {
                     return Value::Use(self.report_error_and_get_poison(
                         ctx,
                         SemanticError {
@@ -51,7 +51,7 @@ impl FunctionBuilder {
                     ))
                 }
                 CheckedDeclaration::Function(checked_fn_decl) => {
-                    todo!()
+                    Value::Function(checked_fn_decl.id)
                 }
             },
             None => Value::Use(self.report_error_and_get_poison(

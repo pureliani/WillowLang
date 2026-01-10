@@ -52,8 +52,11 @@ fn suffix_bp(token_kind: &TokenKind) -> Option<(u8, ())> {
     use TokenKind::*;
 
     let priority = match token_kind {
-        Punctuation(LParen) | Punctuation(LBrace) => (14, ()), // fn call and struct init
-        Punctuation(Dot) | Punctuation(DoubleCol) => (14, ()), // member/static accesses
+        Punctuation(LParen) => (14, ()),    // fn call
+        Punctuation(LBrace) => (14, ()),    // struct init
+        Punctuation(Dot) => (14, ()),       // member access
+        Punctuation(DoubleCol) => (14, ()), // static member accesses
+        Punctuation(LBracket) => (14, ()),  // array index
         _ => return None,
     };
 
@@ -229,6 +232,20 @@ impl Parser {
                             kind: ExprKind::StaticAccess {
                                 left: Box::new(lhs_clone),
                                 field,
+                            },
+                            span: self.get_span(start_offset, self.offset - 1)?,
+                        })
+                    }
+                    TokenKind::Punctuation(PunctuationKind::LBracket) => {
+                        let start_offset = self.offset;
+                        self.consume_punctuation(PunctuationKind::LBracket)?;
+                        let index = self.parse_expr(0)?;
+                        self.consume_punctuation(PunctuationKind::RBracket)?;
+
+                        Some(Expr {
+                            kind: ExprKind::Index {
+                                left: Box::new(lhs_clone),
+                                index: Box::new(index),
                             },
                             span: self.get_span(start_offset, self.offset - 1)?,
                         })

@@ -357,7 +357,7 @@ let span = e.span.start.byte_offset..e.span.end.byte_offset;
                             SemanticErrorKind::ContinueKeywordOutsideLoop => report.with_message("Keyword \"continue\" used outside of a loop scope").with_label(label.with_message("Cannot use the \"continue\" keyword outside of a loop scope")),
                             SemanticErrorKind::InvalidLValue => report.with_message("Invalid assignment target").with_label(label.with_message("Invalid assignment target")),
                             SemanticErrorKind::TypeMismatch { expected, received } => {
-                                let constraint_str = type_to_string(&expected.kind, self.string_interner.clone());
+                                let constraint_str = type_to_string(&expected,  string_interner.clone());
                                 let declaration_of_expected = expected.span.start.byte_offset..expected.span.end.byte_offset;
 
                                 report.with_message("Type mismatch").with_labels(vec![

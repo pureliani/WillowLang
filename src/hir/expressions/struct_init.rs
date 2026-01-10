@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::{
-    ast::{expr::Expr, IdentifierNode, Span},
+    ast::{expr::Expr, IdentifierNode},
     hir::{
         cfg::Value,
         errors::{SemanticError, SemanticErrorKind},
@@ -20,7 +20,6 @@ impl FunctionBuilder {
         &mut self,
         ctx: &mut HIRContext,
         fields: Vec<(IdentifierNode, Expr)>,
-        span: Span,
     ) -> Value {
         let mut resolved_fields: Vec<CheckedParam> = Vec::with_capacity(fields.len());
         let mut field_values: HashMap<IdentifierNode, Value> =

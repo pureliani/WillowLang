@@ -24,6 +24,7 @@ pub enum Value {
     VoidLiteral,
     BoolLiteral(bool),
     NumberLiteral(NumberKind),
+    Function(DeclarationId),
     Use(ValueId),
 }
 

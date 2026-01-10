@@ -93,6 +93,10 @@ pub enum ExprKind {
         left: Box<Expr>,
         field: IdentifierNode,
     },
+    Index {
+        left: Box<Expr>,
+        index: Box<Expr>,
+    },
     TypeCast {
         left: Box<Expr>,
         target: TypeAnnotation,
