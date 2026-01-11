@@ -121,7 +121,7 @@ fn check_is_assignable_recursive<'a>(
             let params_compatible = source_params
                 .iter()
                 .zip(target_params.iter())
-                .all(|(sp, tp)| check_is_assignable_recursive(&sp.ty, &tp.ty, visited));
+                .all(|(sp, tp)| check_is_assignable_recursive(&tp.ty, &sp.ty, visited));
 
             if !params_compatible {
                 return false;
