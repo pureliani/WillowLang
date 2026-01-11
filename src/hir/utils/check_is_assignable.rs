@@ -5,18 +5,23 @@ use crate::hir::types::{
     checked_type::{StructKind, Type},
 };
 
-pub fn check_is_assignable(source_type: &Type, target_type: &Type) -> bool {
-    let mut visited_declarations: HashSet<(usize, usize)> = HashSet::new();
+pub fn check_is_assignable<'a>(source_type: &'a Type, target_type: &'a Type) -> bool {
+    let mut visited_declarations: HashSet<(&'a Type, &'a Type)> = HashSet::new();
     check_is_assignable_recursive(source_type, target_type, &mut visited_declarations)
 }
 
-fn check_is_assignable_recursive(
-    source_type: &Type,
-    target_type: &Type,
-    visited_declarations: &mut HashSet<(usize, usize)>,
+fn check_is_assignable_recursive<'a>(
+    source_type: &'a Type,
+    target_type: &'a Type,
+    visited: &mut HashSet<(&'a Type, &'a Type)>,
 ) -> bool {
+    let pair = (source_type, target_type);
+    if visited.contains(&pair) {
+        return true;
+    }
+    visited.insert(pair);
+
     use Type::*;
-    // TODO: add recursion detection and handling
 
     let result = match (&source_type, &target_type) {
         (I8, I8)
@@ -37,17 +42,18 @@ fn check_is_assignable_recursive(
         | (_, Unknown)
         | (Unknown, _) => true,
 
+        (Pointer(s), Pointer(t)) => {
+            check_is_assignable_recursive(s, t, visited)
+                && check_is_assignable_recursive(t, s, visited)
+        }
+
         (Struct(source), Struct(target)) => match (source, target) {
             (
                 StructKind::Union { variants: source },
                 StructKind::Union { variants: target },
             ) => source.into_iter().all(|source_item| {
                 target.into_iter().any(|target_item| {
-                    check_is_tag_assignable(
-                        source_item,
-                        target_item,
-                        visited_declarations,
-                    )
+                    check_is_tag_assignable(source_item, target_item, visited)
                 })
             }),
             (
@@ -56,10 +62,10 @@ fn check_is_assignable_recursive(
                     variants: target_union,
                 },
             ) => target_union.iter().any(|target_item| {
-                check_is_tag_assignable(source_item, target_item, visited_declarations)
+                check_is_tag_assignable(source_item, target_item, visited)
             }),
             (StructKind::Tag(t1), StructKind::Tag(t2)) => {
-                check_is_tag_assignable(t1, t2, visited_declarations)
+                check_is_tag_assignable(t1, t2, visited)
             }
             (
                 StructKind::UserDefined(source_fields),
@@ -75,11 +81,8 @@ fn check_is_assignable_recursive(
                         .zip(target_fields.iter())
                         .all(|(sp, tp)| {
                             let same_name = sp.identifier.name == tp.identifier.name;
-                            let assignable = check_is_assignable_recursive(
-                                &sp.ty,
-                                &tp.ty,
-                                visited_declarations,
-                            );
+                            let assignable =
+                                check_is_assignable_recursive(&sp.ty, &tp.ty, visited);
 
                             same_name && assignable
                         });
@@ -94,11 +97,7 @@ fn check_is_assignable_recursive(
                 todo!()
             }
             (StructKind::List(source_item_type), StructKind::List(target_item_type)) => {
-                check_is_assignable_recursive(
-                    source_item_type,
-                    target_item_type,
-                    visited_declarations,
-                )
+                check_is_assignable_recursive(source_item_type, target_item_type, visited)
             }
             (StructKind::String, StructKind::String) => true,
             _ => false,
@@ -119,17 +118,10 @@ fn check_is_assignable_recursive(
                 return false;
             }
 
-            let params_compatible =
-                source_params
-                    .iter()
-                    .zip(target_params.iter())
-                    .all(|(sp, tp)| {
-                        check_is_assignable_recursive(
-                            &sp.ty,
-                            &tp.ty,
-                            visited_declarations,
-                        )
-                    });
+            let params_compatible = source_params
+                .iter()
+                .zip(target_params.iter())
+                .all(|(sp, tp)| check_is_assignable_recursive(&sp.ty, &tp.ty, visited));
 
             if !params_compatible {
                 return false;
@@ -138,7 +130,7 @@ fn check_is_assignable_recursive(
             let returns_compatible = check_is_assignable_recursive(
                 &source_return_type,
                 &target_return_type,
-                visited_declarations,
+                visited,
             );
 
             returns_compatible
@@ -146,13 +138,15 @@ fn check_is_assignable_recursive(
         _ => false,
     };
 
+    visited.remove(&pair);
+
     result
 }
 
-fn check_is_tag_assignable(
-    source_tag: &TagType,
-    target_tag: &TagType,
-    visited_declarations: &mut HashSet<(usize, usize)>,
+fn check_is_tag_assignable<'a>(
+    source_tag: &'a TagType,
+    target_tag: &'a TagType,
+    visited_declarations: &mut HashSet<(&'a Type, &'a Type)>,
 ) -> bool {
     match (source_tag, target_tag) {
         (
