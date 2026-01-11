@@ -4,7 +4,9 @@ use crate::{
         cfg::{Terminator, Value},
         errors::{SemanticError, SemanticErrorKind},
         types::checked_declaration::{CheckedDeclaration, CheckedParam, CheckedVarDecl},
-        utils::check_type::check_type_annotation,
+        utils::{
+            check_is_assignable::check_is_assignable, check_type::check_type_annotation,
+        },
         FunctionBuilder, HIRContext,
     },
 };
@@ -40,7 +42,7 @@ impl FunctionBuilder {
         let final_value = self.build_codeblock_expr(ctx, body);
         let final_value_type = ctx.program_builder.get_value_type(&final_value);
 
-        if !self.check_is_assignable(&final_value_type, &self.return_type) {
+        if !check_is_assignable(&final_value_type, &self.return_type) {
             ctx.module_builder.errors.push(SemanticError {
                 span: Span::default(), // TODO: fix later
                 kind: SemanticErrorKind::ReturnTypeMismatch {

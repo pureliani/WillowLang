@@ -6,7 +6,7 @@ use crate::{
         cfg::Terminator,
         errors::{SemanticError, SemanticErrorKind},
         types::checked_type::Type,
-        utils::scope::ScopeKind,
+        utils::{check_is_assignable::check_is_assignable, scope::ScopeKind},
         FunctionBuilder, HIRContext,
     },
 };
@@ -33,7 +33,7 @@ impl FunctionBuilder {
         let condition_value = self.build_expr(ctx, *condition);
         let condition_type = ctx.program_builder.get_value_type(&condition_value);
 
-        if !self.check_is_assignable(&condition_type, &Type::Bool) {
+        if !check_is_assignable(&condition_type, &Type::Bool) {
             ctx.program_builder.errors.push(SemanticError {
                 span: condition_span,
                 kind: SemanticErrorKind::TypeMismatch {

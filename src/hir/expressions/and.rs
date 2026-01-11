@@ -4,6 +4,7 @@ use crate::{
         cfg::{Terminator, Value},
         errors::{SemanticError, SemanticErrorKind},
         types::checked_type::Type,
+        utils::check_is_assignable::check_is_assignable,
         FunctionBuilder, HIRContext,
     },
 };
@@ -24,7 +25,7 @@ impl FunctionBuilder {
         let left_value = self.build_expr(ctx, *left);
 
         let left_type = ctx.program_builder.get_value_type(&left_value);
-        if !self.check_is_assignable(&left_type, &Type::Bool) {
+        if !check_is_assignable(&left_type, &Type::Bool) {
             return Value::Use(self.report_error_and_get_poison(
                 ctx,
                 SemanticError {
@@ -52,7 +53,7 @@ impl FunctionBuilder {
         let right_value = self.build_expr(ctx, *right);
 
         let right_type = ctx.program_builder.get_value_type(&right_value);
-        if !self.check_is_assignable(&right_type, &Type::Bool) {
+        if !check_is_assignable(&right_type, &Type::Bool) {
             return Value::Use(self.report_error_and_get_poison(
                 ctx,
                 SemanticError {

@@ -6,6 +6,7 @@ use crate::{
         cfg::Value,
         errors::{SemanticError, SemanticErrorKind},
         types::checked_type::{StructKind, Type},
+        utils::check_is_assignable::check_is_assignable,
         FunctionBuilder, HIRContext,
     },
 };
@@ -27,7 +28,7 @@ impl FunctionBuilder {
         let index_type = ctx.program_builder.get_value_type(&index_val);
 
         // TODO: allow smaller unsigned types
-        if !self.check_is_assignable(&index_type, &Type::USize) {
+        if !check_is_assignable(&index_type, &Type::USize) {
             return Value::Use(self.report_error_and_get_poison(
                 ctx,
                 SemanticError {

@@ -9,7 +9,10 @@ use crate::{
         },
         errors::{SemanticError, SemanticErrorKind},
         types::checked_type::{StructKind, Type},
-        utils::{check_is_equatable::check_is_equatable, numeric::is_signed},
+        utils::{
+            check_is_assignable::check_is_assignable,
+            check_is_equatable::check_is_equatable, numeric::is_signed,
+        },
         FunctionBuilder, HIRContext, ModuleBuilder,
     },
 };
@@ -50,7 +53,7 @@ impl FunctionBuilder {
     ) -> Result<ValueId, SemanticError> {
         let count_type = ctx.program_builder.get_value_type(&count);
         let expected_count_type = Type::USize;
-        if !self.check_is_assignable(&count_type, &expected_count_type) {
+        if !check_is_assignable(&count_type, &expected_count_type) {
             return Err(SemanticError {
                 span: Span::default(), // TODO: Fix span propagation
                 kind: SemanticErrorKind::TypeMismatch {
@@ -75,7 +78,7 @@ impl FunctionBuilder {
             _ => panic!("INTERNAL COMPILER ERROR: Expected destination_ptr_id to be of Pointer type"),
         };
 
-        if !self.check_is_assignable(&value_type, &target_type) {
+        if !check_is_assignable(&value_type, &target_type) {
             ctx.program_builder.errors.push(SemanticError {
                 span: Span::default(), // TODO: Fix span
                 kind: SemanticErrorKind::TypeMismatch {
@@ -170,7 +173,7 @@ impl FunctionBuilder {
         index: Value,
     ) -> Result<ValueId, SemanticError> {
         let index_type = ctx.program_builder.get_value_type(&index);
-        if !self.check_is_assignable(&index_type, &Type::USize) {
+        if !check_is_assignable(&index_type, &Type::USize) {
             return Err(SemanticError {
                 span: Span::default(),
                 kind: SemanticErrorKind::TypeMismatch {
@@ -234,7 +237,7 @@ impl FunctionBuilder {
             UnaryOperationKind::Not => {
                 let bool_type = Type::Bool;
 
-                if !self.check_is_assignable(&value_type, &bool_type) {
+                if !check_is_assignable(&value_type, &bool_type) {
                     return Err(SemanticError {
                         kind: SemanticErrorKind::TypeMismatch {
                             expected: bool_type.clone(),
@@ -360,7 +363,7 @@ impl FunctionBuilder {
             let arg_type = ctx.program_builder.get_value_type(arg_value);
             let param_type = &param_decl.ty;
 
-            if !self.check_is_assignable(&arg_type, param_type) {
+            if !check_is_assignable(&arg_type, param_type) {
                 return Err(SemanticError {
                     span: Span::default(), // TODO: Fix span
                     kind: SemanticErrorKind::TypeMismatch {

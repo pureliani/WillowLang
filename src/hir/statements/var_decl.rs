@@ -4,7 +4,9 @@ use crate::{
         cfg::Value,
         errors::{SemanticError, SemanticErrorKind},
         types::checked_declaration::{CheckedDeclaration, CheckedVarDecl},
-        utils::check_type::check_type_annotation,
+        utils::{
+            check_is_assignable::check_is_assignable, check_type::check_type_annotation,
+        },
         FunctionBuilder, HIRContext,
     },
 };
@@ -34,7 +36,7 @@ impl FunctionBuilder {
                 let expected_constraint =
                     check_type_annotation(ctx, &constraint_annotation);
 
-                if !self.check_is_assignable(&initial_value_type, &expected_constraint) {
+                if !check_is_assignable(&initial_value_type, &expected_constraint) {
                     ctx.module_builder.errors.push(SemanticError {
                         span: initial_value_span,
                         kind: SemanticErrorKind::TypeMismatch {

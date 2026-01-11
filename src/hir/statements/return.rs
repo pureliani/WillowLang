@@ -4,6 +4,7 @@ use crate::{
         cfg::Terminator,
         errors::{SemanticError, SemanticErrorKind},
         types::checked_type::Type,
+        utils::check_is_assignable::check_is_assignable,
         FunctionBuilder, HIRContext,
     },
 };
@@ -13,7 +14,7 @@ impl FunctionBuilder {
         let return_value = self.build_expr(ctx, value);
         let return_type = ctx.program_builder.get_value_type(&return_value);
 
-        if !self.check_is_assignable(&return_type, &self.return_type) {
+        if !check_is_assignable(&return_type, &self.return_type) {
             ctx.module_builder.errors.push(SemanticError {
                 kind: SemanticErrorKind::ReturnTypeMismatch {
                     expected: self.return_type.clone(),

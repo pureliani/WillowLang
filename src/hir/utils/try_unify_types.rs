@@ -6,6 +6,7 @@ use crate::{
             checked_declaration::TagType,
             checked_type::{StructKind, Type},
         },
+        utils::check_is_assignable::check_is_assignable,
         FunctionBuilder,
     },
 };
@@ -59,7 +60,7 @@ impl FunctionBuilder {
 
         let (first_type, _) = &entries[0];
         for (ty, span) in entries.iter().skip(1) {
-            if !self.check_is_assignable(ty, first_type) {
+            if !check_is_assignable(ty, first_type) {
                 return Err(SemanticError {
                     span: *span,
                     kind: SemanticErrorKind::TypeMismatch {

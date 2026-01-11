@@ -1,10 +1,13 @@
 use crate::{
-    ast::expr::{BlockContents, Expr},
-    ast::Span,
+    ast::{
+        expr::{BlockContents, Expr},
+        Span,
+    },
     hir::{
         cfg::{BasicBlockId, Terminator, Value},
         errors::{SemanticError, SemanticErrorKind},
         types::checked_type::Type,
+        utils::check_is_assignable::check_is_assignable,
         FunctionBuilder, HIRContext,
     },
 };
@@ -50,7 +53,7 @@ impl FunctionBuilder {
             let condition_value_type =
                 ctx.program_builder.get_value_type(&condition_value);
 
-            if !self.check_is_assignable(&condition_value_type, &Type::Bool) {
+            if !check_is_assignable(&condition_value_type, &Type::Bool) {
                 ctx.program_builder.errors.push(SemanticError {
                     span: condition_span,
                     kind: SemanticErrorKind::TypeMismatch {
