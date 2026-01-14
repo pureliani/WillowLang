@@ -1,5 +1,9 @@
 use std::{
-    borrow::Borrow, collections::HashMap, hash::Hash, marker::PhantomData, sync::RwLock,
+    borrow::Borrow,
+    collections::HashMap,
+    hash::Hash,
+    marker::PhantomData,
+    sync::{Arc, RwLock},
 };
 
 pub trait Id: Copy + Eq + Hash {
@@ -164,3 +168,9 @@ where
 
 pub type SharedStringInterner = SharedInterner<String, StringId>;
 pub type SharedTagInterner = SharedInterner<StringId, TagId>;
+
+#[derive(Clone)]
+pub struct Interners {
+    pub string_interner: Arc<SharedStringInterner>,
+    pub tag_interner: Arc<SharedTagInterner>,
+}

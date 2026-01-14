@@ -89,13 +89,6 @@ fn check_is_assignable_recursive<'a>(
 
                 is_assignable
             }
-            (
-                StructKind::ClosureObject(source_object),
-                StructKind::ClosureObject(target_object),
-            ) => todo!(),
-            (StructKind::ClosureEnv(source_env), StructKind::ClosureEnv(target_env)) => {
-                todo!()
-            }
             (StructKind::List(source_item_type), StructKind::List(target_item_type)) => {
                 check_is_assignable_recursive(source_item_type, target_item_type, visited)
             }

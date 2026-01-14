@@ -71,6 +71,7 @@ pub enum SemanticErrorKind {
         module_path: PathBuf,
         symbol: IdentifierNode,
     },
+    ClosuresNotSupportedYet,
 }
 
 #[derive(Debug, Clone)]
@@ -121,6 +122,7 @@ impl SemanticErrorKind {
             SemanticErrorKind::UseOfUninitializedVariable(..) => 38,
             SemanticErrorKind::DuplicateUnionVariant(_) => 39,
             SemanticErrorKind::SymbolNotExported { .. } => 40,
+            SemanticErrorKind::ClosuresNotSupportedYet => 41,
         }
     }
 }

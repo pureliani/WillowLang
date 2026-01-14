@@ -109,12 +109,10 @@ pub fn check_type_annotation(ctx: &mut HIRContext, annotation: &TypeAnnotation) 
             let checked_params = check_params(ctx, params);
             let checked_return_type = check_type_annotation(ctx, return_type);
 
-            let fn_type = FnType {
+            Type::Fn(FnType {
                 params: checked_params,
                 return_type: Box::new(checked_return_type),
-            };
-
-            Type::Struct(StructKind::ClosureObject(fn_type))
+            })
         }
         TypeAnnotationKind::Struct(items) => {
             let checked_field_types: Vec<CheckedParam> = items

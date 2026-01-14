@@ -8,7 +8,7 @@ use crate::{
             ValueId,
         },
         errors::{SemanticError, SemanticErrorKind},
-        types::checked_type::{StructKind, Type},
+        types::{checked_declaration::CheckedDeclaration, checked_type::Type},
         utils::{
             check_is_assignable::check_is_assignable,
             check_is_equatable::check_is_equatable, numeric::is_signed,
@@ -330,22 +330,43 @@ impl FunctionBuilder {
     pub fn emit_function_call(
         &mut self,
         ctx: &mut HIRContext,
-        value: Value,
+        function_value: Value,
         args: Vec<Value>,
         call_span: Span,
     ) -> Result<Option<ValueId>, SemanticError> {
-        let value_type = ctx.program_builder.get_value_type(&value);
-
-        let (params, return_type) = match &value_type {
-            Type::Fn(fn_type) => (fn_type.params.clone(), fn_type.return_type.clone()),
-            Type::Struct(s) if matches!(s, StructKind::ClosureObject(_)) => {
-                todo!();
+        let (fn_ptr_val, params, return_type) = match function_value {
+            Value::Function(decl_id) => {
+                let decl = ctx.program_builder.get_declaration(decl_id);
+                match decl {
+                    CheckedDeclaration::Function(f) => (
+                        Value::Function(decl_id),
+                        f.params.clone(),
+                        f.return_type.clone(),
+                    ),
+                    _ => panic!("INTERNAL COMPILER ERROR: Value::Function(DeclarationId) contained non-function declaration id"),
+                }
+            }
+            Value::Use(val_id) => {
+                let ty = ctx.program_builder.get_value_id_type(&val_id);
+                match ty {
+                    Type::Fn(fn_type) => (
+                        Value::Use(val_id),
+                        fn_type.params.clone(),
+                        *fn_type.return_type.clone(),
+                    ),
+                    _ => {
+                        return Err(SemanticError {
+                            kind: SemanticErrorKind::CannotCall(ty),
+                            span: call_span,
+                        })
+                    }
+                }
             }
             _ => {
                 return Err(SemanticError {
-                    kind: SemanticErrorKind::CannotCall(value_type),
+                    kind: SemanticErrorKind::CannotCall(Type::Unknown),
                     span: call_span,
-                });
+                })
             }
         };
 
@@ -359,30 +380,28 @@ impl FunctionBuilder {
             });
         }
 
-        for (arg_value, param_decl) in args.iter().zip(params.iter()) {
-            let arg_type = ctx.program_builder.get_value_type(arg_value);
-            let param_type = &param_decl.ty;
-
-            if !check_is_assignable(&arg_type, param_type) {
+        for (arg, param) in args.iter().zip(params.iter()) {
+            let arg_ty = ctx.program_builder.get_value_type(arg);
+            if !check_is_assignable(&param.ty, &arg_ty) {
                 return Err(SemanticError {
-                    span: Span::default(), // TODO: Fix span
                     kind: SemanticErrorKind::TypeMismatch {
-                        expected: param_type.clone(),
-                        received: arg_type,
+                        expected: param.ty.clone(),
+                        received: arg_ty,
                     },
+                    span: call_span,
                 });
             }
         }
 
-        let destination_id = if *return_type != Type::Void {
-            Some(self.alloc_value(ctx, *return_type))
+        let destination_id = if return_type != Type::Void {
+            Some(self.alloc_value(ctx, return_type))
         } else {
             None
         };
 
         self.push_instruction(Instruction::FunctionCall {
             destination: destination_id,
-            function_rvalue: value,
+            function_rvalue: fn_ptr_val,
             args,
         });
 

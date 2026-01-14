@@ -97,7 +97,7 @@ impl FunctionBuilder {
             ExprKind::Identifier(identifier) => {
                 self.build_identifier_expr(ctx, identifier)
             }
-            ExprKind::Fn(decl) => self.build_fn_expr(ctx, decl),
+            ExprKind::Fn(decl) => FunctionBuilder::build(ctx, decl),
             ExprKind::If {
                 branches,
                 else_branch,

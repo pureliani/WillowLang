@@ -84,10 +84,6 @@ pub fn pack_struct(
             sort_fields(program_builder, &mut fields);
             StructKind::UserDefined(fields)
         }
-        StructKind::ClosureEnv(mut fields) => {
-            sort_fields(program_builder, &mut fields);
-            StructKind::ClosureEnv(fields)
-        }
         _ => {
             panic!("INTERNAL COMPILER ERROR: Cannot pack struct that is neither user defined nor closure environment!");
         }

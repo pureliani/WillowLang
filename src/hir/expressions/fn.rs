@@ -1,9 +1,13 @@
+use std::collections::{HashMap, HashSet};
+
 use crate::{
     ast::{decl::FnDecl, expr::BlockContents, Span},
     hir::{
-        cfg::{Terminator, Value},
+        cfg::{BasicBlock, BasicBlockId, ControlFlowGraph, Terminator, Value},
         errors::{SemanticError, SemanticErrorKind},
-        types::checked_declaration::{CheckedDeclaration, CheckedParam, CheckedVarDecl},
+        types::checked_declaration::{
+            CheckedDeclaration, CheckedFnDecl, CheckedParam, CheckedVarDecl,
+        },
         utils::{
             check_is_assignable::check_is_assignable, check_type::check_type_annotation,
         },
@@ -12,62 +16,22 @@ use crate::{
 };
 
 impl FunctionBuilder {
-    pub fn build_fn_body(
-        &mut self,
-        ctx: &mut HIRContext,
-        params: &[CheckedParam],
-        body: BlockContents,
-    ) {
-        for param in params {
-            let variable_stack_ptr = self.emit_stack_alloc(ctx, param.ty.clone(), 1);
-
-            // The calling convention will be responsible for storing the actual argument value
-            // into this variable's stack slot before the function body begins execution.
-
-            let checked_var_decl = CheckedVarDecl {
-                id: ctx.program_builder.new_declaration_id(),
-                ptr: variable_stack_ptr,
-                identifier: param.identifier,
-                documentation: None,
-                constraint: param.ty.clone(),
-            };
-
-            ctx.module_builder.scope_insert(
-                ctx.program_builder,
-                param.identifier,
-                CheckedDeclaration::Var(checked_var_decl),
-            );
-        }
-
-        let final_value = self.build_codeblock_expr(ctx, body);
-        let final_value_type = ctx.program_builder.get_value_type(&final_value);
-
-        if !check_is_assignable(&final_value_type, &self.return_type) {
+    pub fn build(ctx: &mut HIRContext, fn_decl: FnDecl) -> Value {
+        if !ctx.module_builder.is_file_scope() {
             ctx.module_builder.errors.push(SemanticError {
-                span: Span::default(), // TODO: fix later
-                kind: SemanticErrorKind::ReturnTypeMismatch {
-                    expected: self.return_type.clone(),
-                    received: final_value_type,
-                },
+                kind: SemanticErrorKind::ClosuresNotSupportedYet,
+                span: fn_decl.identifier.span,
             });
-
-            self.set_basic_block_terminator(Terminator::Unreachable);
-            return;
+            return Value::VoidLiteral;
         }
 
-        self.set_basic_block_terminator(Terminator::Return {
-            value: Some(final_value),
-        });
-    }
-
-    pub fn build_fn_expr(&mut self, ctx: &mut HIRContext, fn_decl: FnDecl) -> Value {
         let FnDecl {
             identifier,
             params,
             return_type,
             body,
             is_exported,
-            documentation,
+            ..
         } = fn_decl;
 
         let checked_params: Vec<CheckedParam> = params
@@ -79,6 +43,97 @@ impl FunctionBuilder {
             .collect();
         let checked_return_type = check_type_annotation(ctx, &return_type);
 
-        todo!()
+        let entry_block_id = BasicBlockId(0);
+        let cfg = ControlFlowGraph {
+            blocks: HashMap::from([(
+                entry_block_id,
+                BasicBlock {
+                    id: entry_block_id,
+                    instructions: vec![],
+                    terminator: None,
+                    params: vec![],
+                },
+            )]),
+            entry_block: entry_block_id,
+        };
+
+        let mut inner_builder = FunctionBuilder {
+            cfg,
+            return_type: checked_return_type.clone(),
+            current_block_id: entry_block_id,
+            predecessors: HashMap::new(),
+            block_value_maps: HashMap::new(),
+            value_definitions: HashMap::new(),
+            sealed_blocks: HashSet::new(),
+            incomplete_params: HashMap::new(),
+            block_id_counter: 1,
+            value_id_counter: 0,
+        };
+        inner_builder.sealed_blocks.insert(entry_block_id);
+
+        ctx.module_builder
+            .enter_scope(crate::hir::utils::scope::ScopeKind::Function);
+
+        for param in &checked_params {
+            let arg_ssa_val =
+                inner_builder.append_block_param(ctx, entry_block_id, param.ty.clone());
+
+            let stack_ptr = inner_builder.emit_stack_alloc(ctx, param.ty.clone(), 1);
+
+            inner_builder.emit_store(ctx, stack_ptr, Value::Use(arg_ssa_val));
+
+            let decl = CheckedVarDecl {
+                id: ctx.program_builder.new_declaration_id(),
+                ptr: stack_ptr,
+                identifier: param.identifier,
+                documentation: None,
+                constraint: param.ty.clone(),
+            };
+
+            ctx.module_builder.scope_insert(
+                ctx.program_builder,
+                param.identifier,
+                CheckedDeclaration::Var(decl),
+            );
+        }
+
+        inner_builder.build_fn_body(ctx, body);
+        ctx.module_builder.exit_scope();
+
+        let decl_id = ctx.program_builder.new_declaration_id();
+        let checked_fn_decl = CheckedFnDecl {
+            id: decl_id,
+            identifier,
+            params: checked_params,
+            return_type: checked_return_type,
+            body: Some(inner_builder.cfg),
+            is_exported,
+        };
+
+        ctx.program_builder
+            .declarations
+            .insert(decl_id, CheckedDeclaration::Function(checked_fn_decl));
+
+        Value::Function(decl_id)
+    }
+
+    fn build_fn_body(&mut self, ctx: &mut HIRContext, body: BlockContents) {
+        let final_value = self.build_codeblock_expr(ctx, body);
+        let final_value_type = ctx.program_builder.get_value_type(&final_value);
+
+        if !check_is_assignable(&final_value_type, &self.return_type) {
+            ctx.module_builder.errors.push(SemanticError {
+                span: Span::default(), // TODO: Fix span propagation
+                kind: SemanticErrorKind::ReturnTypeMismatch {
+                    expected: self.return_type.clone(),
+                    received: final_value_type,
+                },
+            });
+            self.set_basic_block_terminator(Terminator::Unreachable);
+        } else {
+            self.set_basic_block_terminator(Terminator::Return {
+                value: Some(final_value),
+            });
+        }
     }
 }

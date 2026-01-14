@@ -17,22 +17,19 @@ use crate::{
     },
     compile::{
         file_cache::FileCache,
-        interner::{SharedStringInterner, SharedTagInterner},
+        interner::{Interners, SharedStringInterner, SharedTagInterner},
     },
     hir::{
         errors::{SemanticError, SemanticErrorKind},
-        utils::type_to_string::type_to_string,
+        utils::type_to_string::{token_kind_to_string, type_to_string},
         ProgramBuilder,
     },
     parse::{Parser, ParsingError, ParsingErrorKind},
-    tokenize::{
-        token_kind_to_string, TokenizationError, TokenizationErrorKind, Tokenizer,
-    },
+    tokenize::{TokenizationError, TokenizationErrorKind, Tokenizer},
 };
 
 pub struct Compiler {
-    string_interner: Arc<SharedStringInterner>,
-    tag_interner: Arc<SharedTagInterner>,
+    interners: Interners,
     files: Arc<Mutex<FileCache>>,
     errors: Vec<CompilationError>,
 }
@@ -74,8 +71,10 @@ pub struct ParallelParseResult {
 impl Compiler {
     pub fn new() -> Self {
         Self {
-            string_interner: Arc::new(SharedStringInterner::default()),
-            tag_interner: Arc::new(SharedTagInterner::default()),
+            interners: Interners {
+                string_interner: Arc::new(SharedStringInterner::default()),
+                tag_interner: Arc::new(SharedTagInterner::default()),
+            },
             files: Arc::new(Mutex::new(FileCache::default())),
             errors: Vec::new(),
         }
@@ -115,8 +114,10 @@ impl Compiler {
             return;
         }
 
-        let mut program_builder =
-            ProgramBuilder::new(self.string_interner.clone(), self.tag_interner.clone());
+        let mut program_builder = ProgramBuilder::new(
+            self.interners.string_interner.clone(),
+            self.interners.tag_interner.clone(),
+        );
 
         // TODO: Pass `modules_to_compile` to the program_builder to generate HIR
         // let semantic_errors = program_builder.build(modules_to_compile);
@@ -143,7 +144,7 @@ impl Compiler {
             fn parse_recursive(
                 path: PathBuf,
                 s: &rayon::Scope,
-                interner: Arc<SharedStringInterner>,
+                interners: Interners,
                 files: Arc<Mutex<FileCache>>,
                 visited: Arc<Mutex<HashSet<PathBuf>>>,
                 all_results: Arc<
@@ -170,15 +171,15 @@ impl Compiler {
                 };
 
                 let (tokens, tokenization_errors) =
-                    Tokenizer::tokenize(&source_code, interner.clone());
+                    Tokenizer::tokenize(&source_code, interners.string_interner.clone());
                 let (statements, parsing_errors) =
-                    Parser::parse(tokens, interner.clone());
+                    Parser::parse(tokens, interners.string_interner.clone());
 
                 let (dependencies, dependency_errors, declarations) =
                     find_dependencies(&path, &statements);
 
                 for dep_path in dependencies {
-                    let interner = Arc::clone(&interner);
+                    let cloned_interners = interners.clone();
                     let files = Arc::clone(&files);
                     let visited = Arc::clone(&visited);
                     let all_results = Arc::clone(&all_results);
@@ -187,7 +188,7 @@ impl Compiler {
                         parse_recursive(
                             dep_path,
                             s,
-                            interner,
+                            cloned_interners,
                             files,
                             visited,
                             all_results,
@@ -211,7 +212,7 @@ impl Compiler {
             parse_recursive(
                 canonical_main,
                 s,
-                self.string_interner.clone(),
+                self.interners.clone(),
                 self.files.clone(),
                 visited,
                 all_results.clone(),
@@ -295,13 +296,13 @@ impl Compiler {
                                 .with_label(label.with_message("This documentation must be followed by a declaration of a type alias or a variable")),
                             ParsingErrorKind::ExpectedAnExpressionButFound(token) => report
                                 .with_message("Expected an expression")
-                                .with_label(label.with_message(format!("Expected an expression but instead found token \"{}\"", token_kind_to_string(&token.kind, self.string_interner.clone())))),
+                                .with_label(label.with_message(format!("Expected an expression but instead found token \"{}\"", token_kind_to_string(&token.kind, &self.interners)))),
                             ParsingErrorKind::ExpectedATypeButFound(token) => report
                                 .with_message("Expected a type")
-                                .with_label(label.with_message(format!("Expected a type but instead found token \"{}\"", token_kind_to_string(&token.kind, self.string_interner.clone())))),
+                                .with_label(label.with_message(format!("Expected a type but instead found token \"{}\"", token_kind_to_string(&token.kind, &self.interners)))),
                             ParsingErrorKind::InvalidSuffixOperator(token) => report
                                 .with_message("Invalid suffix operator")
-                                .with_label(label.with_message(format!("Invalid token as expression suffix operator \"{}\"", token_kind_to_string(&token.kind, self.string_interner.clone())))),
+                                .with_label(label.with_message(format!("Invalid token as expression suffix operator \"{}\"", token_kind_to_string(&token.kind, &self.interners)))),
                             ParsingErrorKind::UnexpectedEndOfInput => report.with_message("Unexpected end of input").with_label(label.with_message("Unexpected end of input")),
                             ParsingErrorKind::ExpectedAnIdentifier => report.with_message("Expected an identifier").with_label(label.with_message("Expected an identifier")),
                             ParsingErrorKind::ExpectedAPunctuationMark(punctuation_kind) => report.with_message("Expected a punctuation mark").with_label(label.with_message(format!("Expected the \"{}\" punctuation mark", punctuation_kind.to_string()))),
@@ -309,16 +310,16 @@ impl Compiler {
                             ParsingErrorKind::ExpectedAStringValue => report.with_message("Expected a string literal").with_label(label.with_message("Expected a string literal")),
                             ParsingErrorKind::ExpectedANumericValue => report.with_message("Expected a numeric literal").with_label(label.with_message("Expected a numeric literal")),
                             ParsingErrorKind::UnknownStaticMethod(identifier_node) => {
-                                let name = self.string_interner.resolve(identifier_node.name);
+                                let name = self.interners.string_interner.resolve(identifier_node.name);
                                 report.with_message("Unknown static method").with_label(label.with_message(format!("Static method with name \"{}\" doesn't exist", name)))
                             }
                             ParsingErrorKind::UnexpectedStatementAfterFinalExpression => report.with_message("Unexpected statement after final expression").with_label(label.with_message("Final expression of a codeblock must not be followed by another statement")),
                             ParsingErrorKind::ExpectedStatementOrExpression { found } => report
                                 .with_message("Expected a statement or an expression")
-                                .with_label(label.with_message(format!("Expected a statement or an expression but instead found token \"{}\"", token_kind_to_string(&found.kind, self.string_interner.clone())))),
+                                .with_label(label.with_message(format!("Expected a statement or an expression but instead found token \"{}\"", token_kind_to_string(&found.kind, &self.interners)))),
                             ParsingErrorKind::UnexpectedTokenAfterFinalExpression { found } => report
                                 .with_message("Unexpected token after final expression")
-                                .with_label(label.with_message(format!("Unexpected token \"{}\" after final expression", token_kind_to_string(&found.kind, self.string_interner.clone())))),
+                                .with_label(label.with_message(format!("Unexpected token \"{}\" after final expression", token_kind_to_string(&found.kind, &self.interners)))),
                             ParsingErrorKind::ExpectedATagTypeButFound(type_annotation) => todo!(),
                             ParsingErrorKind::ExpectedToBeFollowedByOneOfTheTokens(tokens) => todo!(),
                         };
@@ -340,15 +341,15 @@ let span = e.span.start.byte_offset..e.span.end.byte_offset;
                             SemanticErrorKind::MixedFloatAndInteger => report.with_message("Mixed float and integer operands").with_label(label.with_message("Mixing integer and floating-point numbers in an arithmetic operation is not allowed")),
                             SemanticErrorKind::CannotCompareType { of, to } => {
                                 report.with_message("Cannot compare types")
-                                    .with_label(label.with_message(format!("Cannot compare type \"{}\" to type \"{}\"", type_to_string(&of.kind, self.string_interner.clone()), type_to_string(&to.kind, self.string_interner.clone()))))
+                                    .with_label(label.with_message(format!("Cannot compare type \"{}\" to type \"{}\"", type_to_string(&of, &self.interners), type_to_string(&to, &self.interners))))
                             }
                             SemanticErrorKind::UndeclaredIdentifier(id) => {
-                                let name = self.string_interner.resolve(id.name);
+                                let name = self.interners.string_interner.resolve(id.name);
 
                                 report.with_message("Undeclared identifier").with_label(label.with_message(format!("Undeclared identifier \"{}\"", name)))
                             }
                             SemanticErrorKind::UndeclaredType(id) => {
-                                let name = self.string_interner.resolve(id.name);
+                                let name = self.interners.string_interner.resolve(id.name);
 
                                 report.with_message("Undeclared type").with_label(label.with_message(format!("Undeclared type \"{}\"", name)))
                             }
@@ -357,27 +358,24 @@ let span = e.span.start.byte_offset..e.span.end.byte_offset;
                             SemanticErrorKind::ContinueKeywordOutsideLoop => report.with_message("Keyword \"continue\" used outside of a loop scope").with_label(label.with_message("Cannot use the \"continue\" keyword outside of a loop scope")),
                             SemanticErrorKind::InvalidLValue => report.with_message("Invalid assignment target").with_label(label.with_message("Invalid assignment target")),
                             SemanticErrorKind::TypeMismatch { expected, received } => {
-                                let constraint_str = type_to_string(&expected,  string_interner.clone());
-                                let declaration_of_expected = expected.span.start.byte_offset..expected.span.end.byte_offset;
+                                let expected_type_str = type_to_string(&expected, &self.interners);
+                                let received_type_str = type_to_string(&expected, &self.interners);
 
-                                report.with_message("Type mismatch").with_labels(vec![
-                                    label.with_message(format!("Type mismatch, expected `{}`, instead found `{}`", constraint_str, type_to_string(&received.kind, self.string_interner.clone()))),
-                                    Label::new((path.clone(), declaration_of_expected)).with_message(format!("expected type \"{}\" originated here", constraint_str)),
-                                ])
+                                report.with_message("Type mismatch").with_label(label.with_message(format!("Type mismatch, expected `{}`, instead found `{}`", expected_type_str, received_type_str)))
                             }
                             SemanticErrorKind::ReturnNotLastStatement => report
                                 .with_message("Expected the return statement to be the last statement in the function")
                                 .with_label(label.with_message("Expected the return statement to be the last statement in the function")),
                             SemanticErrorKind::ReturnTypeMismatch { expected, received } => {
                                 report.with_message("Return type mismatch")
-                                    .with_label(label.with_message(format!("Expected the return value to be assignable to {}, found {}", type_to_string(&expected.kind, self.string_interner.clone()), type_to_string(&received.kind, self.string_interner.clone()))))
+                                    .with_label(label.with_message(format!("Expected the return value to be assignable to {}, found {}", type_to_string(&expected, &self.interners), type_to_string(&received, &self.interners))))
                             }
                             SemanticErrorKind::CannotAccess(target) => report
                                 .with_message("Cannot access field")
-                                .with_label(label.with_message(format!("Cannot use the access operator on the type \"{}\"", type_to_string(&target.kind, self.string_interner.clone())))),
+                                .with_label(label.with_message(format!("Cannot use the access operator on the type \"{}\"", type_to_string(&target, &self.interners)))),
                             SemanticErrorKind::CannotCall(target) => report
                                 .with_message("Cannot use the function call operator")
-                                .with_label(label.with_message(format!("Cannot use the function-call operator on type \"{}\"", type_to_string(&target.kind, self.string_interner.clone())))),
+                                .with_label(label.with_message(format!("Cannot use the function-call operator on type \"{}\"", type_to_string(&target, &self.interners)))),
                             SemanticErrorKind::FnArgumentCountMismatch { expected, received, .. } => {
                                 let s = if *expected > 1 { "s" } else { "" };
                                 report.with_message("Function argument count mismatch")
@@ -385,25 +383,25 @@ let span = e.span.start.byte_offset..e.span.end.byte_offset;
                             }
                             SemanticErrorKind::CannotUseVariableDeclarationAsType => report.with_message("Cannot use variable declaration as a type").with_label(label.with_message("Cannot use variable declaration as a type")),
                             SemanticErrorKind::AccessToUndefinedField(field) => {
-                                let name = self.string_interner.resolve(field.name);
+                                let name = self.interners.string_interner.resolve(field.name);
                                 report.with_message("Access to an undefined field").with_label(label.with_message(format!("Field {} is not defined", name)))
                             }
                             SemanticErrorKind::TypeAliasMustBeDeclaredAtTopLevel => report.with_message("Type aliases must be declared in the file scope").with_label(label.with_message("Type aliases must be declared in the file scope")),
                             SemanticErrorKind::DuplicateStructFieldInitializer(id) => {
-                                let name = self.string_interner.resolve(id.name);
+                                let name = self.interners.string_interner.resolve(id.name);
                                 report.with_message("Duplicate initializer for a struct field").with_label(label.with_message(format!("Struct field \"{}\" cannot be initialized multiple times", name)))
                             }
                             SemanticErrorKind::UnknownStructFieldInitializer(id) => {
-                                let name = self.string_interner.resolve(id.name);
+                                let name = self.interners.string_interner.resolve(id.name);
                                 report.with_message("Unknown field in the struct initializer").with_label(label.with_message(format!("Unknown struct field \"{}\"", name)))
                             }
                             SemanticErrorKind::MissingStructFieldInitializers(missing_fields) => {
-                                let field_names: Vec<String> = missing_fields.into_iter().map(|f| self.string_interner.resolve(*f)).collect();
+                                let field_names: Vec<String> = missing_fields.into_iter().map(|f| self.interners.string_interner.resolve(*f)).collect();
                                 let joined = field_names.iter().map(|n| format!("\"{}\"", n)).collect::<Vec<String>>().join(", ");
                                 report.with_message("Missing field initializers").with_label(label.with_message(format!("Missing initializers for the following struct fields {}", joined)))
                             }
                             SemanticErrorKind::DuplicateIdentifier(id) => {
-                                let identifier_name = self.string_interner.resolve(id.name);
+                                let identifier_name = self.interners.string_interner.resolve(id.name);
                                 report.with_message("Duplicate identifier").with_label(label.with_message(format!("Duplicate identifier declaration \"{}\"", identifier_name)))
                             }
                             SemanticErrorKind::CannotIndex(_) => todo!(),
@@ -422,6 +420,7 @@ let span = e.span.start.byte_offset..e.span.end.byte_offset;
                             SemanticErrorKind::UseOfUninitializedVariable(identifier_node) => todo!(),
                             SemanticErrorKind::DuplicateUnionVariant(identifier_node) => todo!(),
                             SemanticErrorKind::SymbolNotExported { module_path, symbol } => todo!(),
+                            SemanticErrorKind::ClosuresNotSupportedYet => todo!(),
                         };
 
                         let _ = final_report.finish().print(&mut *cache);

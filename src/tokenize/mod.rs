@@ -223,20 +223,6 @@ pub enum TokenKind {
     Doc(String),
 }
 
-pub fn token_kind_to_string(
-    kind: &TokenKind,
-    interner: Arc<SharedStringInterner>,
-) -> String {
-    match kind {
-        TokenKind::Identifier(id) => interner.resolve(*id).to_string(),
-        TokenKind::Punctuation(punctuation_kind) => punctuation_kind.to_string(),
-        TokenKind::Keyword(keyword_kind) => keyword_kind.to_string(),
-        TokenKind::String(value) => value.to_owned(),
-        TokenKind::Number(number_kind) => number_kind.to_string(),
-        TokenKind::Doc(value) => format!("---\n{}\n---", value),
-    }
-}
-
 #[derive(Debug, PartialEq, Clone)]
 pub struct Token {
     pub span: Span,

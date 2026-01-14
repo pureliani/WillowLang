@@ -12,12 +12,6 @@ use std::hash::Hash;
 pub enum StructKind {
     UserDefined(Vec<CheckedParam>), // packed
 
-    /// { fn_ptr, env_ptr }
-    ClosureObject(FnType),
-
-    /// The captured environment.
-    ClosureEnv(Vec<CheckedParam>), // packed
-
     /// { id: u16, value: T }
     Tag(TagType),
 
@@ -36,18 +30,10 @@ pub enum StructKind {
 impl StructKind {
     pub fn fields(&self, ctx: &ProgramBuilder) -> Vec<(StringId, Type)> {
         match self {
-            StructKind::UserDefined(params) | StructKind::ClosureEnv(params) => params
+            StructKind::UserDefined(params) => params
                 .iter()
                 .map(|p| (p.identifier.name, p.ty.clone()))
                 .collect(),
-
-            StructKind::ClosureObject(_) => {
-                let void_ptr = Type::Pointer(Box::new(Type::Void));
-                vec![
-                    (ctx.common_identifiers.fn_ptr, void_ptr.clone()),
-                    (ctx.common_identifiers.env_ptr, void_ptr),
-                ]
-            }
 
             StructKind::List(elem_ty) => vec![
                 (ctx.common_identifiers.capacity, Type::USize),
