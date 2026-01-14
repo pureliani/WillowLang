@@ -23,7 +23,8 @@ impl FunctionBuilder {
 
         if current_block.terminator.is_some() {
             panic!(
-                "INTERNAL COMPILER ERROR: Attempted to add instruction to a basic block (ID: {}) that has already been terminated",
+                "INTERNAL COMPILER ERROR: Attempted to add instruction to a basic block \
+                 (ID: {}) that has already been terminated",
                 current_block.id.0
             );
         }
@@ -75,7 +76,10 @@ impl FunctionBuilder {
 
         let target_type = match destination_ptr_type {
             Type::Pointer(to) => to,
-            _ => panic!("INTERNAL COMPILER ERROR: Expected destination_ptr_id to be of Pointer type"),
+            _ => panic!(
+                "INTERNAL COMPILER ERROR: Expected destination_ptr_id to be of Pointer \
+                 type"
+            ),
         };
 
         if !check_is_assignable(&value_type, &target_type) {
@@ -133,7 +137,7 @@ impl FunctionBuilder {
         let base_ptr_type = ctx.program_builder.get_value_id_type(&base_ptr);
 
         let s = match base_ptr_type {
-            Type::Pointer (to) => {
+            Type::Pointer(to) => {
                 if let Type::Struct(s) = *to {
                     s
                 } else {
@@ -143,7 +147,10 @@ impl FunctionBuilder {
                     });
                 }
             }
-            _ => panic!("INTERNAL COMPILER ERROR: emit_get_field_ptr called on a non-pointer type."),
+            _ => panic!(
+                "INTERNAL COMPILER ERROR: emit_get_field_ptr called on a non-pointer \
+                 type."
+            ),
         };
 
         if let Some((field_index, ty)) = s.get_field(&ctx.program_builder, field.name) {
@@ -343,7 +350,10 @@ impl FunctionBuilder {
                         f.params.clone(),
                         f.return_type.clone(),
                     ),
-                    _ => panic!("INTERNAL COMPILER ERROR: Value::Function(DeclarationId) contained non-function declaration id"),
+                    _ => panic!(
+                        "INTERNAL COMPILER ERROR: Value::Function(DeclarationId) \
+                         contained non-function declaration id"
+                    ),
                 }
             }
             Value::Use(val_id) => {

@@ -193,7 +193,10 @@ impl Parser {
                         }
                     }
                     _ => {
-                        panic!("INTERNAL COMPILER ERROR: Unexpected suffix type-annotation operator")
+                        panic!(
+                            "INTERNAL COMPILER ERROR: Unexpected suffix type-annotation \
+                             operator"
+                        )
                     }
                 };
 

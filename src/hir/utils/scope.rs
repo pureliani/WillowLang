@@ -99,16 +99,14 @@ impl ModuleBuilder {
     ) {
         let last_scope = self.last_scope_mut();
 
-        let existing_decl_id = last_scope
-            .symbols
-            .get(&id.name)
-            .unwrap_or_else(|| {
-                let name = string_interner.resolve(id.name);
-                panic!(
-                    "INTERNAL COMPILER ERROR: Expected to find uninitialized variable '{}' in scope for replacement",
-                    name
-                )
-            });
+        let existing_decl_id = last_scope.symbols.get(&id.name).unwrap_or_else(|| {
+            let name = string_interner.resolve(id.name);
+            panic!(
+                "INTERNAL COMPILER ERROR: Expected to find uninitialized variable '{}' \
+                 in scope for replacement",
+                name
+            )
+        });
 
         let existing_decl = program_builder.get_declaration_mut(*existing_decl_id);
         if !matches!(
@@ -117,7 +115,8 @@ impl ModuleBuilder {
         ) {
             let name = string_interner.resolve(id.name);
             panic!(
-                "INTERNAL COMPILER ERROR: Attempted to replace a variable '{}' that was not in an uninitialized state",
+                "INTERNAL COMPILER ERROR: Attempted to replace a variable '{}' that was \
+                 not in an uninitialized state",
                 name
             );
         }
@@ -125,7 +124,8 @@ impl ModuleBuilder {
         if !matches!(&new_declaration, &CheckedDeclaration::Var { .. }) {
             let name = string_interner.resolve(id.name);
             panic!(
-                "INTERNAL COMPILER ERROR: Attempted to replace an uninitialized variable '{}' with something other than initialized variable",
+                "INTERNAL COMPILER ERROR: Attempted to replace an uninitialized \
+                 variable '{}' with something other than initialized variable",
                 name
             );
         }

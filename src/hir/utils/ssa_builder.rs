@@ -11,7 +11,8 @@ impl FunctionBuilder {
             self.current_block_id = id;
         } else {
             panic!(
-                "INTERNAL COMPILER ERROR: Could not use basic block with id {} as it doesn't exist",
+                "INTERNAL COMPILER ERROR: Could not use basic block with id {} as it \
+                 doesn't exist",
                 id.0
             );
         }
@@ -38,7 +39,8 @@ impl FunctionBuilder {
         self.value_definitions.insert(id, block_id);
 
         let block = self.cfg.blocks.get_mut(&block_id).expect(&format!(
-            "INTERNAL COMPILER ERROR: Could not append basic block parameter, BasicBlockId({}) not found",
+            "INTERNAL COMPILER ERROR: Could not append basic block parameter, \
+             BasicBlockId({}) not found",
             block_id.0,
         ));
         block.params.push(id);
@@ -160,7 +162,8 @@ impl FunctionBuilder {
             bb.terminator = Some(terminator);
         } else {
             panic!(
-                "INTERNAL COMPILER ERROR: Could not set basic block terminator: basic block with id: {} doesn't exist.",
+                "INTERNAL COMPILER ERROR: Could not set basic block terminator: basic \
+                 block with id: {} doesn't exist.",
                 self.current_block_id.0
             );
         }
@@ -204,7 +207,10 @@ impl FunctionBuilder {
                     false_args.push(Value::Use(arg));
                 }
                 if *true_target != to_block && *false_target != to_block {
-                    panic!("INTERNAL COMPILER ERROR: Invalid 'to_block' argument, didn't match neither 'true_target' nor 'false_target'")
+                    panic!(
+                        "INTERNAL COMPILER ERROR: Invalid 'to_block' argument, didn't \
+                         match neither 'true_target' nor 'false_target'"
+                    )
                 }
             }
             _ => {}

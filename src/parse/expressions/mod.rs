@@ -146,9 +146,11 @@ impl Parser {
                 self.parse_list_literal_expr()?
             }
             TokenKind::Punctuation(PunctuationKind::Minus) => {
-                let ((), r_bp) = prefix_bp(&TokenKind::Punctuation(PunctuationKind::Minus)).expect(
-                    "INTERNAL COMPILER ERROR: expected the minus \'-\' symbol to have a corresponding prefix binding power",
-                );
+                let ((), r_bp) =
+                    prefix_bp(&TokenKind::Punctuation(PunctuationKind::Minus)).expect(
+                        "INTERNAL COMPILER ERROR: expected the minus \'-\' symbol to \
+                         have a corresponding prefix binding power",
+                    );
                 let start_offset = self.offset;
 
                 self.consume_punctuation(PunctuationKind::Minus)?;
@@ -161,9 +163,11 @@ impl Parser {
                 }
             }
             TokenKind::Punctuation(PunctuationKind::Not) => {
-                let ((), r_bp) = prefix_bp(&TokenKind::Punctuation(PunctuationKind::Not)).expect(
-                    "INTERNAL COMPILER ERROR: expected the not \'!\' symbol to have a corresponding prefix binding power",
-                );
+                let ((), r_bp) = prefix_bp(&TokenKind::Punctuation(PunctuationKind::Not))
+                    .expect(
+                        "INTERNAL COMPILER ERROR: expected the not \'!\' symbol to have \
+                         a corresponding prefix binding power",
+                    );
                 let start_offset = self.offset;
 
                 self.consume_punctuation(PunctuationKind::Not)?;

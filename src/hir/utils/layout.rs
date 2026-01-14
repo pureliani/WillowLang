@@ -85,7 +85,10 @@ pub fn pack_struct(
             StructKind::UserDefined(fields)
         }
         _ => {
-            panic!("INTERNAL COMPILER ERROR: Cannot pack struct that is neither user defined nor closure environment!");
+            panic!(
+                "INTERNAL COMPILER ERROR: Cannot pack struct that is neither user \
+                 defined nor closure environment!"
+            );
         }
     }
 }
