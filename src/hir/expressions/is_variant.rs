@@ -39,10 +39,6 @@ impl FunctionBuilder {
             ),
         };
 
-        let true_path = self.new_basic_block();
-        let false_path = self.new_basic_block();
-        let merge_block = self.new_basic_block();
-
         let id_field = IdentifierNode {
             name: ctx.program_builder.common_identifiers.id,
             span: left_span,
@@ -53,6 +49,82 @@ impl FunctionBuilder {
         };
         let actual_id = Value::Use(self.emit_load(ctx, id_ptr));
 
-        todo!()
+        let true_path = self.new_basic_block();
+        let false_path = self.new_basic_block();
+        let merge_block = self.new_basic_block();
+
+        let mut target_tag_ids = Vec::new();
+
+        // For each variant, if it matches, jump to true_path.
+        // If it doesn't, jump to the next check (or false_path if it's the last one).
+        for (i, tag_ann) in variants.iter().enumerate() {
+            let tag_id = ctx
+                .program_builder
+                .tag_interner
+                .intern(&tag_ann.identifier.name);
+            target_tag_ids.push(tag_id);
+
+            let is_match = match self.emit_binary_op(
+                ctx,
+                BinaryOperationKind::Equal,
+                actual_id.clone(),
+                left_span,
+                Value::NumberLiteral(NumberKind::U16(tag_id.0)),
+                tag_ann.span,
+            ) {
+                Ok(id) => id,
+                Err(e) => return Value::Use(self.report_error_and_get_poison(ctx, e)),
+            };
+
+            let is_last = i == variants.len() - 1;
+            let next_check_block = if is_last {
+                false_path
+            } else {
+                self.new_basic_block()
+            };
+
+            self.set_basic_block_terminator(Terminator::CondJump {
+                condition: Value::Use(is_match),
+                true_target: true_path,
+                true_args: vec![],
+                false_target: next_check_block,
+                false_args: vec![],
+            });
+
+            if !is_last {
+                self.seal_block(ctx, next_check_block);
+                self.use_basic_block(next_check_block);
+            }
+        }
+
+        self.seal_block(ctx, true_path);
+        self.use_basic_block(true_path);
+
+        let current_ty = self.get_refined_type(ctx, true_path, union_id);
+        let narrowed_ty = intersect_types(&current_ty, &target_tag_ids);
+        self.refinements.insert((true_path, union_id), narrowed_ty);
+
+        self.set_basic_block_terminator(Terminator::Jump {
+            target: merge_block,
+            args: vec![Value::BoolLiteral(true)],
+        });
+
+        self.seal_block(ctx, false_path);
+        self.use_basic_block(false_path);
+
+        let remainder_ty = subtract_types(&current_ty, &target_tag_ids);
+        self.refinements
+            .insert((false_path, union_id), remainder_ty);
+
+        self.set_basic_block_terminator(Terminator::Jump {
+            target: merge_block,
+            args: vec![Value::BoolLiteral(false)],
+        });
+
+        self.seal_block(ctx, merge_block);
+        self.use_basic_block(merge_block);
+        let result_bool = self.append_block_param(ctx, merge_block, Type::Bool);
+
+        Value::Use(result_bool)
     }
 }

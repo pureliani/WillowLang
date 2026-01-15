@@ -1,8 +1,12 @@
-use crate::hir::{
-    cfg::{BasicBlock, BasicBlockId, Terminator, Value, ValueId},
-    errors::SemanticError,
-    types::checked_type::Type,
-    FunctionBuilder, HIRContext,
+use crate::{
+    ast::Span,
+    hir::{
+        cfg::{BasicBlock, BasicBlockId, Terminator, Value, ValueId},
+        errors::SemanticError,
+        types::checked_type::Type,
+        utils::try_unify_types::try_unify_types,
+        FunctionBuilder, HIRContext,
+    },
 };
 
 impl FunctionBuilder {
@@ -242,7 +246,7 @@ impl FunctionBuilder {
     }
 
     pub fn get_refined_type(
-        &self,
+        &mut self,
         ctx: &mut HIRContext,
         block_id: BasicBlockId,
         value_id: ValueId,
@@ -251,20 +255,34 @@ impl FunctionBuilder {
             return ty.clone();
         }
 
-        let preds = self.predecessors.get(&block_id);
-        if let Some(preds) = preds {
-            if !preds.is_empty() {
-                let first_ty = self.get_refined_type(ctx, preds[0], value_id);
-                if preds
-                    .iter()
-                    .skip(1)
-                    .all(|p| self.get_refined_type(ctx, *p, value_id) == first_ty)
-                {
-                    return first_ty;
-                }
-            }
+        if !self.sealed_blocks.contains(&block_id) {
+            return ctx.program_builder.get_value_id_type(&value_id);
         }
 
-        ctx.program_builder.get_value_id_type(&value_id)
+        let preds = self
+            .predecessors
+            .get(&block_id)
+            .cloned()
+            .unwrap_or_default();
+
+        if preds.is_empty() {
+            return ctx.program_builder.get_value_id_type(&value_id);
+        }
+
+        let mut pred_entries = Vec::with_capacity(preds.len());
+        for pred_id in preds {
+            let ty = self.get_refined_type(ctx, pred_id, value_id);
+            pred_entries.push((ty, Span::default()));
+        }
+
+        let result_type = match try_unify_types(&pred_entries) {
+            Ok(unified) => unified,
+            Err(_) => ctx.program_builder.get_value_id_type(&value_id),
+        };
+
+        self.refinements
+            .insert((block_id, value_id), result_type.clone());
+
+        result_type
     }
 }
