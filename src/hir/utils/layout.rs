@@ -86,8 +86,7 @@ pub fn pack_struct(
         }
         _ => {
             panic!(
-                "INTERNAL COMPILER ERROR: Cannot pack struct that is neither user \
-                 defined nor closure environment!"
+                "INTERNAL COMPILER ERROR: Cannot pack struct that is not user defined!"
             );
         }
     }

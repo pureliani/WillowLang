@@ -1,12 +1,9 @@
-use crate::{
-    ast::Span,
-    hir::{
-        cfg::{BasicBlock, BasicBlockId, Terminator, Value, ValueId},
-        errors::SemanticError,
-        types::checked_type::Type,
-        utils::try_unify_types::try_unify_types,
-        FunctionBuilder, HIRContext,
-    },
+use crate::hir::{
+    cfg::{BasicBlock, BasicBlockId, Terminator, Value, ValueId},
+    errors::SemanticError,
+    types::checked_type::Type,
+    utils::try_unify_types::try_unify_types,
+    FunctionBuilder, HIRContext,
 };
 
 impl FunctionBuilder {

@@ -109,11 +109,6 @@ impl Compiler {
             };
         }
 
-        if !self.errors.is_empty() {
-            self.report_errors();
-            return;
-        }
-
         let mut program_builder = ProgramBuilder::new(
             self.interners.string_interner.clone(),
             self.interners.tag_interner.clone(),
@@ -123,10 +118,10 @@ impl Compiler {
         // let semantic_errors = program_builder.build(modules_to_compile);
         // self.errors.push(semantic_errors);
 
-        // if !self.errors.is_empty() {
-        //     self.report_errors();
-        //     return;
-        // }
+        if !self.errors.is_empty() {
+            self.report_errors();
+            return;
+        }
     }
 
     pub fn parallel_parse_modules(
