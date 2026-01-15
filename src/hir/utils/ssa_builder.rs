@@ -259,30 +259,92 @@ impl FunctionBuilder {
             return ctx.program_builder.get_value_id_type(&value_id);
         }
 
-        let preds = self
-            .predecessors
-            .get(&block_id)
-            .cloned()
-            .unwrap_or_default();
+        let block = &self.cfg.blocks[&block_id];
+        let param_index = block.params.iter().position(|&p| p == value_id);
 
-        if preds.is_empty() {
-            return ctx.program_builder.get_value_id_type(&value_id);
-        }
+        let result_type = if let Some(idx) = param_index {
+            let preds = self
+                .predecessors
+                .get(&block_id)
+                .cloned()
+                .unwrap_or_default();
 
-        let mut pred_entries = Vec::with_capacity(preds.len());
-        for pred_id in preds {
-            let ty = self.get_refined_type(ctx, pred_id, value_id);
-            pred_entries.push((ty, Span::default()));
-        }
+            if preds.is_empty() {
+                ctx.program_builder.get_value_id_type(&value_id)
+            } else {
+                let mut incoming_types = Vec::with_capacity(preds.len());
+                for pred_id in preds {
+                    let arg_value =
+                        self.get_terminator_arg_for_param(pred_id, block_id, idx);
 
-        let result_type = match try_unify_types(&pred_entries) {
-            Ok(unified) => unified,
-            Err(_) => ctx.program_builder.get_value_id_type(&value_id),
+                    let ty = match arg_value {
+                        Value::Use(id) => self.get_refined_type(ctx, pred_id, id),
+                        _ => ctx.program_builder.get_value_type(&arg_value),
+                    };
+
+                    incoming_types.push((ty, crate::ast::Span::default()));
+                }
+
+                try_unify_types(&incoming_types)
+                    .unwrap_or_else(|_| ctx.program_builder.get_value_id_type(&value_id))
+            }
+        } else {
+            let preds = self
+                .predecessors
+                .get(&block_id)
+                .cloned()
+                .unwrap_or_default();
+            if preds.is_empty() {
+                ctx.program_builder.get_value_id_type(&value_id)
+            } else {
+                let mut incoming_types = Vec::with_capacity(preds.len());
+                for pred_id in preds {
+                    let ty = self.get_refined_type(ctx, pred_id, value_id);
+                    incoming_types.push((ty, crate::ast::Span::default()));
+                }
+                try_unify_types(&incoming_types)
+                    .unwrap_or_else(|_| ctx.program_builder.get_value_id_type(&value_id))
+            }
         };
 
         self.refinements
             .insert((block_id, value_id), result_type.clone());
-
         result_type
+    }
+
+    /// Helper to find which ValueId is passed to a specific block parameter index
+    fn get_terminator_arg_for_param(
+        &self,
+        from_block: BasicBlockId,
+        to_block: BasicBlockId,
+        param_index: usize,
+    ) -> Value {
+        let terminator = self.cfg.blocks[&from_block]
+            .terminator
+            .as_ref()
+            .expect("Block must have terminator");
+
+        match terminator {
+            Terminator::Jump { target, args } => {
+                assert_eq!(target, &to_block);
+                args[param_index].clone()
+            }
+            Terminator::CondJump {
+                true_target,
+                true_args,
+                false_target,
+                false_args,
+                ..
+            } => {
+                if true_target == &to_block {
+                    true_args[param_index].clone()
+                } else if false_target == &to_block {
+                    false_args[param_index].clone()
+                } else {
+                    panic!("Inconsistent CFG: target block not found in CondJump")
+                }
+            }
+            _ => panic!("Terminator type does not support block arguments"),
+        }
     }
 }
