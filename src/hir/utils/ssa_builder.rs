@@ -240,4 +240,31 @@ impl FunctionBuilder {
                 )
             })
     }
+
+    pub fn get_refined_type(
+        &self,
+        ctx: &mut HIRContext,
+        block_id: BasicBlockId,
+        value_id: ValueId,
+    ) -> Type {
+        if let Some(ty) = self.refinements.get(&(block_id, value_id)) {
+            return ty.clone();
+        }
+
+        let preds = self.predecessors.get(&block_id);
+        if let Some(preds) = preds {
+            if !preds.is_empty() {
+                let first_ty = self.get_refined_type(ctx, preds[0], value_id);
+                if preds
+                    .iter()
+                    .skip(1)
+                    .all(|p| self.get_refined_type(ctx, *p, value_id) == first_ty)
+                {
+                    return first_ty;
+                }
+            }
+        }
+
+        ctx.program_builder.get_value_id_type(&value_id)
+    }
 }

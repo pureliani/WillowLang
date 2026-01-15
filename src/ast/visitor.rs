@@ -2,7 +2,7 @@ use crate::ast::{
     decl::{FnDecl, TypeAliasDecl, VarDecl},
     expr::{BlockContents, Expr, ExprKind, MatchArm, MatchPattern},
     stmt::{Stmt, StmtKind},
-    type_annotation::{TypeAnnotation, TypeAnnotationKind},
+    type_annotation::{TagAnnotation, TypeAnnotation, TypeAnnotationKind},
     IdentifierNode, StringNode,
 };
 use crate::tokenize::NumberKind;
@@ -251,6 +251,14 @@ pub trait ASTVisitor<'ast>: Sized {
         self.visit_expr(left);
         self.visit_expr(right);
     }
+
+    fn visit_is_variant_expr(
+        &mut self,
+        left: &'ast Expr,
+        _variants: &'ast [TagAnnotation],
+    ) {
+        self.visit_expr(left);
+    }
 }
 
 pub fn walk_stmt<'ast, V: ASTVisitor<'ast>>(v: &mut V, stmt: &'ast Stmt) {
@@ -305,6 +313,7 @@ pub fn walk_expr<'ast, V: ASTVisitor<'ast>>(v: &mut V, expr: &'ast Expr) {
         ExprKind::List(items) => v.visit_list_literal_expr(items),
         ExprKind::CodeBlock(block) => v.visit_codeblock_expr(block),
         ExprKind::Index { left, index } => v.visit_index_expr(left, index),
+        ExprKind::IsVariant { left, variants } => v.visit_is_variant_expr(left, variants),
     }
 }
 

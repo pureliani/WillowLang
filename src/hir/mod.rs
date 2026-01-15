@@ -84,6 +84,7 @@ pub struct FunctionBuilder {
     pub block_value_maps: HashMap<BasicBlockId, HashMap<ValueId, ValueId>>,
     pub value_definitions: HashMap<ValueId, BasicBlockId>,
     pub sealed_blocks: HashSet<BasicBlockId>,
+    pub refinements: HashMap<(BasicBlockId, ValueId), Type>,
     // Map: BlockId -> List of (PlaceholderParamId, OriginalValueId)
     pub incomplete_params: HashMap<BasicBlockId, Vec<(ValueId, ValueId)>>,
 
@@ -228,6 +229,7 @@ impl FunctionBuilder {
             incomplete_params: HashMap::new(),
             predecessors: HashMap::new(),
             value_definitions: HashMap::new(),
+            refinements: HashMap::new(),
             sealed_blocks: HashSet::new(),
             current_block_id: entry_block_id,
             block_id_counter: 1,

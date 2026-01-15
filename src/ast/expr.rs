@@ -1,5 +1,7 @@
 use crate::{
-    ast::{decl::FnDecl, IdentifierNode, Span, StringNode},
+    ast::{
+        decl::FnDecl, type_annotation::TagAnnotation, IdentifierNode, Span, StringNode,
+    },
     tokenize::NumberKind,
 };
 
@@ -100,6 +102,10 @@ pub enum ExprKind {
     TypeCast {
         left: Box<Expr>,
         target: TypeAnnotation,
+    },
+    IsVariant {
+        left: Box<Expr>,
+        variants: Vec<TagAnnotation>,
     },
     Tag {
         name: IdentifierNode,

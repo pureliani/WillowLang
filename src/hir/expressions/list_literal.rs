@@ -3,6 +3,7 @@ use crate::{
     hir::{
         cfg::Value,
         types::checked_type::{StructKind, Type},
+        utils::try_unify_types::try_unify_types,
         FunctionBuilder, HIRContext,
     },
     tokenize::NumberKind,
@@ -31,7 +32,7 @@ impl FunctionBuilder {
             type_entries.push((ty, span));
         }
 
-        let element_type = match self.try_unify_types(&type_entries) {
+        let element_type = match try_unify_types(&type_entries) {
             Ok(ty) => ty,
             Err(e) => {
                 return Value::Use(self.report_error_and_get_poison(ctx, e));

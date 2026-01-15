@@ -7,7 +7,9 @@ use crate::{
         cfg::{BasicBlockId, Terminator, Value},
         errors::{SemanticError, SemanticErrorKind},
         types::checked_type::Type,
-        utils::check_is_assignable::check_is_assignable,
+        utils::{
+            check_is_assignable::check_is_assignable, try_unify_types::try_unify_types,
+        },
         FunctionBuilder, HIRContext,
     },
 };
@@ -111,7 +113,7 @@ impl FunctionBuilder {
                 .map(|(_, val, span)| (ctx.program_builder.get_value_type(val), *span))
                 .collect();
 
-            let result_type = match self.try_unify_types(&type_entries) {
+            let result_type = match try_unify_types(&type_entries) {
                 Ok(ty) => ty,
                 Err(e) => {
                     ctx.program_builder.errors.push(e);

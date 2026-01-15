@@ -11,6 +11,7 @@ pub mod parse_tag_expr;
 use crate::{
     ast::{
         expr::{Expr, ExprKind},
+        type_annotation::TypeAnnotationKind,
         Span,
     },
     tokenize::{KeywordKind, PunctuationKind, TokenKind},
@@ -229,16 +230,60 @@ impl Parser {
                     }
                     TokenKind::Punctuation(PunctuationKind::DoubleCol) => {
                         let start_offset = self.offset;
-
                         self.consume_punctuation(PunctuationKind::DoubleCol)?;
                         let field = self.consume_identifier()?;
-                        Some(Expr {
-                            kind: ExprKind::StaticAccess {
-                                left: Box::new(lhs_clone),
-                                field,
-                            },
-                            span: self.get_span(start_offset, self.offset - 1)?,
-                        })
+                        let field_name = self.interner.resolve(field.name);
+
+                        let new_lhs = if field_name == "is" {
+                            // lhs::is(#A | #B)
+                            self.consume_punctuation(PunctuationKind::LParen)?;
+                            let type_ann = self.parse_tag_type_annotation()?;
+                            self.consume_punctuation(PunctuationKind::RParen)?;
+
+                            let variants = match type_ann.kind {
+                                TypeAnnotationKind::Tag(t) => vec![t],
+                                TypeAnnotationKind::Union(tags) => tags,
+                                _ => {
+                                    return Err(ParsingError {
+                                        kind: ParsingErrorKind::ExpectedATagTypeButFound(
+                                            type_ann.clone(),
+                                        ),
+                                        span: type_ann.span,
+                                    })
+                                }
+                            };
+
+                            Expr {
+                                kind: ExprKind::IsVariant {
+                                    left: Box::new(lhs.clone()),
+                                    variants,
+                                },
+                                span: self.get_span(start_offset, self.offset - 1)?,
+                            }
+                        } else if field_name == "as" {
+                            // lhs::as(Type)
+                            self.consume_punctuation(PunctuationKind::LParen)?;
+                            let target_type = self.parse_type_annotation(0)?;
+                            self.consume_punctuation(PunctuationKind::RParen)?;
+
+                            Expr {
+                                kind: ExprKind::TypeCast {
+                                    left: Box::new(lhs.clone()),
+                                    target: target_type,
+                                },
+                                span: self.get_span(start_offset, self.offset - 1)?,
+                            }
+                        } else {
+                            Expr {
+                                kind: ExprKind::StaticAccess {
+                                    left: Box::new(lhs.clone()),
+                                    field,
+                                },
+                                span: self.get_span(start_offset, self.offset - 1)?,
+                            }
+                        };
+
+                        Some(new_lhs)
                     }
                     TokenKind::Punctuation(PunctuationKind::LBracket) => {
                         let start_offset = self.offset;
@@ -255,36 +300,7 @@ impl Parser {
                         })
                     }
                     TokenKind::Punctuation(PunctuationKind::LParen) => {
-                        if let ExprKind::StaticAccess { left, field } = lhs.kind.clone() {
-                            let is_type_cast = field.name == self.interner.intern("as");
-
-                            if is_type_cast {
-                                let start_offset = self.offset;
-                                self.consume_punctuation(PunctuationKind::LParen)?;
-                                let target_type = self.parse_type_annotation(0)?;
-                                self.consume_punctuation(PunctuationKind::RParen)?;
-                                let span_end =
-                                    self.get_span(start_offset, self.offset - 1)?;
-
-                                Some(Expr {
-                                    kind: ExprKind::TypeCast {
-                                        left,
-                                        target: target_type,
-                                    },
-                                    span: Span {
-                                        start: lhs.span.start,
-                                        end: span_end.end,
-                                    },
-                                })
-                            } else {
-                                return Err(ParsingError {
-                                    kind: ParsingErrorKind::UnknownStaticMethod(field),
-                                    span: field.span,
-                                });
-                            }
-                        } else {
-                            Some(self.parse_fn_call_expr(lhs_clone)?)
-                        }
+                        Some(self.parse_fn_call_expr(lhs.clone())?)
                     }
                     _ => {
                         return Err(ParsingError {

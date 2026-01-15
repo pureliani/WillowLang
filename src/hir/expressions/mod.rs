@@ -8,6 +8,7 @@ pub mod fn_call;
 pub mod identifier;
 pub mod r#if;
 pub mod index;
+pub mod is_variant;
 pub mod list_literal;
 pub mod r#match;
 pub mod number_literal;
@@ -31,6 +32,9 @@ use crate::{
 impl FunctionBuilder {
     pub fn build_expr(&mut self, ctx: &mut HIRContext, expr: Expr) -> Value {
         match expr.kind {
+            ExprKind::IsVariant { left, variants } => {
+                self.build_is_variant_expr(ctx, left, variants)
+            }
             ExprKind::Not { right } => {
                 self.build_unary_op_expr(ctx, UnaryOperationKind::Not, right)
             }
