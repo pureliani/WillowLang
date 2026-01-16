@@ -88,14 +88,13 @@ pub fn check_type_annotation(ctx: &mut HIRContext, annotation: &TypeAnnotation) 
         TypeAnnotationKind::I64 => Type::I64,
         TypeAnnotationKind::F32 => Type::F32,
         TypeAnnotationKind::F64 => Type::F64,
-        TypeAnnotationKind::String => Type::Struct(StructKind::String),
         TypeAnnotationKind::Identifier(id) => {
             match check_type_identifier_annotation(ctx, *id, annotation.span) {
                 Ok(resolved_type) => {
                     return resolved_type;
                 }
                 Err(error) => {
-                    ctx.program_builder.errors.push(error);
+                    ctx.module_builder.errors.push(error);
                     Type::Unknown
                 }
             }
@@ -112,6 +111,43 @@ pub fn check_type_annotation(ctx: &mut HIRContext, annotation: &TypeAnnotation) 
                 return_type: Box::new(checked_return_type),
             })
         }
+        TypeAnnotationKind::Tag(t) => {
+            Type::Struct(StructKind::Tag(check_tag_annotation(ctx, t)))
+        }
+        TypeAnnotationKind::Union(tag_annotations) => {
+            let mut checked_variants: Vec<TagType> =
+                Vec::with_capacity(tag_annotations.len());
+            let mut seen_tags: HashSet<TagId> = HashSet::new();
+
+            for t in tag_annotations {
+                let checked_tag = check_tag_annotation(ctx, t);
+
+                if seen_tags.insert(checked_tag.id) {
+                    checked_variants.push(checked_tag);
+                } else {
+                    ctx.module_builder.errors.push(SemanticError {
+                        kind: SemanticErrorKind::DuplicateUnionVariant(t.identifier),
+                        span: t.span,
+                    });
+                }
+            }
+
+            checked_variants.sort_by(|a, b| a.id.0.cmp(&b.id.0));
+
+            Type::Struct(StructKind::Union {
+                variants: checked_variants,
+            })
+        }
+        // Passed by pointer
+        TypeAnnotationKind::String => {
+            Type::Pointer(Box::new(Type::Struct(StructKind::String)))
+        }
+        TypeAnnotationKind::List(item_type) => {
+            let checked_item_type = check_type_annotation(ctx, item_type);
+            Type::Pointer(Box::new(Type::Struct(StructKind::List(Box::new(
+                checked_item_type,
+            )))))
+        }
         TypeAnnotationKind::Struct(items) => {
             let checked_field_types = check_params(ctx, items);
 
@@ -120,39 +156,7 @@ pub fn check_type_annotation(ctx: &mut HIRContext, annotation: &TypeAnnotation) 
                 StructKind::UserDefined(checked_field_types),
             );
 
-            Type::Struct(packed)
-        }
-        TypeAnnotationKind::List(item_type) => {
-            let checked_item_type = check_type_annotation(ctx, item_type);
-
-            Type::Struct(StructKind::List(Box::new(checked_item_type)))
-        }
-        TypeAnnotationKind::Tag(t) => {
-            Type::Struct(StructKind::Tag(check_tag_annotation(ctx, t)))
-        }
-        TypeAnnotationKind::Union(tag_annotations) => {
-            let mut checked_tag_types: Vec<TagType> =
-                Vec::with_capacity(tag_annotations.len());
-            let mut seen_tags: HashSet<TagId> = HashSet::new();
-
-            for t in tag_annotations {
-                let checked_tag = check_tag_annotation(ctx, t);
-
-                if seen_tags.insert(checked_tag.id) {
-                    checked_tag_types.push(checked_tag);
-                } else {
-                    ctx.program_builder.errors.push(SemanticError {
-                        kind: SemanticErrorKind::DuplicateUnionVariant(t.identifier),
-                        span: t.span,
-                    });
-                }
-            }
-
-            checked_tag_types.sort_by(|a, b| a.id.0.cmp(&b.id.0));
-
-            Type::Struct(StructKind::Union {
-                variants: checked_tag_types,
-            })
+            Type::Pointer(Box::new(Type::Struct(packed)))
         }
     };
 

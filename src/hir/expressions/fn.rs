@@ -121,12 +121,13 @@ impl FunctionBuilder {
     }
 
     fn build_fn_body(&mut self, ctx: &mut HIRContext, body: BlockContents) {
+        let body_span = body.span;
         let final_value = self.build_codeblock_expr(ctx, body);
         let final_value_type = ctx.program_builder.get_value_type(&final_value);
 
         if !check_is_assignable(&final_value_type, &self.return_type) {
             ctx.module_builder.errors.push(SemanticError {
-                span: Span::default(),
+                span: body_span,
                 kind: SemanticErrorKind::ReturnTypeMismatch {
                     expected: self.return_type.clone(),
                     received: final_value_type,

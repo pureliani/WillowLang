@@ -49,6 +49,15 @@ impl Parser {
                     span,
                 }
             }
+            TokenKind::Keyword(KeywordKind::String) => {
+                let start_offset = self.offset;
+                self.consume_keyword(KeywordKind::String)?;
+                let span = self.get_span(start_offset, self.offset - 1)?;
+                TypeAnnotation {
+                    kind: TypeAnnotationKind::String,
+                    span,
+                }
+            }
             TokenKind::Keyword(KeywordKind::U8) => {
                 let start_offset = self.offset;
 

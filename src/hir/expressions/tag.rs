@@ -62,6 +62,7 @@ impl FunctionBuilder {
             self.emit_store(ctx, value_ptr, *v);
         }
 
-        Value::Use(tag_ptr)
+        let final_val = self.emit_load(ctx, tag_ptr);
+        Value::Use(final_val)
     }
 }

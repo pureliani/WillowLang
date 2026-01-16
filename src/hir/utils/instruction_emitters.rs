@@ -83,7 +83,7 @@ impl FunctionBuilder {
         };
 
         if !check_is_assignable(&value_type, &target_type) {
-            ctx.program_builder.errors.push(SemanticError {
+            ctx.module_builder.errors.push(SemanticError {
                 span: Span::default(), // TODO: Fix span
                 kind: SemanticErrorKind::TypeMismatch {
                     expected: *target_type,

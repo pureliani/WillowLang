@@ -592,6 +592,15 @@ impl Compiler {
                                     "Capturing variables from outer scopes (closures) \
                                      is not supported yet",
                                 )),
+                            SemanticErrorKind::ValuedTagInIsExpression => report
+                                .with_message(
+                                    "Valued tag not allowed in `::is()` expression",
+                                )
+                                .with_label(label.with_message(
+                                    "The `::is()` operator only checks the variant \
+                                     identifier. Remove the value type (e.g., use \
+                                     `#Tag` instead of `#Tag(Type)`)",
+                                )),
                         };
 
                         let _ = final_report.finish().print(&mut *cache);

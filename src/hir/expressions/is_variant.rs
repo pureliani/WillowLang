@@ -18,8 +18,25 @@ impl FunctionBuilder {
         variants: Vec<TagAnnotation>,
     ) -> Value {
         let left_span = left.span;
-        let union_val = self.build_expr(ctx, *left);
-        let union_type = ctx.program_builder.get_value_type(&union_val);
+
+        let (union_ptr_id, union_type) = match self.build_lvalue_expr(ctx, *left.clone())
+        {
+            Ok(ptr) => {
+                let ptr_ty = self.get_refined_type(ctx, self.current_block_id, ptr);
+                match ptr_ty {
+                    Type::Pointer(inner) => (ptr, *inner),
+                    _ => panic!("INTERNAL COMPILER ERROR: L-value must be a pointer"),
+                }
+            }
+            Err(_) => {
+                // store in a temporary stack slot.
+                let val = self.build_expr(ctx, *left);
+                let ty = ctx.program_builder.get_value_type(&val);
+                let tmp_ptr = self.emit_stack_alloc(ctx, ty.clone(), 1);
+                self.emit_store(ctx, tmp_ptr, val);
+                (tmp_ptr, ty)
+            }
+        };
 
         if !matches!(
             union_type,
@@ -32,18 +49,14 @@ impl FunctionBuilder {
             return Value::Use(self.report_error_and_get_poison(ctx, err));
         }
 
-        let union_id = match union_val {
-            Value::Use(id) => id,
-            _ => panic!(
-                "INTERNAL COMPILER ERROR: Expected Value::Use for narrowing target"
-            ),
-        };
+        let base_refined_ptr_ty =
+            self.get_refined_type(ctx, self.current_block_id, union_ptr_id);
 
         let id_field = IdentifierNode {
             name: ctx.program_builder.common_identifiers.id,
             span: left_span,
         };
-        let id_ptr = match self.emit_get_field_ptr(ctx, union_id, id_field) {
+        let id_ptr = match self.emit_get_field_ptr(ctx, union_ptr_id, id_field) {
             Ok(ptr) => ptr,
             Err(e) => return Value::Use(self.report_error_and_get_poison(ctx, e)),
         };
@@ -52,12 +65,17 @@ impl FunctionBuilder {
         let true_path = self.new_basic_block();
         let false_path = self.new_basic_block();
         let merge_block = self.new_basic_block();
-
         let mut target_tag_ids = Vec::new();
 
-        // For each variant, if it matches, jump to true_path.
-        // If it doesn't, jump to the next check (or false_path if it's the last one).
         for (i, tag_ann) in variants.iter().enumerate() {
+            if tag_ann.value_type.is_some() {
+                let err = SemanticError {
+                    kind: SemanticErrorKind::ValuedTagInIsExpression,
+                    span: tag_ann.span,
+                };
+                return Value::Use(self.report_error_and_get_poison(ctx, err));
+            }
+
             let tag_id = ctx
                 .program_builder
                 .tag_interner
@@ -100,9 +118,10 @@ impl FunctionBuilder {
         self.seal_block(ctx, true_path);
         self.use_basic_block(true_path);
 
-        let current_ty = self.get_refined_type(ctx, true_path, union_id);
-        let narrowed_ty = intersect_types(&current_ty, &target_tag_ids);
-        self.refinements.insert((true_path, union_id), narrowed_ty);
+        let local_union_ptr_id = self.use_value_in_block(ctx, true_path, union_ptr_id);
+        let narrowed_ptr_ty = intersect_types(&base_refined_ptr_ty, &target_tag_ids);
+        self.refinements
+            .insert((true_path, local_union_ptr_id), narrowed_ptr_ty);
 
         self.set_basic_block_terminator(Terminator::Jump {
             target: merge_block,
@@ -112,9 +131,10 @@ impl FunctionBuilder {
         self.seal_block(ctx, false_path);
         self.use_basic_block(false_path);
 
-        let remainder_ty = subtract_types(&current_ty, &target_tag_ids);
+        let local_union_ptr_id_f = self.use_value_in_block(ctx, false_path, union_ptr_id);
+        let remainder_ptr_ty = subtract_types(&base_refined_ptr_ty, &target_tag_ids);
         self.refinements
-            .insert((false_path, union_id), remainder_ty);
+            .insert((false_path, local_union_ptr_id_f), remainder_ptr_ty);
 
         self.set_basic_block_terminator(Terminator::Jump {
             target: merge_block,
@@ -123,8 +143,8 @@ impl FunctionBuilder {
 
         self.seal_block(ctx, merge_block);
         self.use_basic_block(merge_block);
-        let result_bool = self.append_block_param(ctx, merge_block, Type::Bool);
 
+        let result_bool = self.append_block_param(ctx, merge_block, Type::Bool);
         Value::Use(result_bool)
     }
 }

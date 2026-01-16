@@ -64,6 +64,10 @@ pub fn try_unify_types(entries: &[(Type, Span)]) -> Result<Type, SemanticError> 
 
 pub fn subtract_types(base: &Type, to_remove: &[TagId]) -> Type {
     match base {
+        Type::Pointer(inner) => {
+            let narrowed_inner = subtract_types(inner, to_remove);
+            Type::Pointer(Box::new(narrowed_inner))
+        }
         Type::Struct(StructKind::Union { variants }) => {
             let remaining: Vec<TagType> = variants
                 .iter()
@@ -86,6 +90,10 @@ pub fn subtract_types(base: &Type, to_remove: &[TagId]) -> Type {
 
 pub fn intersect_types(base: &Type, allowed: &[TagId]) -> Type {
     match base {
+        Type::Pointer(inner) => {
+            let narrowed_inner = intersect_types(inner, allowed);
+            Type::Pointer(Box::new(narrowed_inner))
+        }
         Type::Struct(StructKind::Union { variants }) => {
             let kept: Vec<TagType> = variants
                 .iter()

@@ -8,6 +8,7 @@ use crate::{
 
 #[derive(Debug, Clone)]
 pub enum SemanticErrorKind {
+    ValuedTagInIsExpression,
     UnreachableCode,
     DuplicateIdentifier(IdentifierNode),
     DuplicateUnionVariant(IdentifierNode),
@@ -123,6 +124,7 @@ impl SemanticErrorKind {
             SemanticErrorKind::DuplicateUnionVariant(_) => 39,
             SemanticErrorKind::SymbolNotExported { .. } => 40,
             SemanticErrorKind::ClosuresNotSupportedYet => 41,
+            SemanticErrorKind::ValuedTagInIsExpression => 42,
         }
     }
 }

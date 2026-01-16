@@ -42,7 +42,7 @@ impl FunctionBuilder {
         let block = self.cfg.blocks.get_mut(&block_id).unwrap_or_else(|| {
             panic!(
                 "INTERNAL COMPILER ERROR: Could not append basic block parameter, \
-             BasicBlockId({}) not found",
+                 BasicBlockId({}) not found",
                 block_id.0
             )
         });
@@ -227,7 +227,7 @@ impl FunctionBuilder {
         ctx: &mut HIRContext,
         error: SemanticError,
     ) -> ValueId {
-        ctx.program_builder.errors.push(error);
+        ctx.module_builder.errors.push(error);
 
         self.alloc_value(ctx, Type::Unknown)
     }

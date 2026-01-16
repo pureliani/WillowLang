@@ -34,7 +34,7 @@ impl FunctionBuilder {
         let condition_type = ctx.program_builder.get_value_type(&condition_value);
 
         if !check_is_assignable(&condition_type, &Type::Bool) {
-            ctx.program_builder.errors.push(SemanticError {
+            ctx.module_builder.errors.push(SemanticError {
                 span: condition_span,
                 kind: SemanticErrorKind::TypeMismatch {
                     expected: Type::Bool,

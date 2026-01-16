@@ -1,3 +1,5 @@
-fn foo() string {
+
+
+fn foo(): string {
     "foo!"
 }

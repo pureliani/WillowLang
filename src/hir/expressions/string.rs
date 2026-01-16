@@ -19,9 +19,15 @@ impl FunctionBuilder {
             .constant_data
             .insert(constant_id, node.value.as_bytes().to_vec());
 
-        let string_type = Type::Struct(StructKind::String);
+        let string_header_type = Type::Struct(StructKind::String);
 
-        let struct_ptr = self.emit_stack_alloc(ctx, string_type.clone(), 1);
+        let struct_ptr = self
+            .emit_heap_alloc(
+                ctx,
+                string_header_type.clone(),
+                Value::NumberLiteral(NumberKind::USize(1)),
+            )
+            .expect("INTERNAL COMPILER ERROR: Failed to allocate string header");
 
         let is_heap_id = IdentifierNode {
             name: ctx.program_builder.common_identifiers.is_heap_allocated,
