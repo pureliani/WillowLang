@@ -15,7 +15,7 @@ use crate::{
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TokenizationErrorKind {
-    UnknownToken,
+    UnknownToken(String),
     UnknownEscapeSequence,
     InvalidFloatingNumber,
     InvalidIntegerNumber,
@@ -26,7 +26,7 @@ pub enum TokenizationErrorKind {
 impl TokenizationErrorKind {
     pub fn code(&self) -> usize {
         match self {
-            TokenizationErrorKind::UnknownToken => 1,
+            TokenizationErrorKind::UnknownToken { .. } => 1,
             TokenizationErrorKind::UnknownEscapeSequence => 2,
             TokenizationErrorKind::InvalidFloatingNumber => 3,
             TokenizationErrorKind::InvalidIntegerNumber => 4,
@@ -290,6 +290,18 @@ impl<'a> Tokenizer<'a> {
         }
     }
 
+    fn skip_ignored(&mut self) {
+        loop {
+            let start_offset = self.grapheme_offset;
+            self.skip_whitespace();
+            self.skip_comment();
+
+            if self.grapheme_offset == start_offset {
+                break;
+            }
+        }
+    }
+
     fn skip_whitespace(&mut self) {
         while let Some(ch) = self.current() {
             let is_whitespace = ch.chars().all(|c| c.is_whitespace());
@@ -305,7 +317,7 @@ impl<'a> Tokenizer<'a> {
     fn skip_comment(&mut self) {
         if self.peek(0) == Some("/") && self.peek(1) == Some("/") {
             while let Some(c) = self.current() {
-                if c == "\n" {
+                if c == "\n" || c == "\r" {
                     break;
                 }
                 self.consume();
@@ -328,8 +340,7 @@ impl<'a> Tokenizer<'a> {
         let mut errors: Vec<TokenizationError> = vec![];
 
         loop {
-            state.skip_whitespace();
-            state.skip_comment();
+            state.skip_ignored();
 
             let start_pos = Position {
                 line: state.line,
@@ -478,7 +489,7 @@ impl<'a> Tokenizer<'a> {
                             byte_offset: state.byte_offset,
                         };
                         errors.push(TokenizationError {
-                            kind: TokenizationErrorKind::UnknownToken,
+                            kind: TokenizationErrorKind::UnknownToken(punct.to_string()),
                             span: Span {
                                 start: start_pos,
                                 end: end_pos,

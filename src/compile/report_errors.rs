@@ -27,42 +27,53 @@ impl Compiler {
                         let label =
                             Label::new((path.clone(), span)).with_color(Color::Red);
 
-                        let final_report = match &e.kind {
-                            TokenizationErrorKind::UnterminatedString => {
-                                report.with_message("Unterminated string").with_label(
-                                    label.with_message("This string is not terminated"),
-                                )
-                            }
-                            TokenizationErrorKind::UnknownToken => {
-                                report.with_message("Unknown token").with_label(
-                                    label.with_message("This token is not recognized"),
-                                )
-                            }
-                            TokenizationErrorKind::UnknownEscapeSequence => {
-                                report.with_message("Unknown escape sequence").with_label(
-                                    label.with_message(
+                        let final_report =
+                            match &e.kind {
+                                TokenizationErrorKind::UnterminatedString => {
+                                    report.with_message("Unterminated string").with_label(
+                                        label.with_message(
+                                            "This string is not terminated",
+                                        ),
+                                    )
+                                }
+                                TokenizationErrorKind::UnknownToken(ref char_str) => {
+                                    let readable_char = match char_str.as_str() {
+                                        "\n" => "\"\\n\"".to_string(),
+                                        "\r" => "\"\\r\"".to_string(),
+                                        "\t" => "\"\\t\"".to_string(),
+                                        " " => "\"<whitespace>\"".to_string(),
+                                        _ => format!("'{}'", char_str),
+                                    };
+
+                                    report.with_message("Unknown token").with_label(
+                                        label.with_message(format!(
+                                            "This character {} is not recognized by the \
+                                             tokenizer",
+                                            readable_char
+                                        )),
+                                    )
+                                }
+                                TokenizationErrorKind::UnknownEscapeSequence => report
+                                    .with_message("Unknown escape sequence")
+                                    .with_label(label.with_message(
                                         "The escape sequence here is invalid",
-                                    ),
-                                )
-                            }
-                            TokenizationErrorKind::InvalidFloatingNumber => report
-                                .with_message("Invalid floating-point number")
-                                .with_label(label.with_message(
-                                    "This is not a valid floating-point number",
-                                )),
-                            TokenizationErrorKind::InvalidIntegerNumber => {
-                                report.with_message("Invalid integer number").with_label(
-                                    label.with_message(
+                                    )),
+                                TokenizationErrorKind::InvalidFloatingNumber => report
+                                    .with_message("Invalid floating-point number")
+                                    .with_label(label.with_message(
+                                        "This is not a valid floating-point number",
+                                    )),
+                                TokenizationErrorKind::InvalidIntegerNumber => report
+                                    .with_message("Invalid integer number")
+                                    .with_label(label.with_message(
                                         "This is not a valid integer number",
-                                    ),
-                                )
-                            }
-                            TokenizationErrorKind::UnterminatedDoc => report
-                                .with_message("Unterminated documentation")
-                                .with_label(label.with_message(
-                                    "This documentation block is not terminated",
-                                )),
-                        };
+                                    )),
+                                TokenizationErrorKind::UnterminatedDoc => report
+                                    .with_message("Unterminated documentation")
+                                    .with_label(label.with_message(
+                                        "This documentation block is not terminated",
+                                    )),
+                            };
 
                         let _ = final_report.finish().print(&mut *cache);
                     });
