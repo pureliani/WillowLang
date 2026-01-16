@@ -24,7 +24,7 @@ pub fn build_type_alias_decl(
     let alias_value = Box::new(check_type_annotation(ctx, &type_alias_decl.value));
 
     let checked_type_alias_decl = CheckedTypeAliasDecl {
-        id: ctx.program_builder.new_declaration_id(),
+        id: type_alias_decl.id,
         documentation: type_alias_decl.documentation,
         identifier: type_alias_decl.identifier,
         span,

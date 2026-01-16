@@ -1,10 +1,10 @@
 use std::hash::{Hash, Hasher};
 
 use crate::{
-    ast::{IdentifierNode, Span},
+    ast::{DeclarationId, IdentifierNode, Span},
     compile::interner::TagId,
     hir::{
-        cfg::{ControlFlowGraph, DeclarationId, ValueId},
+        cfg::{ControlFlowGraph, ValueId},
         types::checked_type::Type,
     },
     parse::DocAnnotation,

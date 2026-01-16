@@ -330,9 +330,9 @@ pub fn walk_type<'ast, V: ASTVisitor<'ast>>(v: &mut V, ty: &'ast TypeAnnotation)
     match &ty.kind {
         TypeAnnotationKind::Identifier(id) => v.visit_ident_type(*id),
         TypeAnnotationKind::Struct(fields) => {
-            for (id, sub_ty) in fields {
-                v.visit_ident_label(*id);
-                v.visit_type(sub_ty);
+            for f in fields {
+                v.visit_ident_label(f.identifier);
+                v.visit_type(&f.constraint);
             }
         }
         TypeAnnotationKind::Tag(tag) => {

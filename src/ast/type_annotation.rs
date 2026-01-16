@@ -25,7 +25,7 @@ pub enum TypeAnnotationKind {
     F64,
     String,
     Identifier(IdentifierNode),
-    Struct(Vec<(IdentifierNode, TypeAnnotation)>),
+    Struct(Vec<Param>),
     Tag(TagAnnotation),
     Union(Vec<TagAnnotation>),
     List(Box<TypeAnnotation>),

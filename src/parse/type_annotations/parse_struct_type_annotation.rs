@@ -1,5 +1,8 @@
 use crate::{
-    ast::type_annotation::{TypeAnnotation, TypeAnnotationKind},
+    ast::{
+        decl::Param,
+        type_annotation::{TypeAnnotation, TypeAnnotationKind},
+    },
     parse::{Parser, ParsingError},
     tokenize::{PunctuationKind, TokenKind},
 };
@@ -12,10 +15,14 @@ impl Parser {
         self.consume_punctuation(PunctuationKind::LBrace)?;
         let fields = self.comma_separated(
             |p| {
-                let name = p.consume_identifier()?;
+                let identifier = p.consume_identifier()?;
                 p.consume_punctuation(PunctuationKind::Col)?;
-                let value = p.parse_type_annotation(0)?;
-                Ok((name, value))
+                let constraint = p.parse_type_annotation(0)?;
+
+                Ok(Param {
+                    identifier,
+                    constraint,
+                })
             },
             |p| p.match_token(0, TokenKind::Punctuation(PunctuationKind::RBrace)),
         )?;

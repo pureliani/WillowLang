@@ -8,18 +8,25 @@ use std::{
 };
 
 use crate::{
-    compile::interner::{SharedStringInterner, SharedTagInterner, StringId},
+    ast::{decl::Declaration, stmt::StmtKind, DeclarationId},
+    compile::{
+        interner::{SharedStringInterner, SharedTagInterner, StringId},
+        ParallelParseResult,
+    },
     hir::{
         cfg::{
-            BasicBlockId, CheckedModule, ConstantId, ControlFlowGraph, DeclarationId,
-            Value, ValueId,
+            BasicBlockId, CheckedModule, ConstantId, ControlFlowGraph, Value, ValueId,
         },
         errors::SemanticError,
+        statements::{from::build_from_stmt, type_alias_decl::build_type_alias_decl},
         types::{
-            checked_declaration::{CheckedDeclaration, FnType},
+            checked_declaration::{CheckedDeclaration, CheckedFnDecl, FnType},
             checked_type::Type,
         },
-        utils::scope::{Scope, ScopeKind},
+        utils::{
+            check_type::{check_params, check_type_annotation},
+            scope::{Scope, ScopeKind},
+        },
     },
     tokenize::NumberKind,
 };
@@ -62,7 +69,7 @@ pub struct ProgramBuilder {
     pub errors: Vec<SemanticError>,
     value_id_counter: AtomicUsize,
     constant_id_counter: AtomicUsize,
-    declaration_id_counter: AtomicUsize,
+    decl_id_counter: Arc<AtomicUsize>,
 }
 
 #[derive(Debug)]
@@ -96,6 +103,7 @@ impl ProgramBuilder {
     pub fn new(
         string_interner: Arc<SharedStringInterner>,
         tag_interner: Arc<SharedTagInterner>,
+        decl_id_counter: Arc<AtomicUsize>,
     ) -> Self {
         let common_identifiers = CommonIdentifiers {
             id: string_interner.intern("id"),
@@ -120,12 +128,8 @@ impl ProgramBuilder {
             declarations: HashMap::new(),
             constant_id_counter: AtomicUsize::new(0),
             value_id_counter: AtomicUsize::new(0),
-            declaration_id_counter: AtomicUsize::new(0),
+            decl_id_counter,
         }
-    }
-
-    pub fn new_declaration_id(&self) -> DeclarationId {
-        DeclarationId(self.declaration_id_counter.fetch_add(1, Ordering::SeqCst))
     }
 
     pub fn get_declaration(&self, id: DeclarationId) -> &CheckedDeclaration {
@@ -188,6 +192,96 @@ impl ProgramBuilder {
                     | CheckedDeclaration::UninitializedVar { .. } => todo!(),
                 }
             }
+        }
+    }
+
+    pub fn new_declaration_id(&self) -> DeclarationId {
+        DeclarationId(self.decl_id_counter.fetch_add(1, Ordering::SeqCst))
+    }
+
+    pub fn build(&mut self, results: Vec<ParallelParseResult>) {
+        // Pass 1: Signatures
+        for res in &results {
+            let mut mb = ModuleBuilder::new(res.path.clone());
+            for decl in &res.declarations {
+                match decl {
+                    Declaration::TypeAlias(d) => {
+                        if d.is_exported {
+                            mb.module.exports.insert(d.identifier.name);
+                        }
+                        let mut ctx = HIRContext {
+                            program_builder: self,
+                            module_builder: &mut mb,
+                        };
+                        build_type_alias_decl(&mut ctx, d.clone(), d.identifier.span);
+                    }
+                    Declaration::Fn(d) => {
+                        if d.is_exported {
+                            mb.module.exports.insert(d.identifier.name);
+                        }
+                        let mut ctx = HIRContext {
+                            program_builder: self,
+                            module_builder: &mut mb,
+                        };
+                        let checked_params = check_params(&mut ctx, &d.params);
+                        let return_type = check_type_annotation(&mut ctx, &d.return_type);
+
+                        let checked_fn = CheckedFnDecl {
+                            id: d.id,
+                            identifier: d.identifier,
+                            params: checked_params,
+                            return_type,
+                            body: None,
+                            is_exported: d.is_exported,
+                        };
+
+                        ctx.module_builder.scope_insert(
+                            ctx.program_builder,
+                            d.identifier,
+                            CheckedDeclaration::Function(checked_fn),
+                        );
+                    }
+                }
+            }
+            self.modules.insert(res.path.clone(), mb);
+        }
+
+        // Pass 2: Imports
+        for res in &results {
+            let mut mb = self.modules.remove(&res.path).unwrap();
+            {
+                let mut ctx = HIRContext {
+                    program_builder: self,
+                    module_builder: &mut mb,
+                };
+                for stmt in &res.statements {
+                    if let StmtKind::From { path, identifiers } = &stmt.kind {
+                        build_from_stmt(
+                            &mut ctx,
+                            path.clone(),
+                            identifiers.clone(),
+                            stmt.span,
+                        );
+                    }
+                }
+            }
+            self.modules.insert(res.path.clone(), mb);
+        }
+
+        // Pass 3: Bodies
+        for res in &results {
+            let mut mb = self.modules.remove(&res.path).unwrap();
+            for decl in &res.declarations {
+                if let Declaration::Fn(fn_decl) = decl {
+                    let mut ctx = HIRContext {
+                        program_builder: self,
+                        module_builder: &mut mb,
+                    };
+
+                    FunctionBuilder::build(&mut ctx, fn_decl.clone());
+                }
+            }
+            self.modules.insert(res.path.clone(), mb);
         }
     }
 }

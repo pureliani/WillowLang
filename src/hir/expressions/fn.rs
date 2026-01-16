@@ -1,3 +1,5 @@
+// src/hir/expressions/fn.rs
+
 use std::collections::{HashMap, HashSet};
 
 use crate::{
@@ -26,6 +28,7 @@ impl FunctionBuilder {
         }
 
         let FnDecl {
+            id: decl_id,
             identifier,
             params,
             return_type,
@@ -80,11 +83,11 @@ impl FunctionBuilder {
                 inner_builder.append_block_param(ctx, entry_block_id, param.ty.clone());
 
             let stack_ptr = inner_builder.emit_stack_alloc(ctx, param.ty.clone(), 1);
-
             inner_builder.emit_store(ctx, stack_ptr, Value::Use(arg_ssa_val));
 
+            let param_decl_id = ctx.program_builder.new_declaration_id();
             let decl = CheckedVarDecl {
-                id: ctx.program_builder.new_declaration_id(),
+                id: param_decl_id,
                 ptr: stack_ptr,
                 identifier: param.identifier,
                 documentation: None,
@@ -101,7 +104,6 @@ impl FunctionBuilder {
         inner_builder.build_fn_body(ctx, body);
         ctx.module_builder.exit_scope();
 
-        let decl_id = ctx.program_builder.new_declaration_id();
         let checked_fn_decl = CheckedFnDecl {
             id: decl_id,
             identifier,
@@ -124,14 +126,14 @@ impl FunctionBuilder {
 
         if !check_is_assignable(&final_value_type, &self.return_type) {
             ctx.module_builder.errors.push(SemanticError {
-                span: Span::default(), // TODO: Fix span propagation
+                span: Span::default(),
                 kind: SemanticErrorKind::ReturnTypeMismatch {
                     expected: self.return_type.clone(),
                     received: final_value_type,
                 },
             });
             self.set_basic_block_terminator(Terminator::Unreachable);
-        } else {
+        } else if self.get_current_basic_block().terminator.is_none() {
             self.set_basic_block_terminator(Terminator::Return {
                 value: Some(final_value),
             });

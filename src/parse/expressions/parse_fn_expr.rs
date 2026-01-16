@@ -43,8 +43,11 @@ impl Parser {
 
         let body = self.parse_codeblock_expr()?;
 
+        let id = self.new_declaration_id();
+
         Ok(Expr {
             kind: ExprKind::Fn(Box::new(FnDecl {
+                id,
                 identifier,
                 params,
                 return_type,

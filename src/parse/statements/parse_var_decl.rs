@@ -33,8 +33,11 @@ impl Parser {
 
         let span = self.get_span(start_offset, self.offset - 1)?;
 
+        let id = self.new_declaration_id();
+
         Ok(Stmt {
             kind: StmtKind::VarDecl(VarDecl {
+                id,
                 documentation,
                 identifier: name,
                 constraint,

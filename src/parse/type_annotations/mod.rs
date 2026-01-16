@@ -212,7 +212,7 @@ impl Parser {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
+    use std::sync::{atomic::AtomicUsize, Arc};
 
     use crate::{
         ast::{
@@ -468,12 +468,14 @@ mod tests {
 
         for (input, expected) in test_cases {
             let interner = Arc::new(SharedStringInterner::default());
+            let decl_id_counter = Arc::new(AtomicUsize::new(0));
             let (tokens, _) = Tokenizer::tokenize(input, interner.clone());
             let mut parser = Parser {
                 offset: 0,
                 checkpoint_offset: 0,
                 tokens,
                 interner,
+                decl_id_counter,
             };
             let result = parser.parse_type_annotation(0);
 

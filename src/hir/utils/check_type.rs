@@ -113,16 +113,7 @@ pub fn check_type_annotation(ctx: &mut HIRContext, annotation: &TypeAnnotation) 
             })
         }
         TypeAnnotationKind::Struct(items) => {
-            let checked_field_types: Vec<CheckedParam> = items
-                .iter()
-                .map(|(identifier, ty)| {
-                    let checked_type = check_type_annotation(ctx, ty);
-                    CheckedParam {
-                        identifier: *identifier,
-                        ty: checked_type,
-                    }
-                })
-                .collect();
+            let checked_field_types = check_params(ctx, items);
 
             let packed = pack_struct(
                 ctx.program_builder,

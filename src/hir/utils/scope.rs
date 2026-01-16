@@ -4,10 +4,10 @@ use std::{
 };
 
 use crate::{
-    ast::IdentifierNode,
+    ast::{DeclarationId, IdentifierNode},
     compile::interner::{SharedStringInterner, StringId},
     hir::{
-        cfg::{BasicBlockId, DeclarationId},
+        cfg::BasicBlockId,
         errors::{SemanticError, SemanticErrorKind},
         types::checked_declaration::CheckedDeclaration,
         ModuleBuilder, ProgramBuilder,

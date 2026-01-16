@@ -2,7 +2,7 @@ use std::{
     collections::HashSet,
     fs,
     path::{Path, PathBuf},
-    sync::{Arc, Mutex},
+    sync::{atomic::AtomicUsize, Arc, Mutex},
 };
 
 pub mod file_cache;
@@ -28,6 +28,7 @@ pub struct Compiler {
     interners: Interners,
     files: Arc<Mutex<FileCache>>,
     errors: Vec<CompilationError>,
+    decl_id_counter: Arc<AtomicUsize>,
 }
 
 impl Default for Compiler {
@@ -39,6 +40,7 @@ impl Default for Compiler {
             },
             files: Arc::new(Mutex::new(FileCache::default())),
             errors: Vec::new(),
+            decl_id_counter: Arc::new(AtomicUsize::new(0)),
         }
     }
 }
@@ -70,16 +72,17 @@ pub enum CompilationError {
 
 #[derive(Debug)]
 pub struct ParallelParseResult {
-    path: PathBuf,
-    statements: Vec<Stmt>,
-    tokenization_errors: Vec<TokenizationError>,
-    parsing_errors: Vec<ParsingError>,
-    declarations: Vec<Declaration>,
+    pub path: PathBuf,
+    pub statements: Vec<Stmt>,
+    pub tokenization_errors: Vec<TokenizationError>,
+    pub parsing_errors: Vec<ParsingError>,
+    pub declarations: Vec<Declaration>,
 }
 
 impl Compiler {
     pub fn compile(&mut self, main_path: PathBuf) {
         let parsed_modules = self.parallel_parse_modules(main_path);
+        let mut modules_to_compile = Vec::new();
 
         for m in parsed_modules {
             match m {
@@ -103,23 +106,50 @@ impl Compiler {
                             errors: module.parsing_errors.clone(),
                         });
                     }
+
+                    if !has_tokenization_errors && !has_parsing_errors {
+                        modules_to_compile.push(module);
+                    }
                 }
             };
         }
-
-        let mut program_builder = ProgramBuilder::new(
-            self.interners.string_interner.clone(),
-            self.interners.tag_interner.clone(),
-        );
-
-        // TODO: Pass `modules_to_compile` to the program_builder to generate HIR
-        // let semantic_errors = program_builder.build(modules_to_compile); // this method doesn't exist
-        // self.errors.push(semantic_errors);
 
         if !self.errors.is_empty() {
             self.report_errors();
             return;
         }
+
+        let mut program_builder = ProgramBuilder::new(
+            self.interners.string_interner.clone(),
+            self.interners.tag_interner.clone(),
+            self.decl_id_counter.clone(),
+        );
+
+        program_builder.build(modules_to_compile);
+
+        for (path, mut mb) in program_builder.modules {
+            if !mb.errors.is_empty() {
+                self.errors.push(CompilationError::Semantic {
+                    path,
+                    errors: mb.errors,
+                });
+            }
+        }
+
+        if !program_builder.errors.is_empty() {
+            // These are global program errors
+            self.errors.push(CompilationError::Semantic {
+                path: PathBuf::from("Global"),
+                errors: program_builder.errors,
+            });
+        }
+
+        if !self.errors.is_empty() {
+            self.report_errors();
+            return;
+        }
+
+        println!("Compilation successful (HIR generated)");
     }
 
     pub fn parallel_parse_modules(
@@ -143,6 +173,7 @@ impl Compiler {
                 all_results: Arc<
                     Mutex<Vec<Result<ParallelParseResult, CompilationError>>>,
                 >,
+                decl_id_counter: Arc<AtomicUsize>,
             ) {
                 let path = path.canonicalize().expect("Could not find a module");
 
@@ -165,14 +196,18 @@ impl Compiler {
 
                 let (tokens, tokenization_errors) =
                     Tokenizer::tokenize(&source_code, interners.string_interner.clone());
-                let (statements, parsing_errors) =
-                    Parser::parse(tokens, interners.string_interner.clone());
+                let (statements, parsing_errors) = Parser::parse(
+                    tokens,
+                    interners.string_interner.clone(),
+                    decl_id_counter.clone(),
+                );
 
                 let (dependencies, dependency_errors, declarations) =
                     find_dependencies(&path, &statements);
 
                 for dep_path in dependencies {
                     let cloned_interners = interners.clone();
+                    let decl_id_counter = decl_id_counter.clone();
                     let files = Arc::clone(&files);
                     let visited = Arc::clone(&visited);
                     let all_results = Arc::clone(&all_results);
@@ -185,6 +220,7 @@ impl Compiler {
                             files,
                             visited,
                             all_results,
+                            decl_id_counter,
                         );
                     });
                 }
@@ -209,6 +245,7 @@ impl Compiler {
                 self.files.clone(),
                 visited,
                 all_results.clone(),
+                self.decl_id_counter.clone(),
             );
         });
 

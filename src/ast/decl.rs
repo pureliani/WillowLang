@@ -1,5 +1,5 @@
 use crate::{
-    ast::{expr::BlockContents, IdentifierNode},
+    ast::{expr::BlockContents, DeclarationId, IdentifierNode},
     parse::DocAnnotation,
 };
 
@@ -13,6 +13,7 @@ pub struct Param {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct FnDecl {
+    pub id: DeclarationId,
     pub documentation: Option<DocAnnotation>,
     pub identifier: IdentifierNode,
     pub params: Vec<Param>,
@@ -23,6 +24,7 @@ pub struct FnDecl {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct TypeAliasDecl {
+    pub id: DeclarationId,
     pub documentation: Option<DocAnnotation>,
     pub identifier: IdentifierNode,
     pub value: TypeAnnotation,
@@ -37,6 +39,7 @@ pub enum Declaration {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct VarDecl {
+    pub id: DeclarationId,
     pub documentation: Option<DocAnnotation>,
     pub identifier: IdentifierNode,
     pub constraint: Option<TypeAnnotation>,

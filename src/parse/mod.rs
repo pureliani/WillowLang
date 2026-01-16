@@ -15,16 +15,20 @@ pub struct Parser {
     pub tokens: Vec<Token>,
     pub checkpoint_offset: usize,
     pub interner: Arc<SharedStringInterner>,
+    pub decl_id_counter: Arc<AtomicUsize>,
 }
 
-use std::sync::Arc;
+use std::sync::{
+    atomic::{AtomicUsize, Ordering},
+    Arc,
+};
 
 use unicode_segmentation::UnicodeSegmentation;
 
 use crate::{
     ast::{
-        stmt::Stmt, type_annotation::TypeAnnotation, IdentifierNode, Position, Span,
-        StringNode,
+        stmt::Stmt, type_annotation::TypeAnnotation, DeclarationId, IdentifierNode,
+        Position, Span, StringNode,
     },
     compile::interner::SharedStringInterner,
     tokenize::{KeywordKind, NumberKind, PunctuationKind, Token, TokenKind},
@@ -318,15 +322,21 @@ impl Parser {
         Ok(items)
     }
 
+    fn new_declaration_id(&self) -> DeclarationId {
+        DeclarationId(self.decl_id_counter.fetch_add(1, Ordering::SeqCst))
+    }
+
     pub fn parse(
         tokens: Vec<Token>,
         interner: Arc<SharedStringInterner>,
+        decl_id_counter: Arc<AtomicUsize>,
     ) -> (Vec<Stmt>, Vec<ParsingError>) {
         let mut state = Parser {
             offset: 0,
             checkpoint_offset: 0,
             tokens,
             interner,
+            decl_id_counter,
         };
 
         let mut statements: Vec<Stmt> = vec![];

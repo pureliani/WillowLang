@@ -4,7 +4,8 @@ use std::{
 };
 
 use crate::{
-    compile::interner::StringId, hir::types::checked_type::Type, tokenize::NumberKind,
+    ast::DeclarationId, compile::interner::StringId, hir::types::checked_type::Type,
+    tokenize::NumberKind,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -15,9 +16,6 @@ pub struct ValueId(pub usize);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct ConstantId(pub usize);
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub struct DeclarationId(pub usize);
 
 #[derive(Clone, Debug)]
 pub enum Value {

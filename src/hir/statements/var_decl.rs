@@ -69,7 +69,7 @@ impl FunctionBuilder {
         };
 
         let checked_var_decl = CheckedVarDecl {
-            id: ctx.program_builder.new_declaration_id(),
+            id: var_decl.id,
             ptr,
             identifier: var_decl.identifier,
             documentation: var_decl.documentation,
