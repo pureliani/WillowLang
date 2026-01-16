@@ -11,20 +11,30 @@ impl FunctionBuilder {
         target_type: &Type,
     ) -> bool {
         match (&source_type, &target_type) {
-            (st, tt)
-                if is_integer(st)
-                    && is_integer(tt)
-                    && (is_signed(st) == is_signed(tt)) =>
+            (
+                Type::Pointer {
+                    constraint: source_constraint,
+                    ..
+                },
+                Type::Pointer {
+                    constraint: target_constraint,
+                    ..
+                },
+            ) => source_constraint == target_constraint,
+            (source_t, target_t)
+                if is_integer(source_t)
+                    && is_integer(target_t)
+                    && (is_signed(source_t) == is_signed(target_t)) =>
             {
-                get_numeric_type_rank(st) <= get_numeric_type_rank(tt)
+                get_numeric_type_rank(source_t) <= get_numeric_type_rank(target_t)
             }
-            (st, tt) if is_float(st) && is_float(tt) => {
-                get_numeric_type_rank(st) <= get_numeric_type_rank(tt)
+            (source_t, target_t) if is_float(source_t) && is_float(target_t) => {
+                get_numeric_type_rank(source_t) <= get_numeric_type_rank(target_t)
             }
-            (st, tt) if is_integer(st) && is_float(tt) => true,
+            (source_t, target_t) if is_integer(source_t) && is_float(target_t) => true,
 
-            (Type::Pointer { .. }, t) if is_integer(t) => true,
-            (s, Type::Pointer { .. }) if is_integer(s) => true,
+            (Type::Pointer { .. }, target_t) if is_integer(target_t) => true,
+            (source_t, Type::Pointer { .. }) if is_integer(source_t) => true,
             _ => false,
         }
     }

@@ -140,13 +140,21 @@ pub fn check_type_annotation(ctx: &mut HIRContext, annotation: &TypeAnnotation) 
         }
         // Passed by pointer
         TypeAnnotationKind::String => {
-            Type::Pointer(Box::new(Type::Struct(StructKind::String)))
+            let inner = Box::new(Type::Struct(StructKind::String));
+            Type::Pointer {
+                constraint: inner.clone(),
+                narrowed_to: inner,
+            }
         }
         TypeAnnotationKind::List(item_type) => {
             let checked_item_type = check_type_annotation(ctx, item_type);
-            Type::Pointer(Box::new(Type::Struct(StructKind::List(Box::new(
-                checked_item_type,
-            )))))
+            let inner =
+                Box::new(Type::Struct(StructKind::List(Box::new(checked_item_type))));
+
+            Type::Pointer {
+                constraint: inner.clone(),
+                narrowed_to: inner,
+            }
         }
         TypeAnnotationKind::Struct(items) => {
             let checked_field_types = check_params(ctx, items);
@@ -156,7 +164,12 @@ pub fn check_type_annotation(ctx: &mut HIRContext, annotation: &TypeAnnotation) 
                 StructKind::UserDefined(checked_field_types),
             );
 
-            Type::Pointer(Box::new(Type::Struct(packed)))
+            let inner = Box::new(Type::Struct(packed));
+
+            Type::Pointer {
+                constraint: inner.clone(),
+                narrowed_to: inner,
+            }
         }
     };
 

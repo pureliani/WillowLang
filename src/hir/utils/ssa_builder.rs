@@ -2,7 +2,6 @@ use crate::hir::{
     cfg::{BasicBlock, BasicBlockId, Terminator, Value, ValueId},
     errors::SemanticError,
     types::checked_type::Type,
-    utils::try_unify_types::try_unify_types,
     FunctionBuilder, HIRContext,
 };
 
@@ -242,73 +241,6 @@ impl FunctionBuilder {
                     self.current_block_id.0
                 )
             })
-    }
-
-    pub fn get_refined_type(
-        &mut self,
-        ctx: &mut HIRContext,
-        block_id: BasicBlockId,
-        value_id: ValueId,
-    ) -> Type {
-        if let Some(ty) = self.refinements.get(&(block_id, value_id)) {
-            return ty.clone();
-        }
-
-        if !self.sealed_blocks.contains(&block_id) {
-            return ctx.program_builder.get_value_id_type(&value_id);
-        }
-
-        let block = &self.cfg.blocks[&block_id];
-        let param_index = block.params.iter().position(|&p| p == value_id);
-
-        let result_type = if let Some(idx) = param_index {
-            let preds = self
-                .predecessors
-                .get(&block_id)
-                .cloned()
-                .unwrap_or_default();
-
-            if preds.is_empty() {
-                ctx.program_builder.get_value_id_type(&value_id)
-            } else {
-                let mut incoming_types = Vec::with_capacity(preds.len());
-                for pred_id in preds {
-                    let arg_value =
-                        self.get_terminator_arg_for_param(pred_id, block_id, idx);
-
-                    let ty = match arg_value {
-                        Value::Use(id) => self.get_refined_type(ctx, pred_id, id),
-                        _ => ctx.program_builder.get_value_type(&arg_value),
-                    };
-
-                    incoming_types.push((ty, crate::ast::Span::default()));
-                }
-
-                try_unify_types(&incoming_types)
-                    .unwrap_or_else(|_| ctx.program_builder.get_value_id_type(&value_id))
-            }
-        } else {
-            let preds = self
-                .predecessors
-                .get(&block_id)
-                .cloned()
-                .unwrap_or_default();
-            if preds.is_empty() {
-                ctx.program_builder.get_value_id_type(&value_id)
-            } else {
-                let mut incoming_types = Vec::with_capacity(preds.len());
-                for pred_id in preds {
-                    let ty = self.get_refined_type(ctx, pred_id, value_id);
-                    incoming_types.push((ty, crate::ast::Span::default()));
-                }
-                try_unify_types(&incoming_types)
-                    .unwrap_or_else(|_| ctx.program_builder.get_value_id_type(&value_id))
-            }
-        };
-
-        self.refinements
-            .insert((block_id, value_id), result_type.clone());
-        result_type
     }
 
     /// Helper to find which ValueId is passed to a specific block parameter index

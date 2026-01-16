@@ -39,7 +39,13 @@ impl FunctionBuilder {
         ty: Type,
         count: usize,
     ) -> ValueId {
-        let destination = self.alloc_value(ctx, Type::Pointer(Box::new(ty)));
+        let destination = self.alloc_value(
+            ctx,
+            Type::Pointer {
+                constraint: Box::new(ty.clone()),
+                narrowed_to: Box::new(ty),
+            },
+        );
         self.push_instruction(Instruction::StackAlloc { destination, count });
 
         destination
@@ -64,7 +70,13 @@ impl FunctionBuilder {
             });
         }
 
-        let destination = self.alloc_value(ctx, Type::Pointer(Box::new(ty)));
+        let destination = self.alloc_value(
+            ctx,
+            Type::Pointer {
+                constraint: Box::new(ty.clone()),
+                narrowed_to: Box::new(ty),
+            },
+        );
         self.push_instruction(Instruction::HeapAlloc { destination, count });
 
         Ok(destination)
@@ -78,35 +90,37 @@ impl FunctionBuilder {
         value_span: Span,
     ) {
         let value_type = ctx.program_builder.get_value_type(&value);
-        let base_ptr_type = ctx.program_builder.get_value_id_type(&ptr);
+        let ptr_type = ctx.program_builder.get_value_id_type(&ptr);
 
-        let constraint_type = match base_ptr_type {
-            Type::Pointer(to) => to,
-            _ => panic!("INTERNAL COMPILER ERROR: Expected Pointer type"),
-        };
-
-        if !check_is_assignable(&value_type, &constraint_type) {
-            ctx.module_builder.errors.push(SemanticError {
-                span: value_span,
-                kind: SemanticErrorKind::TypeMismatch {
-                    expected: *constraint_type,
-                    received: value_type,
-                },
-            });
-            return;
+        if let Type::Pointer { constraint, .. } = ptr_type {
+            if !check_is_assignable(&value_type, &constraint) {
+                ctx.module_builder.errors.push(SemanticError {
+                    span: value_span,
+                    kind: SemanticErrorKind::TypeMismatch {
+                        expected: *constraint,
+                        received: value_type,
+                    },
+                });
+                return;
+            }
+        } else {
+            panic!("INTERNAL COMPILER ERROR: emit_store expected a pointer");
         }
 
         self.push_instruction(Instruction::Store { ptr, value });
     }
 
     pub fn emit_load(&mut self, ctx: &mut HIRContext, ptr: ValueId) -> ValueId {
-        let ptr_type = self.get_refined_type(ctx, self.current_block_id, ptr);
+        let ptr_type = ctx.program_builder.get_value_id_type(&ptr);
 
         let destination_type = match ptr_type {
-            Type::Pointer(to) => *to,
-            _ => panic!(
-                "INTERNAL COMPILER ERROR: Expected source_ptr to be of Pointer type"
-            ),
+            Type::Pointer {
+                narrowed_to,
+                constraint: _,
+            } => *narrowed_to,
+            _ => {
+                panic!("INTERNAL COMPILER ERROR: emit_get_element_ptr expects a pointer")
+            }
         };
 
         let destination = self.alloc_value(ctx, destination_type);
@@ -120,7 +134,10 @@ impl FunctionBuilder {
         ctx: &mut HIRContext,
         constant_id: ConstantId,
     ) -> ValueId {
-        let ptr_type = Type::Pointer(Box::new(Type::U8));
+        let ptr_type = Type::Pointer {
+            constraint: Box::new(Type::U8),
+            narrowed_to: Box::new(Type::U8),
+        };
         let destination = self.alloc_value(ctx, ptr_type);
 
         self.push_instruction(Instruction::LoadConstant {
@@ -138,52 +155,69 @@ impl FunctionBuilder {
         field: IdentifierNode,
     ) -> Result<ValueId, SemanticError> {
         let mut current_ptr = base_ptr;
-        let mut current_ptr_type =
-            self.get_refined_type(ctx, self.current_block_id, current_ptr);
+        let mut current_ptr_ty = ctx.program_builder.get_value_id_type(&current_ptr);
 
-        if let Type::Pointer(inner) = &current_ptr_type {
-            if let Type::Pointer(target) = &**inner {
-                if matches!(**target, Type::Struct(_)) {
+        if let Type::Pointer {
+            narrowed_to: outer_narrowed,
+            ..
+        } = &current_ptr_ty
+        {
+            if let Type::Pointer {
+                narrowed_to: inner_narrowed,
+                ..
+            } = &**outer_narrowed
+            {
+                if matches!(**inner_narrowed, Type::Struct(_)) {
                     current_ptr = self.emit_load(ctx, current_ptr);
-                    current_ptr_type =
-                        self.get_refined_type(ctx, self.current_block_id, current_ptr);
+                    current_ptr_ty = ctx.program_builder.get_value_id_type(&current_ptr);
                 }
             }
         }
-        let s = match current_ptr_type {
-            Type::Pointer(to) => {
-                if let Type::Struct(s) = *to {
-                    s
-                } else {
+
+        let (constraint_struct, narrowed_struct) = match current_ptr_ty {
+            Type::Pointer {
+                constraint,
+                narrowed_to,
+            } => match (*constraint, *narrowed_to.clone()) {
+                (Type::Struct(c), Type::Struct(n)) => (c, n),
+                _ => {
                     return Err(SemanticError {
-                        kind: SemanticErrorKind::CannotAccess(to.as_ref().clone()),
+                        kind: SemanticErrorKind::CannotAccess(
+                            narrowed_to.as_ref().clone(),
+                        ),
                         span: field.span,
-                    });
+                    })
                 }
-            }
-            _ => panic!(
-                "INTERNAL COMPILER ERROR: emit_get_field_ptr called on a non-pointer \
-                 type."
-            ),
+            },
+            _ => panic!("Expected pointer"),
         };
 
-        if let Some((field_index, ty)) = s.get_field(ctx.program_builder, field.name) {
-            let result_type = Type::Pointer(Box::new(ty.clone()));
-            let destination = self.alloc_value(ctx, result_type);
-
-            self.push_instruction(Instruction::GetFieldPtr {
-                destination,
-                base_ptr: current_ptr,
-                field_index,
-            });
-
-            Ok(destination)
-        } else {
-            Err(SemanticError {
+        let (field_index, _) = narrowed_struct
+            .get_field(ctx.program_builder, field.name)
+            .ok_or_else(|| SemanticError {
                 kind: SemanticErrorKind::AccessToUndefinedField(field),
                 span: field.span,
-            })
-        }
+            })?;
+
+        let (_, field_constraint) =
+            constraint_struct.fields(ctx.program_builder)[field_index].clone();
+
+        let (_, field_narrowed) =
+            narrowed_struct.fields(ctx.program_builder)[field_index].clone();
+
+        let result_ptr_ty = Type::Pointer {
+            constraint: Box::new(field_constraint),
+            narrowed_to: Box::new(field_narrowed),
+        };
+
+        let destination = self.alloc_value(ctx, result_ptr_ty);
+        self.push_instruction(Instruction::GetFieldPtr {
+            destination,
+            base_ptr,
+            field_index,
+        });
+
+        Ok(destination)
     }
 
     pub fn emit_get_element_ptr(
@@ -203,18 +237,16 @@ impl FunctionBuilder {
             });
         }
 
-        let base_ptr_type = self.get_refined_type(ctx, self.current_block_id, base_ptr);
+        let base_ptr_type = ctx.program_builder.get_value_id_type(&base_ptr);
 
-        let element_type = match base_ptr_type {
-            Type::Pointer(to) => *to,
-            _ => {
-                panic!("INTERNAL COMPILER ERROR: emit_get_element_ptr expects a pointer")
-            }
-        };
+        if !matches!(base_ptr_type, Type::Pointer { .. }) {
+            panic!(
+                "INTERNAL COMPILER ERROR: emit_get_element_ptr expects a pointer, found {:?}",
+                base_ptr_type
+            );
+        }
 
-        let result_type = Type::Pointer(Box::new(element_type));
-
-        let destination = self.alloc_value(ctx, result_type);
+        let destination = self.alloc_value(ctx, base_ptr_type);
         self.push_instruction(Instruction::GetElementPtr {
             destination,
             base_ptr,

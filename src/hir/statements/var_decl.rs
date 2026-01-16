@@ -62,13 +62,30 @@ impl FunctionBuilder {
 
         let ptr = self.emit_stack_alloc(ctx, initial_constraint.clone(), 1);
 
-        let val_id = match &initial_value.clone() {
+        let val_id = match &initial_value {
             Value::Use(id) => self.use_value_in_block(ctx, self.current_block_id, *id),
             _ => {
                 let ty = ctx.program_builder.get_value_type(&initial_value);
                 self.emit_type_cast(ctx, initial_value.clone(), initial_value_span, ty)
             }
         };
+
+        self.emit_store(ctx, ptr, Value::Use(val_id), initial_value_span);
+
+        let value_type = ctx.program_builder.get_value_type(&initial_value);
+        let narrowed_ptr_ty = Type::Pointer {
+            constraint: Box::new(initial_constraint.clone()),
+            narrowed_to: Box::new(value_type),
+        };
+
+        let narrowed_ptr = self.emit_type_cast(
+            ctx,
+            Value::Use(ptr),
+            initial_value_span,
+            narrowed_ptr_ty,
+        );
+
+        self.map_value(self.current_block_id, ptr, narrowed_ptr);
 
         let checked_var_decl = CheckedVarDecl {
             id: var_decl.id,
@@ -77,14 +94,6 @@ impl FunctionBuilder {
             documentation: var_decl.documentation,
             constraint: initial_constraint,
         };
-
-        self.emit_store(ctx, ptr, Value::Use(val_id), initial_value_span);
-
-        let value_type = ctx.program_builder.get_value_type(&initial_value);
-        self.refinements.insert(
-            (self.current_block_id, ptr),
-            Type::Pointer(Box::new(value_type)),
-        );
 
         ctx.module_builder.scope_insert(
             ctx.program_builder,

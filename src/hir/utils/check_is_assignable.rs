@@ -42,8 +42,23 @@ fn check_is_assignable_recursive<'a>(
         | (_, Unknown)
         | (Unknown, _) => true,
 
-        (Pointer(s), Pointer(t)) => check_is_assignable_recursive(s, t, visited),
-
+        (
+            Type::Pointer {
+                constraint: source_constraint,
+                ..
+            },
+            Type::Pointer {
+                constraint: target_constraint,
+                ..
+            },
+        ) => {
+            check_is_assignable_recursive(source_constraint, target_constraint, visited)
+                && check_is_assignable_recursive(
+                    target_constraint,
+                    source_constraint,
+                    visited,
+                )
+        }
         (Struct(source), Struct(target)) => match (source, target) {
             (
                 StructKind::Union { variants: source },

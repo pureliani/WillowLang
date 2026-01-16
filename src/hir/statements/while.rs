@@ -45,13 +45,8 @@ impl FunctionBuilder {
 
         if let Value::Use(cond_id) = condition_value {
             if let Some(pred) = self.predicates.get(&cond_id).cloned() {
-                let local_t = self.use_value_in_block(ctx, body_block, pred.target_ptr);
-                self.refinements
-                    .insert((body_block, local_t), pred.true_type);
-
-                let local_f = self.use_value_in_block(ctx, exit_block, pred.target_ptr);
-                self.refinements
-                    .insert((exit_block, local_f), pred.false_type);
+                self.map_value(body_block, pred.source, pred.true_id);
+                self.map_value(exit_block, pred.source, pred.false_id);
             }
         }
 

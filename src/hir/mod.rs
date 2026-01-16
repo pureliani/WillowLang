@@ -80,9 +80,12 @@ pub struct ModuleBuilder {
 
 #[derive(Debug, Clone)]
 pub struct TypePredicate {
-    pub target_ptr: ValueId,
-    pub true_type: Type,
-    pub false_type: Type,
+    /// The original ValueId that was checked, could be a pointer or a value
+    pub source: ValueId,
+    /// The new ValueId to use in the true path
+    pub true_id: ValueId,
+    /// The new ValueId to use in the false path
+    pub false_id: ValueId,
 }
 
 #[derive(Debug)]
@@ -95,7 +98,6 @@ pub struct FunctionBuilder {
     pub block_value_maps: HashMap<BasicBlockId, HashMap<ValueId, ValueId>>,
     pub value_definitions: HashMap<ValueId, BasicBlockId>,
     pub sealed_blocks: HashSet<BasicBlockId>,
-    pub refinements: HashMap<(BasicBlockId, ValueId), Type>,
     /// Maps a boolean ValueId to the narrowing facts it carries
     pub predicates: HashMap<ValueId, TypePredicate>,
     // Map: BlockId -> List of (PlaceholderParamId, OriginalValueId)

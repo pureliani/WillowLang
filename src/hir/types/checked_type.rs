@@ -38,7 +38,13 @@ impl StructKind {
             StructKind::List(elem_ty) => vec![
                 (ctx.common_identifiers.capacity, Type::USize),
                 (ctx.common_identifiers.len, Type::USize),
-                (ctx.common_identifiers.ptr, Type::Pointer(elem_ty.clone())),
+                (
+                    ctx.common_identifiers.ptr,
+                    Type::Pointer {
+                        constraint: elem_ty.clone(),
+                        narrowed_to: elem_ty.clone(),
+                    },
+                ),
             ],
 
             StructKind::String => vec![
@@ -46,7 +52,10 @@ impl StructKind {
                 (ctx.common_identifiers.len, Type::USize),
                 (
                     ctx.common_identifiers.ptr,
-                    Type::Pointer(Box::new(Type::U8)),
+                    Type::Pointer {
+                        constraint: Box::new(Type::U8),
+                        narrowed_to: Box::new(Type::U8),
+                    },
                 ),
             ],
 
@@ -115,8 +124,10 @@ pub enum Type {
     F32,
     F64,
 
-    /// Represents a pointer to another type
-    Pointer(Box<Type>),
+    Pointer {
+        constraint: Box<Type>,
+        narrowed_to: Box<Type>,
+    },
 
     /// Represents any block of memory with named fields
     Struct(StructKind),

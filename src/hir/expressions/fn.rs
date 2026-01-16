@@ -69,7 +69,6 @@ impl FunctionBuilder {
             value_definitions: HashMap::new(),
             sealed_blocks: HashSet::new(),
             incomplete_params: HashMap::new(),
-            refinements: HashMap::new(),
             predicates: HashMap::new(),
             block_id_counter: 1,
             value_id_counter: 0,

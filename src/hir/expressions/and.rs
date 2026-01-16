@@ -39,15 +39,8 @@ impl FunctionBuilder {
 
         if let Value::Use(left_id) = left_value {
             if let Some(pred) = self.predicates.get(&left_id).cloned() {
-                let local_t =
-                    self.use_value_in_block(ctx, right_entry_block_id, pred.target_ptr);
-                self.refinements
-                    .insert((right_entry_block_id, local_t), pred.true_type);
-
-                let local_f =
-                    self.use_value_in_block(ctx, merge_block_id, pred.target_ptr);
-                self.refinements
-                    .insert((merge_block_id, local_f), pred.false_type);
+                self.map_value(right_entry_block_id, pred.source, pred.true_id);
+                self.map_value(merge_block_id, pred.source, pred.false_id);
             }
         }
 
@@ -81,9 +74,7 @@ impl FunctionBuilder {
 
         if let Value::Use(right_id) = right_value {
             if let Some(pred) = self.predicates.get(&right_id).cloned() {
-                if let Value::Use(res_id) = Value::Use(result_param) {
-                    self.predicates.insert(res_id, pred);
-                }
+                self.predicates.insert(result_param, pred);
             }
         }
 

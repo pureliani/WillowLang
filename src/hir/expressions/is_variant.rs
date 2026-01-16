@@ -1,5 +1,5 @@
 use crate::{
-    ast::{expr::Expr, type_annotation::TagAnnotation, IdentifierNode},
+    ast::{expr::Expr, type_annotation::TagAnnotation, IdentifierNode, Span},
     hir::{
         cfg::{BinaryOperationKind, Terminator, Value},
         errors::{SemanticError, SemanticErrorKind},
@@ -19,44 +19,48 @@ impl FunctionBuilder {
     ) -> Value {
         let left_span = left.span;
 
-        let (union_ptr_id, union_type) = match self.build_lvalue_expr(ctx, *left.clone())
-        {
-            Ok(ptr) => {
-                let ptr_ty = self.get_refined_type(ctx, self.current_block_id, ptr);
-                match ptr_ty {
-                    Type::Pointer(inner) => (ptr, *inner),
-                    _ => panic!("INTERNAL COMPILER ERROR: L-value must be a pointer"),
-                }
+        let union_val = self.build_expr(ctx, *left.clone());
+        let source_id = match union_val {
+            Value::Use(id) => id,
+            _ => {
+                let ty = ctx.program_builder.get_value_type(&union_val);
+                self.emit_type_cast(ctx, union_val, Span::default(), ty)
             }
-            Err(_) => {
-                // store in a temporary stack slot.
-                let left_span = left.span;
-                let val = self.build_expr(ctx, *left);
-                let ty = ctx.program_builder.get_value_type(&val);
-                let tmp_ptr = self.emit_stack_alloc(ctx, ty.clone(), 1);
-                self.emit_store(ctx, tmp_ptr, val, left_span);
-                (tmp_ptr, ty)
-            }
+        };
+        let source_ty = ctx.program_builder.get_value_id_type(&source_id);
+
+        let underlying_ty = match &source_ty {
+            Type::Pointer { narrowed_to, .. } => narrowed_to.as_ref(),
+            other => other,
         };
 
         if !matches!(
-            union_type,
+            underlying_ty,
             Type::Struct(StructKind::Union { .. }) | Type::Unknown
         ) {
-            ctx.module_builder.errors.push(SemanticError {
-                kind: SemanticErrorKind::CannotNarrowNonUnion(union_type),
-                span: left_span,
-            });
+            return Value::Use(self.report_error_and_get_poison(
+                ctx,
+                SemanticError {
+                    kind: SemanticErrorKind::CannotNarrowNonUnion(source_ty.clone()),
+                    span: left_span,
+                },
+            ));
         }
 
-        let base_refined_ptr_ty =
-            self.get_refined_type(ctx, self.current_block_id, union_ptr_id);
+        let union_ptr = match self.build_lvalue_expr(ctx, *left) {
+            Ok((ptr, _)) => ptr,
+            Err(_) => {
+                let p = self.emit_stack_alloc(ctx, source_ty.clone(), 1);
+                self.emit_store(ctx, p, Value::Use(source_id), left_span);
+                p
+            }
+        };
 
         let id_field = IdentifierNode {
             name: ctx.program_builder.common_identifiers.id,
             span: left_span,
         };
-        let id_ptr = match self.emit_get_field_ptr(ctx, union_ptr_id, id_field) {
+        let id_ptr = match self.emit_get_field_ptr(ctx, union_ptr, id_field) {
             Ok(ptr) => ptr,
             Err(e) => return Value::Use(self.report_error_and_get_poison(ctx, e)),
         };
@@ -114,39 +118,40 @@ impl FunctionBuilder {
             }
         }
 
-        let true_ty = intersect_types(&base_refined_ptr_ty, &target_tag_ids);
-        let false_ty = subtract_types(&base_refined_ptr_ty, &target_tag_ids);
+        let true_ty = intersect_types(&source_ty, &target_tag_ids);
+        let false_ty = subtract_types(&source_ty, &target_tag_ids);
 
-        self.seal_block(ctx, true_path);
+        let true_id =
+            self.emit_type_cast(ctx, Value::Use(source_id), Span::default(), true_ty);
+        let false_id =
+            self.emit_type_cast(ctx, Value::Use(source_id), Span::default(), false_ty);
+
         self.use_basic_block(true_path);
-        let local_ptr_t = self.use_value_in_block(ctx, true_path, union_ptr_id);
-        self.refinements
-            .insert((true_path, local_ptr_t), true_ty.clone());
+        self.seal_block(ctx, true_path);
+        self.map_value(true_path, source_id, true_id);
         self.set_basic_block_terminator(Terminator::Jump {
             target: merge_block,
             args: vec![Value::BoolLiteral(true)],
         });
 
-        self.seal_block(ctx, false_path);
         self.use_basic_block(false_path);
-        let local_ptr_f = self.use_value_in_block(ctx, false_path, union_ptr_id);
-        self.refinements
-            .insert((false_path, local_ptr_f), false_ty.clone());
+        self.seal_block(ctx, false_path);
+        self.map_value(false_path, source_id, false_id);
         self.set_basic_block_terminator(Terminator::Jump {
             target: merge_block,
             args: vec![Value::BoolLiteral(false)],
         });
 
-        self.seal_block(ctx, merge_block);
         self.use_basic_block(merge_block);
+        self.seal_block(ctx, merge_block);
         let result_bool_id = self.append_block_param(ctx, merge_block, Type::Bool);
 
         self.predicates.insert(
             result_bool_id,
             TypePredicate {
-                target_ptr: union_ptr_id,
-                true_type: true_ty,
-                false_type: false_ty,
+                source: source_id,
+                true_id,
+                false_id,
             },
         );
 

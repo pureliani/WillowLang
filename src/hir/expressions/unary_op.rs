@@ -27,9 +27,9 @@ impl FunctionBuilder {
                     self.predicates.insert(
                         destination,
                         TypePredicate {
-                            target_ptr: pred.target_ptr,
-                            true_type: pred.false_type,
-                            false_type: pred.true_type,
+                            source: pred.source,
+                            true_id: pred.false_id,
+                            false_id: pred.true_id,
                         },
                     );
                 }

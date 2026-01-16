@@ -72,7 +72,10 @@ pub fn type_to_string_recursive(
         Type::Unknown => String::from("unknown"),
         Type::Struct(s) => struct_to_string(s, interners, visited_set),
         Type::Fn(fn_type) => fn_signature_to_string(fn_type, interners, visited_set),
-        Type::Pointer(to) => type_to_string_recursive(to, interners, visited_set),
+        Type::Pointer {
+            constraint: _,
+            narrowed_to,
+        } => type_to_string_recursive(narrowed_to, interners, visited_set),
         Type::Buffer { size, alignment } => {
             format!("Buffer(size={}, align={})", size, alignment)
         }

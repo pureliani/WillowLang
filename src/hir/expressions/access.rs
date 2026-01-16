@@ -10,12 +10,14 @@ impl FunctionBuilder {
         left: Box<Expr>,
         field: IdentifierNode,
     ) -> Value {
-        let base_ptr_id = match self.build_lvalue_expr(ctx, *left) {
-            Ok(id) => id,
-            Err(e) => return Value::Use(self.report_error_and_get_poison(ctx, e)),
-        };
+        let (current_base_ptr_id, _original_base_ptr_id) =
+            match self.build_lvalue_expr(ctx, *left) {
+                Ok(id) => id,
+                Err(e) => return Value::Use(self.report_error_and_get_poison(ctx, e)),
+            };
 
-        let field_ptr_id = match self.emit_get_field_ptr(ctx, base_ptr_id, field) {
+        let field_ptr_id = match self.emit_get_field_ptr(ctx, current_base_ptr_id, field)
+        {
             Ok(id) => id,
             Err(e) => return Value::Use(self.report_error_and_get_poison(ctx, e)),
         };
