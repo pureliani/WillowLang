@@ -84,7 +84,12 @@ impl FunctionBuilder {
                 inner_builder.append_block_param(ctx, entry_block_id, param.ty.clone());
 
             let stack_ptr = inner_builder.emit_stack_alloc(ctx, param.ty.clone(), 1);
-            inner_builder.emit_store(ctx, stack_ptr, Value::Use(arg_ssa_val));
+            inner_builder.emit_store(
+                ctx,
+                stack_ptr,
+                Value::Use(arg_ssa_val),
+                param.identifier.span,
+            );
 
             let param_decl_id = ctx.program_builder.new_declaration_id();
             let decl = CheckedVarDecl {

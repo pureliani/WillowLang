@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::{
-    ast::{expr::Expr, IdentifierNode},
+    ast::{expr::Expr, IdentifierNode, Span},
     hir::{
         cfg::Value,
         errors::{SemanticError, SemanticErrorKind},
@@ -22,7 +22,7 @@ impl FunctionBuilder {
         fields: Vec<(IdentifierNode, Expr)>,
     ) -> Value {
         let mut resolved_fields: Vec<CheckedParam> = Vec::with_capacity(fields.len());
-        let mut field_values: HashMap<IdentifierNode, Value> =
+        let mut field_values: HashMap<IdentifierNode, (Value, Span)> =
             HashMap::with_capacity(fields.len());
         let mut initialized_fields: HashSet<IdentifierNode> = HashSet::new();
 
@@ -39,6 +39,7 @@ impl FunctionBuilder {
                 ));
             }
 
+            let value_span = field_expr.span;
             let value = self.build_expr(ctx, field_expr);
             let value_type = ctx.program_builder.get_value_type(&value);
 
@@ -46,7 +47,7 @@ impl FunctionBuilder {
                 identifier: field_name,
                 ty: value_type,
             });
-            field_values.insert(field_name, value);
+            field_values.insert(field_name, (value, value_span));
         }
 
         let packed_fields = pack_struct(
@@ -76,9 +77,10 @@ impl FunctionBuilder {
                         }
                     };
 
-                let field_value = field_values.get(&field.identifier).unwrap();
+                let (field_value, value_span) =
+                    field_values.get(&field.identifier).unwrap();
 
-                self.emit_store(ctx, field_ptr, field_value.clone());
+                self.emit_store(ctx, field_ptr, field_value.clone(), *value_span);
             }
         }
 

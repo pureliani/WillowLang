@@ -70,23 +70,26 @@ impl FunctionBuilder {
         Ok(destination)
     }
 
-    pub fn emit_store(&mut self, ctx: &mut HIRContext, ptr: ValueId, value: Value) {
+    pub fn emit_store(
+        &mut self,
+        ctx: &mut HIRContext,
+        ptr: ValueId,
+        value: Value,
+        value_span: Span,
+    ) {
         let value_type = ctx.program_builder.get_value_type(&value);
-        let destination_ptr_type = self.get_refined_type(ctx, self.current_block_id, ptr);
+        let base_ptr_type = ctx.program_builder.get_value_id_type(&ptr);
 
-        let target_type = match destination_ptr_type {
+        let constraint_type = match base_ptr_type {
             Type::Pointer(to) => to,
-            _ => panic!(
-                "INTERNAL COMPILER ERROR: Expected destination_ptr_id to be of Pointer \
-                 type"
-            ),
+            _ => panic!("INTERNAL COMPILER ERROR: Expected Pointer type"),
         };
 
-        if !check_is_assignable(&value_type, &target_type) {
+        if !check_is_assignable(&value_type, &constraint_type) {
             ctx.module_builder.errors.push(SemanticError {
-                span: Span::default(), // TODO: Fix span
+                span: value_span,
                 kind: SemanticErrorKind::TypeMismatch {
-                    expected: *target_type,
+                    expected: *constraint_type,
                     received: value_type,
                 },
             });

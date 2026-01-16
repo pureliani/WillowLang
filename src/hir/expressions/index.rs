@@ -1,5 +1,5 @@
 use crate::{
-    ast::{expr::Expr, IdentifierNode},
+    ast::{expr::Expr, IdentifierNode, Span},
     hir::{
         cfg::{BinaryOperationKind, Terminator, Value},
         errors::{SemanticError, SemanticErrorKind},
@@ -152,6 +152,7 @@ impl FunctionBuilder {
             ctx,
             some_id_ptr,
             Value::NumberLiteral(NumberKind::U16(some_tag_id.0)),
+            Span::default(),
         );
 
         let val_field = IdentifierNode {
@@ -159,7 +160,7 @@ impl FunctionBuilder {
             span: left_span,
         };
         let some_val_ptr = self.emit_get_field_ptr(ctx, some_ptr, val_field).unwrap();
-        self.emit_store(ctx, some_val_ptr, element_val);
+        self.emit_store(ctx, some_val_ptr, element_val, Span::default());
 
         let some_val = Value::Use(self.emit_load(ctx, some_ptr));
         let cast_some =
@@ -181,6 +182,7 @@ impl FunctionBuilder {
             ctx,
             none_id_ptr,
             Value::NumberLiteral(NumberKind::U16(none_tag_id.0)),
+            Span::default(),
         );
 
         let none_val = Value::Use(self.emit_load(ctx, none_ptr));

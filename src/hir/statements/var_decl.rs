@@ -78,7 +78,7 @@ impl FunctionBuilder {
             constraint: initial_constraint,
         };
 
-        self.emit_store(ctx, ptr, Value::Use(val_id));
+        self.emit_store(ctx, ptr, Value::Use(val_id), initial_value_span);
 
         let value_type = ctx.program_builder.get_value_type(&initial_value);
         self.refinements.insert(

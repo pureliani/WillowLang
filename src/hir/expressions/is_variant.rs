@@ -30,10 +30,11 @@ impl FunctionBuilder {
             }
             Err(_) => {
                 // store in a temporary stack slot.
+                let left_span = left.span;
                 let val = self.build_expr(ctx, *left);
                 let ty = ctx.program_builder.get_value_type(&val);
                 let tmp_ptr = self.emit_stack_alloc(ctx, ty.clone(), 1);
-                self.emit_store(ctx, tmp_ptr, val);
+                self.emit_store(ctx, tmp_ptr, val, left_span);
                 (tmp_ptr, ty)
             }
         };

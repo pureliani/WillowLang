@@ -1,5 +1,5 @@
 use crate::{
-    ast::{IdentifierNode, StringNode},
+    ast::{IdentifierNode, Span, StringNode},
     hir::{
         cfg::Value,
         types::checked_type::{StructKind, Type},
@@ -37,7 +37,7 @@ impl FunctionBuilder {
             .emit_get_field_ptr(ctx, struct_ptr, is_heap_id)
             .unwrap();
 
-        self.emit_store(ctx, is_heap_ptr, Value::BoolLiteral(false));
+        self.emit_store(ctx, is_heap_ptr, Value::BoolLiteral(false), Span::default());
 
         let len_id = IdentifierNode {
             name: ctx.program_builder.common_identifiers.len,
@@ -48,6 +48,7 @@ impl FunctionBuilder {
             ctx,
             len_ptr,
             Value::NumberLiteral(NumberKind::USize(node.len)),
+            Span::default(),
         );
 
         let ptr_id = IdentifierNode {
@@ -57,7 +58,12 @@ impl FunctionBuilder {
         let data_ptr_field = self.emit_get_field_ptr(ctx, struct_ptr, ptr_id).unwrap();
 
         let constant_ptr_id = self.emit_load_constant(ctx, constant_id);
-        self.emit_store(ctx, data_ptr_field, Value::Use(constant_ptr_id));
+        self.emit_store(
+            ctx,
+            data_ptr_field,
+            Value::Use(constant_ptr_id),
+            Span::default(),
+        );
 
         Value::Use(struct_ptr)
     }

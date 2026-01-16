@@ -53,6 +53,7 @@ impl FunctionBuilder {
         target: Expr,
         value: Expr,
     ) {
+        let value_span = value.span;
         let source_val = self.build_expr(ctx, value);
         let source_type = ctx.program_builder.get_value_type(&source_val);
 
@@ -64,7 +65,7 @@ impl FunctionBuilder {
             }
         };
 
-        self.emit_store(ctx, destination_ptr, source_val);
+        self.emit_store(ctx, destination_ptr, source_val, value_span);
         self.refinements.insert(
             (self.current_block_id, destination_ptr),
             Type::Pointer(Box::new(source_type)),

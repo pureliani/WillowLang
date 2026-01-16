@@ -28,7 +28,7 @@ impl FunctionBuilder {
             let val = self.build_expr(ctx, item);
             let ty = ctx.program_builder.get_value_type(&val);
 
-            item_values.push(val);
+            item_values.push((val, span));
             type_entries.push((ty, span));
         }
 
@@ -68,21 +68,21 @@ impl FunctionBuilder {
                 .emit_get_field_ptr(ctx, header_ptr, field_id)
                 .expect("INTERNAL COMPILER ERROR: Failed to set field on List literal");
 
-            self.emit_store(ctx, ptr, val);
+            self.emit_store(ctx, ptr, val, expr_span);
         };
 
         set_field(identifier_capacity, capacity_val.clone());
         set_field(identifier_len, capacity_val);
         set_field(identifier_ptr, Value::Use(buffer_ptr));
 
-        for (i, val) in item_values.into_iter().enumerate() {
+        for (i, (val, item_span)) in item_values.into_iter().enumerate() {
             let index_val = Value::NumberLiteral(NumberKind::USize(i));
 
             let elem_ptr = self
                 .emit_get_element_ptr(ctx, buffer_ptr, index_val)
                 .unwrap();
 
-            self.emit_store(ctx, elem_ptr, val);
+            self.emit_store(ctx, elem_ptr, val, item_span);
         }
 
         Value::Use(header_ptr)
