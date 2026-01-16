@@ -3,7 +3,7 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::{
-    ast::{decl::FnDecl, expr::BlockContents, Span},
+    ast::{decl::FnDecl, expr::BlockContents},
     hir::{
         cfg::{BasicBlock, BasicBlockId, ControlFlowGraph, Terminator, Value},
         errors::{SemanticError, SemanticErrorKind},
@@ -70,6 +70,7 @@ impl FunctionBuilder {
             sealed_blocks: HashSet::new(),
             incomplete_params: HashMap::new(),
             refinements: HashMap::new(),
+            predicates: HashMap::new(),
             block_id_counter: 1,
             value_id_counter: 0,
         };

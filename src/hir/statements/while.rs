@@ -3,7 +3,7 @@
 use crate::{
     ast::expr::{BlockContents, Expr},
     hir::{
-        cfg::Terminator,
+        cfg::{Terminator, Value},
         errors::{SemanticError, SemanticErrorKind},
         types::checked_type::Type,
         utils::{check_is_assignable::check_is_assignable, scope::ScopeKind},
@@ -41,6 +41,18 @@ impl FunctionBuilder {
                     received: condition_type,
                 },
             });
+        }
+
+        if let Value::Use(cond_id) = condition_value {
+            if let Some(pred) = self.predicates.get(&cond_id).cloned() {
+                let local_t = self.use_value_in_block(ctx, body_block, pred.target_ptr);
+                self.refinements
+                    .insert((body_block, local_t), pred.true_type);
+
+                let local_f = self.use_value_in_block(ctx, exit_block, pred.target_ptr);
+                self.refinements
+                    .insert((exit_block, local_f), pred.false_type);
+            }
         }
 
         self.set_basic_block_terminator(Terminator::CondJump {

@@ -72,7 +72,7 @@ impl FunctionBuilder {
 
     pub fn emit_store(&mut self, ctx: &mut HIRContext, ptr: ValueId, value: Value) {
         let value_type = ctx.program_builder.get_value_type(&value);
-        let destination_ptr_type = ctx.program_builder.get_value_id_type(&ptr);
+        let destination_ptr_type = self.get_refined_type(ctx, self.current_block_id, ptr);
 
         let target_type = match destination_ptr_type {
             Type::Pointer(to) => to,
@@ -134,7 +134,7 @@ impl FunctionBuilder {
         base_ptr: ValueId,
         field: IdentifierNode,
     ) -> Result<ValueId, SemanticError> {
-        let base_ptr_type = ctx.program_builder.get_value_id_type(&base_ptr);
+        let base_ptr_type = self.get_refined_type(ctx, self.current_block_id, base_ptr);
 
         let s = match base_ptr_type {
             Type::Pointer(to) => {
@@ -190,7 +190,8 @@ impl FunctionBuilder {
             });
         }
 
-        let base_ptr_type = ctx.program_builder.get_value_id_type(&base_ptr);
+        let base_ptr_type = self.get_refined_type(ctx, self.current_block_id, base_ptr);
+
         let element_type = match base_ptr_type {
             Type::Pointer(to) => *to,
             _ => {

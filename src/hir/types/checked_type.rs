@@ -15,7 +15,7 @@ pub enum StructKind {
     /// { id: u16, value: T }
     Tag(TagType),
 
-    /// { id: u16, payload: Buffer }
+    /// { id: u16, value: Buffer }
     Union {
         variants: Vec<TagType>,
     },
@@ -73,7 +73,7 @@ impl StructKind {
                 vec![
                     (ctx.common_identifiers.id, Type::U16),
                     (
-                        ctx.common_identifiers.payload,
+                        ctx.common_identifiers.value,
                         Type::Buffer {
                             size: max_size,
                             alignment: max_align,

@@ -5,7 +5,7 @@ use crate::{
         errors::{SemanticError, SemanticErrorKind},
         types::checked_type::{StructKind, Type},
         utils::try_unify_types::{intersect_types, subtract_types},
-        FunctionBuilder, HIRContext,
+        FunctionBuilder, HIRContext, TypePredicate,
     },
     tokenize::NumberKind,
 };
@@ -69,11 +69,10 @@ impl FunctionBuilder {
 
         for (i, tag_ann) in variants.iter().enumerate() {
             if tag_ann.value_type.is_some() {
-                let err = SemanticError {
+                ctx.module_builder.errors.push(SemanticError {
                     kind: SemanticErrorKind::ValuedTagInIsExpression,
                     span: tag_ann.span,
-                };
-                return Value::Use(self.report_error_and_get_poison(ctx, err));
+                });
             }
 
             let tag_id = ctx
@@ -115,14 +114,14 @@ impl FunctionBuilder {
             }
         }
 
+        let true_ty = intersect_types(&base_refined_ptr_ty, &target_tag_ids);
+        let false_ty = subtract_types(&base_refined_ptr_ty, &target_tag_ids);
+
         self.seal_block(ctx, true_path);
         self.use_basic_block(true_path);
-
-        let local_union_ptr_id = self.use_value_in_block(ctx, true_path, union_ptr_id);
-        let narrowed_ptr_ty = intersect_types(&base_refined_ptr_ty, &target_tag_ids);
+        let local_ptr_t = self.use_value_in_block(ctx, true_path, union_ptr_id);
         self.refinements
-            .insert((true_path, local_union_ptr_id), narrowed_ptr_ty);
-
+            .insert((true_path, local_ptr_t), true_ty.clone());
         self.set_basic_block_terminator(Terminator::Jump {
             target: merge_block,
             args: vec![Value::BoolLiteral(true)],
@@ -130,12 +129,9 @@ impl FunctionBuilder {
 
         self.seal_block(ctx, false_path);
         self.use_basic_block(false_path);
-
-        let local_union_ptr_id_f = self.use_value_in_block(ctx, false_path, union_ptr_id);
-        let remainder_ptr_ty = subtract_types(&base_refined_ptr_ty, &target_tag_ids);
+        let local_ptr_f = self.use_value_in_block(ctx, false_path, union_ptr_id);
         self.refinements
-            .insert((false_path, local_union_ptr_id_f), remainder_ptr_ty);
-
+            .insert((false_path, local_ptr_f), false_ty.clone());
         self.set_basic_block_terminator(Terminator::Jump {
             target: merge_block,
             args: vec![Value::BoolLiteral(false)],
@@ -143,8 +139,17 @@ impl FunctionBuilder {
 
         self.seal_block(ctx, merge_block);
         self.use_basic_block(merge_block);
+        let result_bool_id = self.append_block_param(ctx, merge_block, Type::Bool);
 
-        let result_bool = self.append_block_param(ctx, merge_block, Type::Bool);
-        Value::Use(result_bool)
+        self.predicates.insert(
+            result_bool_id,
+            TypePredicate {
+                target_ptr: union_ptr_id,
+                true_type: true_ty,
+                false_type: false_ty,
+            },
+        );
+
+        Value::Use(result_bool_id)
     }
 }

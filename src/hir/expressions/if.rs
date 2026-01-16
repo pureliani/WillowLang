@@ -21,6 +21,7 @@ pub enum IfContext {
     /// The `if` is used for control flow, its value is discarded
     Statement,
 }
+// src/hir/expressions/if.rs
 
 impl FunctionBuilder {
     pub fn build_if(
@@ -67,6 +68,23 @@ impl FunctionBuilder {
 
             let body_block_id = self.new_basic_block();
             let next_condition_block_id = self.new_basic_block();
+
+            if let Value::Use(cond_id) = condition_value {
+                if let Some(pred) = self.predicates.get(&cond_id).cloned() {
+                    let local_t =
+                        self.use_value_in_block(ctx, body_block_id, pred.target_ptr);
+                    self.refinements
+                        .insert((body_block_id, local_t), pred.true_type);
+
+                    let local_f = self.use_value_in_block(
+                        ctx,
+                        next_condition_block_id,
+                        pred.target_ptr,
+                    );
+                    self.refinements
+                        .insert((next_condition_block_id, local_f), pred.false_type);
+                }
+            }
 
             self.set_basic_block_terminator(Terminator::CondJump {
                 condition: condition_value,
@@ -124,11 +142,9 @@ impl FunctionBuilder {
             None
         };
 
-        // Emit Jumps for all collected branches
         for (block_id, val, _) in branch_results {
             self.use_basic_block(block_id);
-
-            let args = if let Some(_) = result_param_id {
+            let args = if result_param_id.is_some() {
                 vec![val]
             } else {
                 vec![]

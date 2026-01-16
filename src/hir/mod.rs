@@ -44,15 +44,12 @@ pub struct HIRContext<'a> {
 }
 
 pub struct CommonIdentifiers {
-    env_ptr: StringId,
-    fn_ptr: StringId,
     ptr: StringId,
     capacity: StringId,
     is_heap_allocated: StringId,
     len: StringId,
     id: StringId,
     value: StringId,
-    payload: StringId,
 }
 
 pub struct ProgramBuilder {
@@ -81,6 +78,13 @@ pub struct ModuleBuilder {
     pub scopes: Vec<Scope>,
 }
 
+#[derive(Debug, Clone)]
+pub struct TypePredicate {
+    pub target_ptr: ValueId,
+    pub true_type: Type,
+    pub false_type: Type,
+}
+
 #[derive(Debug)]
 pub struct FunctionBuilder {
     pub cfg: ControlFlowGraph,
@@ -92,6 +96,8 @@ pub struct FunctionBuilder {
     pub value_definitions: HashMap<ValueId, BasicBlockId>,
     pub sealed_blocks: HashSet<BasicBlockId>,
     pub refinements: HashMap<(BasicBlockId, ValueId), Type>,
+    /// Maps a boolean ValueId to the narrowing facts it carries
+    pub predicates: HashMap<ValueId, TypePredicate>,
     // Map: BlockId -> List of (PlaceholderParamId, OriginalValueId)
     pub incomplete_params: HashMap<BasicBlockId, Vec<(ValueId, ValueId)>>,
 
@@ -108,11 +114,8 @@ impl ProgramBuilder {
         let common_identifiers = CommonIdentifiers {
             id: string_interner.intern("id"),
             value: string_interner.intern("value"),
-            payload: string_interner.intern("payload"),
             capacity: string_interner.intern("capacity"),
             is_heap_allocated: string_interner.intern("is_heap_allocated"),
-            env_ptr: string_interner.intern("env_ptr"),
-            fn_ptr: string_interner.intern("fn_ptr"),
             len: string_interner.intern("len"),
             ptr: string_interner.intern("ptr"),
         };
