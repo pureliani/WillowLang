@@ -3,7 +3,7 @@ use crate::{
     hir::{
         cfg::ValueId,
         errors::{SemanticError, SemanticErrorKind},
-        types::checked_declaration::CheckedDeclaration,
+        types::{checked_declaration::CheckedDeclaration, checked_type::Type},
         FunctionBuilder, HIRContext,
     },
 };
@@ -54,6 +54,7 @@ impl FunctionBuilder {
         value: Expr,
     ) {
         let source_val = self.build_expr(ctx, value);
+        let source_type = ctx.program_builder.get_value_type(&source_val);
 
         let destination_ptr = match self.build_lvalue_expr(ctx, target) {
             Ok(value_id) => value_id,
@@ -64,5 +65,9 @@ impl FunctionBuilder {
         };
 
         self.emit_store(ctx, destination_ptr, source_val);
+        self.refinements.insert(
+            (self.current_block_id, destination_ptr),
+            Type::Pointer(Box::new(source_type)),
+        );
     }
 }

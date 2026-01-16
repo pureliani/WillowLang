@@ -3,7 +3,10 @@ use crate::{
     hir::{
         cfg::Value,
         errors::{SemanticError, SemanticErrorKind},
-        types::checked_declaration::{CheckedDeclaration, CheckedVarDecl},
+        types::{
+            checked_declaration::{CheckedDeclaration, CheckedVarDecl},
+            checked_type::Type,
+        },
         utils::{
             check_is_assignable::check_is_assignable, check_type::check_type_annotation,
         },
@@ -60,11 +63,11 @@ impl FunctionBuilder {
 
         let ptr = self.emit_stack_alloc(ctx, initial_constraint.clone(), 1);
 
-        let val_id = match initial_value {
-            Value::Use(id) => self.use_value_in_block(ctx, self.current_block_id, id),
+        let val_id = match &initial_value.clone() {
+            Value::Use(id) => self.use_value_in_block(ctx, self.current_block_id, *id),
             _ => {
                 let ty = ctx.program_builder.get_value_type(&initial_value);
-                self.emit_type_cast(ctx, initial_value, ty)
+                self.emit_type_cast(ctx, initial_value.clone(), ty)
             }
         };
 
@@ -77,6 +80,12 @@ impl FunctionBuilder {
         };
 
         self.emit_store(ctx, ptr, Value::Use(val_id));
+
+        let value_type = ctx.program_builder.get_value_type(&initial_value);
+        self.refinements.insert(
+            (self.current_block_id, ptr),
+            Type::Pointer(Box::new(value_type)),
+        );
 
         ctx.module_builder.scope_insert(
             ctx.program_builder,

@@ -1,5 +1,7 @@
 from "./code2.wl" {}
 
-fn helloWorld(): string {
-    "hello world!"
+fn main(): #Name(string) {
+    let userIdentifier: #Id(u32) | #Name(string) = #Name("Gabriel");
+
+    userIdentifier
 }

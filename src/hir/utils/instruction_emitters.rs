@@ -97,7 +97,7 @@ impl FunctionBuilder {
     }
 
     pub fn emit_load(&mut self, ctx: &mut HIRContext, ptr: ValueId) -> ValueId {
-        let ptr_type = ctx.program_builder.get_value_id_type(&ptr);
+        let ptr_type = self.get_refined_type(ctx, self.current_block_id, ptr);
 
         let destination_type = match ptr_type {
             Type::Pointer(to) => *to,
