@@ -236,6 +236,15 @@ impl Compiler {
                             Label::new((path.clone(), span)).with_color(Color::Red);
 
                         let final_report = match &e.kind {
+                            SemanticErrorKind::CannotNarrowNonUnion(ref ty) => {
+                                let type_str = type_to_string(ty, &self.interners);
+                                report.with_message("Redundant type check").with_label(
+                                    label.with_message(format!(
+                                        "This value is already known to be `{}`, the `::is()` operator can only be used on union types",
+                                        type_str
+                                    )),
+                                )
+                            }
                             SemanticErrorKind::ExpectedANumericOperand => report
                                 .with_message("Expected a numeric operand")
                                 .with_label(label.with_message(

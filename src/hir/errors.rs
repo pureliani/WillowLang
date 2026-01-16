@@ -8,6 +8,7 @@ use crate::{
 
 #[derive(Debug, Clone)]
 pub enum SemanticErrorKind {
+    CannotNarrowNonUnion(Type),
     ValuedTagInIsExpression,
     UnreachableCode,
     DuplicateIdentifier(IdentifierNode),
@@ -125,6 +126,7 @@ impl SemanticErrorKind {
             SemanticErrorKind::SymbolNotExported { .. } => 40,
             SemanticErrorKind::ClosuresNotSupportedYet => 41,
             SemanticErrorKind::ValuedTagInIsExpression => 42,
+            SemanticErrorKind::CannotNarrowNonUnion(_) => 43,
         }
     }
 }

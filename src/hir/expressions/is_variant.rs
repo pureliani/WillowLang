@@ -40,13 +40,12 @@ impl FunctionBuilder {
 
         if !matches!(
             union_type,
-            Type::Struct(StructKind::Union { .. }) | Type::Struct(StructKind::Tag(_))
+            Type::Struct(StructKind::Union { .. }) | Type::Unknown
         ) {
-            let err = SemanticError {
-                kind: SemanticErrorKind::CannotAccess(union_type),
+            ctx.module_builder.errors.push(SemanticError {
+                kind: SemanticErrorKind::CannotNarrowNonUnion(union_type),
                 span: left_span,
-            };
-            return Value::Use(self.report_error_and_get_poison(ctx, err));
+            });
         }
 
         let base_refined_ptr_ty =

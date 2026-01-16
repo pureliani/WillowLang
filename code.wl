@@ -1,10 +1,9 @@
-fn main(): #Name(string) {
+fn main(): u32 {
     let userIdentifier: #Id(u32) | #Name(string) = #Name("Gabriel");
 
-    // Return the tag, not the inner string 
     if userIdentifier::is(#Name) { 
-        userIdentifier 
+        1u32
     } else { 
-        #Name("Guest") 
+        userIdentifier.value
     }
 }

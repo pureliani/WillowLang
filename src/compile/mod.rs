@@ -127,7 +127,7 @@ impl Compiler {
 
         program_builder.build(modules_to_compile);
 
-        for (path, mut mb) in program_builder.modules {
+        for (path, mb) in program_builder.modules {
             if !mb.errors.is_empty() {
                 self.errors.push(CompilationError::Semantic {
                     path,
