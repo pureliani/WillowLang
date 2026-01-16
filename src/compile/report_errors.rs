@@ -24,7 +24,8 @@ impl Compiler {
                             (path.clone(), span.clone()),
                         )
                         .with_code(format!("T{}", e.kind.code()));
-                        let label = Label::new((path.clone(), span));
+                        let label =
+                            Label::new((path.clone(), span)).with_color(Color::Red);
 
                         let final_report = match &e.kind {
                             TokenizationErrorKind::UnterminatedString => {
@@ -220,7 +221,8 @@ impl Compiler {
                             (path.clone(), span.clone()),
                         )
                         .with_code(format!("S{}", e.kind.code()));
-                        let label = Label::new((path.clone(), span));
+                        let label =
+                            Label::new((path.clone(), span)).with_color(Color::Red);
 
                         let final_report = match &e.kind {
                             SemanticErrorKind::ExpectedANumericOperand => report
@@ -306,8 +308,8 @@ impl Compiler {
 
                                 report.with_message("Type mismatch").with_label(
                                     label.with_message(format!(
-                                        "Type mismatch, expected `{}`, instead found \
-                                         `{}`",
+                                        "Type mismatch, expected \"{}\", instead found \
+                                         \"{}\"",
                                         expected_type_str, received_type_str
                                     )),
                                 )
@@ -326,8 +328,8 @@ impl Compiler {
                                 received,
                             } => report.with_message("Return type mismatch").with_label(
                                 label.with_message(format!(
-                                    "Expected the return value to be assignable to {}, \
-                                     found {}",
+                                    "Expected the return value to be assignable to \
+                                     \"{}\", found \"{}\"",
                                     type_to_string(expected, &self.interners),
                                     type_to_string(received, &self.interners)
                                 )),
@@ -374,7 +376,7 @@ impl Compiler {
                                 report
                                     .with_message("Access to an undefined field")
                                     .with_label(label.with_message(format!(
-                                        "Field {} is not defined",
+                                        "Field \"{}\" is not defined",
                                         name
                                     )))
                             }
@@ -465,7 +467,12 @@ impl Compiler {
                             } => {
                                 let mut expected_strings: Vec<String> = expected
                                     .iter()
-                                    .map(|t| type_to_string(t, &self.interners))
+                                    .map(|t| {
+                                        format!(
+                                            "\"{}\"",
+                                            type_to_string(t, &self.interners)
+                                        )
+                                    })
                                     .collect();
                                 // Sort for deterministic error messages
                                 expected_strings.sort();
@@ -473,7 +480,7 @@ impl Compiler {
 
                                 report.with_message("Type mismatch").with_label(
                                     label.with_message(format!(
-                                        "Expected one of [{}], but found \"{}\"",
+                                        "Expected one of {}, but found \"{}\"",
                                         expected_str,
                                         type_to_string(received, &self.interners)
                                     )),
@@ -608,7 +615,7 @@ impl Compiler {
                 }
                 CompilationError::CouldNotReadFile { path, error } => {
                     println!(
-                        "Could not read file at path {}, error {}",
+                        "Could not read file at path \"{}\", error {}",
                         path.display(),
                         error
                     )
@@ -619,7 +626,7 @@ impl Compiler {
                     error,
                 } => {
                     println!(
-                        "Module not found {}, imported from {}, error: {}",
+                        "Module not found \"{}\", imported from \"{}\", error: {}",
                         target_path.display(),
                         importing_module.display(),
                         error

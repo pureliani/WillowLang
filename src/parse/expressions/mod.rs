@@ -54,7 +54,6 @@ fn suffix_bp(token_kind: &TokenKind) -> Option<(u8, ())> {
 
     let priority = match token_kind {
         Punctuation(LParen) => (14, ()),    // fn call
-        Punctuation(LBrace) => (14, ()),    // struct init
         Punctuation(Dot) => (14, ()),       // member access
         Punctuation(DoubleCol) => (14, ()), // static member accesses
         Punctuation(LBracket) => (14, ()),  // array index
