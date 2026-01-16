@@ -162,7 +162,8 @@ impl FunctionBuilder {
         self.emit_store(ctx, some_val_ptr, element_val);
 
         let some_val = Value::Use(self.emit_load(ctx, some_ptr));
-        let cast_some = self.emit_type_cast(ctx, some_val, result_union_type.clone());
+        let cast_some =
+            self.emit_type_cast(ctx, some_val, left_span, result_union_type.clone());
 
         self.set_basic_block_terminator(Terminator::Jump {
             target: merge_block,
@@ -183,7 +184,8 @@ impl FunctionBuilder {
         );
 
         let none_val = Value::Use(self.emit_load(ctx, none_ptr));
-        let cast_none = self.emit_type_cast(ctx, none_val, result_union_type.clone());
+        let cast_none =
+            self.emit_type_cast(ctx, none_val, left_span, result_union_type.clone());
 
         self.set_basic_block_terminator(Terminator::Jump {
             target: merge_block,

@@ -423,6 +423,7 @@ impl FunctionBuilder {
         &mut self,
         ctx: &mut HIRContext,
         value: Value,
+        value_span: Span,
         target_type: Type,
     ) -> ValueId {
         let value_type = ctx.program_builder.get_value_type(&value);
@@ -431,7 +432,7 @@ impl FunctionBuilder {
             return self.report_error_and_get_poison(
                 ctx,
                 SemanticError {
-                    span: Span::default(), // TODO: Fix span
+                    span: value_span,
                     kind: SemanticErrorKind::CannotCastType {
                         source_type: value_type.clone(),
                         target_type: target_type.clone(),

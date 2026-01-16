@@ -12,8 +12,9 @@ impl FunctionBuilder {
         left: Box<Expr>,
         target: TypeAnnotation,
     ) -> Value {
+        let value_span = left.span;
         let value = self.build_expr(ctx, *left);
         let target_type = check_type_annotation(ctx, &target);
-        Value::Use(self.emit_type_cast(ctx, value, target_type))
+        Value::Use(self.emit_type_cast(ctx, value, value_span, target_type))
     }
 }

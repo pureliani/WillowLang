@@ -1,9 +1,9 @@
-fn main(): u32 {
-    let userIdentifier: #Id(u32) | #Name(string) = #Name("Gabriel");
+type User = {
+    id: #U32(u32) | #UUID(string),
+};
 
-    if userIdentifier::is(#Name) { 
-        1u32
-    } else { 
-        userIdentifier.value
-    }
+fn main(): u32 {
+    let u: User = { id: #U32(17u32) };
+
+    u.id.value
 }

@@ -29,9 +29,9 @@ impl FunctionBuilder {
             return;
         }
 
+        let initial_value_span = var_decl.value.span;
         let (initial_value, initial_constraint) = match var_decl.constraint {
             Some(constraint_annotation) => {
-                let initial_value_span = var_decl.value.span;
                 let initial_value = self.build_expr(ctx, var_decl.value);
                 let initial_value_type =
                     ctx.program_builder.get_value_type(&initial_value);
@@ -67,7 +67,7 @@ impl FunctionBuilder {
             Value::Use(id) => self.use_value_in_block(ctx, self.current_block_id, *id),
             _ => {
                 let ty = ctx.program_builder.get_value_type(&initial_value);
-                self.emit_type_cast(ctx, initial_value.clone(), ty)
+                self.emit_type_cast(ctx, initial_value.clone(), initial_value_span, ty)
             }
         };
 
