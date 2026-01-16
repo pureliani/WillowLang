@@ -145,7 +145,7 @@ pub trait ASTVisitor<'ast>: Sized {
         self.visit_type(target);
     }
 
-    fn visit_tag_expr(&mut self, name: IdentifierNode, value: Option<&'ast Box<Expr>>) {
+    fn visit_tag_expr(&mut self, name: IdentifierNode, value: Option<&'ast Expr>) {
         self.visit_ident_label(name);
         if let Some(val) = value {
             self.visit_expr(val);
@@ -299,7 +299,7 @@ pub fn walk_expr<'ast, V: ASTVisitor<'ast>>(v: &mut V, expr: &'ast Expr) {
             v.visit_static_access_expr(left, *field)
         }
         ExprKind::TypeCast { left, target } => v.visit_type_cast_expr(left, target),
-        ExprKind::Tag { name, value } => v.visit_tag_expr(*name, value.as_ref()),
+        ExprKind::Tag { name, value } => v.visit_tag_expr(*name, value.as_deref()),
         ExprKind::FnCall { left, args } => v.visit_fn_call_expr(left, args),
         ExprKind::BoolLiteral(b) => v.visit_bool_literal(*b),
         ExprKind::Number(n) => v.visit_number_literal(*n),

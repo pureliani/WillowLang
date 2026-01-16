@@ -39,11 +39,13 @@ impl FunctionBuilder {
 
         self.value_definitions.insert(id, block_id);
 
-        let block = self.cfg.blocks.get_mut(&block_id).expect(&format!(
-            "INTERNAL COMPILER ERROR: Could not append basic block parameter, \
+        let block = self.cfg.blocks.get_mut(&block_id).unwrap_or_else(|| {
+            panic!(
+                "INTERNAL COMPILER ERROR: Could not append basic block parameter, \
              BasicBlockId({}) not found",
-            block_id.0,
-        ));
+                block_id.0
+            )
+        });
         block.params.push(id);
         id
     }
@@ -226,8 +228,8 @@ impl FunctionBuilder {
         error: SemanticError,
     ) -> ValueId {
         ctx.program_builder.errors.push(error);
-        let unknown_result_id = self.alloc_value(ctx, Type::Unknown);
-        unknown_result_id
+
+        self.alloc_value(ctx, Type::Unknown)
     }
 
     pub fn get_current_basic_block(&mut self) -> &mut BasicBlock {

@@ -11,8 +11,8 @@ use crate::{
     compile::interner::{SharedStringInterner, SharedTagInterner, StringId},
     hir::{
         cfg::{
-            BasicBlock, BasicBlockId, CheckedModule, ConstantId, ControlFlowGraph,
-            DeclarationId, Value, ValueId,
+            BasicBlockId, CheckedModule, ConstantId, ControlFlowGraph, DeclarationId,
+            Value, ValueId,
         },
         errors::SemanticError,
         types::{
@@ -161,24 +161,20 @@ impl ProgramBuilder {
         match value {
             Value::VoidLiteral => Type::Void,
             Value::BoolLiteral(_) => Type::Bool,
-            Value::NumberLiteral(kind) => {
-                let ty = match kind {
-                    NumberKind::I64(_) => Type::I64,
-                    NumberKind::I32(_) => Type::I32,
-                    NumberKind::I16(_) => Type::I16,
-                    NumberKind::I8(_) => Type::I8,
-                    NumberKind::F32(_) => Type::F32,
-                    NumberKind::F64(_) => Type::F64,
-                    NumberKind::U64(_) => Type::U64,
-                    NumberKind::U32(_) => Type::U32,
-                    NumberKind::U16(_) => Type::U16,
-                    NumberKind::U8(_) => Type::U8,
-                    NumberKind::USize(_) => Type::USize,
-                    NumberKind::ISize(_) => Type::ISize,
-                };
-
-                ty
-            }
+            Value::NumberLiteral(kind) => match kind {
+                NumberKind::I64(_) => Type::I64,
+                NumberKind::I32(_) => Type::I32,
+                NumberKind::I16(_) => Type::I16,
+                NumberKind::I8(_) => Type::I8,
+                NumberKind::F32(_) => Type::F32,
+                NumberKind::F64(_) => Type::F64,
+                NumberKind::U64(_) => Type::U64,
+                NumberKind::U32(_) => Type::U32,
+                NumberKind::U16(_) => Type::U16,
+                NumberKind::U8(_) => Type::U8,
+                NumberKind::USize(_) => Type::USize,
+                NumberKind::ISize(_) => Type::ISize,
+            },
             Value::Use(value_id) => self.get_value_id_type(value_id),
             Value::Function(declaration_id) => {
                 let fn_decl = self.get_declaration(*declaration_id);
@@ -203,41 +199,5 @@ impl ModuleBuilder {
             errors: vec![],
             scopes: vec![Scope::new(ScopeKind::File)],
         }
-    }
-}
-
-impl FunctionBuilder {
-    pub fn new(return_type: Type) -> Self {
-        let entry_block_id = BasicBlockId(0);
-        let cfg = ControlFlowGraph {
-            blocks: HashMap::from([(
-                entry_block_id,
-                BasicBlock {
-                    id: entry_block_id,
-                    instructions: vec![],
-                    terminator: None,
-                    params: vec![],
-                },
-            )]),
-            entry_block: entry_block_id,
-        };
-
-        let mut builder = Self {
-            cfg,
-            return_type,
-            block_value_maps: HashMap::new(),
-            incomplete_params: HashMap::new(),
-            predecessors: HashMap::new(),
-            value_definitions: HashMap::new(),
-            refinements: HashMap::new(),
-            sealed_blocks: HashSet::new(),
-            current_block_id: entry_block_id,
-            block_id_counter: 1,
-            value_id_counter: 0,
-        };
-
-        builder.sealed_blocks.insert(entry_block_id);
-
-        builder
     }
 }

@@ -51,8 +51,8 @@ fn check_is_assignable_recursive<'a>(
             (
                 StructKind::Union { variants: source },
                 StructKind::Union { variants: target },
-            ) => source.into_iter().all(|source_item| {
-                target.into_iter().any(|target_item| {
+            ) => source.iter().all(|source_item| {
+                target.iter().any(|target_item| {
                     check_is_tag_assignable(source_item, target_item, visited)
                 })
             }),
@@ -120,13 +120,7 @@ fn check_is_assignable_recursive<'a>(
                 return false;
             }
 
-            let returns_compatible = check_is_assignable_recursive(
-                &source_return_type,
-                &target_return_type,
-                visited,
-            );
-
-            returns_compatible
+            check_is_assignable_recursive(source_return_type, target_return_type, visited)
         }
         _ => false,
     };

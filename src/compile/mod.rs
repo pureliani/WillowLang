@@ -453,8 +453,8 @@ impl Compiler {
                                 .with_message("Cannot compare types")
                                 .with_label(label.with_message(format!(
                                     "Cannot compare type \"{}\" to type \"{}\"",
-                                    type_to_string(&of, &self.interners),
-                                    type_to_string(&to, &self.interners)
+                                    type_to_string(of, &self.interners),
+                                    type_to_string(to, &self.interners)
                                 ))),
                             SemanticErrorKind::UndeclaredIdentifier(id) => {
                                 let name =
@@ -509,9 +509,9 @@ impl Compiler {
                                 ),
                             SemanticErrorKind::TypeMismatch { expected, received } => {
                                 let expected_type_str =
-                                    type_to_string(&expected, &self.interners);
+                                    type_to_string(expected, &self.interners);
                                 let received_type_str =
-                                    type_to_string(&received, &self.interners);
+                                    type_to_string(received, &self.interners);
 
                                 report.with_message("Type mismatch").with_label(
                                     label.with_message(format!(
@@ -537,22 +537,22 @@ impl Compiler {
                                 label.with_message(format!(
                                     "Expected the return value to be assignable to {}, \
                                      found {}",
-                                    type_to_string(&expected, &self.interners),
-                                    type_to_string(&received, &self.interners)
+                                    type_to_string(expected, &self.interners),
+                                    type_to_string(received, &self.interners)
                                 )),
                             ),
                             SemanticErrorKind::CannotAccess(target) => report
                                 .with_message("Cannot access field")
                                 .with_label(label.with_message(format!(
                                     "Cannot use the access operator on the type \"{}\"",
-                                    type_to_string(&target, &self.interners)
+                                    type_to_string(target, &self.interners)
                                 ))),
                             SemanticErrorKind::CannotCall(target) => report
                                 .with_message("Cannot use the function call operator")
                                 .with_label(label.with_message(format!(
                                     "Cannot use the function-call operator on type \
                                      \"{}\"",
-                                    type_to_string(&target, &self.interners)
+                                    type_to_string(target, &self.interners)
                                 ))),
                             SemanticErrorKind::FnArgumentCountMismatch {
                                 expected,
@@ -565,9 +565,7 @@ impl Compiler {
                                     .with_label(label.with_message(format!(
                                         "This function expects {} argument{}, but \
                                          instead received {}",
-                                        expected.to_string(),
-                                        s,
-                                        received.to_string()
+                                        expected, s, received
                                     )))
                             }
                             SemanticErrorKind::CannotUseVariableDeclarationAsType => {
@@ -627,7 +625,7 @@ impl Compiler {
                                 missing_fields,
                             ) => {
                                 let field_names: Vec<String> = missing_fields
-                                    .into_iter()
+                                    .iter()
                                     .map(|f| self.interners.string_interner.resolve(*f))
                                     .collect();
                                 let joined = field_names
@@ -865,7 +863,7 @@ fn find_dependencies(
                 kind: ExprKind::Fn(decl),
                 ..
             }) => {
-                declarations.push(Declaration::Fn(decl.clone()));
+                declarations.push(Declaration::Fn(*decl.clone()));
             }
             StmtKind::TypeAliasDecl(decl) => {
                 declarations.push(Declaration::TypeAlias(decl.clone()));

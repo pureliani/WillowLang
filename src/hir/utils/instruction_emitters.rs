@@ -153,7 +153,7 @@ impl FunctionBuilder {
             ),
         };
 
-        if let Some((field_index, ty)) = s.get_field(&ctx.program_builder, field.name) {
+        if let Some((field_index, ty)) = s.get_field(ctx.program_builder, field.name) {
             let result_type = Type::Pointer(Box::new(ty.clone()));
 
             let destination = self.alloc_value(ctx, result_type);

@@ -1,5 +1,6 @@
 #![allow(clippy::result_large_err)]
 #![allow(clippy::inherent_to_string)]
+#![allow(clippy::redundant_pattern_matching)]
 
 pub mod ast;
 pub mod codegen;

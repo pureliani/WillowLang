@@ -98,13 +98,11 @@ impl FunctionBuilder {
             if self.get_current_basic_block().terminator.is_none() {
                 branch_results.push((self.current_block_id, else_value, else_span));
             }
-        } else {
-            if context == IfContext::Statement {
-                self.set_basic_block_terminator(Terminator::Jump {
-                    target: merge_block_id,
-                    args: vec![],
-                });
-            }
+        } else if context == IfContext::Statement {
+            self.set_basic_block_terminator(Terminator::Jump {
+                target: merge_block_id,
+                args: vec![],
+            });
         }
 
         let result_param_id = if context == IfContext::Expression {

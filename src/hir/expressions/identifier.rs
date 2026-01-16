@@ -31,15 +31,15 @@ impl FunctionBuilder {
                     Value::Use(self.emit_load(ctx, ptr_val))
                 }
                 CheckedDeclaration::UninitializedVar { identifier, .. } => {
-                    return Value::Use(self.report_error_and_get_poison(
+                    Value::Use(self.report_error_and_get_poison(
                         ctx,
                         SemanticError {
                             kind: SemanticErrorKind::UseOfUninitializedVariable(
-                                identifier.clone(),
+                                *identifier,
                             ),
                             span: identifier.span,
                         },
-                    ));
+                    ))
                 }
                 CheckedDeclaration::TypeAlias(decl) => {
                     Value::Use(self.report_error_and_get_poison(

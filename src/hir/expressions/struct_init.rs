@@ -50,7 +50,7 @@ impl FunctionBuilder {
         }
 
         let packed_fields = pack_struct(
-            &ctx.program_builder,
+            ctx.program_builder,
             StructKind::UserDefined(resolved_fields),
         );
 

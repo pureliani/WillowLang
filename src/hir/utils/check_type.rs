@@ -67,13 +67,11 @@ pub fn check_tag_annotation(
     let tag_id = ctx.program_builder.tag_interner.intern(&identifier.name);
     let checked_value_type = value_type.as_ref().map(|v| check_type_annotation(ctx, v));
 
-    let tag_type = TagType {
+    TagType {
         id: tag_id,
         value_type: checked_value_type.clone().map(Box::new),
         span: *span,
-    };
-
-    tag_type
+    }
 }
 
 pub fn check_type_annotation(ctx: &mut HIRContext, annotation: &TypeAnnotation) -> Type {
@@ -127,7 +125,7 @@ pub fn check_type_annotation(ctx: &mut HIRContext, annotation: &TypeAnnotation) 
                 .collect();
 
             let packed = pack_struct(
-                &ctx.program_builder,
+                ctx.program_builder,
                 StructKind::UserDefined(checked_field_types),
             );
 

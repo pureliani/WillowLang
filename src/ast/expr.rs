@@ -119,7 +119,7 @@ pub enum ExprKind {
     Number(NumberKind),
     String(StringNode),
     Identifier(IdentifierNode),
-    Fn(FnDecl),
+    Fn(Box<FnDecl>),
     Match {
         conditions: Vec<Expr>,
         arms: Vec<MatchArm>,

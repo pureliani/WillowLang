@@ -44,14 +44,14 @@ impl Parser {
         let body = self.parse_codeblock_expr()?;
 
         Ok(Expr {
-            kind: ExprKind::Fn(FnDecl {
+            kind: ExprKind::Fn(Box::new(FnDecl {
                 identifier,
                 params,
                 return_type,
                 body,
                 documentation,
                 is_exported,
-            }),
+            })),
             span: self.get_span(start_offset, self.offset - 1)?,
         })
     }
