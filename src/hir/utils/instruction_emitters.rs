@@ -134,9 +134,20 @@ impl FunctionBuilder {
         base_ptr: ValueId,
         field: IdentifierNode,
     ) -> Result<ValueId, SemanticError> {
-        let base_ptr_type = self.get_refined_type(ctx, self.current_block_id, base_ptr);
+        let mut current_ptr = base_ptr;
+        let mut current_ptr_type =
+            self.get_refined_type(ctx, self.current_block_id, current_ptr);
 
-        let s = match base_ptr_type {
+        if let Type::Pointer(inner) = &current_ptr_type {
+            if let Type::Pointer(target) = &**inner {
+                if matches!(**target, Type::Struct(_)) {
+                    current_ptr = self.emit_load(ctx, current_ptr);
+                    current_ptr_type =
+                        self.get_refined_type(ctx, self.current_block_id, current_ptr);
+                }
+            }
+        }
+        let s = match current_ptr_type {
             Type::Pointer(to) => {
                 if let Type::Struct(s) = *to {
                     s
@@ -155,12 +166,11 @@ impl FunctionBuilder {
 
         if let Some((field_index, ty)) = s.get_field(ctx.program_builder, field.name) {
             let result_type = Type::Pointer(Box::new(ty.clone()));
-
             let destination = self.alloc_value(ctx, result_type);
 
             self.push_instruction(Instruction::GetFieldPtr {
                 destination,
-                base_ptr,
+                base_ptr: current_ptr,
                 field_index,
             });
 

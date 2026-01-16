@@ -42,10 +42,7 @@ fn check_is_assignable_recursive<'a>(
         | (_, Unknown)
         | (Unknown, _) => true,
 
-        (Pointer(s), Pointer(t)) => {
-            check_is_assignable_recursive(s, t, visited)
-                && check_is_assignable_recursive(t, s, visited)
-        }
+        (Pointer(s), Pointer(t)) => check_is_assignable_recursive(s, t, visited),
 
         (Struct(source), Struct(target)) => match (source, target) {
             (
@@ -89,8 +86,9 @@ fn check_is_assignable_recursive<'a>(
 
                 is_assignable
             }
-            (StructKind::List(source_item_type), StructKind::List(target_item_type)) => {
-                check_is_assignable_recursive(source_item_type, target_item_type, visited)
+            (StructKind::List(s_inner), StructKind::List(t_inner)) => {
+                check_is_assignable_recursive(s_inner, t_inner, visited)
+                    && check_is_assignable_recursive(t_inner, s_inner, visited)
             }
             (StructKind::String, StructKind::String) => true,
             _ => false,

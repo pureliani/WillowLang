@@ -43,11 +43,10 @@ impl FunctionBuilder {
                     ctx.module_builder.errors.push(SemanticError {
                         span: initial_value_span,
                         kind: SemanticErrorKind::TypeMismatch {
-                            expected: expected_constraint,
+                            expected: expected_constraint.clone(),
                             received: initial_value_type,
                         },
                     });
-                    return;
                 }
 
                 (initial_value, expected_constraint)
