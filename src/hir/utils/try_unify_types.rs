@@ -2,6 +2,7 @@ use crate::{
     ast::Span,
     compile::interner::TagId,
     hir::{
+        cfg::Projection,
         errors::{SemanticError, SemanticErrorKind},
         types::{
             checked_declaration::TagType,
@@ -10,6 +11,36 @@ use crate::{
         utils::check_is_assignable::check_is_assignable,
     },
 };
+
+pub fn narrow_type_at_path(base: &Type, path: &[Projection], leaf_type: &Type) -> Type {
+    if path.is_empty() {
+        return leaf_type.clone();
+    }
+
+    match (&path[0], base) {
+        (
+            Projection::Deref,
+            Type::Pointer {
+                constraint,
+                narrowed_to,
+            },
+        ) => Type::Pointer {
+            constraint: constraint.clone(),
+            narrowed_to: Box::new(narrow_type_at_path(
+                narrowed_to,
+                &path[1..],
+                leaf_type,
+            )),
+        },
+        (Projection::Field(idx), Type::Struct(StructKind::UserDefined(fields))) => {
+            let mut new_fields = fields.clone();
+            new_fields[*idx].ty =
+                narrow_type_at_path(&fields[*idx].ty, &path[1..], leaf_type);
+            Type::Struct(StructKind::UserDefined(new_fields))
+        }
+        _ => base.clone(),
+    }
+}
 
 pub fn try_unify_types(entries: &[(Type, Span)]) -> Result<Type, SemanticError> {
     if entries.is_empty() {

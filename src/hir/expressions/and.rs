@@ -1,7 +1,7 @@
 use crate::{
     ast::expr::Expr,
     hir::{
-        cfg::{Terminator, Value},
+        cfg::{Terminator, ValueId},
         errors::{SemanticError, SemanticErrorKind},
         types::checked_type::Type,
         utils::check_is_assignable::check_is_assignable,
@@ -15,10 +15,10 @@ impl FunctionBuilder {
         ctx: &mut HIRContext,
         left: Box<Expr>,
         right: Box<Expr>,
-    ) -> Value {
-        let right_entry_block_id = self.new_basic_block();
-        let merge_block_id = self.new_basic_block();
-        let result_param = self.append_block_param(ctx, merge_block_id, Type::Bool);
+    ) -> ValueId {
+        let right_entry_block = self.new_basic_block();
+        let merge_block = self.new_basic_block();
+        let result_param = merge_block.append_block_param(ctx, Type::Bool);
 
         let left_span = left.span;
         let left_value = self.build_expr(ctx, *left);

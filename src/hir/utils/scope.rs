@@ -7,7 +7,7 @@ use crate::{
     ast::{DeclarationId, IdentifierNode},
     compile::interner::{SharedStringInterner, StringId},
     hir::{
-        cfg::BasicBlockId,
+        cfg::basic_blocks::BasicBlockId,
         errors::{SemanticError, SemanticErrorKind},
         types::checked_declaration::CheckedDeclaration,
         ModuleBuilder, ProgramBuilder,

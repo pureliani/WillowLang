@@ -1,12 +1,13 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use crate::{
     ast::{IdentifierNode, Span},
     hir::{
         cfg::{
-            BinaryOperationKind, ConstantId, Instruction, UnaryOperationKind, Value,
-            ValueId,
+            BasicBlock, BinaryOperationKind, ConstantId, Instruction, UnaryOperationKind,
+            Value, ValueId,
         },
+        counters::next_value_id,
         errors::{SemanticError, SemanticErrorKind},
         types::{checked_declaration::CheckedDeclaration, checked_type::Type},
         utils::{
@@ -18,69 +19,7 @@ use crate::{
 };
 
 impl FunctionBuilder {
-    fn push_instruction(&mut self, instruction: Instruction) {
-        let current_block = self.get_current_basic_block();
-
-        if current_block.terminator.is_some() {
-            panic!(
-                "INTERNAL COMPILER ERROR: Attempted to add instruction to a basic block \
-                 (ID: {}) that has already been terminated",
-                current_block.id.0
-            );
-        }
-
-        current_block.instructions.push(instruction);
-    }
-
     /// Returns ValueId which holds pointer: Type::Pointer { kind: PointerKind::Raw, to: Box<Type> }
-    pub fn emit_stack_alloc(
-        &mut self,
-        ctx: &mut HIRContext,
-        ty: Type,
-        count: usize,
-    ) -> ValueId {
-        let destination = self.alloc_value(
-            ctx,
-            Type::Pointer {
-                constraint: Box::new(ty.clone()),
-                narrowed_to: Box::new(ty),
-            },
-        );
-        self.push_instruction(Instruction::StackAlloc { destination, count });
-
-        destination
-    }
-
-    /// Returns ValueId which holds pointer: Type::Pointer { kind: PointerKind::Raw, to: Box<Type> }
-    pub fn emit_heap_alloc(
-        &mut self,
-        ctx: &mut HIRContext,
-        ty: Type,
-        count: Value,
-    ) -> Result<ValueId, SemanticError> {
-        let count_type = ctx.program_builder.get_value_type(&count);
-        let expected_count_type = Type::USize;
-        if !check_is_assignable(&count_type, &expected_count_type) {
-            return Err(SemanticError {
-                span: Span::default(), // TODO: Fix span propagation
-                kind: SemanticErrorKind::TypeMismatch {
-                    expected: expected_count_type,
-                    received: count_type,
-                },
-            });
-        }
-
-        let destination = self.alloc_value(
-            ctx,
-            Type::Pointer {
-                constraint: Box::new(ty.clone()),
-                narrowed_to: Box::new(ty),
-            },
-        );
-        self.push_instruction(Instruction::HeapAlloc { destination, count });
-
-        Ok(destination)
-    }
 
     pub fn emit_store(
         &mut self,
